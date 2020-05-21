@@ -8,9 +8,11 @@ import sys
 from codecs import open
 from subprocess import call
 from distutils.version import LooseVersion
-
+from distutils import sysconfig
 from setuptools import Command, find_packages, setup
+
 import numpy #WHY?
+from distutils.command.build import build as _build
 
 
 ### CYTHON COMPILATION MANGELING
@@ -25,6 +27,7 @@ try:
 
     _CYTHON_INSTALLED = _CYTHON_VERSION >= LooseVersion(min_cython_ver)
 except ImportError:
+    raise
     _CYTHON_VERSION = None
     _CYTHON_INSTALLED = False
     cythonize = lambda x, *args, **kwargs: x  # dummy func
@@ -36,7 +39,8 @@ from distutils.extension import Extension
 from distutils.command.build import build
 
 if _CYTHON_INSTALLED:
-    from Cython.Distutils.old_build_ext import old_build_ext as _build_ext
+    #from Cython.Distutils.old_build_ext import old_build_ext as _build_ext # Do not use the old build_ext
+    from Cython.Distutils import build_ext as _build_ext
 
     cython = True
     from Cython import Tempita as tempita
@@ -173,22 +177,22 @@ with open('requirements.txt') as f:
 
 LANGUAGE = 'c' # Not sure when this is not true
 LIBRARIES = 'imas' # We just need the IMAS library
-EXTRALINKARGS = '' # This is machine-specific
-EXTRACOMPILEARGS = '' # This is machine-specific
+#EXTRALINKARGS = '' # This is machine-specific
+#EXTRACOMPILEARGS = '' # This is machine-specific
 
 # This will probably _always_depend on the UAL version. However, opposed to the original Python HLI, it does not depend on the IMAS DD version, as that is build dynamically in runtime
 pxd_path = os.path.join(this_dir, 'pymas/_libs')
 print(os.listdir(pxd_path))
+ext_module_name = "ual_{!s}._ual_lowlevel".format(UAL_VERSION_SAFE.replace('.', '_'))
 ext_module = Extension(
-  name = "ual_{!s}._ual_lowlevel".format(UAL_VERSION_SAFE.replace('.', '_')),
+  name = ext_module_name,
   sources = [ "pymas/_libs/_ual_lowlevel.pyx" ], # As we're targetting a single UAL (For not), the sources are easy to find!
   language = LANGUAGE,
   library_dirs = [ IMAS_PREFIX + "/lib" ],
   libraries = [ LIBRARIES ],
-  extra_link_args = [ EXTRALINKARGS ],
-  extra_compile_args = [ EXTRACOMPILEARGS ],
+  #extra_link_args = [ EXTRALINKARGS ],
+  #extra_compile_args = [ EXTRACOMPILEARGS ],
   include_dirs=[ IMAS_PREFIX + "/include", numpy.get_include(), pxd_path],
-  language_level = 3, # DEPACRACATE Python 2!
 )
 
 
@@ -231,5 +235,5 @@ setup(
         'test': ['coverage', 'pytest', 'pytest-cov'],
     },
     ext_modules = maybe_cythonize([ext_module]),
-    cmdclass = {'test': RunTests},
+    cmdclass = {'test': RunTests, "build_ext": build_ext, "build": _build },
 )
