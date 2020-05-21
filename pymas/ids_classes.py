@@ -1,12 +1,12 @@
 import abc
-import imas
 from IPython import embed
-import imas_3_28_1_ual_4_7_2_dev38._ual_lowlevel as ull
-from .imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA
+import ual_4_7_2 as ual
+import ual._ual_lowlevel as ull
+from pymas._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA
 import numpy as np
 import xml
 import xml.etree.ElementTree as ET
-import pymas.hli_utils as hli_utils
+import pymas._libs.hli_utils as hli_utils
 
 class ALException(Exception):
 
