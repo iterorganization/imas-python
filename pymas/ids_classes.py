@@ -32,9 +32,7 @@ python_type_to_ual = {
 allowed_ids_types = ['STR_0D', 'INT_0D']
 
 class IDSPrimitive():
-#class IDSPrimitive():
     def __init__(self, name, ids_type, ndims, parent=None, value=None, on_wrong_type='warn'):
-        #is_right_type = isinstance(value, self.python_type)
         if value is None:
             value = ids_type_to_default[ids_type]
         self._ids_type = ids_type
@@ -93,6 +91,7 @@ def python_to_ids_type(value):
         embed()
     return ids_type, ndims
 
+
 class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
     def __str__(self):
         return self.value.__str__()
@@ -129,29 +128,6 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
         else:
             # one return value
             return type(self)(result)
-
-
-# For now, hard code this, sorry!
-#class IDS_STR_0D(IDSPrimitive):
-#    python_type = str
-#    ids_type = 'STR_0D'
-#    default_value = ''
-#
-#class IDS_INT_0D(IDSNumericArray):
-#    python_type = int
-#    ids_type = 'INT_0D'
-#    default_value = EMPTY_INT
-#    def __set__(self, instance, value):
-#        print('__set__!')
-#
-#    def __get__(self, instance, owner):
-#        print('__get__!')
-
-#data_type_to_class = {
-#    'STR_0D': IDS_STR_0D,
-#    'INT_0D': IDS_INT_0D,
-#}
-
 
 class IDSRoot():
 
@@ -476,13 +452,9 @@ class IDSStructure():
             if my_data_type == 'structure':
                 child_hli = IDSStructure(my_name, child)
                 setattr(self, my_name, child_hli)
-            # 'class way'
             elif my_data_type in allowed_ids_types:
                 setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self))
                 self._children.append(my_name)
-            # fill default way
-            #elif my_data_type in data_type_to_default:
-            #    setattr(self, my_name, data_type_to_default[my_data_type])
             else:
                 print('What to do? Unknown type!', my_data_type)
                 embed()
