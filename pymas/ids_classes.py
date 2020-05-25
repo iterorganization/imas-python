@@ -1,7 +1,8 @@
 import abc
 from IPython import embed
-import ual_4_7_2 as ual
-import ual._ual_lowlevel as ull
+import numbers
+import importlib
+ull = importlib.import_module('ual_4_7_2._ual_lowlevel')
 from pymas._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA
 import numpy as np
 import xml
@@ -16,29 +17,141 @@ class ALException(Exception):
         else:
           Exception.__init__(self, message)
 
-class IDSPrimitive():
-    pass
-
-# For now, hard code this, sorry!
-class IDS_STR_0D(IDSPrimitive):
-    pass
-
-class IDS_INT_0D(IDSPrimitive):
-    pass
-
-data_type_to_class = {
-    'STR_0D': IDS_STR_0D,
-    'INT_0D': IDS_INT_0D,
-}
-
 data_type_to_default = {
     'STR_0D': '',
     'INT_0D': EMPTY_INT,
+}
+ids_type_to_default = {
+    'STR': '',
+    'INT': EMPTY_INT,
 }
 python_type_to_ual = {
     str: 'STR_0D',
     int: 'INT_0D',
 }
+allowed_ids_types = ['STR_0D', 'INT_0D']
+
+class IDSPrimitive():
+#class IDSPrimitive():
+    def __init__(self, name, ids_type, ndims, parent=None, value=None, on_wrong_type='warn'):
+        #is_right_type = isinstance(value, self.python_type)
+        if value is None:
+            value = ids_type_to_default[ids_type]
+        self._ids_type = ids_type
+        self._ndims = ndims
+        self._name = name
+        self.value = value
+
+    def put(self, ctx, homogeneousTime):
+        if self._name is None:
+            raise Exception('Location in tree undefined, cannot put in database')
+        if self._ids_type == 'INT':
+            scalar_type = 1
+            data = hli_utils.HLIUtils.isScalarFinite(self.value, scalar_type)
+        else:
+            data = self.value
+
+        status = ull.ual_write_data(ctx, 'ids_properties/' + self._name, '', data)
+        if status != 0:
+            raise ALException('Error writing field "{!s}"'.format(self._name))
+
+    def get(self, ctx, homogeneousTime):
+        strNodeRoot = 'ids_properties/'
+        strNodePath = strNodeRoot + self._name
+        strTimeBasePath = ''
+        if self._ids_type == 'STR' and self._ndims == 0:
+            status, data = ull.ual_read_data_string(ctx, strNodePath, strTimeBasePath, CHAR_DATA, 1)
+        elif self._ids_type == 'INT' and self._ndims == 0:
+            status, data = ull.ual_read_data_scalar(ctx, strNodePath, strTimeBasePath, INTEGER_DATA)
+        else:
+            print('Unknown type {!s} for field {!s}! Not sure now..'.format(type(child), child_name))
+        return status, data
+
+
+    def __repr__(self):
+        return '%s("%s", %r)' % (type(self).__name__, self._name, self.value)
+
+    @property
+    def data_type(self):
+        return '{!s}_{!s}D'.format(self._ids_type, self._ndims)
+
+
+def create_leaf_container(name, data_type, **kwargs):
+    ids_type, ids_dims = data_type.split('_')
+    ndims = int(ids_dims[:-1])
+    return IDSPrimitive(name, ids_type, ndims, **kwargs)
+
+def python_to_ids_type(value):
+    if isinstance(value, str):
+        ids_type = 'STR'
+        ndims = 0
+    elif isinstance(value, int):
+        ids_type = 'INT'
+        ndims = 0
+    else:
+        print('Unknown python type {!s}', type(value))
+        embed()
+    return ids_type, ndims
+
+class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
+    def __str__(self):
+        return self.value.__str__()
+
+    # One might also consider adding the built-in list type to this
+    # list, to support operations like np.add(array_like, list)
+    _HANDLED_TYPES = (np.ndarray, numbers.Number)
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        out = kwargs.get('out', ())
+        for x in inputs + out:
+            # Only support operations with instances of _HANDLED_TYPES.
+            # Use ArrayLike instead of type(self) for isinstance to
+            # allow subclasses that don't override __array_ufunc__ to
+            # handle ArrayLike objects.
+            if not isinstance(x, self._HANDLED_TYPES + (IDSPrimitive,)):
+                return NotImplemented
+
+        # Defer to the implementation of the ufunc on unwrapped values.
+        inputs = tuple(x.value if isinstance(x, IDSPrimitive) else x
+                       for x in inputs)
+        if out:
+            kwargs['out'] = tuple(
+                x.value if isinstance(x, IDSPrimitive) else x
+                for x in out)
+        result = getattr(ufunc, method)(*inputs, **kwargs)
+
+        if type(result) is tuple:
+            # multiple return values
+            return tuple(type(self)(x) for x in result)
+        elif method == 'at':
+            # no return value
+            return None
+        else:
+            # one return value
+            return type(self)(result)
+
+
+# For now, hard code this, sorry!
+#class IDS_STR_0D(IDSPrimitive):
+#    python_type = str
+#    ids_type = 'STR_0D'
+#    default_value = ''
+#
+#class IDS_INT_0D(IDSNumericArray):
+#    python_type = int
+#    ids_type = 'INT_0D'
+#    default_value = EMPTY_INT
+#    def __set__(self, instance, value):
+#        print('__set__!')
+#
+#    def __get__(self, instance, owner):
+#        print('__get__!')
+
+#data_type_to_class = {
+#    'STR_0D': IDS_STR_0D,
+#    'INT_0D': IDS_INT_0D,
+#}
+
 
 class IDSRoot():
 
@@ -325,6 +438,16 @@ class IDSRoot():
   if status != 0:
    raise ALException('ERROR calling ual_end_action().', status) 
   return status,timeList
+import time
+class Foo(object):
+    global time
+    asdf = time
+    def thing(self):
+        return self
+
+def asdfy():
+    return Foo
+
 
 class IDSStructure():
     _MAX_OCCURRENCES = None
@@ -342,6 +465,7 @@ class IDSStructure():
         raise NotImplementedError
 
     def __init__(self, structure_name, structure_xml):
+        self._convert_ids_types = False
         self._name = structure_name
         self._children = []
         for child in structure_xml.getchildren():
@@ -353,15 +477,16 @@ class IDSStructure():
                 child_hli = IDSStructure(my_name, child)
                 setattr(self, my_name, child_hli)
             # 'class way'
-            #elif my_data_type in data_type_to_class:
-            #    setattr(self, my_name, data_type_to_class[my_data_type])
-            #    self._children.append(my_name)
+            elif my_data_type in allowed_ids_types:
+                setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self))
+                self._children.append(my_name)
             # fill default way
-            elif my_data_type in data_type_to_default:
-                setattr(self, my_name, data_type_to_default[my_data_type])
+            #elif my_data_type in data_type_to_default:
+            #    setattr(self, my_name, data_type_to_default[my_data_type])
             else:
                 print('What to do? Unknown type!', my_data_type)
                 embed()
+        self._convert_ids_types = True
 
 
     def initIDS(self):
@@ -375,6 +500,27 @@ class IDSStructure():
         """ Return a nice string representation """
         raise NotImplementedError
 
+    def __setattr__(self, key, value):
+        if hasattr(self, '_convert_ids_types') and self._convert_ids_types:
+            ids_type, ndims = python_to_ids_type(value)
+            if hasattr(self, key):
+                attr = getattr(self, key)
+            else:
+                attr = IDSPrimitive(ids_type, ndims, name=key, parent=self)
+            if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):
+                print('Trying to set structure field with non-structure, not converting anything')
+                object.__setattr__(self, key, value)
+                return
+            if ids_type != attr._ids_type:
+                raise ValueError('Cannot set key {!s} with value {!s}, would change type'.format(key, value))
+            if ndims != attr._ndims:
+                raise ValueError('Cannot set key {!s} with value {!s}, would change ndims'.format(key, value))
+
+            attr.value = value
+            object.__setattr__(self, key, attr)
+        else:
+            object.__setattr__(self, key, value)
+
     def readTime(self, occurrence):
         raise NotImplementedError
         time = []
@@ -384,7 +530,7 @@ class IDSStructure():
         else:
             path='equilibrium'+ '/' + str(occurrence)
 
-        status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
+        status, ctx = ull.ual_begin_global_action(self._idx.values, path, READ_OP)
         if status != 0:
              raise ALException('Error calling ual_begin_global_action() in readTime() operation', status)
     
@@ -397,19 +543,13 @@ class IDSStructure():
         return time
 
     def get(self, ctx, homogeneousTime):
-        strNodeRoot = "ids_properties/"
-        print('Getting all of', self._name)
         for child_name in self._children:
             child = getattr(self, child_name)
-            print('Trying to grab {!s} of type {!s}'.format(child_name, type(child)))
-            strNodePath = strNodeRoot + child_name
-            strTimeBasePath = ''
-            if isinstance(child, str):
-                status, data = ull.ual_read_data_string(ctx, strNodePath, strTimeBasePath, CHAR_DATA, 1)
-            elif isinstance(child, int):
-                status, data = ull.ual_read_data_scalar(ctx, strNodePath, strTimeBasePath, INTEGER_DATA)
+            if isinstance(child, IDSPrimitive):
+                status, data = child.get(ctx, homogeneousTime)
             else:
                 print('Unknown type {!s} for field {!s}! Not sure now..'.format(type(child), child_name))
+                embed()
             if status == 0 and data is not None:
                 setattr(self, child_name, data)
             else:
@@ -424,25 +564,25 @@ class IDSStructure():
         raise NotImplementedError
 
     def put(self, ctx, homogeneousTime):
+        homogenousTime = None
         # Do not check if type is valid, just go for it
         for child_name in self._children:
             child = getattr(self, child_name)
             if isinstance(child, IDSStructure):
                 print('Not yet putting IDS structures')
                 continue
-            elif not hli_utils.HLIUtils.isTypeValid(child, child_name, python_type_to_ual[type(child)]):
+            elif not hli_utils.HLIUtils.isTypeValid(child, child_name, child.data_type):
                 print('child {!s} of type {!s} has an invalid type, skip'.format(child_name, type(child)))
                 continue
             if child is not None and child != '':
                 print('Trying to write {!s}'.format(child_name))
+                child.put(ctx, homogenousTime)
+
                 if isinstance(child, int):
                     scalar_type = 1
                     data = hli_utils.HLIUtils.isScalarFinite(child, scalar_type)
                 else:
                     data = child
-                status = ull.ual_write_data(ctx, 'ids_properties/' + child_name, '', data)
-                if status != 0:
-                    raise ALException('Error writing field "{!s}"'.format(child_name))
 
 
     def putSlice(self, occurrence=0):
@@ -483,16 +623,13 @@ class IDSToplevel(IDSStructure):
         self._base_path = ids_name
         self._idx = EMPTY_INT
         self._children = []
-        print('Top level IDS name:', ids_name)
         for child in ids_xml_element.getchildren():
             my_name = child.get('name')
-            print(my_name)
             if my_name != 'ids_properties':
                 # Only build ids_properties to KISS
                 continue
             my_data_type = child.get('data_type')
             self._children.append(my_name)
-            print('Initialized HL element', my_name)
             if my_data_type == 'structure':
                 child_hli = IDSStructure(my_name, child)
             else:
@@ -575,7 +712,7 @@ class IDSToplevel(IDSStructure):
         else:
             path = self.__name__ + '/' + str(occurrence)
 
-        homogeneousTime = self.ids_properties.homogeneous_time 
+        homogeneousTime = self.ids_properties.homogeneous_time.value
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
             print("IDS equilibrium is found to be EMPTY (homogeneous_time undefined). PUT quits with no action.")
             return
