@@ -489,11 +489,10 @@ class IDSStructure():
             self._children.append(my_name)
             my_data_type = child.get('data_type')
             if my_data_type == 'structure':
-                child_hli = IDSStructure(parent, my_name, child)
+                child_hli = IDSStructure(self, my_name, child)
                 setattr(self, my_name, child_hli)
             elif my_data_type in allowed_ids_types:
                 setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self))
-                self._children.append(my_name)
             else:
                 logger.critical('Unknown child type {!s} of field {!s}!'.format(
                     my_data_type, my_name))
@@ -526,9 +525,7 @@ class IDSStructure():
             else:
                 attr = IDSPrimitive(ids_type, ndims, name=key, parent=self)
             if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):
-                logger.debug('Trying to set structure field with non-structure, do not converting anything')
-                object.__setattr__(self, key, value)
-                return
+                raise Exception('Trying to set structure field {!s} with non-structure.'.format(key))
             if ids_type != attr._ids_type:
                 raise ValueError('Cannot set key {!s} with value {!s}, would change type'.format(key, value))
             if ndims != attr._ndims:
@@ -564,13 +561,17 @@ class IDSStructure():
     @loglevel
     def get(self, ctx, homogeneousTime):
         for child_name in self._children:
+            dbg_str = ' ' * self.depth + '- ' + child_name
+            logger.debug('{:53s} get'.format(dbg_str))
             child = getattr(self, child_name)
+            if isinstance(child, IDSStructure):
+                child.get(ctx, homogeneousTime)
+                return # Nested struct will handle setting attributes
             if isinstance(child, IDSPrimitive):
                 status, data = child.get(ctx, homogeneousTime)
             else:
-                logger.critical('Unknown type {!s} for field {!s}!'.format(
+                logger.critical('Unknown type {!s} for field {!s}! Skipping'.format(
                     type(child), child_name))
-                embed()
             if status == 0 and data is not None:
                 setattr(self, child_name, data)
             else:
@@ -596,7 +597,7 @@ class IDSStructure():
             child = getattr(self, child_name)
             if isinstance(child, IDSStructure):
                 logger.critical('Not yet putting IDS structures into database')
-                continue
+                child.put(ctx, homogeneousTime)
             elif not hli_utils.HLIUtils.isTypeValid(child, child_name, child.data_type):
                 logger.warning(
                     'Child {!s} of type {!s} has an invalid value. Skipping'.format(
@@ -650,7 +651,7 @@ class IDSToplevel(IDSStructure):
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
     def __init__(self, parent, ids_name, ids_xml_element):
-        self.__name__ = ids_name
+        self._name = ids_name
         self._base_path = ids_name
         self._idx = EMPTY_INT
         self._parent = parent
@@ -681,7 +682,7 @@ class IDSToplevel(IDSStructure):
             2: IDS_TIME_MODE_INDEPENDENT; No dynamic node is filled in the IDS (dynamic nodes _will_ be skipped by the Access Layer)
         """
         homogeneousTime = IDS_TIME_MODE_UNKNOWN
-        path = self.__name__
+        path = self._name
         if occurrence != 0:
             path += '/' + str(occurrence)
 
@@ -700,7 +701,7 @@ class IDSToplevel(IDSStructure):
     @loglevel
     def read_data_dictionary_version(self, occurrence):
         data_dictionary_version = ''
-        path = self.__name__
+        path = self._name
         if occurrence != 0:
             path += '/' + str(occurrence)
 
@@ -717,7 +718,7 @@ class IDSToplevel(IDSStructure):
         return data_dictionary_version
 
     @loglevel
-    def get(self, occurrence=0):
+    def get(self, occurrence=0, **kwargs):
         path = None
         if occurrence == 0:
             path='equilibrium'
@@ -734,10 +735,11 @@ class IDSToplevel(IDSStructure):
         if status != 0:
           raise ALException('Error calling ual_begin_global_action() for equilibrium', status)
 
+        logger.debug('{:53s} get'.format(self._name))
         for child_name in self._children:
-            logger.debug('Trying to get {!s}'.format(child_name))
+            logger.debug('- {:51s} get'.format(child_name))
             child = getattr(self, child_name)
-            child.get(ctx, homogeneousTime)
+            child.get(ctx, homogeneousTime, **kwargs)
 
     @loglevel
     def put(self, occurrence=0):
@@ -745,9 +747,9 @@ class IDSToplevel(IDSStructure):
         path = None
         homogeneousTime = 2
         if occurrence == 0:
-            path = self.__name__
+            path = self._name
         else:
-            path = self.__name__ + '/' + str(occurrence)
+            path = self._name + '/' + str(occurrence)
 
         homogeneousTime = self.ids_properties.homogeneous_time.value
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
@@ -760,7 +762,7 @@ class IDSToplevel(IDSStructure):
         self.deleteData(occurrence)
         status, ctx = ull.ual_begin_global_action(self._idx, path, WRITE_OP)
         if status != 0:
-            raise ALException('Error calling ual_begin_global_action() for {!s}'.format(self.__name__, status))
+            raise ALException('Error calling ual_begin_global_action() for {!s}'.format(self._name, status))
 
         for child_name in self._children:
             child = getattr(self, child_name)
