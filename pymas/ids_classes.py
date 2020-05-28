@@ -48,7 +48,7 @@ def loglevel(func):
         verbosity = kwargs.pop('verbosity', 0)
         if verbosity >= 1:
             logger.setLevel(logging.INFO)
-        elif verbosity >= 2:
+        if verbosity >= 2:
             logger.setLevel(logging.DEBUG)
         value = func(*args, **kwargs)
         logger.setLevel(old_log_level)
@@ -89,7 +89,8 @@ class IDSPrimitive():
         elif self._ids_type == 'INT' and self._ndims == 0:
             status, data = ull.ual_read_data_scalar(ctx, strNodePath, strTimeBasePath, INTEGER_DATA)
         else:
-            print('Unknown type {!s} for field {!s}! Not sure now..'.format(type(child), child_name))
+            logger.critical('Unknown child type {!s} of field {!s}, skipping for now'.format(
+            type(child), child_name))
         return status, data
 
 
@@ -114,7 +115,9 @@ def python_to_ids_type(value):
         ids_type = 'INT'
         ndims = 0
     else:
-        print('Unknown python type {!s}', type(value))
+        logger.critical(
+            'Unknown python type {!s}, cannot convert from python to IDS type'.format(
+                type(value)))
         embed()
     return ids_type, ndims
 
@@ -159,6 +162,8 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
 class IDSRoot():
  """ Root of IDS tree. Contains all top-level IDSs """
 
+ depth = 0
+
  @loglevel
  def __init__(self, s=-1, r=-1, rs=-1, rr=-1, xml_path=None):
   setattr(self, 'shot', s)
@@ -172,6 +177,7 @@ class IDSRoot():
   XMLtreeIDSDef = ET.parse(xml_path)
   root = XMLtreeIDSDef.getroot()
   self._children = []
+  logger.info('Generating IDS structures from XML file {!s}'.format(os.path.abspath(xml_path)))
   for ids in root:
       my_name = ids.get('name')
       if my_name is None:
@@ -179,6 +185,7 @@ class IDSRoot():
       # Only build for equilibrium to KISS
       if my_name != 'equilibrium':
           continue
+      logger.debug('{:42s} initialization'.format(my_name))
       self._children.append(my_name)
       setattr(self, my_name, IDSToplevel(self, my_name, ids))
   #self.equilibrium = IDSToplevel('equilibrium')
@@ -477,7 +484,8 @@ class IDSStructure():
         self._children = []
         for child in structure_xml.getchildren():
             my_name = child.get('name')
-            print('IDSStructure name', my_name)
+            dbg_str = ' ' * self.depth + '- ' + my_name
+            logger.debug('{:42s} initialization'.format(dbg_str))
             self._children.append(my_name)
             my_data_type = child.get('data_type')
             if my_data_type == 'structure':
@@ -487,10 +495,17 @@ class IDSStructure():
                 setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self))
                 self._children.append(my_name)
             else:
-                print('What to do? Unknown type!', my_data_type)
+                logger.critical('Unknown child type {!s} of field {!s}!'.format(
+                    my_data_type, my_name))
                 embed()
         self._convert_ids_types = True
 
+    @property
+    def depth(self):
+        my_depth = 0
+        if hasattr(self, '_parent'):
+            my_depth += 1 + self._parent.depth
+        return my_depth
 
     def initIDS(self):
         raise NotImplementedError
@@ -511,7 +526,7 @@ class IDSStructure():
             else:
                 attr = IDSPrimitive(ids_type, ndims, name=key, parent=self)
             if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):
-                print('Trying to set structure field with non-structure, not converting anything')
+                logger.debug('Trying to set structure field with non-structure, do not converting anything')
                 object.__setattr__(self, key, value)
                 return
             if ids_type != attr._ids_type:
@@ -553,12 +568,15 @@ class IDSStructure():
             if isinstance(child, IDSPrimitive):
                 status, data = child.get(ctx, homogeneousTime)
             else:
-                print('Unknown type {!s} for field {!s}! Not sure now..'.format(type(child), child_name))
+                logger.critical('Unknown type {!s} for field {!s}!'.format(
+                    type(child), child_name))
                 embed()
             if status == 0 and data is not None:
                 setattr(self, child_name, data)
             else:
-                print('Warning! Unable to have grabbed simple type {!s}'.format(child_name))
+                 logger.critical(
+                     'Unable to get simple field {!s} from storage'.format(my_name))
+
 
     @loglevel
     def getSlice(self, time_requested, interpolation_method, occurrence=0):
@@ -577,13 +595,16 @@ class IDSStructure():
         for child_name in self._children:
             child = getattr(self, child_name)
             if isinstance(child, IDSStructure):
-                print('Not yet putting IDS structures')
+                logger.critical('Not yet putting IDS structures into database')
                 continue
             elif not hli_utils.HLIUtils.isTypeValid(child, child_name, child.data_type):
-                print('child {!s} of type {!s} has an invalid type, skip'.format(child_name, type(child)))
+                logger.warning(
+                    'Child {!s} of type {!s} has an invalid value. Skipping'.format(
+                    child_name, type(child)))
                 continue
             if child is not None and child != '':
-                print('Trying to write {!s}'.format(child_name))
+                logger.debug(
+                    'Trying to write {!s} to storage'.format(child_name))
                 child.put(ctx, homogenousTime)
 
                 if isinstance(child, int):
@@ -601,7 +622,7 @@ class IDSStructure():
     @loglevel
     def deleteData(self, occurrence=0):
         #Delete full IDS data from the open database.
-        print('Not deleting data, everything is temporary atm!')
+        logger.critical('Not deleting any data from storage, everything is temporary!')
 
     def setExpIdx(self, idx):
         raise NotImplementedError
@@ -636,6 +657,7 @@ class IDSToplevel(IDSStructure):
         self._children = []
         for child in ids_xml_element.getchildren():
             my_name = child.get('name')
+            logger.debug('- {:40s} initialization'.format(my_name))
             if my_name != 'ids_properties':
                 # Only build ids_properties to KISS
                 continue
@@ -644,7 +666,7 @@ class IDSToplevel(IDSStructure):
             if my_data_type == 'structure':
                 child_hli = IDSStructure(self, my_name, child)
             else:
-                print('Unknown type ', my_data_type)
+                logger.critical('Unknown IDS type {!s}'.format(my_data_type))
                 embed()
             setattr(self, my_name, child_hli)
         #self.initIDS()
@@ -704,7 +726,7 @@ class IDSToplevel(IDSStructure):
 
         homogeneousTime = self.readHomogeneous(occurrence)
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
-            print('Unknown time mode, not getting')
+            logger.warning('Unknown time mode, not getting')
             return
         data_dictionary_version = self.read_data_dictionary_version(occurrence)
 
@@ -713,7 +735,7 @@ class IDSToplevel(IDSStructure):
           raise ALException('Error calling ual_begin_global_action() for equilibrium', status)
 
         for child_name in self._children:
-            print('Trying to grab {!s}'.format(child_name))
+            logger.debug('Trying to get {!s}'.format(child_name))
             child = getattr(self, child_name)
             child.get(ctx, homogeneousTime)
 
@@ -729,7 +751,7 @@ class IDSToplevel(IDSStructure):
 
         homogeneousTime = self.ids_properties.homogeneous_time.value
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
-            print("IDS equilibrium is found to be EMPTY (homogeneous_time undefined). PUT quits with no action.")
+            logger.warning("IDS equilibrium is found to be EMPTY (homogeneous_time undefined). PUT quits with no action.")
             return
         if homogeneousTime not in IDS_TIME_MODES:
             raise ALException('ERROR: ids_properties.homogeneous_time should be set to IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_HOMOGENEOUS or IDS_TIME_MODE_INDEPENDENT.')
