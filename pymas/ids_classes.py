@@ -1,4 +1,13 @@
+# Set up logging immediately
+import logging
+
+root_logger = logging.getLogger('pymas')
+logger = root_logger
+logger.setLevel(logging.WARNING)
+
 import abc
+import functools
+import os
 from IPython import embed
 import numbers
 import importlib
@@ -8,6 +17,7 @@ import numpy as np
 import xml
 import xml.etree.ElementTree as ET
 import pymas._libs.hli_utils as hli_utils
+
 
 class ALException(Exception):
 
@@ -31,7 +41,22 @@ python_type_to_ual = {
 }
 allowed_ids_types = ['STR_0D', 'INT_0D']
 
+def loglevel(func):
+    @functools.wraps(func)
+    def loglevel_decorator(*args, **kwargs):
+        old_log_level = logger.level
+        verbosity = kwargs.pop('verbosity', 0)
+        if verbosity >= 1:
+            logger.setLevel(logging.INFO)
+        elif verbosity >= 2:
+            logger.setLevel(logging.DEBUG)
+        value = func(*args, **kwargs)
+        logger.setLevel(old_log_level)
+        return value
+    return loglevel_decorator
+
 class IDSPrimitive():
+    @loglevel
     def __init__(self, name, ids_type, ndims, parent=None, value=None, on_wrong_type='warn'):
         if value is None:
             value = ids_type_to_default[ids_type]
@@ -40,6 +65,7 @@ class IDSPrimitive():
         self._name = name
         self.value = value
 
+    @loglevel
     def put(self, ctx, homogeneousTime):
         if self._name is None:
             raise Exception('Location in tree undefined, cannot put in database')
@@ -53,6 +79,7 @@ class IDSPrimitive():
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
 
+    @loglevel
     def get(self, ctx, homogeneousTime):
         strNodeRoot = 'ids_properties/'
         strNodePath = strNodeRoot + self._name
@@ -132,6 +159,7 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
 class IDSRoot():
  """ Root of IDS tree. Contains all top-level IDSs """
 
+ @loglevel
  def __init__(self, s=-1, r=-1, rs=-1, rr=-1, xml_path=None):
   setattr(self, 'shot', s)
   self.shot = s
@@ -441,6 +469,7 @@ class IDSStructure():
     def __copy__(self):
         raise NotImplementedError
 
+    @loglevel
     def __init__(self, parent, structure_name, structure_xml):
         self._convert_ids_types = False
         self._name = structure_name
@@ -495,6 +524,7 @@ class IDSStructure():
         else:
             object.__setattr__(self, key, value)
 
+    @loglevel
     def readTime(self, occurrence):
         raise NotImplementedError
         time = []
@@ -516,6 +546,7 @@ class IDSStructure():
          raise ALException('Error calling ual_end_action() in readTime() operation', status) 
         return time
 
+    @loglevel
     def get(self, ctx, homogeneousTime):
         for child_name in self._children:
             child = getattr(self, child_name)
@@ -529,14 +560,17 @@ class IDSStructure():
             else:
                 print('Warning! Unable to have grabbed simple type {!s}'.format(child_name))
 
+    @loglevel
     def getSlice(self, time_requested, interpolation_method, occurrence=0):
         #Retrieve full IDS data from the open database.
         raise NotImplementedError
 
+    @loglevel
     def _getData(self, ctx, indexFrom, indexTo, homogeneousTime, nodePath, analyzeTime):
         """ A deeped way of getting data?? using 'traverser' whatever that is """
         raise NotImplementedError
 
+    @loglevel
     def put(self, ctx, homogeneousTime):
         homogenousTime = None
         # Do not check if type is valid, just go for it
@@ -559,10 +593,12 @@ class IDSStructure():
                     data = child
 
 
+    @loglevel
     def putSlice(self, occurrence=0):
         #Store IDS data time slice to the open database.
         raise NotImplementedError
 
+    @loglevel
     def deleteData(self, occurrence=0):
         #Delete full IDS data from the open database.
         print('Not deleting data, everything is temporary atm!')
@@ -613,6 +649,7 @@ class IDSToplevel(IDSStructure):
             setattr(self, my_name, child_hli)
         #self.initIDS()
 
+    @loglevel
     def readHomogeneous(self, occurrence):
         """ Read the value of homogeneousTime.
 
@@ -638,6 +675,7 @@ class IDSToplevel(IDSStructure):
             raise ALException('Error calling ual_end_action() in readHomogeneous() operation', status) 
         return homogeneousTime
 
+    @loglevel
     def read_data_dictionary_version(self, occurrence):
         data_dictionary_version = ''
         path = self.__name__
@@ -656,6 +694,7 @@ class IDSToplevel(IDSStructure):
             raise ALException('Error calling ual_end_action() in read_data_dictionary_version() operation', status) 
         return data_dictionary_version
 
+    @loglevel
     def get(self, occurrence=0):
         path = None
         if occurrence == 0:
@@ -678,6 +717,7 @@ class IDSToplevel(IDSStructure):
             child = getattr(self, child_name)
             child.get(ctx, homogeneousTime)
 
+    @loglevel
     def put(self, occurrence=0):
         # Store full IDS data to the open database.
         path = None
