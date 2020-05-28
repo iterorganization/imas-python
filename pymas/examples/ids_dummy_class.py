@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
         #thing = IDSStructure()
         ids.setPulseCtx(db_ctx)
-        ids.put()
+        ids.put(verbosity=2)
         #ids.ids_properties.homogeneous_time = 'crap'
         print('Done putting')
         print('Putting')
@@ -132,6 +132,14 @@ if __name__ == '__main__':
         print('Post put ids.ids_properties.version_put.access_layer:', ids.ids_properties.version_put.access_layer)
         ids.get()
         print('Post get ids.ids_properties.version_put.access_layer:', ids.ids_properties.version_put.access_layer)
+
+        # And an array
+        print('Pre put ids.vacuum_toroidal_field.b0:', ids.vacuum_toroidal_field.b0)
+        ids.vacuum_toroidal_field.b0 = [1, 2, 3.2]
+        ids.put()
+        print('Post put ids.vacuum_toroidal_field.b0:', ids.vacuum_toroidal_field.b0)
+        ids.get()
+        print('Post get ids.vacuum_toroidal_field.b0:', ids.vacuum_toroidal_field.b0)
 
         # 5.8 Putting an IDS
         # imas_entry.pf_active.put(occurence)
