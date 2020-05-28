@@ -81,8 +81,9 @@ if __name__ == '__main__':
         # New API
         # 4.4.1 Initializing an empty IDS
         import pymas as imas
-        idsdef = '../../../imas-data-dictionary/IDSDef.xml'
-        imas_entry = imas.ids(shot, run_in, xml_path=idsdef)
+        idsdef_dir = os.path.join(os.path.dirname(__file__), '../../../imas-data-dictionary/')
+        idsdef = os.path.join(idsdef_dir, 'IDSDef.xml')
+        imas_entry = imas.ids(shot, run_in, xml_path=idsdef, verbosity=2)
         # This should then support accessing an IDS using idsVar.<IDSname>.<IDSfield>
 
         # 5.5 Opening an existing Data Entry
@@ -108,6 +109,7 @@ if __name__ == '__main__':
         #ids.ids_properties.homogeneous_time = 2
         time = 2
         ids.ids_properties.homogeneous_time = time
+
         #thing = IDSStructure()
         ids.setPulseCtx(db_ctx)
         ids.put()
@@ -120,8 +122,16 @@ if __name__ == '__main__':
         print('Original ids.ids_properties.homogeneous_time:', ids.ids_properties.homogeneous_time)
         ids.ids_properties.homogeneous_time = 9999
         print('Changed ids.ids_properties.homogeneous_time:', ids.ids_properties.homogeneous_time)
-        ids.get()
+        ids.get(verbosity=2)
         print('After re-get ids.ids_properties.homogeneous_time:', ids.ids_properties.homogeneous_time)
+
+        # Creating a nested data entry
+        print('Pre put ids.ids_properties.version_put.access_layer:', ids.ids_properties.version_put.access_layer)
+        ids.ids_properties.version_put.access_layer = 'pymas'
+        ids.put()
+        print('Post put ids.ids_properties.version_put.access_layer:', ids.ids_properties.version_put.access_layer)
+        ids.get()
+        print('Post get ids.ids_properties.version_put.access_layer:', ids.ids_properties.version_put.access_layer)
 
         # 5.8 Putting an IDS
         # imas_entry.pf_active.put(occurence)
