@@ -130,6 +130,7 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
             return type(self)(result)
 
 class IDSRoot():
+ """ Root of IDS tree. Contains all top-level IDSs """
 
  def __init__(self, s=-1, r=-1, rs=-1, rr=-1, xml_path=None):
   setattr(self, 'shot', s)
@@ -151,7 +152,7 @@ class IDSRoot():
       if my_name != 'equilibrium':
           continue
       self._children.append(my_name)
-      setattr(self, my_name, IDSToplevel(my_name, ids))
+      setattr(self, my_name, IDSToplevel(self, my_name, ids))
   #self.equilibrium = IDSToplevel('equilibrium')
 
   # Do not use this now
@@ -440,9 +441,10 @@ class IDSStructure():
     def __copy__(self):
         raise NotImplementedError
 
-    def __init__(self, structure_name, structure_xml):
+    def __init__(self, parent, structure_name, structure_xml):
         self._convert_ids_types = False
         self._name = structure_name
+        self._parent = parent
         self._children = []
         for child in structure_xml.getchildren():
             my_name = child.get('name')
@@ -450,7 +452,7 @@ class IDSStructure():
             self._children.append(my_name)
             my_data_type = child.get('data_type')
             if my_data_type == 'structure':
-                child_hli = IDSStructure(my_name, child)
+                child_hli = IDSStructure(parent, my_name, child)
                 setattr(self, my_name, child_hli)
             elif my_data_type in allowed_ids_types:
                 setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self))
@@ -590,10 +592,11 @@ class IDSToplevel(IDSStructure):
     At minium, one should fill ids_properties/homogeneous_time
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
-    def __init__(self, ids_name, ids_xml_element):
+    def __init__(self, parent, ids_name, ids_xml_element):
         self.__name__ = ids_name
         self._base_path = ids_name
         self._idx = EMPTY_INT
+        self._parent = parent
         self._children = []
         for child in ids_xml_element.getchildren():
             my_name = child.get('name')
@@ -603,7 +606,7 @@ class IDSToplevel(IDSStructure):
             my_data_type = child.get('data_type')
             self._children.append(my_name)
             if my_data_type == 'structure':
-                child_hli = IDSStructure(my_name, child)
+                child_hli = IDSStructure(self, my_name, child)
             else:
                 print('Unknown type ', my_data_type)
                 embed()
