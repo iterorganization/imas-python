@@ -1,5 +1,6 @@
 # Set up logging immediately
 import logging
+import copy
 
 root_logger = logging.getLogger('pymas')
 logger = root_logger
@@ -32,7 +33,7 @@ ids_type_to_default = {
     'INT': EMPTY_INT,
     'FLT': EMPTY_FLOAT,
 }
-allowed_ids_types = ['STR_0D', 'INT_0D', 'FLT_0D', 'int_type', 'FLT_1D']
+#allowed_ids_types = ['STR_0D', 'INT_0D', 'FLT_0D', 'int_type', 'FLT_1D', 'FLT_2D', 'FLT_4D', 'flt_type']
 
 def loglevel(func):
     @functools.wraps(func)
@@ -118,7 +119,7 @@ class IDSPrimitive():
 
         dbg_str = ' ' * self.depth + '- ' + self._name
         dbg_str += (' {:' + str(max(0, 53 - len(dbg_str))) + 's}').format('(' + str(data) + ')')
-        logger.debug('{:52.52s} write'.format(dbg_str))
+        logger.debug('{:51.51s} write'.format(dbg_str))
         # Call signature
         #ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))
         data_type = ull._getDataType(data)
@@ -170,6 +171,9 @@ class IDSPrimitive():
 def create_leaf_container(name, data_type, **kwargs):
     if data_type == 'int_type':
         ids_type = 'INT'
+        ndims = 0
+    elif data_type == 'flt_type':
+        ids_type = 'FLT'
         ndims = 0
     else:
         ids_type, ids_dims = data_type.split('_')
@@ -534,11 +538,11 @@ class IDSStructure():
     def getMaxOccurrences(cls):
         raise NotImplementedError
 
-    def __deepcopy__(self, memo):
-        raise NotImplementedError
+    #def __deepcopy__(self, memo):
+    #    raise NotImplementedError
 
-    def __copy__(self):
-        raise NotImplementedError
+    #def __copy__(self):
+    #    raise NotImplementedError
 
     @loglevel
     def __init__(self, parent, structure_name, structure_xml):
@@ -550,7 +554,7 @@ class IDSStructure():
         self._children = []
         for child in structure_xml.getchildren():
             my_name = child.get('name')
-            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field']:
+            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field']:#, 'time_slice']:
                 # Only build these to KISS
                 continue
             dbg_str = ' ' * self.depth + '- ' + my_name
@@ -560,12 +564,13 @@ class IDSStructure():
             if my_data_type == 'structure':
                 child_hli = IDSStructure(self, my_name, child)
                 setattr(self, my_name, child_hli)
-            elif my_data_type in allowed_ids_types:
-                setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self))
+            elif my_data_type == 'struct_array':
+                #if my_name not in ['time_slice', 'coodinate_system']:
+                #    continue
+                child_hli = IDSStructArray(self, my_name, child)
+                setattr(self, my_name, child_hli)
             else:
-                logger.critical('Unknown child type {!s} of field {!s}!'.format(
-                    my_data_type, my_name))
-                embed()
+                setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self))
         self._convert_ids_types = True
 
     @property
@@ -648,6 +653,7 @@ class IDSStructure():
                 return # Nested struct will handle setting attributes
             if isinstance(child, IDSPrimitive):
                 status, data = child.get(ctx, homogeneousTime)
+                #return # Nested struct will handle setting attributes
             else:
                 logger.critical('Unknown type {!s} for field {!s}! Skipping'.format(
                     type(child), child_name))
@@ -674,9 +680,15 @@ class IDSStructure():
 
     @loglevel
     def put(self, ctx, homogeneousTime):
+        if len(self._children) == 0:
+            logger.warning(
+                'Trying to put structure {!s} without children to data store'.format(
+                    self._name))
         for child_name in self._children:
             child = getattr(self, child_name)
+            dbg_str = ' ' * self.depth + '- ' + child_name
             if isinstance(child, IDSStructure):
+                logger.debug('{:53.53s} put'.format(dbg_str))
                 child.put(ctx, homogeneousTime)
             elif not hli_utils.HLIUtils.isTypeValid(child, child_name, child.data_type):
                 logger.warning(
@@ -685,7 +697,6 @@ class IDSStructure():
                 continue
             if child is not None:
                 #and child != '':
-                dbg_str = ' ' * self.depth + '- ' + child_name
                 if not isinstance(child, IDSPrimitive):
                     logger.debug('{:53.53s} put'.format(dbg_str))
                 child.put(ctx, homogeneousTime)
@@ -719,12 +730,17 @@ class IDSStructure():
         #Retrieve partial IDS data without reading the full database content
         raise NotImplementedError
 
+class IDSStructArray(IDSStructure):
+    def getNodeType(cls):
+        raise NotImplementedError
+
 class IDSToplevel(IDSStructure):
     """ This is any IDS Structure which has ids_properties as child node
 
     At minium, one should fill ids_properties/homogeneous_time
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
+
     @loglevel
     def readHomogeneous(self, occurrence):
         """ Read the value of homogeneousTime.
@@ -822,4 +838,7 @@ class IDSToplevel(IDSStructure):
         for child_name in self._children:
             child = getattr(self, child_name)
             if isinstance(child, IDSStructure):
+                dbg_str = ' ' * self.depth + '- ' + child_name
+                if not isinstance(child, IDSPrimitive):
+                    logger.debug('{:53.53s} put'.format(dbg_str))
                 child.put(ctx, homogeneousTime)
