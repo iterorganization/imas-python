@@ -544,10 +544,15 @@ class IDSStructure():
     def __init__(self, parent, structure_name, structure_xml):
         self._convert_ids_types = False
         self._name = structure_name
+        self._base_path = structure_name
+        self._idx = EMPTY_INT
         self._parent = parent
         self._children = []
         for child in structure_xml.getchildren():
             my_name = child.get('name')
+            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field']:
+                # Only build these to KISS
+                continue
             dbg_str = ' ' * self.depth + '- ' + my_name
             logger.debug('{:42.42s} initialization'.format(dbg_str))
             self._children.append(my_name)
@@ -590,12 +595,13 @@ class IDSStructure():
         raise NotImplementedError
 
     def __setattr__(self, key, value):
-        if hasattr(self, '_convert_ids_types') and self._convert_ids_types:
+        if not key.startswith('_') and hasattr(self, '_convert_ids_types') and self._convert_ids_types:
+            # Convert IDS type on set time. Never try this for hidden attributes!
             if hasattr(self, key):
                 attr = getattr(self, key)
             else:
                 # Structure does not exist. It should have been pre-generated
-                raise NotImplementedError
+                raise NotImplementedError('generating new structure from scratch')
                 attr = create_leaf_container(key, no_data_type_I_guess, parent=self)
             if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):
                 raise Exception('Trying to set structure field {!s} with non-structure.'.format(key))
@@ -719,29 +725,6 @@ class IDSToplevel(IDSStructure):
     At minium, one should fill ids_properties/homogeneous_time
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
-    def __init__(self, parent, ids_name, ids_xml_element):
-        self._name = ids_name
-        self._base_path = ids_name
-        self._idx = EMPTY_INT
-        self._parent = parent
-        self._children = []
-        for child in ids_xml_element.getchildren():
-            my_name = child.get('name')
-            if my_name not in ['ids_properties', 'vacuum_toroidal_field']:
-                # Only build these to KISS
-                continue
-
-            logger.debug('- {:40.40s} initialization'.format(my_name))
-            my_data_type = child.get('data_type')
-            self._children.append(my_name)
-            if my_data_type == 'structure':
-                child_hli = IDSStructure(self, my_name, child)
-            else:
-                logger.critical('Unknown IDS type {!s}'.format(my_data_type))
-                embed()
-            setattr(self, my_name, child_hli)
-        #self.initIDS()
-
     @loglevel
     def readHomogeneous(self, occurrence):
         """ Read the value of homogeneousTime.
