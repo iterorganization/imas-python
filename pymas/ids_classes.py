@@ -51,6 +51,8 @@ def loglevel(func):
 class IDSPrimitive():
     @loglevel
     def __init__(self, name, ids_type, ndims, parent=None, value=None, on_wrong_type='warn'):
+        if ids_type != 'STR' and ndims != 0 and self.__class__ == IDSPrimitive:
+            raise Exception('{!s} should be 0D! Got ndims={:d}. Instantiate using IDSNumericArray instead'.format(self.__class__, ndims))
         if value is None:
             if ndims == 0:
                 value = ids_type_to_default[ids_type]
@@ -172,7 +174,16 @@ def create_leaf_container(name, data_type, **kwargs):
     else:
         ids_type, ids_dims = data_type.split('_')
         ndims = int(ids_dims[:-1])
-    return IDSPrimitive(name, ids_type, ndims, **kwargs)
+    if ndims == 0:
+        leaf = IDSPrimitive(name, ids_type, ndims, **kwargs)
+    else:
+        if ids_type == 'STR':
+            # Array of strings should behave more like lists
+            # this is an assumption on user expectation!
+            leaf = IDSPrimitive(name, ids_type, ndims, **kwargs)
+        else:
+            leaf = IDSNumericArray(name, ids_type, ndims, **kwargs)
+    return leaf
 
 class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
     def __str__(self):
@@ -203,13 +214,13 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
 
         if type(result) is tuple:
             # multiple return values
-            return tuple(type(self)(x) for x in result)
+            return tuple(type(self)(self._name, self._ids_type, self._ndims, value=x) for x in result)
         elif method == 'at':
             # no return value
             return None
         else:
             # one return value
-            return type(self)(result)
+            return type(self)(self._name, self._ids_type, self._ndims, value=result)
 
 class IDSRoot():
  """ Root of IDS tree. Contains all top-level IDSs """
@@ -585,7 +596,7 @@ class IDSStructure():
             else:
                 # Structure does not exist. It should have been pre-generated
                 raise NotImplementedError
-                attr = IDSPrimitive(ids_type, ndims, name=key, parent=self)
+                attr = create_leaf_container(key, no_data_type_I_guess, parent=self)
             if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):
                 raise Exception('Trying to set structure field {!s} with non-structure.'.format(key))
 
@@ -666,7 +677,8 @@ class IDSStructure():
                     'Child {!s} of type {!s} has an invalid value. Skipping'.format(
                     child_name, type(child)))
                 continue
-            if child is not None and child != '':
+            if child is not None:
+                #and child != '':
                 dbg_str = ' ' * self.depth + '- ' + child_name
                 if not isinstance(child, IDSPrimitive):
                     logger.debug('{:53.53s} put'.format(dbg_str))
