@@ -62,6 +62,45 @@ class IDSPrimitive():
         self._parent = parent
         self.value = value
 
+    @property
+    def value(self):
+        return self.__value
+
+    @value.setter
+    def value(self, value):
+        self.__value = self.cast_value(value)
+
+    def cast_value(self, value):
+        # Cast list-likes to arrays
+        if isinstance(value, (list, tuple)):
+            value = np.array(value)
+
+        # Cast values to their IDS-python types
+        if self._ids_type == 'STR' and self._ndims == 0:
+            value = str(value)
+        elif self._ids_type == 'INT' and self._ndims == 0:
+            value = int(value)
+        elif self._ids_type == 'FLT' and self._ndims == 0:
+            value = float(value)
+        elif self._ndims >= 1:
+            if self._ids_type == 'FLT':
+                value = np.array(value, dtype=np.float64)
+            elif self._ids_type == 'INT':
+                value = np.array(value, dtype=np.int64)
+            else:
+                logger.critical(
+                    'Unknown numpy type {!s}, cannot convert from python to IDS type'.format(
+                        value.dtype))
+                embed()
+                raise Exception
+        else:
+            logger.critical(
+                'Unknown python type {!s}, cannot convert from python to IDS type'.format(
+                    type(value)))
+            embed()
+            raise Exception
+        return value
+
     @loglevel
     def put(self, ctx, homogeneousTime):
         if self._name is None:
@@ -134,37 +173,6 @@ def create_leaf_container(name, data_type, **kwargs):
         ids_type, ids_dims = data_type.split('_')
         ndims = int(ids_dims[:-1])
     return IDSPrimitive(name, ids_type, ndims, **kwargs)
-
-def python_to_ids_type(value):
-    if isinstance(value, list):
-        value = np.array(value)
-    if isinstance(value, str):
-        ids_type = 'STR'
-        ndims = 0
-    elif isinstance(value, int):
-        ids_type = 'INT'
-        ndims = 0
-    elif isinstance(value, float):
-        ids_type = 'FLT'
-        ndims = 0
-    elif isinstance(value, np.ndarray):
-        if value.dtype == np.float64:
-            ids_type = 'FLT'
-        elif value.dtype == np.int64:
-            ids_type = 'INT'
-        else:
-            logger.critical(
-                'Unknown numpy type {!s}, cannot convert from python to IDS type'.format(
-                    value.dtype))
-            embed()
-        ndims = value.ndim
-    else:
-        logger.critical(
-            'Unknown python type {!s}, cannot convert from python to IDS type'.format(
-                type(value)))
-        embed()
-    return ids_type, ndims
-
 
 class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
     def __str__(self):
@@ -572,20 +580,21 @@ class IDSStructure():
 
     def __setattr__(self, key, value):
         if hasattr(self, '_convert_ids_types') and self._convert_ids_types:
-            ids_type, ndims = python_to_ids_type(value)
             if hasattr(self, key):
                 attr = getattr(self, key)
             else:
+                # Structure does not exist. It should have been pre-generated
+                raise NotImplementedError
                 attr = IDSPrimitive(ids_type, ndims, name=key, parent=self)
             if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):
                 raise Exception('Trying to set structure field {!s} with non-structure.'.format(key))
-            if ids_type != attr._ids_type:
-                raise ValueError('Cannot set key {!s} with value {!s}, would change type'.format(key, value))
-            if ndims != attr._ndims:
-                raise ValueError('Cannot set key {!s} with value {!s}, would change ndims'.format(key, value))
 
-            attr.value = value
-            object.__setattr__(self, key, attr)
+            try:
+                attr.value = value
+            except Exception as ee:
+                raise
+            else:
+                object.__setattr__(self, key, attr)
         else:
             object.__setattr__(self, key, value)
 
