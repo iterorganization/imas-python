@@ -112,7 +112,7 @@ if __name__ == '__main__':
 
         #thing = IDSStructure()
         ids.setPulseCtx(db_ctx)
-        ids.put(verbosity=2)
+        ids.put()
         #ids.ids_properties.homogeneous_time = 'crap'
         print('Done putting')
         print('Putting')
@@ -122,7 +122,7 @@ if __name__ == '__main__':
         print('Original ids.ids_properties.homogeneous_time:', ids.ids_properties.homogeneous_time)
         ids.ids_properties.homogeneous_time = 9999
         print('Changed ids.ids_properties.homogeneous_time:', ids.ids_properties.homogeneous_time)
-        ids.get(verbosity=2)
+        ids.get()
         print('After re-get ids.ids_properties.homogeneous_time:', ids.ids_properties.homogeneous_time)
 
         # Creating a nested data entry
@@ -138,8 +138,26 @@ if __name__ == '__main__':
         ids.vacuum_toroidal_field.b0 = [1, 2, 3]
         ids.put()
         print('Post put ids.vacuum_toroidal_field.b0:', ids.vacuum_toroidal_field.b0)
+        # Scramble
+        ids.vacuum_toroidal_field.b0 = [-98767890]
         ids.get()
         print('Post get ids.vacuum_toroidal_field.b0:', ids.vacuum_toroidal_field.b0)
+
+        # We can do fancy math even!
+        print('ids.vacuum_toroidal_field.b0 + 2:', ids.vacuum_toroidal_field.b0 + 2)
+
+        ## Set beyond a struct array
+        #print('Pre put ids.time_slice[0].profiles_1d.psi:', ids.time_slice[0].profiles_1d.psi)
+        #ids.time_slice[0].profiles_1d.psi = [0, 0.5, 1]
+        #ids.put(verbosity=2)
+        #print('Post put ids.time_slice[0].profiles_1d.psi:', ids.time_slice[0].profiles_1d.psi)
+        ## Scramble
+        #ids.time_slice[0].profiles_1d.psi = [-98767890]
+        #ids.get()
+        #print('Post get ids.time_slice[0].profiles_1d.psi:', ids.time_slice[0].profiles_1d.psi)
+
+        # time_slice.coordinate_system.grid.volume_element 2D_FLT
+        # time_slice.coordinate_system.tensor_covariant 4D_FLT
 
         # 5.8 Putting an IDS
         # imas_entry.pf_active.put(occurence)
