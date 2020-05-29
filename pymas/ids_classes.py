@@ -554,7 +554,7 @@ class IDSStructure():
         self._children = []
         for child in structure_xml.getchildren():
             my_name = child.get('name')
-            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field']:#, 'time_slice']:
+            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field', 'time_slice']:
                 # Only build these to KISS
                 continue
             dbg_str = ' ' * self.depth + '- ' + my_name
@@ -653,7 +653,6 @@ class IDSStructure():
                 return # Nested struct will handle setting attributes
             if isinstance(child, IDSPrimitive):
                 status, data = child.get(ctx, homogeneousTime)
-                #return # Nested struct will handle setting attributes
             else:
                 logger.critical('Unknown type {!s} for field {!s}! Skipping'.format(
                     type(child), child_name))
@@ -733,6 +732,146 @@ class IDSStructure():
 class IDSStructArray(IDSStructure):
     def getNodeType(cls):
         raise NotImplementedError
+
+    def getAOSPath(self, ignore_nbc_change=1):
+        # TODO: Just returns name for now
+        AOS_PATH = self.path
+
+        if ignore_nbc_change==0:
+            return AOS_PATH
+        else:
+            AOS_PATH_LATEST_VERSION = self.path
+
+            return AOS_PATH_LATEST_VERSION
+
+    def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):
+        # TODO: This seems to be always "" for some reason
+        strTimeBasePath = ""
+        return strTimeBasePath
+
+    @staticmethod
+    def getBackendInfo(parentCtx, index, homogeneousTime):
+       raise NotImplementedError
+
+    @staticmethod
+    def getAoSElement():
+       raise NotImplementedError
+
+    def __init__(self, parent, structure_name, structure_xml, base_path_in='element'):
+        self._base_path = base_path_in
+        self._convert_ids_types = False
+        self._name = structure_name
+        self._parent = parent
+        # Initialize with an 1-lenght list of contained structure
+        self._element_structure = IDSStructure(self, structure_name, structure_xml)
+        self.value = [self._element_structure]
+        # For now, populate attributes with mirrors of their internal elements. Should probably be smarter!
+        #for child_name in el._children:
+        #    setattr(self, child_name, None)
+
+        self._convert_ids_types = True
+
+    def __setattr__(self, key, value):
+        object.__setattr__(self, key, value)
+
+    def __getattr__(self, key):
+        object.__getattribute__(self, key)
+
+    def __getitem__(self, item):
+        return self.value[item]
+
+    def __setitem__(self, item, value):
+        if hasattr(self, '_convert_ids_types') and self._convert_ids_types:
+            # Convert IDS type on set time. Never try this for hidden attributes!
+            if item in self.value:
+                struct = self.value[item]
+                try:
+                    struct.value = value
+                except Exception as ee:
+                    raise
+        self.value[item] = value
+
+    def append(self, elt):
+        """Append elements to the end of the array of structures.
+
+        Parameters
+        ----------
+        """
+        if not isinstance(elt,list):
+            elements = [elt]
+        else:
+            elements = elt
+        for e in elements:
+            # Just blindly append for now
+            self.value.append(e)
+            #else:
+            #    raise TypeError('elt was expected to be instance of '+str(process__structArrayElement))
+
+    def resize(self, nbelt, keep=False):
+        """Resize an array of structures.
+
+        Parameters
+        ----------
+        nbelt : int
+            The number of elements for the targeted array of structure, 
+            which can be smaller or bigger than the size of the current 
+            array if it already exists.
+        keep : bool, optional
+            Specifies if the targeted array of structure should keep 
+            existing data in remaining elements after resizing it.
+        """
+        if not keep:
+            self.value = []
+        cur = len(self.value)
+        if nbelt > cur:
+            self.append([copy.deepcopy(self._element_structure) for i in range(nbelt - cur)])
+        elif nbelt < cur:
+            raise NotImplementedError
+            for i in range(nbelt, cur):
+                self.value.pop()
+        elif not keep:#case nbelt = cur
+            raise NotImplementedError
+            self.append([process_charge_state__structArrayElement(self._base_path) for i in range(nbelt)])
+
+    def _getData(self, aosCtx, indexFrom, indexTo, homogeneousTime, nodePath, analyzeTime):
+       raise NotImplementedError
+
+    @loglevel
+    def get(self, parentCtx, homogeneousTime):
+        timeBasePath = self.getTimeBasePath(homogeneousTime, 0)
+        nodePath = self.getAOSPath(ignore_nbc_change=0)
+        status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, 0)
+        if status < 0:
+            raise ALException('ERROR: ual_begin_arraystruct_action failed for "process/products/element"', status)
+
+        if size < 1:
+            return
+        self.resize(size)
+        for i in range(size):
+            self.value[i].get(aosCtx, homogeneousTime)
+            ull.ual_iterate_over_arraystruct(aosCtx, 1)
+
+        if aosCtx > 0:
+            ull.ual_end_action(aosCtx)
+
+    def put(self, parentCtx, homogeneousTime):
+        timeBasePath = self.getTimeBasePath(homogeneousTime)
+        nodePath = self.getAOSPath(ignore_nbc_change=1)
+        status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, len(self.value))
+        if status != 0 or aosCtx < 0:
+            raise ALException('ERROR: ual_begin_arraystruct_action failed for "{!s}"'.format(self._name), status)
+
+        for i in range(size):
+            dbg_str = ' ' * self.depth + '- [' + str(i) + ']'
+            logger.debug('{:53.53s} put'.format(dbg_str))
+            self.value[i].put(aosCtx, homogeneousTime)
+            status = ull.ual_iterate_over_arraystruct(aosCtx, 1)
+            if status != 0:
+                raise ALException('ERROR: ual_iterate_over_arraystruct failed for "{!s}"'.format(self._name), status)
+
+        status = ull.ual_end_action(aosCtx)
+        if status != 0:
+            raise ALException('ERROR: ual_end_action failed for "{!s}"'.format(self._name), status)
 
 class IDSToplevel(IDSStructure):
     """ This is any IDS Structure which has ids_properties as child node
