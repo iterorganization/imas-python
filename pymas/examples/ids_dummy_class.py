@@ -135,7 +135,7 @@ if __name__ == '__main__':
 
         # And an array
         print('Pre put ids.vacuum_toroidal_field.b0:', ids.vacuum_toroidal_field.b0)
-        ids.vacuum_toroidal_field.b0 = [1, 2, 3.2]
+        ids.vacuum_toroidal_field.b0 = [1, 2, 3]
         ids.put()
         print('Post put ids.vacuum_toroidal_field.b0:', ids.vacuum_toroidal_field.b0)
         ids.get()
