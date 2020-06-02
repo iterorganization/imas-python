@@ -19,7 +19,13 @@ import xml
 import xml.etree.ElementTree as ET
 import pymas._libs.hli_utils as hli_utils
 
-context_store = {}
+class ContextStore(dict):
+    def __setitem__(self, key, value):
+        if key in self:
+            raise Exception('Trying to set context {!s} to {!s}, but was not released'.format(key, value))
+        else:
+            super().__setitem__(key, value)
+context_store = ContextStore()
 
 class ALException(Exception):
 
@@ -585,7 +591,7 @@ class IDSStructure():
         self._children = []
         for child in structure_xml.getchildren():
             my_name = child.get('name')
-            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field', 'code', 'time', 'time_slice']:
+            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field', 'code', 'time', 'time_slice', 'x_point', 'strike_point']:
                 # Only build these to KISS
                 continue
             dbg_str = ' ' * (self.depth + 1) + '- ' + my_name
@@ -616,7 +622,10 @@ class IDSStructure():
     def path(self):
         my_path = self._name
         if hasattr(self, '_parent'):
-            my_path = self._parent.path + '/' + my_path
+            if isinstance(self._parent, IDSStructArray):
+                my_path = '{!s}/{!s}'.format(self._parent.path, self._parent.value.index(self))
+            else:
+                my_path = self._parent.path + '/' + my_path
         return my_path
 
     def initIDS(self):
@@ -719,6 +728,8 @@ class IDSStructure():
             child = getattr(self, child_name)
             dbg_str = ' ' * self.depth + '- ' + child_name
             if child is not None:
+                print(child.path)
+                print(child._name)
                 if not isinstance(child, IDSPrimitive):
                     logger.debug('{:53.53s} put'.format(dbg_str))
                 child.put(ctx, homogeneousTime)
@@ -737,7 +748,6 @@ class IDSStructure():
         raise NotImplementedError
 
     def setPulseCtx(self, ctx):
-        context_store[ctx] = self.path
         self._idx = ctx
 
     def getPulseCtx(self):
@@ -776,7 +786,7 @@ class IDSStructArray(IDSStructure):
         self._name = structure_name
         self._parent = parent
         # Initialize with an 1-lenght list of contained structure
-        self._element_structure = IDSStructure(self, structure_name, structure_xml)
+        self._element_structure = IDSStructure(self, structure_name + '_el', structure_xml)
         self._element_structure._convert_ids_types = False # Enable converting after copy
         self._element_structure._parent = None # Set parent after copy; parent itself should not be copied
         self.value = []
@@ -862,7 +872,8 @@ class IDSStructArray(IDSStructure):
         timeBasePath = self.getTimeBasePath(homogeneousTime, 0)
         nodePath = self._name
         status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, 0)
-        context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath
+        if aosCtx > 0:
+            context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath
         if status < 0:
             raise ALException('ERROR: ual_begin_arraystruct_action failed for "process/products/element"', status)
 
@@ -873,20 +884,30 @@ class IDSStructArray(IDSStructure):
             self.value[i].get(aosCtx, homogeneousTime)
             ull.ual_iterate_over_arraystruct(aosCtx, 1)
 
-        context_store.pop(aosCtx)
         if aosCtx > 0:
+            context_store.pop(aosCtx)
             ull.ual_end_action(aosCtx)
+
+    def getAosPath(self, ctx):
+        if self.path.startswith(context_store[ctx]):
+            rel_path = self.path[len(context_store[ctx]) + 1:]
+        else:
+            raise Exception('Could not strip context from absolute path')
+        return rel_path
+
+
 
     def put(self, parentCtx, homogeneousTime):
         timeBasePath = self.getTimeBasePath(homogeneousTime)
         # TODO: This might be to simple for array of array of structures
-        nodePath = self._name
+        nodePath = self.getAosPath(parentCtx)
         status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, len(self.value))
-        context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath
         if status != 0 or aosCtx < 0:
             raise ALException('ERROR: ual_begin_arraystruct_action failed for "{!s}"'.format(self._name), status)
 
         for i in range(size):
+            # This loops over the whole array
+            context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath + '/' + str(i)
             dbg_str = ' ' * self.depth + '- [' + str(i) + ']'
             logger.debug('{:53.53s} put'.format(dbg_str))
             self.value[i].put(aosCtx, homogeneousTime)
@@ -894,17 +915,11 @@ class IDSStructArray(IDSStructure):
             if status != 0:
                 raise ALException('ERROR: ual_iterate_over_arraystruct failed for "{!s}"'.format(self._name), status)
 
-        context_store.pop(aosCtx)
+        if size > 0:
+            context_store.pop(aosCtx)
         status = ull.ual_end_action(aosCtx)
         if status != 0:
             raise ALException('ERROR: ual_end_action failed for "{!s}"'.format(self._name), status)
-
-    @property
-    def path(self):
-        my_path = ''
-        if hasattr(self, '_parent'):
-            my_path = self._parent.path
-        return my_path
 
 class IDSToplevel(IDSStructure):
     """ This is any IDS Structure which has ids_properties as child node
