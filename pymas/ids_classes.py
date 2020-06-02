@@ -51,7 +51,7 @@ def loglevel(func):
 
 class IDSPrimitive():
     @loglevel
-    def __init__(self, name, ids_type, ndims, parent=None, value=None, on_wrong_type='warn'):
+    def __init__(self, name, ids_type, ndims, parent=None, value=None, on_wrong_type='warn', timebasepath=None):
         if ids_type != 'STR' and ndims != 0 and self.__class__ == IDSPrimitive:
             raise Exception('{!s} should be 0D! Got ndims={:d}. Instantiate using IDSNumericArray instead'.format(self.__class__, ndims))
         if value is None:
@@ -64,6 +64,7 @@ class IDSPrimitive():
         self._name = name
         self._parent = parent
         self.value = value
+        self.timebasepath = timebasepath
 
     @property
     def value(self):
@@ -110,27 +111,42 @@ class IDSPrimitive():
             raise Exception('Location in tree undefined, cannot put in database')
         if self._ids_type == 'INT':
             scalar_type = 1
+        elif self._ids_type == 'FLT':
+            scalar_type = 2
+        elif self._ids_type == 'CPX':
+            scalar_type = 3
+
+        if self._ids_type in ['INT', 'FLT', 'CPX'] and self._ndims == 0:
             data = hli_utils.HLIUtils.isScalarFinite(self.value, scalar_type)
+        elif self._ids_type in ['INT', 'FLT', 'CPX']:
+            if not hli_utils.HLIUtils.isTypeValid(self.value, self._name, 'NP_ARRAY'):
+                raise Exception
+            data = hli_utils.HLIUtils.isFinite(self.value, scalar_type)
         else:
-            if isinstance(self.value, list):
-                data = np.array(self.value)
-            else:
-                data = self.value
+            data = self.value
 
         dbg_str = ' ' * self.depth + '- ' + self._name
         dbg_str += (' {:' + str(max(0, 53 - len(dbg_str))) + 's}').format('(' + str(data) + ')')
-        logger.debug('{:51.51s} write'.format(dbg_str))
         # Call signature
         #ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))
         data_type = ull._getDataType(data)
-        status = ull.ual_write_data(ctx, self.path, '', data, dataType=data_type, dim=self._ndims)
+        if self.timebasepath is None:
+            strTimeBasePath = ''
+        else:
+            strTimeBasePath = self.timebasepath
+
+        logger.debug('{:51.51s} write'.format(dbg_str))
+        status = ull.ual_write_data(ctx, self.path, strTimeBasePath, data, dataType=data_type, dim=self._ndims)
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
 
     @loglevel
     def get(self, ctx, homogeneousTime):
         strNodePath = self.path
-        strTimeBasePath = ''
+        if self.timebasepath is None:
+            strTimeBasePath = ''
+        else:
+            strTimeBasePath = '/' + self.timebasepath
         if self._ids_type == 'STR' and self._ndims == 0:
             status, data = ull.ual_read_data_string(ctx, strNodePath, strTimeBasePath, CHAR_DATA, 1)
         elif self._ids_type == 'INT' and self._ndims == 0:
@@ -139,9 +155,11 @@ class IDSPrimitive():
             status, data = ull.ual_read_data_scalar(ctx, strNodePath, strTimeBasePath, DOUBLE_DATA)
         elif self._ids_type == 'FLT' and self._ndims > 0:
             status, data = ull.ual_read_data_array(ctx, strNodePath, strTimeBasePath, DOUBLE_DATA, self._ndims)
+        elif self._ids_type == 'INT' and self._ndims > 0:
+            status, data = ull.ual_read_data_array(ctx, strNodePath, strTimeBasePath, INTEGER_DATA, self._ndims)
         else:
-            logger.critical('Unknown type {!s} of field {!s}, skipping for now'.format(
-            self._ids_type, self._name))
+            logger.critical('Unknown type {!s} ndims {!s} of field {!s}, skipping for now'.format(
+            self._ids_type, self._ndims, self._name))
             status = data = None
         return status, data
 
@@ -175,6 +193,9 @@ def create_leaf_container(name, data_type, **kwargs):
     elif data_type == 'flt_type':
         ids_type = 'FLT'
         ndims = 0
+    elif data_type == 'flt_1d_type':
+        ids_type = 'FLT'
+        ndims = 1
     else:
         ids_type, ids_dims = data_type.split('_')
         ndims = int(ids_dims[:-1])
@@ -554,7 +575,7 @@ class IDSStructure():
         self._children = []
         for child in structure_xml.getchildren():
             my_name = child.get('name')
-            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field', 'time_slice']:
+            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field', 'code', 'time']:#, 'time_slice']:
                 # Only build these to KISS
                 continue
             dbg_str = ' ' * self.depth + '- ' + my_name
@@ -570,7 +591,8 @@ class IDSStructure():
                 child_hli = IDSStructArray(self, my_name, child)
                 setattr(self, my_name, child_hli)
             else:
-                setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self))
+                tbp = child.get('timebasepath')
+                setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self, timebasepath=tbp))
         self._convert_ids_types = True
 
     @property
@@ -644,13 +666,15 @@ class IDSStructure():
 
     @loglevel
     def get(self, ctx, homogeneousTime):
+        if len(self._children) == 0:
+            logger.warning('Trying to get structure "{!s}" with 0 children'.format(self._name))
         for child_name in self._children:
             dbg_str = ' ' * self.depth + '- ' + child_name
             logger.debug('{:53.53s} get'.format(dbg_str))
             child = getattr(self, child_name)
             if isinstance(child, IDSStructure):
                 child.get(ctx, homogeneousTime)
-                return # Nested struct will handle setting attributes
+                continue # Nested struct will handle setting attributes
             if isinstance(child, IDSPrimitive):
                 status, data = child.get(ctx, homogeneousTime)
             else:
@@ -946,10 +970,7 @@ class IDSToplevel(IDSStructure):
           raise ALException('Error calling ual_begin_global_action() for equilibrium', status)
 
         logger.debug('{:53.53s} get'.format(self._name))
-        for child_name in self._children:
-            logger.debug('- {:51.51s} get'.format(child_name))
-            child = getattr(self, child_name)
-            child.get(ctx, homogeneousTime, **kwargs)
+        super().get(ctx, homogeneousTime, **kwargs)
 
     @loglevel
     def put(self, occurrence=0):
@@ -976,8 +997,7 @@ class IDSToplevel(IDSStructure):
 
         for child_name in self._children:
             child = getattr(self, child_name)
-            if isinstance(child, IDSStructure):
-                dbg_str = ' ' * self.depth + '- ' + child_name
-                if not isinstance(child, IDSPrimitive):
-                    logger.debug('{:53.53s} put'.format(dbg_str))
-                child.put(ctx, homogeneousTime)
+            dbg_str = ' ' * self.depth + '- ' + child_name
+            if not isinstance(child, IDSPrimitive):
+                logger.debug('{:53.53s} put'.format(dbg_str))
+            child.put(ctx, homogeneousTime)
