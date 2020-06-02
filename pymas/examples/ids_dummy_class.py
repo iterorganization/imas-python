@@ -28,8 +28,13 @@ if __name__ == '__main__':
     TEST_RUN = 2
     backend = 3
     BACKEND_ID_0 = 10
+    NO_BACKEND                  = BACKEND_ID_0;
+    ASCII_BACKEND               = BACKEND_ID_0+1;
+    MDSPLUS_BACKEND             = BACKEND_ID_0+2;
+    HDF5_BACKEND                = BACKEND_ID_0+3;
     MEMORY_BACKEND              = BACKEND_ID_0+4;
-    backend = MEMORY_BACKEND
+    UDA_BACKEND                 = BACKEND_ID_0+5;
+    backend = MDSPLUS_BACKEND
     ACCESS_PULSE_0  = 40
     FORCE_CREATE_PULSE     =     ACCESS_PULSE_0+3
     input_user_or_path = 'vandepk'
@@ -41,6 +46,8 @@ if __name__ == '__main__':
     if status != 0:
         raise Exception('Error calling ual_begin_pulse_action()')
     status = ull.ual_open_pulse(idx, FORCE_CREATE_PULSE, '') 
+    if status != 0:
+        raise Exception('Error calling ual_open_pulse()')
     db_ctx = idx 
 
 
@@ -67,7 +74,7 @@ if __name__ == '__main__':
         idx = imas_entry.create_env(input_user_or_path, input_database, '3')
         ids = imas_entry.equilibrium
         #ids.ids_properties.homogeneous_time = 2-
-        time = 2
+        time = 0
         ids.ids_properties.homogeneous_time = time
         ids.setPulseCtx(db_ctx)
         ids.put()
@@ -103,11 +110,11 @@ if __name__ == '__main__':
         # Using python build-in management, or del var
 
         # 5.4 Creating a new data entry
-        #imas_entry.create_env(input_user_or_path, input_database, '3')
+        imas_entry.create_env(input_user_or_path, input_database, '3')
         # Put mandatory top-level entry
         ids = imas_entry.equilibrium
         #ids.ids_properties.homogeneous_time = 2
-        time = 2
+        time = 0
         ids.ids_properties.homogeneous_time = time
 
         #thing = IDSStructure()
@@ -132,6 +139,16 @@ if __name__ == '__main__':
         print('Post put ids.ids_properties.version_put.access_layer:', ids.ids_properties.version_put.access_layer)
         ids.get()
         print('Post get ids.ids_properties.version_put.access_layer:', ids.ids_properties.version_put.access_layer)
+
+        # Deeper fields
+        # Set time vector
+        print('Pre put ids.time:', ids.time)
+        ids.time = [0.1, 0.2, 0.3]
+        ids.put()
+        print('Post put ids.time:', ids.time)
+        ids.time = [12345678] # Scamble
+        ids.get(verbosity=2)
+        print('Post get ids.time:', ids.time)
 
         # And an array
         print('Pre put ids.vacuum_toroidal_field.b0:', ids.vacuum_toroidal_field.b0)
