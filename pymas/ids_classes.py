@@ -19,6 +19,7 @@ import xml
 import xml.etree.ElementTree as ET
 import pymas._libs.hli_utils as hli_utils
 
+context_store = {}
 
 class ALException(Exception):
 
@@ -135,14 +136,24 @@ class IDSPrimitive():
         else:
             strTimeBasePath = self.timebasepath
 
+        # Strip context from absolute path
+        if self.path.startswith(context_store[ctx]):
+            rel_path = self.path[len(context_store[ctx]) + 1:]
+        else:
+            raise Exception('Could not strip context from absolute path')
+
         logger.debug('{:51.51s} write'.format(dbg_str))
-        status = ull.ual_write_data(ctx, self.path, strTimeBasePath, data, dataType=data_type, dim=self._ndims)
+        status = ull.ual_write_data(ctx, rel_path, strTimeBasePath, data, dataType=data_type, dim=self._ndims)
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
 
     @loglevel
     def get(self, ctx, homogeneousTime):
-        strNodePath = self.path
+        # Strip context from absolute path
+        if self.path.startswith(context_store[ctx]):
+            strNodePath = self.path[len(context_store[ctx]) + 1:]
+        else:
+            raise Exception('Could not strip context from absolute path')
         if self.timebasepath is None:
             strTimeBasePath = ''
         else:
@@ -173,8 +184,7 @@ class IDSPrimitive():
     @property
     def path(self):
         my_path = self._name
-        # Do not add the IDSToplevel path. This is handeled by context ctx
-        if hasattr(self, '_parent') and not isinstance(self._parent, IDSToplevel):
+        if hasattr(self, '_parent'):
             my_path = self._parent.path + '/' + my_path
         return my_path
 
@@ -605,8 +615,7 @@ class IDSStructure():
     @property
     def path(self):
         my_path = self._name
-        # Do not add the IDSToplevel path. This is handeled by context ctx
-        if hasattr(self, '_parent') and not isinstance(self._parent, IDSToplevel):
+        if hasattr(self, '_parent'):
             my_path = self._parent.path + '/' + my_path
         return my_path
 
@@ -728,6 +737,7 @@ class IDSStructure():
         raise NotImplementedError
 
     def setPulseCtx(self, ctx):
+        context_store[ctx] = self.path
         self._idx = ctx
 
     def getPulseCtx(self):
@@ -746,17 +756,6 @@ class IDSStructure():
 class IDSStructArray(IDSStructure):
     def getNodeType(cls):
         raise NotImplementedError
-
-    def getAOSPath(self, ignore_nbc_change=1):
-        # TODO: Just returns name for now
-        AOS_PATH = self.path
-
-        if ignore_nbc_change==0:
-            return AOS_PATH
-        else:
-            AOS_PATH_LATEST_VERSION = self.path
-
-            return AOS_PATH_LATEST_VERSION
 
     def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):
         # TODO: This seems to be always "" for some reason
@@ -861,8 +860,9 @@ class IDSStructArray(IDSStructure):
     @loglevel
     def get(self, parentCtx, homogeneousTime):
         timeBasePath = self.getTimeBasePath(homogeneousTime, 0)
-        nodePath = self.getAOSPath(ignore_nbc_change=0)
+        nodePath = self._name
         status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, 0)
+        context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath
         if status < 0:
             raise ALException('ERROR: ual_begin_arraystruct_action failed for "process/products/element"', status)
 
@@ -873,13 +873,16 @@ class IDSStructArray(IDSStructure):
             self.value[i].get(aosCtx, homogeneousTime)
             ull.ual_iterate_over_arraystruct(aosCtx, 1)
 
+        context_store.pop(aosCtx)
         if aosCtx > 0:
             ull.ual_end_action(aosCtx)
 
     def put(self, parentCtx, homogeneousTime):
         timeBasePath = self.getTimeBasePath(homogeneousTime)
-        nodePath = self.getAOSPath(ignore_nbc_change=1)
+        # TODO: This might be to simple for array of array of structures
+        nodePath = self._name
         status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, len(self.value))
+        context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath
         if status != 0 or aosCtx < 0:
             raise ALException('ERROR: ual_begin_arraystruct_action failed for "{!s}"'.format(self._name), status)
 
@@ -891,9 +894,17 @@ class IDSStructArray(IDSStructure):
             if status != 0:
                 raise ALException('ERROR: ual_iterate_over_arraystruct failed for "{!s}"'.format(self._name), status)
 
+        context_store.pop(aosCtx)
         status = ull.ual_end_action(aosCtx)
         if status != 0:
             raise ALException('ERROR: ual_end_action failed for "{!s}"'.format(self._name), status)
+
+    @property
+    def path(self):
+        my_path = ''
+        if hasattr(self, '_parent'):
+            my_path = self._parent.path
+        return my_path
 
 class IDSToplevel(IDSStructure):
     """ This is any IDS Structure which has ids_properties as child node
@@ -966,9 +977,15 @@ class IDSToplevel(IDSStructure):
         status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
         if status != 0:
           raise ALException('Error calling ual_begin_global_action() for equilibrium', status)
+        context_store[ctx] = self.path
 
         logger.debug('{:53.53s} get'.format(self._name))
         super().get(ctx, homogeneousTime, **kwargs)
+
+        status = ull.ual_end_action(ctx)
+        context_store.pop(ctx)
+        if status != 0:
+            raise ALException('Error calling ual_end_action() for {!s}'.format(self._name), status)
 
     @loglevel
     def put(self, occurrence=0):
@@ -993,9 +1010,16 @@ class IDSToplevel(IDSStructure):
         if status != 0:
             raise ALException('Error calling ual_begin_global_action() for {!s}'.format(self._name, status))
 
+        context_store[ctx] = self.path
         for child_name in self._children:
             child = getattr(self, child_name)
             dbg_str = ' ' * self.depth + '- ' + child_name
             if not isinstance(child, IDSPrimitive):
                 logger.debug('{:53.53s} put'.format(dbg_str))
             child.put(ctx, homogeneousTime)
+
+        context_store.pop(ctx)
+        status = ull.ual_end_action(ctx)
+        if status != 0:
+            raise ALException('Error calling ual_end_action() for {!s}'.format(self._name), status)
+
