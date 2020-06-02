@@ -161,7 +161,8 @@ if __name__ == '__main__':
     print('Pre put ids.time_slice:', ids.time_slice)
     ids.time_slice.resize(1)
     ids.time_slice[0].profiles_1d.psi = np.array([0, 0.5, 1])
-    ids.put()
+    ids.time_slice[0].time = 0.1
+    ids.put(verbosity=2)
     print('Post put ids.time_slice[0].profiles_1d.psi:', ids.time_slice[0].profiles_1d.psi)
     # Scramble
     ids.time_slice[0].profiles_1d.psi = [-98767890]

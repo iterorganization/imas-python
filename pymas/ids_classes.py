@@ -167,7 +167,7 @@ class IDSPrimitive():
     def depth(self):
         my_depth = 0
         if hasattr(self, '_parent'):
-            my_depth += 1 + self._parent.depth
+            my_depth += self._parent.depth
         return my_depth
 
     @property
@@ -578,7 +578,7 @@ class IDSStructure():
             if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field', 'code', 'time', 'time_slice']:
                 # Only build these to KISS
                 continue
-            dbg_str = ' ' * self.depth + '- ' + my_name
+            dbg_str = ' ' * (self.depth + 1) + '- ' + my_name
             logger.debug('{:42.42s} initialization'.format(dbg_str))
             self._children.append(my_name)
             my_data_type = child.get('data_type')
@@ -709,16 +709,7 @@ class IDSStructure():
         for child_name in self._children:
             child = getattr(self, child_name)
             dbg_str = ' ' * self.depth + '- ' + child_name
-            if isinstance(child, IDSStructure):
-                logger.debug('{:53.53s} put'.format(dbg_str))
-                child.put(ctx, homogeneousTime)
-            elif not hli_utils.HLIUtils.isTypeValid(child, child_name, child.data_type):
-                logger.warning(
-                    'Child {!s} of type {!s} has an invalid value. Skipping'.format(
-                    child_name, type(child)))
-                continue
             if child is not None:
-                #and child != '':
                 if not isinstance(child, IDSPrimitive):
                     logger.debug('{:53.53s} put'.format(dbg_str))
                 child.put(ctx, homogeneousTime)
