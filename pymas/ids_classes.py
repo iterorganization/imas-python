@@ -575,7 +575,7 @@ class IDSStructure():
         self._children = []
         for child in structure_xml.getchildren():
             my_name = child.get('name')
-            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field', 'code', 'time']:#, 'time_slice']:
+            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field', 'code', 'time', 'time_slice']:
                 # Only build these to KISS
                 continue
             dbg_str = ' ' * self.depth + '- ' + my_name
@@ -617,9 +617,8 @@ class IDSStructure():
         """ Not sure what this should do. Well, copy values of a structure!"""
         raise NotImplementedError
 
-    def __str__(self, depth=0):
-        """ Return a nice string representation """
-        raise NotImplementedError
+    def __str__(self):
+        return '%s("%s", %r)' % (type(self).__name__, self._name, self.value)
 
     def __setattr__(self, key, value):
         if not key.startswith('_') and hasattr(self, '_convert_ids_types') and self._convert_ids_types:
@@ -788,7 +787,9 @@ class IDSStructArray(IDSStructure):
         self._parent = parent
         # Initialize with an 1-lenght list of contained structure
         self._element_structure = IDSStructure(self, structure_name, structure_xml)
-        self.value = [self._element_structure]
+        self._element_structure._convert_ids_types = False # Enable converting after copy
+        self._element_structure._parent = None # Set parent after copy; parent itself should not be copied
+        self.value = []
         # For now, populate attributes with mirrors of their internal elements. Should probably be smarter!
         #for child_name in el._children:
         #    setattr(self, child_name, None)
@@ -848,7 +849,13 @@ class IDSStructArray(IDSStructure):
             self.value = []
         cur = len(self.value)
         if nbelt > cur:
-            self.append([copy.deepcopy(self._element_structure) for i in range(nbelt - cur)])
+            new_els = []
+            for ii in range(nbelt - cur):
+                new_el = copy.deepcopy(self._element_structure)
+                new_el._parent = self
+                new_el._convert_ids_types = True
+                new_els.append(new_el)
+            self.append(new_els)
         elif nbelt < cur:
             raise NotImplementedError
             for i in range(nbelt, cur):
