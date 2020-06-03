@@ -142,6 +142,33 @@ class IDSPrimitive():
         # Call signature
         #ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))
         data_type = ull._getDataType(data)
+
+        # Strip context from absolute path
+        rel_path = self.getRelCTXPath(ctx)
+        strTimeBasePath = self.getStrBasePath(timebasepath=timebasepath)
+
+        logger.debug('{:51.51s} write'.format(dbg_str))
+        status = ull.ual_write_data(ctx, rel_path, strTimeBasePath, data, dataType=data_type, dim=self._ndims)
+        if status != 0:
+            raise ALException('Error writing field "{!s}"'.format(self._name))
+
+    def getRelCTXPath(self, ctx):
+        if self.path.startswith(context_store[ctx]):
+            rel_path = self.path[len(context_store[ctx]) + 1:]
+            split = rel_path.split('/')
+            try:
+                int(split[0])
+            except (ValueError):
+                pass
+            else:
+                # Starts with numeric, strip. Is captured in context
+                # TODO: Might need to be recursive. Can you have an array of arrays?
+                rel_path = '/'.join(split[1:])
+        else:
+            raise Exception('Could not strip context from absolute path')
+        return rel_path
+
+    def getStrBasePath(self, timebasepath=None):
         strTimeBasePath = ''
         if self._coordinates != {}:
             if self._coordinates['coordinate1'].endswith('time') and 'coordinate2' not in self._coordinates:
@@ -154,30 +181,14 @@ class IDSPrimitive():
             elif self._coordinates['coordinate1'] == '1...N' and 'coordinate2' not in self._coordinates:
                 pass
             else:
-                pass
-
-        # Strip context from absolute path
-        if self.path.startswith(context_store[ctx]):
-            rel_path = self.path[len(context_store[ctx]) + 1:]
-        else:
-            raise Exception('Could not strip context from absolute path')
-
-        logger.debug('{:51.51s} write'.format(dbg_str))
-        status = ull.ual_write_data(ctx, rel_path, strTimeBasePath, data, dataType=data_type, dim=self._ndims)
-        if status != 0:
-            raise ALException('Error writing field "{!s}"'.format(self._name))
+                  pass
+        return strTimeBasePath
 
     @loglevel
-    def get(self, ctx, homogeneousTime):
+    def get(self, ctx, homogeneousTime, timebasepath=None):
         # Strip context from absolute path
-        if self.path.startswith(context_store[ctx]):
-            strNodePath = self.path[len(context_store[ctx]) + 1:]
-        else:
-            raise Exception('Could not strip context from absolute path')
-        if self.timebasepath is None:
-            strTimeBasePath = ''
-        else:
-            strTimeBasePath = '/' + self.timebasepath
+        strNodePath = self.getRelCTXPath(ctx)
+        strTimeBasePath = self.getStrBasePath(timebasepath=timebasepath)
         if self._ids_type == 'STR' and self._ndims == 0:
             status, data = ull.ual_read_data_string(ctx, strNodePath, strTimeBasePath, CHAR_DATA, 1)
         elif self._ids_type == 'INT' and self._ndims == 0:
