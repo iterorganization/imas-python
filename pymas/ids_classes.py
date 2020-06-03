@@ -13,7 +13,7 @@ from IPython import embed
 import numbers
 import importlib
 ull = importlib.import_module('ual_4_7_2._ual_lowlevel')
-from pymas._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA
+from pymas._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA
 import numpy as np
 import xml
 import xml.etree.ElementTree as ET
@@ -58,18 +58,20 @@ def loglevel(func):
 
 class IDSPrimitive():
     @loglevel
-    def __init__(self, name, ids_type, ndims, parent=None, value=None, on_wrong_type='warn', timebasepath=None):
+    def __init__(self, name, ids_type, ndims, parent=None, value=None, on_wrong_type='warn', timebasepath=None, coordinates=None):
         if ids_type != 'STR' and ndims != 0 and self.__class__ == IDSPrimitive:
             raise Exception('{!s} should be 0D! Got ndims={:d}. Instantiate using IDSNumericArray instead'.format(self.__class__, ndims))
+        if ndims == 0:
+            self._default = ids_type_to_default[ids_type]
+        else:
+            self._default = np.full((1, ) * ndims, ids_type_to_default[ids_type])
         if value is None:
-            if ndims == 0:
-                value = ids_type_to_default[ids_type]
-            else:
-                value = np.full((1, ) * ndims, ids_type_to_default[ids_type])
+            value = self._default
         self._ids_type = ids_type
         self._ndims = ndims
         self._name = name
         self._parent = parent
+        self._coordinates = coordinates
         self.value = value
         self.timebasepath = timebasepath
 
@@ -113,7 +115,7 @@ class IDSPrimitive():
         return value
 
     @loglevel
-    def put(self, ctx, homogeneousTime):
+    def put(self, ctx, homogeneousTime, timebasepath=None):
         if self._name is None:
             raise Exception('Location in tree undefined, cannot put in database')
         if self._ids_type == 'INT':
@@ -132,15 +134,27 @@ class IDSPrimitive():
         else:
             data = self.value
 
+        if np.all(data == self._default):
+            return
+
         dbg_str = ' ' * self.depth + '- ' + self._name
         dbg_str += (' {:' + str(max(0, 53 - len(dbg_str))) + 's}').format('(' + str(data) + ')')
         # Call signature
         #ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))
         data_type = ull._getDataType(data)
-        if self.timebasepath is None:
-            strTimeBasePath = ''
-        else:
-            strTimeBasePath = self.timebasepath
+        strTimeBasePath = ''
+        if self._coordinates != {}:
+            if self._coordinates['coordinate1'].endswith('time') and 'coordinate2' not in self._coordinates:
+                if timebasepath is None and self.timebasepath is None:
+                    strTimeBasePath = ''
+                elif self.timebasepath is None:
+                    strTimeBasePath = timebasepath
+                elif timebasepath is None:
+                    strTimeBasePath = self.timebasepath
+            elif self._coordinates['coordinate1'] == '1...N' and 'coordinate2' not in self._coordinates:
+                pass
+            else:
+                pass
 
         # Strip context from absolute path
         if self.path.startswith(context_store[ctx]):
@@ -373,6 +387,7 @@ class IDSRoot():
       Request the lowlevel to be silent (does not print error messages).
   """
   status, idx = ull.ual_begin_pulse_action(MDSPLUS_BACKEND, self.shot, self.run, user, tokamak, version)
+  context_store[idx] = 'ual_begin_pulse_action'
   if status != 0:
    return (status, idx)
   opt = ''
@@ -589,6 +604,7 @@ class IDSStructure():
         self._idx = EMPTY_INT
         self._parent = parent
         self._children = []
+        self._coordinates = {attr: structure_xml.attrib[attr] for attr in structure_xml.attrib if attr.startswith('coordinate')}
         for child in structure_xml.getchildren():
             my_name = child.get('name')
             if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field', 'code', 'time', 'time_slice', 'x_point', 'strike_point']:
@@ -608,7 +624,8 @@ class IDSStructure():
                 setattr(self, my_name, child_hli)
             else:
                 tbp = child.get('timebasepath')
-                setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self, timebasepath=tbp))
+                coordinates = {attr: child.attrib[attr] for attr in child.attrib if attr.startswith('coordinate')}
+                setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self, timebasepath=tbp, coordinates=coordinates))
         self._convert_ids_types = True
 
     @property
@@ -636,7 +653,7 @@ class IDSStructure():
         raise NotImplementedError
 
     def __str__(self):
-        return '%s("%s", %r)' % (type(self).__name__, self._name, self.value)
+        return '%s("%s")' % (type(self).__name__, self._name)
 
     def __setattr__(self, key, value):
         if not key.startswith('_') and hasattr(self, '_convert_ids_types') and self._convert_ids_types:
@@ -719,7 +736,7 @@ class IDSStructure():
         raise NotImplementedError
 
     @loglevel
-    def put(self, ctx, homogeneousTime):
+    def put(self, ctx, homogeneousTime, timebasepath=None):
         if len(self._children) == 0:
             logger.warning(
                 'Trying to put structure {!s} without children to data store'.format(
@@ -728,11 +745,9 @@ class IDSStructure():
             child = getattr(self, child_name)
             dbg_str = ' ' * self.depth + '- ' + child_name
             if child is not None:
-                print(child.path)
-                print(child._name)
                 if not isinstance(child, IDSPrimitive):
                     logger.debug('{:53.53s} put'.format(dbg_str))
-                child.put(ctx, homogeneousTime)
+                child.put(ctx, homogeneousTime, timebasepath=timebasepath)
 
     @loglevel
     def putSlice(self, occurrence=0):
@@ -768,9 +783,16 @@ class IDSStructArray(IDSStructure):
         raise NotImplementedError
 
     def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):
-        # TODO: This seems to be always "" for some reason
-        strTimeBasePath = ""
+        if homogeneousTime==IDS_TIME_MODE_HOMOGENEOUS:
+           strTimeBasePath = "/time"
+        elif homogeneousTime==IDS_TIME_MODE_HETEROGENEOUS:
+           strTimeBasePath = self.getAOSPath(ignore_nbc_change) + "/time"
+        else:
+           raise ALException('Unexpected call to function getTimeBasePath(cls, homogeneousTime) with undefined homogeneous time.')
         return strTimeBasePath
+
+    def getAOSPath(self, ignore_nbc_change=1):
+        return self._name
 
     @staticmethod
     def getBackendInfo(parentCtx, index, homogeneousTime):
@@ -786,6 +808,7 @@ class IDSStructArray(IDSStructure):
         self._name = structure_name
         self._parent = parent
         # Initialize with an 1-lenght list of contained structure
+        self._coordinates = {attr: structure_xml.attrib[attr] for attr in structure_xml.attrib if attr.startswith('coordinate')}
         self._element_structure = IDSStructure(self, structure_name + '_el', structure_xml)
         self._element_structure._convert_ids_types = False # Enable converting after copy
         self._element_structure._parent = None # Set parent after copy; parent itself should not be copied
@@ -870,15 +893,15 @@ class IDSStructArray(IDSStructure):
     @loglevel
     def get(self, parentCtx, homogeneousTime):
         timeBasePath = self.getTimeBasePath(homogeneousTime, 0)
-        nodePath = self._name
+        nodePath = self.getRelCTXPath(parentCtx)
         status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, 0)
-        if aosCtx > 0:
-            context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath
         if status < 0:
             raise ALException('ERROR: ual_begin_arraystruct_action failed for "process/products/element"', status)
 
         if size < 1:
             return
+        if aosCtx > 0:
+            context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath
         self.resize(size)
         for i in range(size):
             self.value[i].get(aosCtx, homogeneousTime)
@@ -888,19 +911,17 @@ class IDSStructArray(IDSStructure):
             context_store.pop(aosCtx)
             ull.ual_end_action(aosCtx)
 
-    def getAosPath(self, ctx):
+    def getRelCTXPath(self, ctx):
         if self.path.startswith(context_store[ctx]):
             rel_path = self.path[len(context_store[ctx]) + 1:]
         else:
             raise Exception('Could not strip context from absolute path')
         return rel_path
 
-
-
-    def put(self, parentCtx, homogeneousTime):
+    def put(self, parentCtx, homogeneousTime, timebasepath=None):
         timeBasePath = self.getTimeBasePath(homogeneousTime)
         # TODO: This might be to simple for array of array of structures
-        nodePath = self.getAosPath(parentCtx)
+        nodePath = self.getRelCTXPath(parentCtx)
         status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, len(self.value))
         if status != 0 or aosCtx < 0:
             raise ALException('ERROR: ual_begin_arraystruct_action failed for "{!s}"'.format(self._name), status)
@@ -910,13 +931,12 @@ class IDSStructArray(IDSStructure):
             context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath + '/' + str(i)
             dbg_str = ' ' * self.depth + '- [' + str(i) + ']'
             logger.debug('{:53.53s} put'.format(dbg_str))
-            self.value[i].put(aosCtx, homogeneousTime)
+            self.value[i].put(aosCtx, homogeneousTime, timebasepath=timeBasePath)
             status = ull.ual_iterate_over_arraystruct(aosCtx, 1)
+            context_store.pop(aosCtx) # Release context, will be reset next iteration
             if status != 0:
                 raise ALException('ERROR: ual_iterate_over_arraystruct failed for "{!s}"'.format(self._name), status)
 
-        if size > 0:
-            context_store.pop(aosCtx)
         status = ull.ual_end_action(aosCtx)
         if status != 0:
             raise ALException('ERROR: ual_end_action failed for "{!s}"'.format(self._name), status)
