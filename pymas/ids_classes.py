@@ -25,7 +25,29 @@ class ContextStore(dict):
             raise Exception('Trying to set context {!s} to {!s}, but was not released'.format(key, value))
         else:
             super().__setitem__(key, value)
+
+    def update(self, ctx, newCtx):
+        if ctx not in self:
+            raise Exception('Trying to update non-existing context {!s}'.format(ctx))
+        super().__setitem__(ctx, newCtx)
+
+    def decodeContextInfo(self, ctx):
+        if ctx not in self:
+            return None
+        # This seems to cause memory corruption
+        # Sometimes..
+        contextInfo = ull.ual_context_info(ctx)
+        infoCopy = (contextInfo + '.')[:-1]
+        info = {}
+        for line in infoCopy.split('\n'):
+            if line == '':
+                continue
+            key, val = line.split('=')
+            info[key.strip()] = val.strip()
+        return info
+
 context_store = ContextStore()
+
 
 class ALException(Exception):
 
@@ -56,9 +78,51 @@ def loglevel(func):
         return value
     return loglevel_decorator
 
-class IDSPrimitive():
+class IDSMixin():
+    def getRelCTXPath(self, ctx):
+        if self.path.startswith(context_store[ctx]):
+            rel_path = self.path[len(context_store[ctx]) + 1:]
+            split = rel_path.split('/')
+            try:
+                int(split[0])
+            except (ValueError):
+                pass
+            else:
+                # Starts with numeric, strip. Is captured in context
+                # TODO: Might need to be recursive. Can you have an array of arrays?
+                rel_path = '/'.join(split[1:])
+        else:
+            raise Exception('Could not strip context from absolute path')
+        return rel_path
+
+    def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):
+        strTimeBasePath = ''
+        if self._coordinates != {}:
+            if self._coordinates['coordinate1'].endswith('time') and 'coordinate2' not in self._coordinates:
+                # Should Walk up the tree
+                # Just stupid copy for now
+                #strTimeBasePath = self._coordinates['coordinate1']
+                if homogeneousTime==IDS_TIME_MODE_HOMOGENEOUS:
+                   strTimeBasePath = "/time"
+                elif homogeneousTime==IDS_TIME_MODE_HETEROGENEOUS:
+                   strTimeBasePath = self.getAOSPath(ignore_nbc_change) + "/time"
+                else:
+                   raise ALException('Unexpected call to function getTimeBasePath(cls, homogeneousTime) with undefined homogeneous time.')
+                pass
+            elif self._coordinates['coordinate1'] == '1...N' and 'coordinate2' not in self._coordinates:
+                pass
+            else:
+                pass
+
+        return strTimeBasePath
+
+    def getAOSPath(self, ignore_nbc_change=1):
+        return self._name
+
+
+class IDSPrimitive(IDSMixin):
     @loglevel
-    def __init__(self, name, ids_type, ndims, parent=None, value=None, on_wrong_type='warn', timebasepath=None, coordinates=None):
+    def __init__(self, name, ids_type, ndims, parent=None, value=None, on_wrong_type='warn', coordinates=None):
         if ids_type != 'STR' and ndims != 0 and self.__class__ == IDSPrimitive:
             raise Exception('{!s} should be 0D! Got ndims={:d}. Instantiate using IDSNumericArray instead'.format(self.__class__, ndims))
         if ndims == 0:
@@ -73,7 +137,6 @@ class IDSPrimitive():
         self._parent = parent
         self._coordinates = coordinates
         self.value = value
-        self.timebasepath = timebasepath
 
     @property
     def value(self):
@@ -115,7 +178,7 @@ class IDSPrimitive():
         return value
 
     @loglevel
-    def put(self, ctx, homogeneousTime, timebasepath=None):
+    def put(self, ctx, homogeneousTime):
         if self._name is None:
             raise Exception('Location in tree undefined, cannot put in database')
         if self._ids_type == 'INT':
@@ -145,50 +208,20 @@ class IDSPrimitive():
 
         # Strip context from absolute path
         rel_path = self.getRelCTXPath(ctx)
-        strTimeBasePath = self.getStrBasePath(timebasepath=timebasepath)
+        # Check ignore_nbc_change
+        strTimeBasePath = self.getTimeBasePath(homogeneousTime)
+
 
         logger.debug('{:51.51s} write'.format(dbg_str))
         status = ull.ual_write_data(ctx, rel_path, strTimeBasePath, data, dataType=data_type, dim=self._ndims)
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
 
-    def getRelCTXPath(self, ctx):
-        if self.path.startswith(context_store[ctx]):
-            rel_path = self.path[len(context_store[ctx]) + 1:]
-            split = rel_path.split('/')
-            try:
-                int(split[0])
-            except (ValueError):
-                pass
-            else:
-                # Starts with numeric, strip. Is captured in context
-                # TODO: Might need to be recursive. Can you have an array of arrays?
-                rel_path = '/'.join(split[1:])
-        else:
-            raise Exception('Could not strip context from absolute path')
-        return rel_path
-
-    def getStrBasePath(self, timebasepath=None):
-        strTimeBasePath = ''
-        if self._coordinates != {}:
-            if self._coordinates['coordinate1'].endswith('time') and 'coordinate2' not in self._coordinates:
-                if timebasepath is None and self.timebasepath is None:
-                    strTimeBasePath = ''
-                elif self.timebasepath is None:
-                    strTimeBasePath = timebasepath
-                elif timebasepath is None:
-                    strTimeBasePath = self.timebasepath
-            elif self._coordinates['coordinate1'] == '1...N' and 'coordinate2' not in self._coordinates:
-                pass
-            else:
-                  pass
-        return strTimeBasePath
-
     @loglevel
-    def get(self, ctx, homogeneousTime, timebasepath=None):
+    def get(self, ctx, homogeneousTime):
         # Strip context from absolute path
         strNodePath = self.getRelCTXPath(ctx)
-        strTimeBasePath = self.getStrBasePath(timebasepath=timebasepath)
+        strTimeBasePath = self.getTimeBasePath(homogeneousTime)
         if self._ids_type == 'STR' and self._ndims == 0:
             status, data = ull.ual_read_data_string(ctx, strNodePath, strTimeBasePath, CHAR_DATA, 1)
         elif self._ids_type == 'INT' and self._ndims == 0:
@@ -408,6 +441,7 @@ class IDSRoot():
   if status != 0:
    return (status, idx)
   self.setPulseCtx(idx)
+  context_store[idx] = 'Pulse context'
   return (status, idx)
 
  def create_env_backend(self, user, tokamak, version, backend_type, silent=False):
@@ -436,6 +470,7 @@ class IDSRoot():
   if status != 0:
    return (status, idx)
   self.setPulseCtx(idx)
+  context_store[idx] = 'Pulse context'
   return (status, idx)
 
  def open_env(self, user, tokamak, version, silent=False):
@@ -462,6 +497,7 @@ class IDSRoot():
   if status != 0:
    return (status, idx)
   self.setPulseCtx(idx)
+  context_store[idx] = 'Pulse context'
   return (status, idx)
 
  def open_env_backend(self, user, tokamak, version, backend_type, silent=False):
@@ -490,6 +526,7 @@ class IDSRoot():
   if status != 0:
    return (status, idx)
   self.setPulseCtx(idx)
+  context_store[idx] = 'Pulse context'
   return (status, idx)
 
  def open_public(self, expName, silent=False):
@@ -503,17 +540,18 @@ class IDSRoot():
   if status != 0:
    return (status, idx)
   self.setPulseCtx(idx)
+  context_store[idx] = 'Pulse context'
   return (status, idx)
 
  def getPulseCtx(self):
   return self.expIdx
 
  def setPulseCtx(self, ctx):
+  # This sets the contexts of the Root. More-or-less a pointer to a specific pulsefile
   self.expIdx = ctx
   self.connected = True
-  self.equilibrium.setPulseCtx(ctx)
-  # Etc. etc for all other IDSs
-  #self.amns_data.setPulseCtx(ctx)
+  # Different than before, IDS TopLevels should get the context from their parent directly
+  #self.equilibrium.setPulseCtx(ctx)
 
  def close(self):
   if (self.expIdx != -1):
@@ -592,7 +630,7 @@ def asdfy():
     return Foo
 
 
-class IDSStructure():
+class IDSStructure(IDSMixin):
     _MAX_OCCURRENCES = None
 
     def getNodeType(cls):
@@ -612,7 +650,6 @@ class IDSStructure():
         self._convert_ids_types = False
         self._name = structure_name
         self._base_path = structure_name
-        self._idx = EMPTY_INT
         self._parent = parent
         self._children = []
         self._coordinates = {attr: structure_xml.attrib[attr] for attr in structure_xml.attrib if attr.startswith('coordinate')}
@@ -635,8 +672,10 @@ class IDSStructure():
                 setattr(self, my_name, child_hli)
             else:
                 tbp = child.get('timebasepath')
+                if tbp is not None:
+                    logger.critical('Found a timebasepath of {!s}! Should not happen'.format(tbp))
                 coordinates = {attr: child.attrib[attr] for attr in child.attrib if attr.startswith('coordinate')}
-                setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self, timebasepath=tbp, coordinates=coordinates))
+                setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self, coordinates=coordinates))
         self._convert_ids_types = True
 
     @property
@@ -697,7 +736,7 @@ class IDSStructure():
         else:
             path='equilibrium'+ '/' + str(occurrence)
 
-        status, ctx = ull.ual_begin_global_action(self._idx.values, path, READ_OP)
+        status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
         if status != 0:
              raise ALException('Error calling ual_begin_global_action() in readTime() operation', status)
     
@@ -747,7 +786,7 @@ class IDSStructure():
         raise NotImplementedError
 
     @loglevel
-    def put(self, ctx, homogeneousTime, timebasepath=None):
+    def put(self, ctx, homogeneousTime):
         if len(self._children) == 0:
             logger.warning(
                 'Trying to put structure {!s} without children to data store'.format(
@@ -758,7 +797,7 @@ class IDSStructure():
             if child is not None:
                 if not isinstance(child, IDSPrimitive):
                     logger.debug('{:53.53s} put'.format(dbg_str))
-                child.put(ctx, homogeneousTime, timebasepath=timebasepath)
+                child.put(ctx, homogeneousTime)
 
     @loglevel
     def putSlice(self, occurrence=0):
@@ -774,7 +813,7 @@ class IDSStructure():
         raise NotImplementedError
 
     def setPulseCtx(self, ctx):
-        self._idx = ctx
+        raise DeprecationWarning('IDSs should not set context directly, set on Root node instead')
 
     def getPulseCtx(self):
         raise NotImplementedError
@@ -789,21 +828,9 @@ class IDSStructure():
         #Retrieve partial IDS data without reading the full database content
         raise NotImplementedError
 
-class IDSStructArray(IDSStructure):
+class IDSStructArray(IDSStructure, IDSMixin):
     def getNodeType(cls):
         raise NotImplementedError
-
-    def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):
-        if homogeneousTime==IDS_TIME_MODE_HOMOGENEOUS:
-           strTimeBasePath = "/time"
-        elif homogeneousTime==IDS_TIME_MODE_HETEROGENEOUS:
-           strTimeBasePath = self.getAOSPath(ignore_nbc_change) + "/time"
-        else:
-           raise ALException('Unexpected call to function getTimeBasePath(cls, homogeneousTime) with undefined homogeneous time.')
-        return strTimeBasePath
-
-    def getAOSPath(self, ignore_nbc_change=1):
-        return self._name
 
     @staticmethod
     def getBackendInfo(parentCtx, index, homogeneousTime):
@@ -929,26 +956,27 @@ class IDSStructArray(IDSStructure):
             raise Exception('Could not strip context from absolute path')
         return rel_path
 
-    def put(self, parentCtx, homogeneousTime, timebasepath=None):
+    def put(self, parentCtx, homogeneousTime):
         timeBasePath = self.getTimeBasePath(homogeneousTime)
         # TODO: This might be to simple for array of array of structures
         nodePath = self.getRelCTXPath(parentCtx)
         status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, len(self.value))
         if status != 0 or aosCtx < 0:
             raise ALException('ERROR: ual_begin_arraystruct_action failed for "{!s}"'.format(self._name), status)
+        context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath + '/' + str(0)
 
         for i in range(size):
             # This loops over the whole array
-            context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath + '/' + str(i)
             dbg_str = ' ' * self.depth + '- [' + str(i) + ']'
             logger.debug('{:53.53s} put'.format(dbg_str))
-            self.value[i].put(aosCtx, homogeneousTime, timebasepath=timeBasePath)
+            self.value[i].put(aosCtx, homogeneousTime)
             status = ull.ual_iterate_over_arraystruct(aosCtx, 1)
-            context_store.pop(aosCtx) # Release context, will be reset next iteration
             if status != 0:
                 raise ALException('ERROR: ual_iterate_over_arraystruct failed for "{!s}"'.format(self._name), status)
+            context_store.update(aosCtx, context_store[parentCtx] + '/' + nodePath + '/' + str(i+1)) # Update context
 
         status = ull.ual_end_action(aosCtx)
+        context_store.pop(aosCtx)
         if status != 0:
             raise ALException('ERROR: ual_end_action failed for "{!s}"'.format(self._name), status)
 
@@ -975,6 +1003,7 @@ class IDSToplevel(IDSStructure):
             path = self._name + '/' + str(occurrence)
 
         status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
+        context_store[ctx] = path
         if status != 0:
             raise ALException('Error calling ual_begin_global_action() in readHomogeneous() operation', status)
 
@@ -982,6 +1011,7 @@ class IDSToplevel(IDSStructure):
         if status != 0:
             raise ALException('ERROR: homogeneous_time cannot be read.', status) 
         status = ull.ual_end_action(ctx)
+        context_store.pop(ctx)
         if status != 0:
             raise ALException('Error calling ual_end_action() in readHomogeneous() operation', status) 
         return homogeneousTime
@@ -994,6 +1024,7 @@ class IDSToplevel(IDSStructure):
             path += '/' + str(occurrence)
 
         status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
+        context_store[ctx] = path
         if status != 0:
             raise ALException('Error calling ual_begin_global_action() in read_data_dictionary_version() operation', status)
 
@@ -1001,6 +1032,7 @@ class IDSToplevel(IDSStructure):
         if status != 0:
             raise ALException('ERROR: data_dictionary_version cannot be read.', status) 
         status = ull.ual_end_action(ctx)
+        context_store.pop(ctx)
         if status != 0:
             raise ALException('Error calling ual_end_action() in read_data_dictionary_version() operation', status) 
         return data_dictionary_version
@@ -1020,6 +1052,7 @@ class IDSToplevel(IDSStructure):
             return
         data_dictionary_version = self.read_data_dictionary_version(occurrence)
 
+        # TODO: Do not use global context
         status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
         if status != 0:
           raise ALException('Error calling ual_begin_global_action() for equilibrium', status)
@@ -1068,4 +1101,8 @@ class IDSToplevel(IDSStructure):
         status = ull.ual_end_action(ctx)
         if status != 0:
             raise ALException('Error calling ual_end_action() for {!s}'.format(self._name), status)
+
+    @property
+    def _idx(self):
+        return self._parent.expIdx
 
