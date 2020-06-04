@@ -100,6 +100,10 @@ if __name__ == '__main__':
     ids.get()
     print('After re-get ids.ids_properties.homogeneous_time:', ids.ids_properties.homogeneous_time)
 
+    # 5.8 Putting an IDS
+    # 5.10 Deleting an IDS # ids.put() deletes the IDS, so calls deleteData(self, occurence)
+    # 5.11 Getting an IDS # Easiest to show the put works by showing a get!
+
     # Creating a nested data entry
     print('Pre put ids.ids_properties.version_put.access_layer:', ids.ids_properties.version_put.access_layer)
     ids.ids_properties.version_put.access_layer = 'pymas'
@@ -159,18 +163,10 @@ if __name__ == '__main__':
     # time_slice.coordinate_system.grid.volume_element 2D_FLT
     # time_slice.coordinate_system.tensor_covariant 4D_FLT
 
-    # 5.8 Putting an IDS
-    # imas_entry.pf_active.put(occurence)
 
     # 5.9 Putting an IDS progressively in a time loop
     # Expect the IDS variable to contain a single slice in any non-empty dynamic nodes
     # So, start with a single .put, then progressive put_slice IN STRICT TIME ORDER
-
-    # 5.10 Deleting an IDS
-    # imas_entry.pf_active.deleteData(occurence)
-
-    # 5.11 getting an IDS
-    # imas_entry.pf_active.get(occurence)
 
     # 5.12 Getting a slice
     # imas_entry.pf_active.getSlice(0.1, 2)
@@ -188,15 +184,5 @@ if __name__ == '__main__':
     # MDSPLUS, MEMORY, UDA, ASCII
     # MAGIC, ignore for now?
 
-    # Grab a direct child node of primitive type FLT_1D. It's dynamic, so special, and a coordinate, double special
-    #time = imas_entry.equilibrium.readTime(occurence)
-    # Grab a child structure
-    #print(time)
-    #e.g. ids_entry = imas.ids(12,1)
-    #inp.equilibrium.getSlice(time_slice, 1)
-    #timeslice = inp.equilibrium.time_slice[0]
-    # retstatus, idx = ids_entry.create_env('usr', 'test', '3')
-    #plt.plot(timeslice.profiles_1d.psi, timeslice.profiles_1d.b_average)
-    #plt.show()
     print('Done!')
 
