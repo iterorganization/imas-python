@@ -37,7 +37,8 @@ if __name__ == '__main__':
     HDF5_BACKEND                = BACKEND_ID_0+3;
     MEMORY_BACKEND              = BACKEND_ID_0+4;
     UDA_BACKEND                 = BACKEND_ID_0+5;
-    backend = MEMORY_BACKEND
+    #backend = MEMORY_BACKEND
+    backend = MDSPLUS_BACKEND
     ACCESS_PULSE_0  = 40
     FORCE_CREATE_PULSE     =     ACCESS_PULSE_0+3
     input_user_or_path = 'vandepk'
@@ -132,10 +133,9 @@ if __name__ == '__main__':
 
     ## Set beyond a struct array
     print('Pre put ids.time_slice:', ids.time_slice)
-    ids.time_slice.resize(2)
+    ids.time_slice.resize(1)
     ids.time_slice[0].profiles_1d.psi = np.array([0, 0.5, 1.5])
     ids.time_slice[0].time = 0.1
-    ids.time_slice[1].time = 0.2
     ids.put()
     print('Post put ids.time_slice[0].time:', ids.time_slice[0].time)
     print('Post put ids.time_slice[0].profiles_1d.psi:', ids.time_slice[0].profiles_1d.psi)
@@ -145,6 +145,16 @@ if __name__ == '__main__':
     ids.get()
     print('Post get ids.time_slice[0].time:', ids.time_slice[0].time)
     print('Post get ids.time_slice[0].profiles_1d.psi:', ids.time_slice[0].profiles_1d.psi)
+
+    ids.time_slice[0].profiles_2d.resize(1)
+    ids.time_slice[0].profiles_2d[0].grid_type.name = 'I am grid'
+    ids.put()
+    print('Post put ids.time_slice[0].profiles_2d[0].grid_type.name:', ids.time_slice[0].profiles_2d[0].grid_type.name)
+    ## Scramble
+    ids.time_slice[0].profiles_2d[0].grid_type.name = 'stuff'
+
+    ids.get()
+    print('Post get ids.time_slice[0].profiles_2d[0].grid_type.name:', ids.time_slice[0].profiles_2d[0].grid_type.name)
 
     # time_slice.coordinate_system.grid.volume_element 2D_FLT
     # time_slice.coordinate_system.tensor_covariant 4D_FLT
@@ -188,4 +198,5 @@ if __name__ == '__main__':
     # retstatus, idx = ids_entry.create_env('usr', 'test', '3')
     #plt.plot(timeslice.profiles_1d.psi, timeslice.profiles_1d.b_average)
     #plt.show()
+    print('Done!')
 
