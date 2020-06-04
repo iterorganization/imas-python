@@ -969,11 +969,12 @@ class IDSStructArray(IDSStructure, IDSMixin):
         if size < 1:
             return
         if aosCtx > 0:
-            context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath
+            context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath + '/' + str(0)
         self.resize(size)
         for i in range(size):
             self.value[i].get(aosCtx, homogeneousTime)
             ull.ual_iterate_over_arraystruct(aosCtx, 1)
+            context_store.update(aosCtx, context_store[parentCtx] + '/' + nodePath + '/' + str(i+1)) # Update context
 
         if aosCtx > 0:
             context_store.pop(aosCtx)
