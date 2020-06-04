@@ -22,7 +22,7 @@ import pymas._libs.hli_utils as hli_utils
 class ContextStore(dict):
     def __setitem__(self, key, value):
         if key in self:
-            raise Exception('Trying to set context {!s} to {!s}, but was not released'.format(key, value))
+            raise Exception('Trying to set context {!s} to {!s}, but was not released. Currently is {!s}'.format(key, value, self[key]))
         else:
             super().__setitem__(key, value)
 
@@ -31,20 +31,25 @@ class ContextStore(dict):
             raise Exception('Trying to update non-existing context {!s}'.format(ctx))
         super().__setitem__(ctx, newCtx)
 
-    def decodeContextInfo(self, ctx):
-        if ctx not in self:
-            return None
-        # This seems to cause memory corruption
-        # Sometimes..
-        contextInfo = ull.ual_context_info(ctx)
-        infoCopy = (contextInfo + '.')[:-1]
-        info = {}
-        for line in infoCopy.split('\n'):
-            if line == '':
-                continue
-            key, val = line.split('=')
-            info[key.strip()] = val.strip()
-        return info
+    def decodeContextInfo(self, ctxLst=None):
+        if ctxLst is None:
+            ctxLst = self.keys()
+        elif ctxLst is not None and not isinstance(cnxLst, list):
+            ctxLst = list(ctxLst)
+        if any(not np.issubdtype(type(ctx), np.integer) for ctx in ctxLst):
+            raise ValuError('ctx identifier should be an integer')
+        for ctx in ctxLst:
+            # This seems to cause memory corruption
+            # Sometimes..
+            contextInfo = ull.ual_context_info(ctx)
+            infoCopy = (contextInfo + '.')[:-1]
+            info = {}
+            for line in infoCopy.split('\n'):
+                if line == '':
+                    continue
+                key, val = line.split('=')
+                info[key.strip()] = val.strip()
+            print('ctx', ctx, info)
 
 context_store = ContextStore()
 
@@ -67,23 +72,34 @@ ids_type_to_default = {
 def loglevel(func):
     @functools.wraps(func)
     def loglevel_decorator(*args, **kwargs):
-        old_log_level = logger.level
-        verbosity = kwargs.pop('verbosity', 0)
-        if verbosity >= 1:
-            logger.setLevel(logging.INFO)
-        if verbosity >= 2:
-            logger.setLevel(logging.DEBUG)
+        verbosity = kwargs.pop('verbosity', None)
+        if verbosity is not None:
+            old_log_level = logger.level
+            if verbosity >= 1:
+                logger.setLevel(logging.INFO)
+            if verbosity >= 2:
+                logger.setLevel(logging.DEBUG)
         value = func(*args, **kwargs)
-        logger.setLevel(old_log_level)
+        if verbosity is not None:
+            logger.setLevel(old_log_level)
         return value
     return loglevel_decorator
 
 class IDSMixin():
+    @loglevel
     def getRelCTXPath(self, ctx):
+        """ Get the path relative to given context from an absolute path"""
         if self.path.startswith(context_store[ctx]):
-            rel_path = self.path[len(context_store[ctx]) + 1:]
+            # If the given path indeed starts with the context path. This should always be the case
+            # Grab the part of the path _after_ the context path string
+            if context_store[ctx] == '/':
+                # The root context is special, it does not have a slash before
+                rel_path = self.path[len(context_store[ctx]):]
+            else:
+                rel_path = self.path[len(context_store[ctx])+1:]
             split = rel_path.split('/')
             try:
+                # Check if the first part of the path is a number. If it is, strip it, it is implied by context
                 int(split[0])
             except (ValueError):
                 pass
@@ -93,6 +109,7 @@ class IDSMixin():
                 rel_path = '/'.join(split[1:])
         else:
             raise Exception('Could not strip context from absolute path')
+        #logger.debug('Got context {!s} with abspath {!s}, relpath is {!s}'.format(ctx, self.path, rel_path))
         return rel_path
 
     def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):
@@ -117,7 +134,25 @@ class IDSMixin():
         return strTimeBasePath
 
     def getAOSPath(self, ignore_nbc_change=1):
+        # This is wrong! Should walk up the tree
         return self._name
+
+    @property
+    def path(self):
+        my_path = self._name
+        if hasattr(self, '_parent'):
+            my_path = self._parent.path + '/' + my_path
+        return my_path
+
+    @property
+    def path(self):
+        my_path = self._name
+        if hasattr(self, '_parent'):
+            if isinstance(self._parent, IDSStructArray):
+                my_path = '{!s}/{!s}'.format(self._parent.path, self._parent.value.index(self))
+            else:
+                my_path = self._parent.path + '/' + my_path
+        return my_path
 
 
 class IDSPrimitive(IDSMixin):
@@ -244,13 +279,6 @@ class IDSPrimitive(IDSMixin):
         if hasattr(self, '_parent'):
             my_depth += self._parent.depth
         return my_depth
-
-    @property
-    def path(self):
-        my_path = self._name
-        if hasattr(self, '_parent'):
-            my_path = self._parent.path + '/' + my_path
-        return my_path
 
     def __repr__(self):
         return '%s("%s", %r)' % (type(self).__name__, self._name, self.value)
@@ -441,7 +469,7 @@ class IDSRoot():
   if status != 0:
    return (status, idx)
   self.setPulseCtx(idx)
-  context_store[idx] = 'Pulse context'
+  context_store[idx] = '/'
   return (status, idx)
 
  def create_env_backend(self, user, tokamak, version, backend_type, silent=False):
@@ -470,7 +498,7 @@ class IDSRoot():
   if status != 0:
    return (status, idx)
   self.setPulseCtx(idx)
-  context_store[idx] = 'Pulse context'
+  context_store[idx] = '/'
   return (status, idx)
 
  def open_env(self, user, tokamak, version, silent=False):
@@ -497,7 +525,7 @@ class IDSRoot():
   if status != 0:
    return (status, idx)
   self.setPulseCtx(idx)
-  context_store[idx] = 'Pulse context'
+  context_store[idx] = '/'
   return (status, idx)
 
  def open_env_backend(self, user, tokamak, version, backend_type, silent=False):
@@ -526,7 +554,7 @@ class IDSRoot():
   if status != 0:
    return (status, idx)
   self.setPulseCtx(idx)
-  context_store[idx] = 'Pulse context'
+  context_store[idx] = '/'
   return (status, idx)
 
  def open_public(self, expName, silent=False):
@@ -540,7 +568,7 @@ class IDSRoot():
   if status != 0:
    return (status, idx)
   self.setPulseCtx(idx)
-  context_store[idx] = 'Pulse context'
+  context_store[idx] = '/'
   return (status, idx)
 
  def getPulseCtx(self):
@@ -685,16 +713,6 @@ class IDSStructure(IDSMixin):
             my_depth += 1 + self._parent.depth
         return my_depth
 
-    @property
-    def path(self):
-        my_path = self._name
-        if hasattr(self, '_parent'):
-            if isinstance(self._parent, IDSStructArray):
-                my_path = '{!s}/{!s}'.format(self._parent.path, self._parent.value.index(self))
-            else:
-                my_path = self._parent.path + '/' + my_path
-        return my_path
-
     def initIDS(self):
         raise NotImplementedError
 
@@ -804,11 +822,6 @@ class IDSStructure(IDSMixin):
         #Store IDS data time slice to the open database.
         raise NotImplementedError
 
-    @loglevel
-    def deleteData(self, occurrence=0):
-        #Delete full IDS data from the open database.
-        logger.critical('Not deleting any data from storage, everything is temporary!')
-
     def setExpIdx(self, idx):
         raise NotImplementedError
 
@@ -827,6 +840,23 @@ class IDSStructure(IDSMixin):
     def _getFromPath(self, dataPath,  occurrence, analyzeTime):
         #Retrieve partial IDS data without reading the full database content
         raise NotImplementedError
+
+    @loglevel
+    def delete(self, ctx):
+        for child_name in self._children:
+            child = getattr(self, child_name)
+            dbg_str = ' ' * self.depth + '- ' + child_name
+            logger.debug('{:53.53s} del'.format(dbg_str))
+            rel_path = child.getRelCTXPath(ctx)
+            if isinstance(child, (IDSStructArray, IDSPrimitive)):
+                status = ull.ual_delete_data(ctx, rel_path)
+                if status != 0:
+                    raise ALException('ERROR: ual_delete_data failed for "{!s}". Status code {!s}'.format(rel_path + '/' + child_name), status)
+            else:
+                status = child.delete(ctx)
+                if status != 0:
+                    raise ALException('ERROR: delete failed for "{!s}". Status code {!s}'.format(rel_path + '/' + child_name), status)
+        return 0
 
 class IDSStructArray(IDSStructure, IDSMixin):
     def getNodeType(cls):
@@ -1003,7 +1033,7 @@ class IDSToplevel(IDSStructure):
             path = self._name + '/' + str(occurrence)
 
         status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
-        context_store[ctx] = path
+        context_store[ctx] = context_store[self._idx] + '/' + path
         if status != 0:
             raise ALException('Error calling ual_begin_global_action() in readHomogeneous() operation', status)
 
@@ -1024,7 +1054,7 @@ class IDSToplevel(IDSStructure):
             path += '/' + str(occurrence)
 
         status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
-        context_store[ctx] = path
+        context_store[ctx] = context_store[self._idx] + '/' + path
         if status != 0:
             raise ALException('Error calling ual_begin_global_action() in read_data_dictionary_version() operation', status)
 
@@ -1056,7 +1086,7 @@ class IDSToplevel(IDSStructure):
         status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
         if status != 0:
           raise ALException('Error calling ual_begin_global_action() for equilibrium', status)
-        context_store[ctx] = self.path
+        context_store[ctx] = context_store[self._idx] +  path
 
         logger.debug('{:53.53s} get'.format(self._name))
         super().get(ctx, homogeneousTime, **kwargs)
@@ -1067,14 +1097,46 @@ class IDSToplevel(IDSStructure):
             raise ALException('Error calling ual_end_action() for {!s}'.format(self._name), status)
 
     @loglevel
+    def deleteData(self, occurrence=0):
+        #Delete full IDS data from the open database.
+        if not np.issubdtype(type(occurrence), np.integer):
+            raise ValuError('Occurrence should be an integer')
+
+        rel_path = self.getRelCTXPath(self._idx)
+        if occurrence != 0:
+            rel_path += '/' + str(occurrence)
+
+        status, ctx = ull.ual_begin_global_action(self._idx, rel_path, WRITE_OP)
+        context_store[ctx] = context_store[self._idx] + rel_path
+        if status < 0:
+            raise ALException('ERROR: ual_begin_global_action failed for "{!s}"'.format(rel_path), status)
+
+        for child_name in self._children:
+            child = getattr(self, child_name)
+            if isinstance(child, (IDSStructArray, IDSPrimitive)):
+                status = ull.ual_delete_data(ctx, child_name)
+                if status != 0:
+                    raise ALException('ERROR: ual_delete_data failed for "{!s}". Status code {!s}'.format(rel_path + '/' + child_name), status)
+            else:
+                status = child.delete(ctx)
+                if status != 0:
+                    raise ALException('ERROR: delete failed for "{!s}". Status code {!s}'.format(rel_path + '/' + child_name), status)
+        status = ull.ual_end_action(ctx)
+        context_store.pop(ctx)
+        if status < 0:
+            raise ALException('ERROR: ual_end_action failed for "{!s}"'.format(rel_path), status)
+        return 0
+
+
+    @loglevel
     def put(self, occurrence=0):
         # Store full IDS data to the open database.
         path = None
         homogeneousTime = 2
         if occurrence == 0:
-            path = self._name
+            path = self.path
         else:
-            path = self._name + '/' + str(occurrence)
+            path = self.path + '/' + str(occurrence)
 
         homogeneousTime = self.ids_properties.homogeneous_time.value
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
@@ -1089,7 +1151,7 @@ class IDSToplevel(IDSStructure):
         if status != 0:
             raise ALException('Error calling ual_begin_global_action() for {!s}'.format(self._name, status))
 
-        context_store[ctx] = self.path
+        context_store[ctx] = path
         for child_name in self._children:
             child = getattr(self, child_name)
             dbg_str = ' ' * self.depth + '- ' + child_name
