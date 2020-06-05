@@ -12,7 +12,7 @@ import os
 from IPython import embed
 import numbers
 import importlib
-ull = importlib.import_module('ual_4_7_2._ual_lowlevel')
+ull = importlib.import_module('ual_4_8_0._ual_lowlevel')
 from pymas._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA
 import numpy as np
 import xml
@@ -20,7 +20,27 @@ import xml.etree.ElementTree as ET
 import pymas._libs.hli_utils as hli_utils
 
 class ContextStore(dict):
+    """ Stores global UAL context
+
+    A context is a sort of pointer but to where depends on the type of context:
+      - PulseContext: identifies a specific entry in database
+      - OperationContext: identifies a specific I/O operation (read/write,
+        global/slice, which IDS, etc...) being performed on a specific
+        PulseContext
+      - ArraystructContext: identifies a array of structure node within the IDS
+        for a specific operation
+
+    The rest of the absolute path (from last context to leaf/data) is not stored
+    in context but passed directly to ual_read and ual_write LL functions.
+    Contexts have a fullPath() method that will return string with pseudo
+    fullpath up to this context
+    """
     def __setitem__(self, key, value):
+        """ Store context id (key) and full path (value)
+
+        As context is stored globally within the LL-UAL beyond our reach,
+        do not allow for duplicated contexts to be opened.
+        """
         if key in self:
             raise Exception('Trying to set context {!s} to {!s}, but was not released. Currently is {!s}'.format(key, value, self[key]))
         else:
@@ -32,6 +52,8 @@ class ContextStore(dict):
         super().__setitem__(ctx, newCtx)
 
     def decodeContextInfo(self, ctxLst=None):
+        """ Decode ual context info to Python-friendly format
+        """
         if ctxLst is None:
             ctxLst = self.keys()
         elif ctxLst is not None and not isinstance(cnxLst, list):
@@ -51,6 +73,8 @@ class ContextStore(dict):
                 info[key.strip()] = val.strip()
             print('ctx', ctx, info)
 
+# Keep the context store on the module level
+# TODO: Decide if this is the place to put it. How 'global' is 'global'?
 context_store = ContextStore()
 
 
@@ -62,14 +86,16 @@ class ALException(Exception):
         else:
           Exception.__init__(self, message)
 
+# Translation dictionary to go from an ids (primitive) type (without the dimensionality) to a default value
 ids_type_to_default = {
     'STR': '',
     'INT': EMPTY_INT,
     'FLT': EMPTY_FLOAT,
 }
-#allowed_ids_types = ['STR_0D', 'INT_0D', 'FLT_0D', 'int_type', 'FLT_1D', 'FLT_2D', 'FLT_4D', 'flt_type']
 
 def loglevel(func):
+    """ Generate a decorator for setting the logger level on a function
+    """
     @functools.wraps(func)
     def loglevel_decorator(*args, **kwargs):
         verbosity = kwargs.pop('verbosity', None)
@@ -89,9 +115,11 @@ class IDSMixin():
     @loglevel
     def getRelCTXPath(self, ctx):
         """ Get the path relative to given context from an absolute path"""
+        # This could be replaced with the fullPath() method provided by the LL-UAL
         if self.path.startswith(context_store[ctx]):
-            # If the given path indeed starts with the context path. This should always be the case
-            # Grab the part of the path _after_ the context path string
+            # If the given path indeed starts with the context path. This should
+            # always be the case. Grab the part of the path _after_ the context
+            # path string
             if context_store[ctx] == '/':
                 # The root context is special, it does not have a slash before
                 rel_path = self.path[len(context_store[ctx]):]
@@ -99,13 +127,14 @@ class IDSMixin():
                 rel_path = self.path[len(context_store[ctx])+1:]
             split = rel_path.split('/')
             try:
-                # Check if the first part of the path is a number. If it is, strip it, it is implied by context
+                # Check if the first part of the path is a number. If it is,
+                # strip it, it is implied by context
                 int(split[0])
             except (ValueError):
                 pass
             else:
                 # Starts with numeric, strip. Is captured in context
-                # TODO: Might need to be recursive. Can you have an array of arrays?
+                # TODO: Might need to be recursive.
                 rel_path = '/'.join(split[1:])
         else:
             raise Exception('Could not strip context from absolute path')
@@ -114,6 +143,10 @@ class IDSMixin():
 
     def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):
         strTimeBasePath = ''
+        # Grab timebasepath from the coordinates.
+        # TODO: In some cases the timebasepath is stored in the XML directly.
+        #       What has priority in case it conflicts? Regardless, this is not
+        #       handled by pymas atm
         if self._coordinates != {}:
             if self._coordinates['coordinate1'].endswith('time') and 'coordinate2' not in self._coordinates:
                 # Should Walk up the tree
@@ -127,18 +160,24 @@ class IDSMixin():
                    raise ALException('Unexpected call to function getTimeBasePath(cls, homogeneousTime) with undefined homogeneous time.')
                 pass
             elif self._coordinates['coordinate1'] == '1...N' and 'coordinate2' not in self._coordinates:
+                # If variable only depends on 1...N, no timebasepath
                 pass
             else:
+                # Stub for explicit handling of other cases
                 pass
 
         return strTimeBasePath
 
     def getAOSPath(self, ignore_nbc_change=1):
-        # This is wrong! Should walk up the tree
+        # TODO: Fix in case it gives trouble
+        # This is probably wrong! Should walk up the tree
         return self._name
 
     @property
     def path(self):
+        """ Build absolute path from node to root
+        """
+        # Probably superseded by the property below
         my_path = self._name
         if hasattr(self, '_parent'):
             my_path = self._parent.path + '/' + my_path
@@ -146,18 +185,43 @@ class IDSMixin():
 
     @property
     def path(self):
+        """ Build absolute path from node to root
+        """
         my_path = self._name
         if hasattr(self, '_parent'):
             if isinstance(self._parent, IDSStructArray):
-                my_path = '{!s}/{!s}'.format(self._parent.path, self._parent.value.index(self))
+                my_path = '{!s}/{!s}'.format(self._parent.path,
+                                             self._parent.value.index(self))
             else:
                 my_path = self._parent.path + '/' + my_path
         return my_path
 
 
 class IDSPrimitive(IDSMixin):
+    """ IDS leaf node
+
+    Represents actual data. Examples are (arrays of) strings, floats, integers.
+    Lives entirely in-memory until 'put' into a database.
+    """
     @loglevel
-    def __init__(self, name, ids_type, ndims, parent=None, value=None, on_wrong_type='warn', coordinates=None):
+    def __init__(self, name, ids_type, ndims, parent=None, value=None, coordinates=None):
+        """ Initialize IDSPrimitive
+
+        args:
+          - name: Name of the leaf node. Will be used in path generation when
+                  stored in DB
+          - ids_type: String representing the IDS type. Will be used to convert
+                      to Python equivalent
+          - ndims: Dimensionality of data
+
+        kwargs:
+          - parent: Parent node of this leaf. Can be anything with a _path attribute.
+                    Will be used in path generation when stored in DB
+          - value: Value to fill the leaf with. Can be anything castable by
+                   IDSPrimitive.__cast_value. If not given, will be filled by
+                   default data matching given ids_type and ndims
+          - coordinates: Data coordinates of the node
+        """
         if ids_type != 'STR' and ndims != 0 and self.__class__ == IDSPrimitive:
             raise Exception('{!s} should be 0D! Got ndims={:d}. Instantiate using IDSNumericArray instead'.format(self.__class__, ndims))
         if ndims == 0:
@@ -214,8 +278,14 @@ class IDSPrimitive(IDSMixin):
 
     @loglevel
     def put(self, ctx, homogeneousTime):
+        """ Put data into UAL backend storage format
+
+        Does minor sanity checking before calling the cython backend.
+        Tries to dynamically build all needed information for the UAL.
+        """
         if self._name is None:
             raise Exception('Location in tree undefined, cannot put in database')
+        # Convert pymas ids_type to ual scalar_type
         if self._ids_type == 'INT':
             scalar_type = 1
         elif self._ids_type == 'FLT':
@@ -223,6 +293,7 @@ class IDSPrimitive(IDSMixin):
         elif self._ids_type == 'CPX':
             scalar_type = 3
 
+        # Check sanity of given data
         if self._ids_type in ['INT', 'FLT', 'CPX'] and self._ndims == 0:
             data = hli_utils.HLIUtils.isScalarFinite(self.value, scalar_type)
         elif self._ids_type in ['INT', 'FLT', 'CPX']:
@@ -232,6 +303,7 @@ class IDSPrimitive(IDSMixin):
         else:
             data = self.value
 
+        # Do not write if data is the same as the default of the leaf node
         if np.all(data == self._default):
             return
 
@@ -243,7 +315,7 @@ class IDSPrimitive(IDSMixin):
 
         # Strip context from absolute path
         rel_path = self.getRelCTXPath(ctx)
-        # Check ignore_nbc_change
+        # TODO: Check ignore_nbc_change
         strTimeBasePath = self.getTimeBasePath(homogeneousTime)
 
 
@@ -254,6 +326,12 @@ class IDSPrimitive(IDSMixin):
 
     @loglevel
     def get(self, ctx, homogeneousTime):
+        """ Get data from UAL backend storage format
+
+        Tries to dynamically build all needed information for the UAL.
+        Does currently _not_ set value of the leaf node, this is handled
+        by the IDSStructure.
+        """
         # Strip context from absolute path
         strNodePath = self.getRelCTXPath(ctx)
         strTimeBasePath = self.getTimeBasePath(homogeneousTime)
@@ -275,6 +353,8 @@ class IDSPrimitive(IDSMixin):
 
     @property
     def depth(self):
+        """ Calculate the depth of the leaf node
+        """
         my_depth = 0
         if hasattr(self, '_parent'):
             my_depth += self._parent.depth
@@ -285,10 +365,14 @@ class IDSPrimitive(IDSMixin):
 
     @property
     def data_type(self):
+        """ Combine pymas ids_type and ndims to UAL data_type
+        """
         return '{!s}_{!s}D'.format(self._ids_type, self._ndims)
 
 
 def create_leaf_container(name, data_type, **kwargs):
+    """ Wrapper to create IDSPrimitive/IDSNumericArray from IDS syntax
+    """
     if data_type == 'int_type':
         ids_type = 'INT'
         ndims = 0
@@ -356,29 +440,42 @@ class IDSRoot():
  path = ''
 
  @loglevel
- def __init__(self, s=-1, r=-1, rs=-1, rr=-1, xml_path=None):
-  setattr(self, 'shot', s)
-  self.shot = s
-  self.refShot = rs
-  self.run = r
-  self.refRun = rr
-  self.treeName = 'ids'
-  self.connected = False
-  self.expIdx = -1
-  XMLtreeIDSDef = ET.parse(xml_path)
-  root = XMLtreeIDSDef.getroot()
-  self._children = []
-  logger.info('Generating IDS structures from XML file {!s}'.format(os.path.abspath(xml_path)))
-  for ids in root:
-      my_name = ids.get('name')
-      if my_name is None:
-          continue
-      # Only build for equilibrium to KISS
-      if my_name != 'equilibrium':
-          continue
-      logger.debug('{:42.42s} initialization'.format(my_name))
-      self._children.append(my_name)
-      setattr(self, my_name, IDSToplevel(self, my_name, ids))
+ def __init__(self, s=-1, r=-1, rs=None, rr=None, xml_path=None):
+     """ Initialize a pymas IDS tree
+
+     Dynamically build the pymas IDS tree from the given xml path.
+     This does not need necessarily need any associated backend,
+     but the structure matches MDSPlus pulsefile. E.g. each Root
+     is identified by its shot and run, combining into a UID that
+     should be unique per database.
+     """
+     setattr(self, 'shot', s)
+     self.shot = s
+     self.run = r
+
+     if rs is not None:
+         raise NotImplementedError('Setting of reference shot')
+     if rr is not None:
+         raise NotImplementedError('Setting of reference run')
+
+     # The following attributes relate to the UAL-LL
+     self.treeName = 'ids'
+     self.connected = False
+     self.expIdx = -1
+
+     # Parse given xml_path and build pymas IDS structures
+     XMLtreeIDSDef = ET.parse(xml_path)
+     root = XMLtreeIDSDef.getroot()
+     self._children = []
+     logger.info('Generating IDS structures from XML file {!s}'.format(os.path.abspath(xml_path)))
+     for ids in root:
+         my_name = ids.get('name')
+         # Only build for equilibrium to KISS
+         if my_name != 'equilibrium':
+             continue
+         logger.debug('{:42.42s} initialization'.format(my_name))
+         self._children.append(my_name)
+         setattr(self, my_name, IDSToplevel(self, my_name, ids))
   #self.equilibrium = IDSToplevel('equilibrium')
 
   # Do not use this now
@@ -473,7 +570,7 @@ class IDSRoot():
   return (status, idx)
 
  def create_env_backend(self, user, tokamak, version, backend_type, silent=False):
-  """Creates a new pulse.
+  """Creates a new pulse for a UAL supported backend
 
   Parameters
   ----------
@@ -529,7 +626,7 @@ class IDSRoot():
   return (status, idx)
 
  def open_env_backend(self, user, tokamak, version, backend_type, silent=False):
-  """Opens a new pulse.
+  """Opens a new pulse for a UAL supported backend.
 
   Parameters
   ----------
@@ -558,6 +655,7 @@ class IDSRoot():
   return (status, idx)
 
  def open_public(self, expName, silent=False):
+  """Opens a public pulse with the UAL UAD backend. """
   status, idx = ull.ual_begin_pulse_action(UDA_BACKEND, self.shot, self.run, '', expName, os.environ['IMAS_VERSION'])
   if status != 0:
    return (status, idx)
@@ -647,18 +745,15 @@ class IDSRoot():
   if status != 0:
    raise ALException('ERROR calling ual_end_action().', status) 
   return status,timeList
-import time
-class Foo(object):
-    global time
-    asdf = time
-    def thing(self):
-        return self
-
-def asdfy():
-    return Foo
-
 
 class IDSStructure(IDSMixin):
+    """ IDS structure node
+
+    Represents a node in the IDS tree. Does not itself contain data,
+    but contains references to leaf nodes with data (IDSPrimitive) or
+    other node-like structures, for example other IDSStructures or
+    IDSStructArrays
+    """
     _MAX_OCCURRENCES = None
 
     def getNodeType(cls):
@@ -674,40 +769,62 @@ class IDSStructure(IDSMixin):
     #    raise NotImplementedError
 
     @loglevel
-    def __init__(self, parent, structure_name, structure_xml):
-        self._convert_ids_types = False
-        self._name = structure_name
-        self._base_path = structure_name
+    def __init__(self, parent, name, structure_xml):
+        """ Initialize IDSStructure from XML specification
+
+        Initializes in-memory an IDSStructure. The XML should contain
+        all direct descendants of the node. To avoid duplication,
+        none of the XML structure is saved directly, so this transformation
+        might be irreversible.
+
+        Args:
+          - parent: Parent structure. Can be anything, but at database write
+                    time should be something with a path attribute
+          - name: Name of the node itself. Will be used in path generation when
+                  stored in DB
+          - structure_xml: Object describing the structure of the IDS. Usually
+                           an instance of `xml.etree.ElementTree.Element`
+        """
+        # To ease setting values at this stage, do not try to cast values
+        # to canonical forms
+        self._convert_ids_types = False 
+        self._name = name
+        self._base_path = name
+        self._children = [] # Store the children as a list of strings.
+        # As we cannot restore the parent from just a string, save a reference
+        # to the parent. Take care when (deep)copying this!
         self._parent = parent
-        self._children = []
         self._coordinates = {attr: structure_xml.attrib[attr] for attr in structure_xml.attrib if attr.startswith('coordinate')}
+        # Loop over the direct descendants of the current node.
+        # Do not loop over grandchildren, that is handled by recursiveness.
         for child in structure_xml.getchildren():
             my_name = child.get('name')
-            if self.depth == 1 and my_name not in ['ids_properties', 'vacuum_toroidal_field', 'code', 'time', 'time_slice', 'x_point', 'strike_point']:
-                # Only build these to KISS
-                continue
             dbg_str = ' ' * (self.depth + 1) + '- ' + my_name
             logger.debug('{:42.42s} initialization'.format(dbg_str))
             self._children.append(my_name)
+            # Decide what to do based on the data_type attribute
             my_data_type = child.get('data_type')
             if my_data_type == 'structure':
                 child_hli = IDSStructure(self, my_name, child)
                 setattr(self, my_name, child_hli)
             elif my_data_type == 'struct_array':
-                #if my_name not in ['time_slice', 'coodinate_system']:
-                #    continue
                 child_hli = IDSStructArray(self, my_name, child)
                 setattr(self, my_name, child_hli)
             else:
+                # If it is not a structure or struct_array, it is probably a
+                # leaf node. Just naively try to generate one
                 tbp = child.get('timebasepath')
                 if tbp is not None:
                     logger.critical('Found a timebasepath of {!s}! Should not happen'.format(tbp))
                 coordinates = {attr: child.attrib[attr] for attr in child.attrib if attr.startswith('coordinate')}
                 setattr(self, my_name, create_leaf_container(my_name, my_data_type, parent=self, coordinates=coordinates))
+        # After initialization, always try to convert setting attributes on this structure
         self._convert_ids_types = True
 
     @property
     def depth(self):
+        """ Calculate the depth of the leaf node
+        """
         my_depth = 0
         if hasattr(self, '_parent'):
             my_depth += 1 + self._parent.depth
@@ -724,6 +841,13 @@ class IDSStructure(IDSMixin):
         return '%s("%s")' % (type(self).__name__, self._name)
 
     def __setattr__(self, key, value):
+        """
+        'Smart' setting of attributes. To be able to warn the user on pymas
+        IDS interaction time, instead of on database put time
+        Only try to cast user-facing attributes, as core developers might
+        want to always bypass this mechanism (I know I do!)
+        """
+        # TODO: Check if this heuristic is sufficient
         if not key.startswith('_') and hasattr(self, '_convert_ids_types') and self._convert_ids_types:
             # Convert IDS type on set time. Never try this for hidden attributes!
             if hasattr(self, key):
@@ -768,6 +892,10 @@ class IDSStructure(IDSMixin):
 
     @loglevel
     def get(self, ctx, homogeneousTime):
+        """ Get data from UAL backend storage format and overwrite data in node
+
+        Tries to dynamically build all needed information for the UAL.
+        """
         if len(self._children) == 0:
             logger.warning('Trying to get structure "{!s}" with 0 children'.format(self._name))
         for child_name in self._children:
@@ -805,6 +933,10 @@ class IDSStructure(IDSMixin):
 
     @loglevel
     def put(self, ctx, homogeneousTime):
+        """ Put data into UAL backend storage format
+
+        As all children _should_ support being put, just call `put` blindly.
+        """
         if len(self._children) == 0:
             logger.warning(
                 'Trying to put structure {!s} without children to data store'.format(
@@ -843,6 +975,8 @@ class IDSStructure(IDSMixin):
 
     @loglevel
     def delete(self, ctx):
+        """ Delete data from UAL backend storage
+        """
         for child_name in self._children:
             child = getattr(self, child_name)
             dbg_str = ' ' * self.depth + '- ' + child_name
@@ -859,6 +993,11 @@ class IDSStructure(IDSMixin):
         return 0
 
 class IDSStructArray(IDSStructure, IDSMixin):
+    """ IDS array of structures (AoS) node
+
+    Represents a node in the IDS tree. Does not itself contain data,
+    but contains references to IDSStructures
+    """
     def getNodeType(cls):
         raise NotImplementedError
 
@@ -870,20 +1009,40 @@ class IDSStructArray(IDSStructure, IDSMixin):
     def getAoSElement():
        raise NotImplementedError
 
-    def __init__(self, parent, structure_name, structure_xml, base_path_in='element'):
+    def __init__(self, parent, name, structure_xml, base_path_in='element'):
+        """ Initialize IDSStructArray from XML specification
+
+        Initializes in-memory an IDSStructArray. The XML should contain
+        all direct descendants of the node. To avoid duplication,
+        none of the XML structure is saved directly, so this transformation
+        might be irreversible.
+
+        Args:
+          - parent: Parent structure. Can be anything, but at database write
+                    time should be something with a path attribute
+          - name: Name of the node itself. Will be used in path generation when
+                  stored in DB
+          - structure_xml: Object describing the structure of the IDS. Usually
+                           an instance of `xml.etree.ElementTree.Element`
+        """
         self._base_path = base_path_in
         self._convert_ids_types = False
-        self._name = structure_name
+        self._name = name
         self._parent = parent
-        # Initialize with an 1-lenght list of contained structure
         self._coordinates = {attr: structure_xml.attrib[attr] for attr in structure_xml.attrib if attr.startswith('coordinate')}
-        self._element_structure = IDSStructure(self, structure_name + '_el', structure_xml)
+        # Save the converted structure_xml for later reference, and adding new
+        # empty structures to the AoS
+        self._element_structure = IDSStructure(self, name + '_el', structure_xml)
+        # Do not try to convert ids_types by default.
+        # As soon as a copy is made, set this to True
         self._element_structure._convert_ids_types = False # Enable converting after copy
-        self._element_structure._parent = None # Set parent after copy; parent itself should not be copied
+        # Do not store a reference to the parent. We will set this explicitly
+        # each time a new instance is created, as all instances share the same
+        # parent, this structure itself.
+        self._element_structure._parent = None
+
+        # Initialize with an 0-lenght list
         self.value = []
-        # For now, populate attributes with mirrors of their internal elements. Should probably be smarter!
-        #for child_name in el._children:
-        #    setattr(self, child_name, None)
 
         self._convert_ids_types = True
 
@@ -960,6 +1119,10 @@ class IDSStructArray(IDSStructure, IDSMixin):
 
     @loglevel
     def get(self, parentCtx, homogeneousTime):
+        """ Get data from UAL backend storage format and overwrite data in node
+
+        Tries to dynamically build all needed information for the UAL.
+        """
         timeBasePath = self.getTimeBasePath(homogeneousTime, 0)
         nodePath = self.getRelCTXPath(parentCtx)
         status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, 0)
@@ -981,6 +1144,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             ull.ual_end_action(aosCtx)
 
     def getRelCTXPath(self, ctx):
+        """ Get the path relative to given context from an absolute path"""
         if self.path.startswith(context_store[ctx]):
             rel_path = self.path[len(context_store[ctx]) + 1:]
         else:
@@ -988,6 +1152,10 @@ class IDSStructArray(IDSStructure, IDSMixin):
         return rel_path
 
     def put(self, parentCtx, homogeneousTime):
+        """ Put data into UAL backend storage format
+
+        As all children _should_ support being put, just call `put` blindly.
+        """
         timeBasePath = self.getTimeBasePath(homogeneousTime)
         # TODO: This might be to simple for array of array of structures
         nodePath = self.getRelCTXPath(parentCtx)
@@ -1070,6 +1238,12 @@ class IDSToplevel(IDSStructure):
 
     @loglevel
     def get(self, occurrence=0, **kwargs):
+        """ Get data from UAL backend storage format and overwrite data in node
+
+        Tries to dynamically build all needed information for the UAL. As this
+        is the root node, it is simple to construct UAL paths and contexts at
+        this level. Should have an open database.
+        """
         path = None
         if occurrence == 0:
             path='equilibrium'
@@ -1099,7 +1273,12 @@ class IDSToplevel(IDSStructure):
 
     @loglevel
     def deleteData(self, occurrence=0):
-        #Delete full IDS data from the open database.
+        """ Delete UAL backend storage data
+
+        Tries to dynamically build all needed information for the UAL. As this
+        is the root node, it is simple to construct UAL paths and contexts at
+        this level. Should have an open database.
+        """
         if not np.issubdtype(type(occurrence), np.integer):
             raise ValuError('Occurrence should be an integer')
 
@@ -1131,6 +1310,14 @@ class IDSToplevel(IDSStructure):
 
     @loglevel
     def put(self, occurrence=0):
+        """ Put data into UAL backend storage format
+
+        As all children _should_ support being put, just call `put` blindly.
+
+        Tries to dynamically build all needed information for the UAL. As this
+        is the root node, it is simple to construct UAL paths and contexts at
+        this level. Should have an open database.
+        """
         # Store full IDS data to the open database.
         path = None
         homogeneousTime = 2
