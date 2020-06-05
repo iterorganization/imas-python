@@ -116,6 +116,7 @@ if __name__ == '__main__':
     # Set time vector
     print('Pre put ids.time:', ids.time)
     ids.time = np.array([0.1, 0.2, 0.3])
+    ids.time = ids.time + 2
     ids.put()
     print('Post put ids.time:', ids.time)
     ids.time = [12345678] # Scamble
