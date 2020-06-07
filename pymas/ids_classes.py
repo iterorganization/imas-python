@@ -13,11 +13,12 @@ from IPython import embed
 import numbers
 import importlib
 ull = importlib.import_module('ual_4_8_0._ual_lowlevel')
-from pymas._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA
+from pymas._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA, NODE_TYPE_STRUCTURE
 import numpy as np
 import xml
 import xml.etree.ElementTree as ET
 import pymas._libs.hli_utils as hli_utils
+
 
 class ContextStore(dict):
     """ Stores global UAL context
@@ -110,6 +111,7 @@ def loglevel(func):
             logger.setLevel(old_log_level)
         return value
     return loglevel_decorator
+
 
 class IDSMixin():
     @loglevel
@@ -405,6 +407,7 @@ def create_leaf_container(name, data_type, **kwargs):
             leaf = IDSNumericArray(name, ids_type, ndims, **kwargs)
     return leaf
 
+
 class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
     def __str__(self):
         return self.value.__str__()
@@ -441,6 +444,7 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
         else:
             # one return value
             return type(self)(self._name, self._ids_type, self._ndims, value=result)
+
 
 class IDSRoot():
  """ Root of IDS tree. Contains all top-level IDSs """
@@ -768,6 +772,7 @@ class IDSRoot():
    raise ALException('ERROR calling ual_end_action().', status) 
   return status,timeList
 
+
 class IDSStructure(IDSMixin):
     """ IDS structure node
 
@@ -778,11 +783,9 @@ class IDSStructure(IDSMixin):
     """
     _MAX_OCCURRENCES = None
 
-    def getNodeType(cls):
-        raise NotImplementedError
-
-    def getMaxOccurrences(cls):
-        raise NotImplementedError
+    def getNodeType(self):
+        raise NotImplementedError("{!s}.getNodeType()".format(self))
+        return NODE_TYPE_STRUCTURE
 
     #def __deepcopy__(self, memo):
     #    raise NotImplementedError
@@ -852,12 +855,9 @@ class IDSStructure(IDSMixin):
             my_depth += 1 + self._parent.depth
         return my_depth
 
-    def initIDS(self):
-        raise NotImplementedError
-
     def copyValues(self, ids):
         """ Not sure what this should do. Well, copy values of a structure!"""
-        raise NotImplementedError
+        raise NotImplementedError("{!s}.copyValues(ids)".format(self))
 
     def __str__(self):
         return '%s("%s")' % (type(self).__name__, self._name)
@@ -892,7 +892,7 @@ class IDSStructure(IDSMixin):
 
     @loglevel
     def readTime(self, occurrence):
-        raise NotImplementedError
+        raise NotImplementedError("{!s}.readTime(occurrence)".format(self))
         time = []
         path = None
         if occurrence == 0:
@@ -944,14 +944,14 @@ class IDSStructure(IDSMixin):
 
 
     @loglevel
-    def getSlice(self, time_requested, interpolation_method, occurrence=0):
+    def getSlice(self, time_requested, interpolation_method, occurrence=0, data_store=None):
         #Retrieve full IDS data from the open database.
-        raise NotImplementedError
+        raise NotImplementedError("{!s}.getSlice(time_requested, interpolation_method, occurrence=0, data_store=None)".format(self))
 
     @loglevel
-    def _getData(self, ctx, indexFrom, indexTo, homogeneousTime, nodePath, analyzeTime):
+    def _getData(self, ctx, homogeneousTime, nodePath, analyzeTime):
         """ A deeped way of getting data?? using 'traverser' whatever that is """
-        raise NotImplementedError
+        raise NotImplementedError("{!s}._getData(ctx, homogeneousTime, nodePath, analyzeTime)".format(self))
 
     @loglevel
     def put(self, ctx, homogeneousTime):
@@ -972,28 +972,15 @@ class IDSStructure(IDSMixin):
                 child.put(ctx, homogeneousTime)
 
     @loglevel
-    def putSlice(self, occurrence=0):
+    def putSlice(self, ctx, homogeneousTime):
         #Store IDS data time slice to the open database.
-        raise NotImplementedError
-
-    def setExpIdx(self, idx):
-        raise NotImplementedError
+        raise NotImplementedError("{!s}.putSlice(ctx, homogeneousTime)".format(self))
 
     def setPulseCtx(self, ctx):
         raise DeprecationWarning('IDSs should not set context directly, set on Root node instead')
 
     def getPulseCtx(self):
-        raise NotImplementedError
-
-    def partialGet(self, dataPath, occurrence=0):
-        raise NotImplementedError
-
-    def getField(self, dataPath, occurrence=0):
-        raise NotImplementedError
-
-    def _getFromPath(self, dataPath,  occurrence, analyzeTime):
-        #Retrieve partial IDS data without reading the full database content
-        raise NotImplementedError
+        raise DeprecationWarning('IDSs should not set context directly, set on Root node instead')
 
     @loglevel
     def delete(self, ctx):
@@ -1014,22 +1001,25 @@ class IDSStructure(IDSMixin):
                     raise ALException('ERROR: delete failed for "{!s}". Status code {!s}'.format(rel_path + '/' + child_name), status)
         return 0
 
+
 class IDSStructArray(IDSStructure, IDSMixin):
     """ IDS array of structures (AoS) node
 
     Represents a node in the IDS tree. Does not itself contain data,
     but contains references to IDSStructures
     """
-    def getNodeType(cls):
-        raise NotImplementedError
+    def getAOSPath(self, ignore_nbc_change=1):
+        raise NotImplementedError("{!s}.getAOSPath(ignore_nbc_change=1)".format(self))
 
     @staticmethod
-    def getBackendInfo(parentCtx, index, homogeneousTime):
-       raise NotImplementedError
+    def getAoSElement(self):
+        logger.warning('getAoSElement is deprecated, you should never need this', FutureWarning)
+        return copy.deepcopy(self._element_structure)
 
     @staticmethod
-    def getAoSElement():
-       raise NotImplementedError
+    def getBackendInfo(parentCtx, index, homogeneousTime): # Is this specific?
+        raise NotImplementedError("{!s}.getBackendInfo(parentCtx, index, homogeneousTime)".format(self))
+
 
     def __init__(self, parent, name, structure_xml, base_path_in='element'):
         """ Initialize IDSStructArray from XML specification
@@ -1100,9 +1090,8 @@ class IDSStructArray(IDSStructure, IDSMixin):
             elements = elt
         for e in elements:
             # Just blindly append for now
+            # TODO: Maybe check if user is not trying to append weird elements
             self.value.append(e)
-            #else:
-            #    raise TypeError('elt was expected to be instance of '+str(process__structArrayElement))
 
     def resize(self, nbelt, keep=False):
         """Resize an array of structures.
@@ -1129,15 +1118,15 @@ class IDSStructArray(IDSStructure, IDSMixin):
                 new_els.append(new_el)
             self.append(new_els)
         elif nbelt < cur:
-            raise NotImplementedError
+            raise NotImplementedError('Making IDSStructArrays smaller')
             for i in range(nbelt, cur):
                 self.value.pop()
         elif not keep:#case nbelt = cur
-            raise NotImplementedError
+            raise NotImplementedError('Overwriting IDSStructArray elements')
             self.append([process_charge_state__structArrayElement(self._base_path) for i in range(nbelt)])
 
     def _getData(self, aosCtx, indexFrom, indexTo, homogeneousTime, nodePath, analyzeTime):
-       raise NotImplementedError
+        raise NotImplementedError("{!s}._getData(aosCtx, indexFrom, indexTo, homogeneousTime, nodePath, analyzeTime)".format(self))
 
     @loglevel
     def get(self, parentCtx, homogeneousTime):
@@ -1200,6 +1189,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         context_store.pop(aosCtx)
         if status != 0:
             raise ALException('ERROR: ual_end_action failed for "{!s}"'.format(self._name), status)
+
 
 class IDSToplevel(IDSStructure):
     """ This is any IDS Structure which has ids_properties as child node
@@ -1379,6 +1369,10 @@ class IDSToplevel(IDSStructure):
         if status != 0:
             raise ALException('Error calling ual_end_action() for {!s}'.format(self._name), status)
 
+    def setExpIdx(self, idx):
+        logger.warning('setExpIdx is deprecated, call self.setPulseCtx instead', FutureWarning)
+        self.setPulseCtx(idx)
+
     @loglevel
     def put(self, occurrence=0, data_store=None):
         if data_store is None:
@@ -1393,3 +1387,20 @@ class IDSToplevel(IDSStructure):
     def _idx(self):
         return self._data_store._idx
 
+    @classmethod
+    def getMaxOccurrences(self):
+        raise NotImplementedError("{!s}.getMaxOccurrences()".format(self))
+        return cls._MAX_OCCURRENCES
+
+    def initIDS(self):
+        raise NotImplementedError("{!s}.initIDS()".format(self))
+
+    def partialGet(self, dataPath, occurrence=0):
+        raise NotImplementedError("{!s}.partialGet(dataPath, occurrence=0)".format(self))
+
+    def getField(self, dataPath, occurrence=0):
+        raise NotImplementedError("{!s}.getField(dataPath, occurrence=0)".format(self))
+
+    def _getFromPath(self, dataPath, occurrence, analyzeTime, data_store=None):
+        #Retrieve partial IDS data without reading the full database content
+        raise NotImplementedError("{!s}.getField(dataPath, occurrence, analyzeTime, data_store=None)".format(self))
