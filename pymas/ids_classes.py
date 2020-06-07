@@ -329,7 +329,6 @@ class IDSPrimitive(IDSMixin):
 
         logger.info('{:54.54s} write'.format(dbg_str))
         logger.debug('   {:50.50s} write'.format('/'.join([context_store[ctx], rel_path])))
-
         status = ull.ual_write_data(ctx, rel_path, strTimeBasePath, data, dataType=data_type, dim=self._ndims)
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
@@ -551,118 +550,131 @@ class IDSRoot():
  def get_units_parser(self):
   return self.ddunits
 
- def create_env(self, user, tokamak, version, silent=False):
-  """Creates a new pulse.
+ def open_ual_store(self, user, tokamak, version, backend_type,
+                    mode='r', silent=False, options='', ual_version=None):
+     from pymas.backends.ual import UALDataStore
 
-  Parameters
-  ----------
-  user : string
-      Owner of the targeted pulse.
-  tokamak : string
-      Tokamak name for the targeted pulse.
-  version : string
-      Data-dictionary major version number for the targeted pulse.
-  silent : bool, optional
-      Request the lowlevel to be silent (does not print error messages).
-  """
-  status, idx = ull.ual_begin_pulse_action(MDSPLUS_BACKEND, self.shot, self.run, user, tokamak, version)
-  context_store[idx] = 'ual_begin_pulse_action'
-  if status != 0:
-   return (status, idx)
-  opt = ''
-  if silent:
-   opt = '-silent'
-  status = ull.ual_open_pulse(idx, FORCE_CREATE_PULSE, opt)
-  if status != 0:
-   return (status, idx)
-  self.setPulseCtx(idx)
-  context_store[idx] = '/'
-  return (status, idx)
+     if silent:
+         options += '-silent'
 
- def create_env_backend(self, user, tokamak, version, backend_type, silent=False):
-  """Creates a new pulse for a UAL supported backend
+     store = UALDataStore.open(
+         backend_type, tokamak, self.shot, self.run, user_name=user,
+         data_version=version, mode='w', options=options, ual_version=ual_version)
 
-  Parameters
-  ----------
-  user : string
-      Owner of the targeted pulse.
-  tokamak : string
-      Tokamak name for the targeted pulse.
-  version : string
-      Data-dictionary major version number for the targeted pulse.
-  backend_type: integer
-      One of the backend types (e.g.: MDSPLUS_BACKEND, MEMORY_BACKEND).
-  silent : bool, optional
-      Request the lowlevel to be silent (does not print error messages).
-  """
-  status, idx = ull.ual_begin_pulse_action(backend_type, self.shot, self.run, user, tokamak, version)
-  if status != 0:
-   return (status, idx)
-  opt = ''
-  if silent:
-   opt = '-silent'
-  status = ull.ual_open_pulse(idx, FORCE_CREATE_PULSE, opt)
-  if status != 0:
-   return (status, idx)
-  self.setPulseCtx(idx)
-  context_store[idx] = '/'
-  return (status, idx)
 
- def open_env(self, user, tokamak, version, silent=False):
-  """Opens a new pulse.
+     # Safe the store internally for magic path detection
+     self._data_store = store
 
-  Parameters
-  ----------
-  user : string
-      Owner of the targeted pulse.
-  tokamak : string
-      Tokamak name for the targeted pulse.
-  version : string
-      Data-dictionary major version number for the targeted pulse.
-  silent : bool, optional
-      Request the lowlevel to be silent (does not print error messages).
-  """
-  status, idx = ull.ual_begin_pulse_action(MDSPLUS_BACKEND, self.shot, self.run, user, tokamak, version)
-  if status != 0:
-   return (status, idx)
-  opt = ''
-  if silent:
-   opt = '-silent'
-  status = ull.ual_open_pulse(idx, OPEN_PULSE, opt)
-  if status != 0:
-   return (status, idx)
-  self.setPulseCtx(idx)
-  context_store[idx] = '/'
-  return (status, idx)
+     # Do we need to set context like dis?
+     self.setPulseCtx(store._idx)
+     context_store[store._idx] = '/'
 
- def open_env_backend(self, user, tokamak, version, backend_type, silent=False):
-  """Opens a new pulse for a UAL supported backend.
+     status = 0
+     return store
 
-  Parameters
-  ----------
-  user : string
-      Owner of the targeted pulse.
-  tokamak : string
-      Tokamak name for the targeted pulse.
-  version : string
-      Data-dictionary major version number for the targeted pulse.
-  backend_type: integer
-      One of the backend types (e.g.: MDSPLUS_BACKEND, MEMORY_BACKEND).
-  silent : bool, optional
-      Request the lowlevel to be silent (does not print error messages).
-  """
-  status, idx = ull.ual_begin_pulse_action(backend_type, self.shot, self.run, user, tokamak, version)
-  if status != 0:
-   return (status, idx)
-  opt = ''
-  if silent:
-   opt = '-silent'
-  status = ull.ual_open_pulse(idx, OPEN_PULSE, opt)
-  if status != 0:
-   return (status, idx)
-  self.setPulseCtx(idx)
-  context_store[idx] = '/'
-  return (status, idx)
+ def create_env(self, user, tokamak, version,
+                silent=False, options='', ual_version=None):
+     """Creates a new pulse.
+
+     Parameters
+     ----------
+     user : string
+         Owner of the targeted pulse.
+     tokamak : string
+         Tokamak name for the targeted pulse.
+     version : string
+         Data-dictionary major version number for the targeted pulse.
+     silent : bool, optional
+         Request the lowlevel to be silent (does not print error messages).
+     options : string, optional
+         Pass additional options to lowlevel.
+     ual_version: string, optional
+         Specify the UAL version to be used. Use format x.x.x
+     """
+     store = self.open_ual_store(
+         user, tokamak, version,
+         MDSPLUS_BACKEND, mode='w', # This is different per env call
+         silent=silent, options=options, ual_version=ual_version)
+     return (0, store._idx)
+
+ def create_env_backend(self, user, tokamak, version, backend_type,
+                        silent=False, options='', ual_version=None):
+     """Creates a new pulse for a UAL supported backend
+
+     Parameters
+     ----------
+     user : string
+         Owner of the targeted pulse.
+     tokamak : string
+         Tokamak name for the targeted pulse.
+     version : string
+         Data-dictionary major version number for the targeted pulse.
+     backend_type: integer
+         One of the backend types (e.g.: MDSPLUS_BACKEND, MEMORY_BACKEND).
+     silent : bool, optional
+         Request the lowlevel to be silent (does not print error messages).
+     options : string, optional
+         Pass additional options to lowlevel.
+     ual_version: string, optional
+         Specify the UAL version to be used. Use format x.x.x
+     """
+     store = self.open_ual_store(
+         user, tokamak, version,
+         backend_type, mode='w', # This is different per env call
+         silent=silent, options=options, ual_version=ual_version)
+     return (0, store._idx)
+
+ def open_env(self, user, tokamak, version,
+              silent=False, options='', ual_version=None):
+     """Opens an existing pulse.
+
+     Parameters
+     ----------
+     user : string
+         Owner of the targeted pulse.
+     tokamak : string
+         Tokamak name for the targeted pulse.
+     version : string
+         Data-dictionary major version number for the targeted pulse.
+     silent : bool, optional
+         Request the lowlevel to be silent (does not print error messages).
+     options : string, optional
+         Pass additional options to lowlevel.
+     ual_version: string, optional
+         Specify the UAL version to be used. Use format x.x.x
+     """
+     store = self.open_ual_store(
+         user, tokamak, version,
+         backend_type, mode='r',  # This is different per env call
+         silent=silent, options=options, ual_version=ual_version)
+     return (0, store._idx)
+
+ def open_env_backend(self, user, tokamak, version, backend_type,
+                      silent=False, options='', ual_version=None):
+     """Opens an existing pulse for UAL supported backend.
+
+     Parameters
+     ----------
+     user : string
+         Owner of the targeted pulse.
+     tokamak : string
+         Tokamak name for the targeted pulse.
+     version : string
+         Data-dictionary major version number for the targeted pulse.
+     backend_type: integer
+         One of the backend types (e.g.: MDSPLUS_BACKEND, MEMORY_BACKEND).
+     silent : bool, optional
+         Request the lowlevel to be silent (does not print error messages).
+     options : string, optional
+         Pass additional options to lowlevel.
+     ual_version: string, optional
+         Specify the UAL version to be used. Use format x.x.x
+     """
+     store = self.open_ual_store(
+         user, tokamak, version,
+         backend_type, mode='r', # This is different per env call
+         silent=silent, options=options, ual_version=ual_version)
+     return (0, store._idx)
 
  def open_public(self, expName, silent=False):
   """Opens a public pulse with the UAL UAD backend. """
@@ -1319,7 +1331,7 @@ class IDSToplevel(IDSStructure):
 
 
     @loglevel
-    def put(self, occurrence=0):
+    def to_ualstore(self, ual_data_store, path=None, occurrence=0):
         """ Put data into UAL backend storage format
 
         As all children _should_ support being put, just call `put` blindly.
@@ -1328,23 +1340,28 @@ class IDSToplevel(IDSStructure):
         is the root node, it is simple to construct UAL paths and contexts at
         this level. Should have an open database.
         """
-        # Store full IDS data to the open database.
-        path = None
-        homogeneousTime = 2
-        if occurrence == 0:
-            path = self.path
-        else:
-            path = self.path + '/' + str(occurrence)
+        if path is not None:
+            raise NotImplementedError('Explicit paths, implicitly handled by structure')
 
+        path = self.path
+        if occurrence != 0:
+            path += '/' + str(occurrence)
+
+        # Determine the time_mode.
         homogeneousTime = self.ids_properties.homogeneous_time.value
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
             logger.warning("IDS equilibrium is found to be EMPTY (homogeneous_time undefined). PUT quits with no action.")
             return
         if homogeneousTime not in IDS_TIME_MODES:
             raise ALException('ERROR: ids_properties.homogeneous_time should be set to IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_HOMOGENEOUS or IDS_TIME_MODE_INDEPENDENT.')
-        if homogeneousTime == IDS_TIME_MODE_HOMOGENEOUS and len(self.time)==0:
+        if homogeneousTime == IDS_TIME_MODE_HOMOGENEOUS and len(self.time.value)==0:
             raise ALException('ERROR: the IDS%time vector of an homogeneous_time IDS must have a non-zero length.')
+
+        # Delete the data in the store
+        # TODO: handle mode correctly!
         self.deleteData(occurrence)
+
+        # Begin a write action
         status, ctx = ull.ual_begin_global_action(self._idx, path, WRITE_OP)
         if status != 0:
             raise ALException('Error calling ual_begin_global_action() for {!s}'.format(self._name, status))
@@ -1362,7 +1379,17 @@ class IDSToplevel(IDSStructure):
         if status != 0:
             raise ALException('Error calling ual_end_action() for {!s}'.format(self._name), status)
 
+    @loglevel
+    def put(self, occurrence=0, data_store=None):
+        if data_store is None:
+            data_store = self._data_store
+        self.to_ualstore(data_store, path=None, occurrence=occurrence)
+
+    @property
+    def _data_store(self):
+        return self._parent._data_store
+
     @property
     def _idx(self):
-        return self._parent.expIdx
+        return self._data_store._idx
 
