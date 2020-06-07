@@ -218,7 +218,7 @@ class IDSPrimitive(IDSMixin):
           - parent: Parent node of this leaf. Can be anything with a _path attribute.
                     Will be used in path generation when stored in DB
           - value: Value to fill the leaf with. Can be anything castable by
-                   IDSPrimitive.__cast_value. If not given, will be filled by
+                   IDSPrimitive.cast_value. If not given, will be filled by
                    default data matching given ids_type and ndims
           - coordinates: Data coordinates of the node
         """
@@ -242,8 +242,16 @@ class IDSPrimitive(IDSMixin):
         return self.__value
 
     @value.setter
-    def value(self, value):
-        self.__value = self.cast_value(value)
+    def value(self, setter_value):
+        if isinstance(setter_value, type(self)):
+            # No need to cast, just overwrite contained value
+            if setter_value._ids_type == self._ids_type and setter_value._ndims == self._ndims:
+                self.__value = setter_value.value
+            # Can we cast the internal value to a valid value?
+            else:
+                self.__value = self.cast_value(setter_value.value)
+        else:
+            self.__value = self.cast_value(setter_value)
 
     def cast_value(self, value):
         # Cast list-likes to arrays
