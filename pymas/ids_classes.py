@@ -307,7 +307,7 @@ class IDSPrimitive(IDSMixin):
         if np.all(data == self._default):
             return
 
-        dbg_str = ' ' * self.depth + '- ' + self._name
+        dbg_str = ' ' + ' ' * self.depth + '- ' + self._name
         dbg_str += (' {:' + str(max(0, 53 - len(dbg_str))) + 's}').format('(' + str(data) + ')')
         # Call signature
         #ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))
@@ -319,7 +319,9 @@ class IDSPrimitive(IDSMixin):
         strTimeBasePath = self.getTimeBasePath(homogeneousTime)
 
 
-        logger.debug('{:51.51s} write'.format(dbg_str))
+        logger.info('{:54.54s} write'.format(dbg_str))
+        logger.debug('   {:50.50s} write'.format('/'.join([context_store[ctx], rel_path])))
+
         status = ull.ual_write_data(ctx, rel_path, strTimeBasePath, data, dataType=data_type, dim=self._ndims)
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
