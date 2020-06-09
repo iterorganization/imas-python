@@ -24,8 +24,8 @@ the main author an email at karelvandeplassche@gmail.com.
 Clone the repository on your local machine. To set up SSH keys for
 GitLab, look here: https://docs.gitlab.com/ee/ssh/
 ``` bash
-git clone git@gitlab.com:Karel-van-de-Plassche/pymas.git # Using SSH keys
-git clone https://gitlab.com/Karel-van-de-Plassche/pymas.git # Using username/password
+git clone git@gitlab.com:pymas-dev/pymas.git # Using SSH keys
+git clone https://gitlab.com/pymas-dev/pymas.git # Using username/password
 ```
 
 Install PyMAS in developer mode with all the optional components it can find:
