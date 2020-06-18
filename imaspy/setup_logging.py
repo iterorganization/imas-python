@@ -40,7 +40,7 @@ class PrettyFormatter(logging.Formatter):
         return s
 
 def test_messages():
-    logger = logging.getLogger('pymas.testlogger')
+    logger = logging.getLogger('imaspy.testlogger')
     logger.setLevel(logging.DEBUG)
     logger.debug('Debug message')
     logger.info('Info message')
@@ -50,7 +50,7 @@ def test_messages():
 
 
 # Log to console by default, and output it all
-logger = logging.getLogger('pymas')
+logger = logging.getLogger('imaspy')
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 ch.setFormatter(PrettyFormatter())

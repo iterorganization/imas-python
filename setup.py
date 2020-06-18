@@ -178,36 +178,36 @@ def prepare_ual_sources(force=False):
     # We need these in runtime, so check them here
     filelist = ['imasdef.py', 'hli_utils.py', 'hli_exception.py']
 
-    # Copy these files into the pymas directory
+    # Copy these files into the imaspy directory
     # TODO: This is a bit hacky, do this nicer
-    pymas_libs_dir = os.path.join(this_dir, 'pymas/_libs')
-    os.makedirs(pymas_libs_dir, exist_ok=True)
-    #if len(os.listdir(pymas_libs_dir)) != 0:
-        #raise Exception('pymas libs dir not empty, refusing to overwrite')
+    imaspy_libs_dir = os.path.join(this_dir, 'imaspy/_libs')
+    os.makedirs(imaspy_libs_dir, exist_ok=True)
+    #if len(os.listdir(imaspy_libs_dir)) != 0:
+        #raise Exception('imaspy libs dir not empty, refusing to overwrite')
     # Make _libs dir act as a python module
-    open(os.path.join(pymas_libs_dir, '__init__.py'), 'w').close()
+    open(os.path.join(imaspy_libs_dir, '__init__.py'), 'w').close()
 
     for file in chain(ual_cython_filelist, filelist):
         path = os.path.join(hli_src, file)
         if not os.path.isfile(path):
             raise Exception('Could not find {!s}, should have failed earlier'.format(path))
         else:
-            target_path = os.path.join(pymas_libs_dir, file)
-            # Patch some imports, they are different from regular Python HLI and pymas
+            target_path = os.path.join(imaspy_libs_dir, file)
+            # Patch some imports, they are different from regular Python HLI and imaspy
             # From PEP-8, absolute imports are preferred https://www.python.org/dev/peps/pep-0008/#id23
             if file == '_ual_lowlevel.pyx':
                 with open(path, 'r') as old, open(target_path, 'w') as new:
                     for line in old:
                         if line == 'cimport ual_lowlevel_interface as ual\n':
-                            new.write('cimport pymas._libs.ual_lowlevel_interface as ual\n')
+                            new.write('cimport imaspy._libs.ual_lowlevel_interface as ual\n')
                         elif line == 'from imasdef import *\n':
-                            new.write('from pymas._libs.imasdef import *\n')
+                            new.write('from imaspy._libs.imasdef import *\n')
                         elif line == 'from hli_exception import ALException \n':
-                            new.write('from pymas._libs.hli_exception import ALException\n')
+                            new.write('from imaspy._libs.hli_exception import ALException\n')
                         else:
                             new.write(line)
             else:
-                shutil.copyfile(path, os.path.join(pymas_libs_dir, file))
+                shutil.copyfile(path, os.path.join(imaspy_libs_dir, file))
 
     return True
 
@@ -266,8 +266,8 @@ else:
 # We need source files of the Python HLI UAL library
 # to link our build against, the version is grabbed from
 # the environment, and they are saved as syubdirectory of
-# pymas
-pxd_path = os.path.join(this_dir, 'pymas/_libs')
+# imaspy
+pxd_path = os.path.join(this_dir, 'imaspy/_libs')
 
 ext_module_name = "ual_{!s}._ual_lowlevel".format(UAL_VERSION_SAFE)
 
@@ -278,7 +278,7 @@ LIBRARIES = 'imas' # We just need the IMAS library
 
 ext_module = Extension(
   name = ext_module_name,
-  sources = [ "pymas/_libs/_ual_lowlevel.pyx" ], # As these files are copied, easy to find!
+  sources = [ "imaspy/_libs/_ual_lowlevel.pyx" ], # As these files are copied, easy to find!
   language = LANGUAGE,
   library_dirs = [ IMAS_PREFIX + "/lib" ],
   libraries = [ LIBRARIES ],
@@ -299,11 +299,11 @@ else:
     print('Cannot build UAL')
 
 setup(
-    name = 'pymas',
+    name = 'imaspy',
     version = '0.0.1',
     description = '.',
     long_description = long_description,
-    url = 'https://gitlab.com/Karel-van-de-Plassche/pymas',
+    url = 'https://gitlab.com/Karel-van-de-Plassche/imaspy',
     author = 'Karel van de Plassche',
     author_email = 'karelvandeplassche@gmail.com',
     license = 'MIT',

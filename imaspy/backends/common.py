@@ -21,8 +21,8 @@
 #limitations under the License.
 from collections.abc import Mapping
 
-import pymas.backends.xarray_core_indexing as indexing
-from pymas.backends.xarray_core_utils import NdimSizeLenMixin
+import imaspy.backends.xarray_core_indexing as indexing
+from imaspy.backends.xarray_core_utils import NdimSizeLenMixin
 
 
 class BackendArray(NdimSizeLenMixin, indexing.ExplicitlyIndexed):

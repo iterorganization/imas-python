@@ -2,7 +2,7 @@
 import logging
 import copy
 
-root_logger = logging.getLogger('pymas')
+root_logger = logging.getLogger('imaspy')
 logger = root_logger
 logger.setLevel(logging.WARNING)
 
@@ -13,11 +13,11 @@ from IPython import embed
 import numbers
 import importlib
 ull = importlib.import_module('ual_4_8_0._ual_lowlevel')
-from pymas._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA, NODE_TYPE_STRUCTURE
+from imaspy._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA, NODE_TYPE_STRUCTURE
 import numpy as np
 import xml
 import xml.etree.ElementTree as ET
-import pymas._libs.hli_utils as hli_utils
+import imaspy._libs.hli_utils as hli_utils
 
 
 class ContextStore(dict):
@@ -148,7 +148,7 @@ class IDSMixin():
         # Grab timebasepath from the coordinates.
         # TODO: In some cases the timebasepath is stored in the XML directly.
         #       What has priority in case it conflicts? Regardless, this is not
-        #       handled by pymas atm
+        #       handled by imaspy atm
         if self._coordinates != {}:
             if self._coordinates['coordinate1'].endswith('time') and 'coordinate2' not in self._coordinates:
                 # Should Walk up the tree
@@ -295,7 +295,7 @@ class IDSPrimitive(IDSMixin):
         """
         if self._name is None:
             raise Exception('Location in tree undefined, cannot put in database')
-        # Convert pymas ids_type to ual scalar_type
+        # Convert imaspy ids_type to ual scalar_type
         if self._ids_type == 'INT':
             scalar_type = 1
         elif self._ids_type == 'FLT':
@@ -376,7 +376,7 @@ class IDSPrimitive(IDSMixin):
 
     @property
     def data_type(self):
-        """ Combine pymas ids_type and ndims to UAL data_type
+        """ Combine imaspy ids_type and ndims to UAL data_type
         """
         return '{!s}_{!s}D'.format(self._ids_type, self._ndims)
 
@@ -454,9 +454,9 @@ class IDSRoot():
 
  @loglevel
  def __init__(self, s=-1, r=-1, rs=None, rr=None, xml_path=None):
-     """ Initialize a pymas IDS tree
+     """ Initialize a imaspy IDS tree
 
-     Dynamically build the pymas IDS tree from the given xml path.
+     Dynamically build the imaspy IDS tree from the given xml path.
      This does not need necessarily need any associated backend,
      but the structure matches MDSPlus pulsefile. E.g. each Root
      is identified by its shot and run, combining into a UID that
@@ -476,7 +476,7 @@ class IDSRoot():
      self.connected = False
      self.expIdx = -1
 
-     # Parse given xml_path and build pymas IDS structures
+     # Parse given xml_path and build imaspy IDS structures
      XMLtreeIDSDef = ET.parse(xml_path)
      root = XMLtreeIDSDef.getroot()
      self._children = []
@@ -556,7 +556,7 @@ class IDSRoot():
 
  def open_ual_store(self, user, tokamak, version, backend_type,
                     mode='r', silent=False, options='', ual_version=None):
-     from pymas.backends.ual import UALDataStore
+     from imaspy.backends.ual import UALDataStore
 
      if silent:
          options += '-silent'
@@ -864,7 +864,7 @@ class IDSStructure(IDSMixin):
 
     def __setattr__(self, key, value):
         """
-        'Smart' setting of attributes. To be able to warn the user on pymas
+        'Smart' setting of attributes. To be able to warn the user on imaspy
         IDS interaction time, instead of on database put time
         Only try to cast user-facing attributes, as core developers might
         want to always bypass this mechanism (I know I do!)

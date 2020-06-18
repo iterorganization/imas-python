@@ -4,10 +4,10 @@ import os
 
 from os.path import expanduser
 
-from pymas.backends.common import WritableIMASDataStore
-from pymas._libs.imasdef import *
-from pymas.ids_classes import ALException
-from pymas.backends.file_manager import DummyFileManager
+from imaspy.backends.common import WritableIMASDataStore
+from imaspy._libs.imasdef import *
+from imaspy.ids_classes import ALException
+from imaspy.backends.file_manager import DummyFileManager
 
 def _find_user_name():
     """ Find user name as needed by UAL. """
@@ -125,7 +125,7 @@ class UALFile():
         self.ual_version = ual_version
         self.backend_id = backend_id
 
-        # Import pymas UAL library
+        # Import imaspy UAL library
         ull = importlib.import_module(
             'ual_{!s}._ual_lowlevel'.format(sanitized_ual_version))
 

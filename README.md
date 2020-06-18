@@ -1,7 +1,7 @@
-# PyMAS
+# IMASPy
 
-PyMAS is (yet another) pure-python library to handle arbitrarily nested
-data structures. PyMAS is designed for, but not necessarily bound to,
+IMASPy is (yet another) pure-python library to handle arbitrarily nested
+data structures. IMASPy is designed for, but not necessarily bound to,
 interacting with Interface Data Structures (IDSs) as defined by the
 Integrated Modelling & Analysis Suite (IMAS) Data Model.
 
@@ -24,13 +24,13 @@ the main author an email at karelvandeplassche@gmail.com.
 Clone the repository on your local machine. To set up SSH keys for
 GitLab, look here: https://docs.gitlab.com/ee/ssh/
 ``` bash
-git clone git@gitlab.com:pymas-dev/pymas.git # Using SSH keys
-git clone https://gitlab.com/pymas-dev/pymas.git # Using username/password
+git clone git@gitlab.com:imaspy-dev/imaspy.git # Using SSH keys
+git clone https://gitlab.com/imaspy-dev/imaspy.git # Using username/password
 ```
 
-Install PyMAS in developer mode with all the optional components it can find:
+Install IMASPy in developer mode with all the optional components it can find:
 ```bash
-cd pymas
+cd imaspy
 pip install --user -e .[all]
 ```
 
@@ -38,7 +38,7 @@ For now, let's assume you have a Data Dictionary specification available,
 and managed to compile the AL.
 ``` python
 # Initialize an empty IDS
-import pymas as imas
+import imaspy as imas
 idsdef_dir = <path to IDSDef.xml>
 idsdef = os.path.join(idsdef_dir, 'IDSDef.xml')
 shot = 1234
@@ -52,7 +52,7 @@ to create an empty `IDSRoot`. No interaction with any LL-AL has happened yet!
 
 Create a PulseFile. This creates an empty PulseFile with the specified backend.
 This _will_ overwrite pulsefiles with the same path. This does need an access
-layer, PyMAS does not provide one out of the box currently.
+layer, IMASPy does not provide one out of the box currently.
 ``` python
 from imas_entry._libs.imasdef import *
 input_user_or_path = <path to pulsefiles, for example your username>
@@ -81,7 +81,7 @@ structures with IMASViz.
 
 ### Prerequisites
 
-PyMAS is a standalone python package with optional dependencies. All needed
+IMASPy is a standalone python package with optional dependencies. All needed
 python packages can be found in `requirements.txt`, and should all be publicly
 available. A simple `pip install` should take care of everything.
 
@@ -113,14 +113,14 @@ the verbose log or open a ticket.
 pip install --user -e .[all] -v
 ```
 
-## Where does PyMAS live in IMAS ecosystem?
-PyMAS tries to fill a slightly different niche than existing tools. It aims
+## Where does IMASPy live in IMAS ecosystem?
+IMASPy tries to fill a slightly different niche than existing tools. It aims
 to be an _alternative_ to Python HLI instead of a wrapper. It tries to be
 dynamic instead of pre-generated. Is hopes to be extendable instead of
 wrappable.
 
 A small, biased, and wildly incomplete of some common IMAS tools, and
-where they live with respect to PyMAS.
+where they live with respect to IMASPy.
 ``` mermaid
 classDiagram
   MDSPLUS_DATABASE .. LL_AL : puts
@@ -128,11 +128,11 @@ classDiagram
   MDSPLUS_DATABASE .. LL_HDC : puts
   MDSPLUS_DATABASE .. LL_HDC : gets
   IMAS DD <.. PythonHLI: build dep
-  IMAS DD <-- PyMAS:  runtime dep
+  IMAS DD <-- IMASPy:  runtime dep
   LL_HDC <-- HDC_python_bindings : calls
   LL_AL <-- Cython_HLI : calls
-  Python_helpers <-- PyMAS: calls
-  HDC_python_bindings <.. PyMAS: Could call
+  Python_helpers <-- IMASPy: calls
+  HDC_python_bindings <.. IMASPy: Could call
 
   Cython_HLI <-- Python_helpers : calls
   Python_helpers <-- Python HLI: calls
@@ -153,7 +153,7 @@ classDiagram
 
 ## Contributing
 
-PyMAS is open for contributions! Please open a
+IMASPy is open for contributions! Please open a
 [fork](https://docs.gitlab.com/ee/user/project/repository/forking_workflow.html#creating-a-fork)
 and create a
 [merge request](https://docs.gitlab.com/ee/user/project/repository/forking_workflow.html#merging-upstream)

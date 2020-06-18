@@ -6,15 +6,15 @@ from IPython import embed
 import numpy
 import numpy as np
 
-root_logger = logging.getLogger('pymas')
+root_logger = logging.getLogger('imaspy')
 logger = root_logger
 logger.setLevel(logging.WARNING)
 
 if __name__ == '__main__':
-    #from pymas.ids_classes import *
+    #from imaspy.ids_classes import *
     # MVP, get a slice
     # So for example be able to run
-    # import pymas as imas
+    # import imaspy as imas
     # input = imas.ids(shot,run_in)
     # input.open_env(input_user_or_path,input_database,’3’)
     # input.equilibrium.getSlice(time_slice, 1)
@@ -63,7 +63,7 @@ if __name__ == '__main__':
         # New API
         run_in = 1
         # 4.4.1 Initializing an empty IDS
-        import pymas as imas
+        import imaspy as imas
         idsdef_dir = os.path.join(os.path.dirname(__file__), '../../../imas-data-dictionary/')
         idsdef = os.path.join(idsdef_dir, 'IDSDef.xml')
         imas_entry = imas.ids(shot, run_in, xml_path=idsdef, verbosity=2)
@@ -106,7 +106,7 @@ if __name__ == '__main__':
 
     # Creating a nested data entry
     print('Pre put ids.ids_properties.version_put.access_layer:', ids.ids_properties.version_put.access_layer)
-    ids.ids_properties.version_put.access_layer = 'pymas'
+    ids.ids_properties.version_put.access_layer = 'imaspy'
     ids.put()
     print('Post put ids.ids_properties.version_put.access_layer:', ids.ids_properties.version_put.access_layer)
     ids.get()
