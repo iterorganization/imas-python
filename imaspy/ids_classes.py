@@ -16,6 +16,7 @@ from imaspy._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_
 import numpy as np
 import xml
 import xml.etree.ElementTree as ET
+
 import imaspy._libs.hli_utils as hli_utils
 
 
@@ -1214,9 +1215,7 @@ class IDSToplevel(IDSStructure):
         if ctx_path != '/':
             raise Exception('{!s} context does not seem to be toplevel'.format(self))
         ual_file = self._data_store._manager.acquire()
-        ual_version = ual_file.ual_version
-        ual_safe_version = ual_version.replace('.', '_')
-        ull = importlib.import_module(''.join(['ual_', ual_safe_version, '._ual_lowlevel']))
+        ull = importlib.import_module(ual_file.ual_module_name)
         return ull
 
     @loglevel

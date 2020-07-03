@@ -16,7 +16,7 @@ from setuptools import Command, find_packages, setup
 
 import numpy #WHY?
 from distutils.command.build import build as _build
-
+from imaspy.imas_ual_env_parsing import parse_UAL_version_string, sanitise_UAL_patch_version, build_UAL_package_name
 
 this_dir = os.path.abspath(os.path.dirname(__file__)) # We need to know where we are for many things
 ### CYTHON COMPILATION MANGELING
@@ -147,35 +147,35 @@ def prepare_ual_sources(force=False):
         origin = repo.remote()
     except ValueError:
         origin = repo.create_remote('origin', url=ual_repo_url)
-
     print("Set up remote '{!s}' linking to '{!s}'".format(origin, origin.url))
-    refspec=':' + ual_commit
-    print('Fetching refspec {!s}'.format(refspec))
 
-    try:
+    origin.fetch('--tags')
+    print("Remote tags fetched")
+
+    # First check if we have the commit already
+    head = None
+    for head in repo.heads:
+        if head.name == ual_commit:
+            head = head
+
+    if head is None:
+        print("Commit '{!s}' not found locally, trying remote".format(ual_commit))
+        # If we do not have the commit, fetch master
+        #refspec='remotes/origin/' + ual_commit + ':' + ual_commit
+        #refspec = ual_commit + ':' + ual_commit
+        refspec = 'master'
+        print('Fetching refspec {!s}'.format(refspec))
+
         fetch_results = origin.fetch(refspec=refspec)
-    except git.exc.GitCommandError:
-        msg = 'Could not find ual_commit {!s}'.format(ual_commit)
-        if force:
-            raise ValueError(msg)
+        if len(fetch_results) == 1:
+            head = repo.create_head('HEAD', ual_commit)
         else:
-            print(msg)
-            return
-    if len(fetch_results) == 0:
-        # We already had the commit, find the head of it
-        head = None
-        for head in repo.heads:
-            if head.name == ual_commit:
-                head = head
-    else:
-        # We fetched the commit, use as HEAD
-        fetch_result = fetch_results[-1]
-        head = repo.create_head(ual_commit, commit=fetch_result)
+            raise Exception("Could not create head HEAD from commit '{!s}'".format(ual_commit))
 
     # Check out remote files locally
     head.checkout()
     described_version = repo.git.describe()
-    if UAL_VERSION_SAFE.replace('_', '.') != described_version:
+    if safe_ual_patch_version.replace('_', '.') != described_version:
         raise Exception("Fetched head commit '{!s}' with description '{!s}' does not match UAL_VERSION '{!s}'".format(head.commit, described_version, UAL_VERSION))
 
 
@@ -269,23 +269,16 @@ if not UAL_VERSION:
     print('UAL_VERSION is unset. Will not build UAL!')
     UAL_VERSION = '0.0.0'
 
-# Safeify the UAL_VERSION
-if '-' in UAL_VERSION:
-    ual_patch_version, micropatch = UAL_VERSION.split('-', 1)
-    steps_from_version, commitspec = micropatch.split('-', 2)
-    ual_commit = commitspec[1:]
-else:
-    ual_patch_version = UAL_VERSION
-    ual_commit = UAL_VERSION
-UAL_VERSION_SAFE = ual_patch_version.replace('.', '_')
+ual_patch_version, steps_from_version, ual_commit = parse_UAL_version_string(UAL_VERSION)
+
+safe_ual_patch_version = sanitise_UAL_patch_version(ual_patch_version)
+ext_module_name = build_UAL_package_name(safe_ual_patch_version, ual_commit)
 
 # We need source files of the Python HLI UAL library
 # to link our build against, the version is grabbed from
 # the environment, and they are saved as syubdirectory of
 # imaspy
 pxd_path = os.path.join(this_dir, 'imaspy/_libs')
-
-ext_module_name = "ual_{!s}._ual_lowlevel".format(UAL_VERSION_SAFE)
 
 LANGUAGE = 'c' # Not sure when this is not true
 LIBRARIES = 'imas' # We just need the IMAS library
