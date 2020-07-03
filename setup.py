@@ -162,12 +162,15 @@ def prepare_ual_sources(force=False):
             print(msg)
             return
     if len(fetch_results) == 0:
-        # We already had the commit, use as HEAD
-        head = repo.create_head('HEAD', commit=ual_commit)
+        # We already had the commit, find the head of it
+        head = None
+        for head in repo.heads:
+            if head.name == ual_commit:
+                head = head
     else:
         # We fetched the commit, use as HEAD
         fetch_result = fetch_results[-1]
-        head = repo.create_head('HEAD', commit=fetch_result)
+        head = repo.create_head(ual_commit, commit=fetch_result)
 
     # Check out remote files locally
     head.checkout()
