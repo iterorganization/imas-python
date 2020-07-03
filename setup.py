@@ -141,31 +141,40 @@ def prepare_ual_sources(force=False):
         repo = git.Repo(ual_repo_path)
     except git.exc.InvalidGitRepositoryError:
         repo = git.Repo.init(ual_repo_path)
+    print("Set up local git repository {!s}".format(repo))
 
     try:
         origin = repo.remote()
     except ValueError:
         origin = repo.create_remote('origin', url=ual_repo_url)
 
+    print("Set up remote '{!s}' linking to '{!s}'".format(origin, origin.url))
+    refspec=':' + ual_commit
+    print('Fetching refspec {!s}'.format(refspec))
+
     try:
-        fetch_results = origin.fetch(UAL_VERSION)
+        fetch_results = origin.fetch(refspec=refspec)
     except git.exc.GitCommandError:
-        msg = 'Could not find UAL_VERSION {!s}'.format(UAL_VERSION)
+        msg = 'Could not find ual_commit {!s}'.format(ual_commit)
         if force:
             raise ValueError(msg)
         else:
             print(msg)
             return
-    if len(fetch_results) > 1:
-        raise Exception('Git fetch returned multiple objects, should probably never happen')
-    elif len(fetch_results) == 0:
-        raise Exception('Git fetch returned no objects, should probably never happen')
+    if len(fetch_results) == 0:
+        # We already had the commit, use as HEAD
+        head = repo.create_head('HEAD', commit=ual_commit)
     else:
-        fetch_result = fetch_results[0]
+        # We fetched the commit, use as HEAD
+        fetch_result = fetch_results[-1]
+        head = repo.create_head('HEAD', commit=fetch_result)
 
     # Check out remote files locally
-    head = repo.create_head(UAL_VERSION, fetch_result)
     head.checkout()
+    described_version = repo.git.describe()
+    if UAL_VERSION_SAFE.replace('_', '.') != described_version:
+        raise Exception("Fetched head commit '{!s}' with description '{!s}' does not match UAL_VERSION '{!s}'".format(head.commit, described_version, UAL_VERSION))
+
 
     # We should now have the Python HLI files, check
     hli_src = os.path.join(this_dir, ual_repo_path, 'pythoninterface/src/imas')
@@ -259,9 +268,13 @@ if not UAL_VERSION:
 
 # Safeify the UAL_VERSION
 if '-' in UAL_VERSION:
-    raise NotImplementedError
+    ual_patch_version, micropatch = UAL_VERSION.split('-', 1)
+    steps_from_version, commitspec = micropatch.split('-', 2)
+    ual_commit = commitspec[1:]
 else:
-    UAL_VERSION_SAFE = UAL_VERSION.replace('.', '_')
+    ual_patch_version = UAL_VERSION
+    ual_commit = UAL_VERSION
+UAL_VERSION_SAFE = ual_patch_version.replace('.', '_')
 
 # We need source files of the Python HLI UAL library
 # to link our build against, the version is grabbed from
