@@ -12,7 +12,6 @@ import os
 from IPython import embed
 import numbers
 import importlib
-ull = importlib.import_module('ual_4_8_0._ual_lowlevel')
 from imaspy._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA, NODE_TYPE_STRUCTURE
 import numpy as np
 import xml
@@ -64,7 +63,7 @@ class ContextStore(dict):
         for ctx in ctxLst:
             # This seems to cause memory corruption
             # Sometimes..
-            contextInfo = ull.ual_context_info(ctx)
+            contextInfo = self._ull.ual_context_info(ctx)
             infoCopy = (contextInfo + '.')[:-1]
             info = {}
             for line in infoCopy.split('\n'):
@@ -198,6 +197,13 @@ class IDSMixin():
                 my_path = self._parent.path + '/' + my_path
         return my_path
 
+    @property
+    def _ull(self):
+        if not hasattr(self, "_parent"):
+            raise Exception("ULL directly connected to {!s}".format(self))
+        return self._parent._ull
+
+
 
 class IDSPrimitive(IDSMixin):
     """ IDS leaf node
@@ -321,7 +327,7 @@ class IDSPrimitive(IDSMixin):
         dbg_str += (' {:' + str(max(0, 53 - len(dbg_str))) + 's}').format('(' + str(data) + ')')
         # Call signature
         #ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))
-        data_type = ull._getDataType(data)
+        data_type = self._ull._getDataType(data)
 
         # Strip context from absolute path
         rel_path = self.getRelCTXPath(ctx)
@@ -331,7 +337,7 @@ class IDSPrimitive(IDSMixin):
 
         logger.info('{:54.54s} write'.format(dbg_str))
         logger.debug('   {:50.50s} write'.format('/'.join([context_store[ctx], rel_path])))
-        status = ull.ual_write_data(ctx, rel_path, strTimeBasePath, data, dataType=data_type, dim=self._ndims)
+        status = self._ull.ual_write_data(ctx, rel_path, strTimeBasePath, data, dataType=data_type, dim=self._ndims)
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
 
@@ -347,15 +353,15 @@ class IDSPrimitive(IDSMixin):
         strNodePath = self.getRelCTXPath(ctx)
         strTimeBasePath = self.getTimeBasePath(homogeneousTime)
         if self._ids_type == 'STR' and self._ndims == 0:
-            status, data = ull.ual_read_data_string(ctx, strNodePath, strTimeBasePath, CHAR_DATA, 1)
+            status, data = self._ull.ual_read_data_string(ctx, strNodePath, strTimeBasePath, CHAR_DATA, 1)
         elif self._ids_type == 'INT' and self._ndims == 0:
-            status, data = ull.ual_read_data_scalar(ctx, strNodePath, strTimeBasePath, INTEGER_DATA)
+            status, data = self._ull.ual_read_data_scalar(ctx, strNodePath, strTimeBasePath, INTEGER_DATA)
         elif self._ids_type == 'FLT' and self._ndims == 0:
-            status, data = ull.ual_read_data_scalar(ctx, strNodePath, strTimeBasePath, DOUBLE_DATA)
+            status, data = self._ull.ual_read_data_scalar(ctx, strNodePath, strTimeBasePath, DOUBLE_DATA)
         elif self._ids_type == 'FLT' and self._ndims > 0:
-            status, data = ull.ual_read_data_array(ctx, strNodePath, strTimeBasePath, DOUBLE_DATA, self._ndims)
+            status, data = self._ull.ual_read_data_array(ctx, strNodePath, strTimeBasePath, DOUBLE_DATA, self._ndims)
         elif self._ids_type == 'INT' and self._ndims > 0:
-            status, data = ull.ual_read_data_array(ctx, strNodePath, strTimeBasePath, INTEGER_DATA, self._ndims)
+            status, data = self._ull.ual_read_data_array(ctx, strNodePath, strTimeBasePath, INTEGER_DATA, self._ndims)
         else:
             logger.critical('Unknown type {!s} ndims {!s} of field {!s}, skipping for now'.format(
             self._ids_type, self._ndims, self._name))
@@ -554,6 +560,11 @@ class IDSRoot():
  def get_units_parser(self):
   return self.ddunits
 
+ #@property
+ #def _ull(self):
+ #    print('Blah!')
+ #    embed()
+
  def open_ual_store(self, user, tokamak, version, backend_type,
                     mode='r', silent=False, options='', ual_version=None):
      from imaspy.backends.ual import UALDataStore
@@ -682,13 +693,13 @@ class IDSRoot():
 
  def open_public(self, expName, silent=False):
   """Opens a public pulse with the UAL UAD backend. """
-  status, idx = ull.ual_begin_pulse_action(UDA_BACKEND, self.shot, self.run, '', expName, os.environ['IMAS_VERSION'])
+  status, idx = self._ull.ual_begin_pulse_action(UDA_BACKEND, self.shot, self.run, '', expName, os.environ['IMAS_VERSION'])
   if status != 0:
    return (status, idx)
   opt = ''
   if silent:
    opt = '-silent'
-  status = ull.ual_open_pulse(idx, OPEN_PULSE, opt)
+  status = self._ull.ual_open_pulse(idx, OPEN_PULSE, opt)
   if status != 0:
    return (status, idx)
   self.setPulseCtx(idx)
@@ -707,7 +718,7 @@ class IDSRoot():
 
  def close(self):
   if (self.expIdx != -1):
-   status = ull.ual_close_pulse(self.expIdx, CLOSE_PULSE, '')
+   status = self._ull.ual_close_pulse(self.expIdx, CLOSE_PULSE, '')
    if status != 0:
     return status
    self.connected = False
@@ -732,42 +743,42 @@ class IDSRoot():
    raise ALException('ERROR: backend not opened.')
 
   # Create READ context
-  status, ctx = ull.ual_begin_global_action(self.expIdx, path, READ_OP)
+  status, ctx = self._ull.ual_begin_global_action(self.expIdx, path, READ_OP)
   if status != 0:
     raise ALException('Error calling ual_begin_global_action() for ', status)
 
   # Check homogeneous_time
-  status, homogenousTime = ull.ual_read_data(ctx, "ids_properties/homogeneous_time", "", INTEGER_DATA, 0)
+  status, homogenousTime = self._ull.ual_read_data(ctx, "ids_properties/homogeneous_time", "", INTEGER_DATA, 0)
   if status != 0:
    raise ALException('ERROR: homogeneous_time cannot be read.', status) 
 
   if homogenousTime == IDS_TIME_MODE_UNKNOWN:
-   status = ull.ual_end_action(ctx)
+   status = self._ull.ual_end_action(ctx)
    if status != 0:
     raise ALException('Error calling ual_end_action().', status) 
    return 0, [] 
   # Heterogeneous IDS #
   if homogenousTime == IDS_TIME_MODE_HETEROGENEOUS:
-   status = ull.ual_end_action(ctx)
+   status = self._ull.ual_end_action(ctx)
    if status != 0:
     raise ALException('ERROR calling ual_end_action().', status) 
    return 0, [np.NaN] 
 
   # Time independent IDS #
   if homogenousTime == IDS_TIME_MODE_INDEPENDENT:
-   status = ull.ual_end_action(ctx)
+   status = self._ull.ual_end_action(ctx)
    if status != 0:
     raise ALException('ERROR calling ual_end_action().', status) 
    return 0, [np.NINF] 
 
   # Get global time
   timeList = []
-  status, data = ull.ual_read_data_array(ctx, "time", "/time", DOUBLE_DATA, 1)
+  status, data = self._ull.ual_read_data_array(ctx, "time", "/time", DOUBLE_DATA, 1)
   if status != 0:
    raise ALException('ERROR: Time vector cannot be read.', status)
   if data is not None:
    timeList = data
-  status = ull.ual_end_action(ctx)
+  status = self._ull.ual_end_action(ctx)
   if status != 0:
    raise ALException('ERROR calling ual_end_action().', status) 
   return status,timeList
@@ -792,7 +803,6 @@ class IDSStructure(IDSMixin):
 
     #def __copy__(self):
     #    raise NotImplementedError
-
     @loglevel
     def __init__(self, parent, name, structure_xml):
         """ Initialize IDSStructure from XML specification
@@ -900,14 +910,14 @@ class IDSStructure(IDSMixin):
         else:
             path='equilibrium'+ '/' + str(occurrence)
 
-        status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
+        status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
         if status != 0:
              raise ALException('Error calling ual_begin_global_action() in readTime() operation', status)
     
-        status, time = ull.ual_read_data_array(ctx, "time", "/time", DOUBLE_DATA, 1)
+        status, time = self._ull.ual_read_data_array(ctx, "time", "/time", DOUBLE_DATA, 1)
         if status != 0:
          raise ALException('ERROR: TIME cannot be read.', status) 
-        status = ull.ual_end_action(ctx)
+        status = self._ull.ual_end_action(ctx)
         if status != 0:
          raise ALException('Error calling ual_end_action() in readTime() operation', status) 
         return time
@@ -992,7 +1002,7 @@ class IDSStructure(IDSMixin):
             logger.debug('{:53.53s} del'.format(dbg_str))
             rel_path = child.getRelCTXPath(ctx)
             if isinstance(child, (IDSStructArray, IDSPrimitive)):
-                status = ull.ual_delete_data(ctx, rel_path)
+                status = self._ull.ual_delete_data(ctx, rel_path)
                 if status != 0:
                     raise ALException('ERROR: ual_delete_data failed for "{!s}". Status code {!s}'.format(rel_path + '/' + child_name), status)
             else:
@@ -1136,7 +1146,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         """
         timeBasePath = self.getTimeBasePath(homogeneousTime, 0)
         nodePath = self.getRelCTXPath(parentCtx)
-        status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, 0)
+        status, aosCtx, size = self._ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, 0)
         if status < 0:
             raise ALException('ERROR: ual_begin_arraystruct_action failed for "process/products/element"', status)
 
@@ -1147,12 +1157,12 @@ class IDSStructArray(IDSStructure, IDSMixin):
         self.resize(size)
         for i in range(size):
             self.value[i].get(aosCtx, homogeneousTime)
-            ull.ual_iterate_over_arraystruct(aosCtx, 1)
+            self._ull.ual_iterate_over_arraystruct(aosCtx, 1)
             context_store.update(aosCtx, context_store[parentCtx] + '/' + nodePath + '/' + str(i+1)) # Update context
 
         if aosCtx > 0:
             context_store.pop(aosCtx)
-            ull.ual_end_action(aosCtx)
+            self._ull.ual_end_action(aosCtx)
 
     def getRelCTXPath(self, ctx):
         """ Get the path relative to given context from an absolute path"""
@@ -1170,7 +1180,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         timeBasePath = self.getTimeBasePath(homogeneousTime)
         # TODO: This might be to simple for array of array of structures
         nodePath = self.getRelCTXPath(parentCtx)
-        status, aosCtx, size = ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, len(self.value))
+        status, aosCtx, size = self._ull.ual_begin_arraystruct_action(parentCtx, nodePath, timeBasePath, len(self.value))
         if status != 0 or aosCtx < 0:
             raise ALException('ERROR: ual_begin_arraystruct_action failed for "{!s}"'.format(self._name), status)
         context_store[aosCtx] = context_store[parentCtx] + '/' + nodePath + '/' + str(0)
@@ -1180,12 +1190,12 @@ class IDSStructArray(IDSStructure, IDSMixin):
             dbg_str = ' ' * self.depth + '- [' + str(i) + ']'
             logger.debug('{:53.53s} put'.format(dbg_str))
             self.value[i].put(aosCtx, homogeneousTime)
-            status = ull.ual_iterate_over_arraystruct(aosCtx, 1)
+            status = self._ull.ual_iterate_over_arraystruct(aosCtx, 1)
             if status != 0:
                 raise ALException('ERROR: ual_iterate_over_arraystruct failed for "{!s}"'.format(self._name), status)
             context_store.update(aosCtx, context_store[parentCtx] + '/' + nodePath + '/' + str(i+1)) # Update context
 
-        status = ull.ual_end_action(aosCtx)
+        status = self._ull.ual_end_action(aosCtx)
         context_store.pop(aosCtx)
         if status != 0:
             raise ALException('ERROR: ual_end_action failed for "{!s}"'.format(self._name), status)
@@ -1197,6 +1207,17 @@ class IDSToplevel(IDSStructure):
     At minium, one should fill ids_properties/homogeneous_time
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
+
+    @property
+    def _ull(self):
+        ctx_path = context_store[self._idx]
+        if ctx_path != '/':
+            raise Exception('{!s} context does not seem to be toplevel'.format(self))
+        ual_file = self._data_store._manager.acquire()
+        ual_version = ual_file.ual_version
+        ual_safe_version = ual_version.replace('.', '_')
+        ull = importlib.import_module(''.join(['ual_', ual_safe_version, '._ual_lowlevel']))
+        return ull
 
     @loglevel
     def readHomogeneous(self, occurrence):
@@ -1213,15 +1234,15 @@ class IDSToplevel(IDSStructure):
         else:
             path = self._name + '/' + str(occurrence)
 
-        status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
+        status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
         context_store[ctx] = context_store[self._idx] + '/' + path
         if status != 0:
             raise ALException('Error calling ual_begin_global_action() in readHomogeneous() operation', status)
 
-        status, homogeneousTime = ull.ual_read_data(ctx, "ids_properties/homogeneous_time", "", INTEGER_DATA, 0)
+        status, homogeneousTime = self._ull.ual_read_data(ctx, "ids_properties/homogeneous_time", "", INTEGER_DATA, 0)
         if status != 0:
             raise ALException('ERROR: homogeneous_time cannot be read.', status) 
-        status = ull.ual_end_action(ctx)
+        status = self._ull.ual_end_action(ctx)
         context_store.pop(ctx)
         if status != 0:
             raise ALException('Error calling ual_end_action() in readHomogeneous() operation', status) 
@@ -1234,15 +1255,15 @@ class IDSToplevel(IDSStructure):
         if occurrence != 0:
             path += '/' + str(occurrence)
 
-        status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
+        status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
         context_store[ctx] = context_store[self._idx] + '/' + path
         if status != 0:
             raise ALException('Error calling ual_begin_global_action() in read_data_dictionary_version() operation', status)
 
-        status, data_dictionary_version = ull.ual_read_data_string(ctx, "ids_properties/version_put/data_dictionary", "", CHAR_DATA, 1)
+        status, data_dictionary_version = self._ull.ual_read_data_string(ctx, "ids_properties/version_put/data_dictionary", "", CHAR_DATA, 1)
         if status != 0:
             raise ALException('ERROR: data_dictionary_version cannot be read.', status) 
-        status = ull.ual_end_action(ctx)
+        status = self._ull.ual_end_action(ctx)
         context_store.pop(ctx)
         if status != 0:
             raise ALException('Error calling ual_end_action() in read_data_dictionary_version() operation', status) 
@@ -1270,7 +1291,7 @@ class IDSToplevel(IDSStructure):
         data_dictionary_version = self.read_data_dictionary_version(occurrence)
 
         # TODO: Do not use global context
-        status, ctx = ull.ual_begin_global_action(self._idx, path, READ_OP)
+        status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
         if status != 0:
           raise ALException('Error calling ual_begin_global_action() for equilibrium', status)
         context_store[ctx] = context_store[self._idx] +  path
@@ -1278,7 +1299,7 @@ class IDSToplevel(IDSStructure):
         logger.debug('{:53.53s} get'.format(self._name))
         super().get(ctx, homogeneousTime, **kwargs)
 
-        status = ull.ual_end_action(ctx)
+        status = self._ull.ual_end_action(ctx)
         context_store.pop(ctx)
         if status != 0:
             raise ALException('Error calling ual_end_action() for {!s}'.format(self._name), status)
@@ -1298,7 +1319,7 @@ class IDSToplevel(IDSStructure):
         if occurrence != 0:
             rel_path += '/' + str(occurrence)
 
-        status, ctx = ull.ual_begin_global_action(self._idx, rel_path, WRITE_OP)
+        status, ctx = self._ull.ual_begin_global_action(self._idx, rel_path, WRITE_OP)
         context_store[ctx] = context_store[self._idx] + rel_path
         if status < 0:
             raise ALException('ERROR: ual_begin_global_action failed for "{!s}"'.format(rel_path), status)
@@ -1306,14 +1327,14 @@ class IDSToplevel(IDSStructure):
         for child_name in self._children:
             child = getattr(self, child_name)
             if isinstance(child, (IDSStructArray, IDSPrimitive)):
-                status = ull.ual_delete_data(ctx, child_name)
+                status = self._ull.ual_delete_data(ctx, child_name)
                 if status != 0:
                     raise ALException('ERROR: ual_delete_data failed for "{!s}". Status code {!s}'.format(rel_path + '/' + child_name), status)
             else:
                 status = child.delete(ctx)
                 if status != 0:
                     raise ALException('ERROR: delete failed for "{!s}". Status code {!s}'.format(rel_path + '/' + child_name), status)
-        status = ull.ual_end_action(ctx)
+        status = self._ull.ual_end_action(ctx)
         context_store.pop(ctx)
         if status < 0:
             raise ALException('ERROR: ual_end_action failed for "{!s}"'.format(rel_path), status)
@@ -1352,7 +1373,7 @@ class IDSToplevel(IDSStructure):
         self.deleteData(occurrence)
 
         # Begin a write action
-        status, ctx = ull.ual_begin_global_action(self._idx, path, WRITE_OP)
+        status, ctx = self._ull.ual_begin_global_action(self._idx, path, WRITE_OP)
         if status != 0:
             raise ALException('Error calling ual_begin_global_action() for {!s}'.format(self._name, status))
 
@@ -1365,7 +1386,7 @@ class IDSToplevel(IDSStructure):
             child.put(ctx, homogeneousTime)
 
         context_store.pop(ctx)
-        status = ull.ual_end_action(ctx)
+        status = self._ull.ual_end_action(ctx)
         if status != 0:
             raise ALException('Error calling ual_end_action() for {!s}'.format(self._name), status)
 
