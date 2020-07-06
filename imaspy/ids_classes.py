@@ -877,6 +877,14 @@ class IDSStructure(IDSMixin):
     def __str__(self):
         return '%s("%s")' % (type(self).__name__, self._name)
 
+    def __getitem__(self, key):
+        keyname = str(key)
+        return getattr(self, keyname)
+
+    def __setitem__(self, key, value):
+        keyname = str(key)
+        self.__setattr__(keyname, value)
+
     def __setattr__(self, key, value):
         """
         'Smart' setting of attributes. To be able to warn the user on imaspy
@@ -1080,18 +1088,22 @@ class IDSStructArray(IDSStructure, IDSMixin):
         object.__getattribute__(self, key)
 
     def __getitem__(self, item):
-        return self.value[item]
+        # value is a list, so the given item should be convertable to integer
+        list_idx = int(item)
+        return self.value[list_idx]
 
     def __setitem__(self, item, value):
+        # value is a list, so the given item should be convertable to integer
+        list_idx = int(item)
         if hasattr(self, '_convert_ids_types') and self._convert_ids_types:
             # Convert IDS type on set time. Never try this for hidden attributes!
-            if item in self.value:
-                struct = self.value[item]
+            if list_idx in self.value:
+                struct = self.value[list_idx]
                 try:
                     struct.value = value
                 except Exception as ee:
                     raise
-        self.value[item] = value
+        self.value[list_idx] = value
 
     def append(self, elt):
         """Append elements to the end of the array of structures.
