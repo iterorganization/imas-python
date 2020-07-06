@@ -911,9 +911,9 @@ class IDSStructure(IDSMixin):
         time = []
         path = None
         if occurrence == 0:
-            path='equilibrium'
+            path = self._name
         else:
-            path='equilibrium'+ '/' + str(occurrence)
+            path = self._name + '/' + str(occurrence)
 
         status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
         if status != 0:
@@ -1273,9 +1273,9 @@ class IDSToplevel(IDSStructure):
         """
         path = None
         if occurrence == 0:
-            path='equilibrium'
+            path = self._name
         else:
-            path='equilibrium'+ '/' + str(occurrence)
+            path = self._name + '/' + str(occurrence)
 
         homogeneousTime = self.readHomogeneous(occurrence)
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
@@ -1287,7 +1287,7 @@ class IDSToplevel(IDSStructure):
         # TODO: Do not use global context
         status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
         if status != 0:
-          raise ALException('Error calling ual_begin_global_action() for equilibrium', status)
+          raise ALException('Error calling ual_begin_global_action() for {!s}'.format(self._name), status)
         context_store[ctx] = context_store[self._idx] +  path
 
         logger.debug('{:53.53s} get'.format(self._name))
@@ -1355,7 +1355,7 @@ class IDSToplevel(IDSStructure):
         # Determine the time_mode.
         homogeneousTime = self.ids_properties.homogeneous_time.value
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
-            logger.warning("IDS equilibrium is found to be EMPTY (homogeneous_time undefined). PUT quits with no action.")
+            logger.warning("IDS {!s} is found to be EMPTY (homogeneous_time undefined). PUT quits with no action.")
             return
         if homogeneousTime not in IDS_TIME_MODES:
             raise ALException('ERROR: ids_properties.homogeneous_time should be set to IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_HOMOGENEOUS or IDS_TIME_MODE_INDEPENDENT.')
