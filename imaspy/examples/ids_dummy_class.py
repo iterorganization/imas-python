@@ -67,7 +67,7 @@ if __name__ == '__main__':
         idsdef_dir = os.path.join(os.path.dirname(__file__), '../../../imas-data-dictionary/')
         idsdef = os.path.join(idsdef_dir, 'IDSDef.xml')
         imas_entry = imas.ids(shot, run_in, xml_path=idsdef, verbosity=2)
-        idx = imas_entry.create_env_backend(input_user_or_path, input_database, '3', backend, ual_version='4.8.0')
+        idx = imas_entry.create_env_backend(input_user_or_path, input_database, '3', backend, ual_version='4.8.2-2-g1fffb6bf')
     # This should then support accessing an IDS using idsVar.<IDSname>.<IDSfield>
 
     # 5.5 Opening an existing Data Entry

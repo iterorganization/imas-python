@@ -8,6 +8,7 @@ from imaspy.backends.common import WritableIMASDataStore
 from imaspy._libs.imasdef import *
 from imaspy.ids_classes import ALException
 from imaspy.backends.file_manager import DummyFileManager
+from imaspy.imas_ual_env_parsing import parse_UAL_version_string, sanitise_UAL_patch_version, build_UAL_package_name
 
 def _find_user_name():
     """ Find user name as needed by UAL. """
@@ -96,7 +97,7 @@ class UALFile():
     def __init__(self, backend_id, db_name, shot, run,
                  user_name,
                  data_version,
-                 ual_version,
+                 ual_version_string,
                  mode='r',
                  options=''):
         # Check sanity of input arguments
@@ -107,11 +108,10 @@ class UALFile():
                 raise Exception('Shot should be 99999 or lower')
 
 
-        try:
-            major, minor, patch = ual_version.split('.')
-        except:
-            raise Exception("Could not determine UAL version. Should be of format x.x.x")
-        sanitized_ual_version = '_'.join([major, minor, patch])
+        ual_patch_version, steps_from_version, ual_commit = parse_UAL_version_string(ual_version_string)
+
+        safe_ual_patch_version = sanitise_UAL_patch_version(ual_patch_version)
+        ual_ext_module_name = build_UAL_package_name(safe_ual_patch_version, ual_commit)
 
         if backend_id not in UAL_BACKENDS:
             raise Exception("Given backend_id '{!s}' not in allowed backends".format(backend_id))
@@ -122,12 +122,11 @@ class UALFile():
         self.user_name = user_name
         self.data_version = data_version
         self.options = options
-        self.ual_version = ual_version
+        self.ual_module_name = ual_ext_module_name
         self.backend_id = backend_id
 
         # Import imaspy UAL library
-        ull = importlib.import_module(
-            'ual_{!s}._ual_lowlevel'.format(sanitized_ual_version))
+        ull = importlib.import_module(ual_ext_module_name)
 
         # Begin the pulse action
         status, idx = ull.ual_begin_pulse_action(backend_id, shot, run,
