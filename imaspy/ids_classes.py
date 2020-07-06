@@ -12,7 +12,7 @@ import os
 from IPython import embed
 import numbers
 import importlib
-from imaspy._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA, NODE_TYPE_STRUCTURE
+from imaspy._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA, NODE_TYPE_STRUCTURE, CLOSE_PULSE
 import numpy as np
 import xml
 import xml.etree.ElementTree as ET
@@ -491,7 +491,7 @@ class IDSRoot():
      for ids in root:
          my_name = ids.get('name')
          # Only build for equilibrium to KISS
-         if my_name != 'equilibrium':
+         if my_name not in ['equilibrium', 'nbi']:
              continue
          logger.debug('{:42.42s} initialization'.format(my_name))
          self._children.append(my_name)
@@ -561,11 +561,6 @@ class IDSRoot():
  def get_units_parser(self):
   return self.ddunits
 
- #@property
- #def _ull(self):
- #    print('Blah!')
- #    embed()
-
  def open_ual_store(self, user, tokamak, version, backend_type,
                     mode='r', silent=False, options='', ual_version=None):
      from imaspy.backends.ual import UALDataStore
@@ -575,7 +570,7 @@ class IDSRoot():
 
      store = UALDataStore.open(
          backend_type, tokamak, self.shot, self.run, user_name=user,
-         data_version=version, mode='w', options=options, ual_version=ual_version)
+         data_version=version, mode=mode, options=options, ual_version=ual_version)
 
 
      # Safe the store internally for magic path detection
@@ -783,6 +778,15 @@ class IDSRoot():
   if status != 0:
    raise ALException('ERROR calling ual_end_action().', status) 
   return status,timeList
+
+ @property
+ def _ull(self):
+     ctx_path = context_store[self.expIdx]
+     if ctx_path != '/':
+         raise Exception('{!s} context does not seem to be toplevel'.format(self))
+     ual_file = self._data_store._manager.acquire()
+     ull = importlib.import_module(ual_file.ual_module_name)
+     return ull
 
 
 class IDSStructure(IDSMixin):
@@ -1208,15 +1212,6 @@ class IDSToplevel(IDSStructure):
     At minium, one should fill ids_properties/homogeneous_time
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
-
-    @property
-    def _ull(self):
-        ctx_path = context_store[self._idx]
-        if ctx_path != '/':
-            raise Exception('{!s} context does not seem to be toplevel'.format(self))
-        ual_file = self._data_store._manager.acquire()
-        ull = importlib.import_module(ual_file.ual_module_name)
-        return ull
 
     @loglevel
     def readHomogeneous(self, occurrence):
