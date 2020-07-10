@@ -124,7 +124,11 @@ class BuildExtWithoutPlatformSuffix(build_ext):
     return filename
 
 def prepare_ual_sources(force=False):
-    import git # Import git here, the user might not have it!
+    try:
+        import git # Import git here, the user might not have it!
+    except ModuleNotFoundError:
+        print("Could not find 'git' module, try 'pip install --user gitpython'. Will not build UAL!")
+        return False
 
     # This will probably _always_ depend on the UAL version.
     # However, opposed to the original Python HLI, it does not
