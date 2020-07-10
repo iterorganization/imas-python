@@ -12,13 +12,22 @@ import os
 from IPython import embed
 import numbers
 import importlib
-from imaspy._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA, NODE_TYPE_STRUCTURE, CLOSE_PULSE
 import numpy as np
 import xml
 import xml.etree.ElementTree as ET
 
-import imaspy._libs.hli_utils as hli_utils
-
+try:
+    import imaspy._libs.hli_utils as hli_utils
+    from imaspy._libs.imasdef import MDSPLUS_BACKEND, OPEN_PULSE, DOUBLE_DATA, READ_OP, EMPTY_INT, FORCE_CREATE_PULSE, IDS_TIME_MODE_UNKNOWN,IDS_TIME_MODES, IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS, WRITE_OP, CHAR_DATA, INTEGER_DATA, EMPTY_FLOAT, DOUBLE_DATA, NODE_TYPE_STRUCTURE, CLOSE_PULSE
+except ImportError:
+    logger.critical('IMASPy _libs could not be imported. UAL not available!')
+else:
+    # Translation dictionary to go from an ids (primitive) type (without the dimensionality) to a default value
+    ids_type_to_default = {
+        'STR': '',
+        'INT': EMPTY_INT,
+        'FLT': EMPTY_FLOAT,
+    }
 
 class ContextStore(dict):
     """ Stores global UAL context
@@ -86,13 +95,6 @@ class ALException(Exception):
           Exception.__init__(self, message + "\nError status=" + str(errorStatus))
         else:
           Exception.__init__(self, message)
-
-# Translation dictionary to go from an ids (primitive) type (without the dimensionality) to a default value
-ids_type_to_default = {
-    'STR': '',
-    'INT': EMPTY_INT,
-    'FLT': EMPTY_FLOAT,
-}
 
 def loglevel(func):
     """ Generate a decorator for setting the logger level on a function
