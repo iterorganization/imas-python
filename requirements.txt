@@ -1,1 +1,2 @@
 pip>=10
+numpy
