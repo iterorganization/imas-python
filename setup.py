@@ -16,9 +16,15 @@ The installable IMASPy package tries to follow in the following order:
   * Packaging source distributions: [setuptools](https://setuptools.readthedocs.io/)
   * Packaging built distribitions: [wheels](https://pythonwheels.com/)
 """
+# Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
+import os
+import sys
+this_dir = os.path.abspath(os.path.dirname(__file__)) # We need to know where we are for many things
+sys.path.insert(0, this_dir)
+
 # Set up 'fancy logging' to display messages to the user
 import logging
-import imaspy
+import imaspy.setup_logging
 imaspy_logger = logging.getLogger('imaspy')
 logger = imaspy_logger
 logger.setLevel(logging.INFO)
@@ -29,16 +35,13 @@ logger.info("pyproject.toml support got added in pip 10. Assuming it is availabl
 # HANDLE USER ENVIRONMENT
 ###
 import argparse
-import os
 from imaspy.imas_ual_env_parsing import parse_UAL_version_string, sanitise_UAL_patch_version, build_UAL_package_name
-this_dir = os.path.abspath(os.path.dirname(__file__)) # We need to know where we are for many things
 parser = argparse.ArgumentParser()
 parser.add_argument("--build-ual", action='store_true')
 args, leftovers = parser.parse_known_args()
 fail_on_ual_fail = args.build_ual
 
 # Now that the environment is defined, import the rest of the needed packages
-import sys
 from subprocess import call
 import logging
 from distutils.version import LooseVersion
@@ -121,8 +124,12 @@ extensions.append(ual_module)
 ###
 
 if USE_CYTHON:
-    from Cython.Build import cythonize
-    extensions = cythonize(extensions)
+    try:
+        from Cython.Build import cythonize
+    except ImportError:
+        logger.critical('USE_CYTHON is {!s}, but could not import Cython'.format(USE_CYTHON))
+    else:
+        extensions = cythonize(extensions)
 else:
     extensions = no_cythonize(extensions)
 
@@ -133,14 +140,24 @@ with open(os.path.join(this_dir, 'README.md'), encoding='utf-8') as file:
 with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
+def get_requires_for_build_wheel(config_settings=None):
+    raise Exception('blablabl')
+
+def get_requires_for_build_sdist(config_settings=None):
+    raise Exception('blablabl')
+
+
 setup(
     name = 'imaspy',
     version = '0.0.1',
-    description = '.',
-    long_description = long_description,
-    url = 'https://gitlab.com/Karel-van-de-Plassche/imaspy',
+    packages = find_packages(),
+
+    # Get requirements from requirements.txt
+    install_requires = requirements,
     author = 'Karel van de Plassche',
     author_email = 'karelvandeplassche@gmail.com',
+    long_description = long_description,
+    url = 'https://gitlab.com/Karel-van-de-Plassche/imaspy',
     license = 'MIT',
     classifiers = [
         'Intended Audience :: Science/Research',
@@ -149,10 +166,13 @@ setup(
         'Natural Language :: English',
         'Programming Language :: Python :: 3'
     ],
-    packages = find_packages(exclude=['docs', 'tests*']),
-    install_requires = requirements,
     extras_require = {
         'test': ['coverage', 'pytest', 'pytest-cov'],
     },
+    python_requires='>=3',
     ext_modules = extensions,
+    cmdclass = {
+        'get_requires_for_build_wheel': get_requires_for_build_wheel,
+        'get_requires_for_build_sdist': get_requires_for_build_sdist,
+    }
 )
