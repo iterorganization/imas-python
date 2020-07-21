@@ -9,7 +9,6 @@ logger.setLevel(logging.WARNING)
 import abc
 import functools
 import os
-from IPython import embed
 import numbers
 import importlib
 import numpy as np
