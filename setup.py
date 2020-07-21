@@ -117,6 +117,10 @@ ual_module = Extension(
   #extra_compile_args = [ EXTRACOMPILEARGS ],
   include_dirs=[ IMAS_PREFIX + "/include", np.get_include(), pxd_path],
 )
+if "develop" in sys.argv:
+    # Make the dir the .so will be put in
+    # Somehow not made automatically
+    os.makedirs(ext_module_name.split('.')[0], exist_ok=True)
 extensions.append(ual_module)
 
 ###
