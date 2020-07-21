@@ -1,3 +1,9 @@
+import logging
+
+root_logger = logging.getLogger('imaspy')
+logger = root_logger
+logger.setLevel(logging.WARNING)
+
 import io
 import importlib
 import os
@@ -5,10 +11,32 @@ import os
 from os.path import expanduser
 
 from imaspy.backends.common import WritableIMASDataStore
-from imaspy._libs.imasdef import *
 from imaspy.ids_classes import ALException
 from imaspy.backends.file_manager import DummyFileManager
 from imaspy.imas_ual_env_parsing import parse_UAL_version_string, sanitise_UAL_patch_version, build_UAL_package_name
+
+try:
+    from imaspy._libs.imasdef import *
+except ImportError:
+    logger.warning('imasdef unavailable, might give trouble when using IMAS-AL related functionality')
+else:
+    UAL_BACKENDS = [
+        NO_BACKEND,
+        ASCII_BACKEND,
+        MDSPLUS_BACKEND,
+        HDF5_BACKEND,
+        MEMORY_BACKEND,
+        UDA_BACKEND,
+    ]
+    PULSE_ACTIONS = [
+        OPEN_PULSE,
+        FORCE_OPEN_PULSE,
+        CREATE_PULSE,
+        FORCE_CREATE_PULSE,
+        CLOSE_PULSE,
+        ERASE_PULSE,
+    ]
+
 
 def _find_user_name():
     """ Find user name as needed by UAL. """
@@ -45,23 +73,6 @@ class ALError(Exception):
 
 class PulseNotFoundError(ALError):
     pass
-
-UAL_BACKENDS = [
-    NO_BACKEND,
-    ASCII_BACKEND,
-    MDSPLUS_BACKEND,
-    HDF5_BACKEND,
-    MEMORY_BACKEND,
-    UDA_BACKEND,
-]
-PULSE_ACTIONS = [
-    OPEN_PULSE,
-    FORCE_OPEN_PULSE,
-    CREATE_PULSE,
-    FORCE_CREATE_PULSE,
-    CLOSE_PULSE,
-    ERASE_PULSE,
-]
 
 def get_user_db_directory(user=None):
     """Get the IMAS database directory root for the user.
