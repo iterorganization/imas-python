@@ -6,14 +6,14 @@ def parse_UAL_version_string(string):
     else:
         ual_patch_version = string
         steps_from_version = '0'
-        ual_commit = ''
+        ual_commit = string
     return ual_patch_version, steps_from_version, ual_commit
 
 def sanitise_UAL_patch_version(ual_patch_version):
     return ual_patch_version.replace('.', '_')
 
 def build_UAL_package_name(safe_ual_patch_version, ual_commit):
-    if ual_commit == '':
+    if '.' in ual_commit:
         # Release package
         return "ual_{!s}._ual_lowlevel".format(safe_ual_patch_version)
     else:
