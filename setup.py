@@ -48,10 +48,10 @@ fail_on_ual_fail = args.build_ual
 # Now that the environment is defined, import the rest of the needed packages
 from subprocess import call
 import logging
-from distutils.version import LooseVersion
-from distutils import sysconfig
 from setuptools import Command, find_packages, setup, Extension
 from setup_helpers import prepare_ual_sources, no_cythonize
+from distutils.version import LooseVersion
+from distutils import sysconfig
 
 
 
