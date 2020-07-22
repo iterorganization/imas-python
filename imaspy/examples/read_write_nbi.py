@@ -71,11 +71,12 @@ else:
     import imaspy as imas
     from imaspy._libs.imasdef import MDSPLUS_BACKEND
     from pathlib import Path
+    imas.ids = imas.ids_classes.IDSRoot # Enable old-style syntax
     imas_prefix = Path(os.getenv('IMAS_PREFIX'))
     imas_include = imas_prefix.joinpath('include')
     idsdef = imas_include.joinpath('IDSDef.xml')
     input = imas.ids(shot, run_in, xml_path=idsdef, verbosity=2) # Create a empty IDSs
-    input.open_env_backend(input_user_or_path, input_database, '3', MDSPLUS_BACKEND, ual_version='4.8.2-2-g1fffb6bf') # Start a new 'pulse action', linking IDSs to input database
+    input.open_env_backend(input_user_or_path, input_database, '3', MDSPLUS_BACKEND)# Start a new 'pulse action', linking IDSs to input database
 
     # READ NBI IDS FROM INPUT DATAFILE
     input_nbi = input.nbi # Make a convinient name for NBI IDS
@@ -85,7 +86,7 @@ else:
 
     ## Do a hacky thing to link to a new file now, should mirror the Python HLI API I guess
     output = output_nbi._parent
-    output.create_env_backend(output_user_or_path, output_database, '3', MDSPLUS_BACKEND, ual_version='4.8.2-2-g1fffb6bf') # Start a new 'pulse acting', linking IDSs to output database
+    output.create_env_backend(output_user_or_path, output_database, '3', MDSPLUS_BACKEND) # Start a new 'pulse acting', linking IDSs to output database
 
     #embed() # Tip: Use IPython's embed() or ipdb for autocomplete, colors, etc.
     unit = output_nbi['unit'][1]
