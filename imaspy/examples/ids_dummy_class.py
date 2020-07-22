@@ -64,12 +64,20 @@ if __name__ == '__main__':
         run_in = 1
         # 4.4.1 Initializing an empty IDS
         import imaspy as imas
+        from pathlib import Path
         imas.ids = imas.ids_classes.IDSRoot # Enable old-style syntax
 
-        idsdef_dir = os.path.join(os.path.dirname(__file__), '../../../working/imas-data-dictionary/')
-        idsdef = os.path.join(idsdef_dir, 'IDSDef.xml')
+        IMAS_PREFIX = os.getenv("IMAS_PREFIX")
+        if not IMAS_PREFIX or not os.path.isdir(IMAS_PREFIX):
+            logger.warning("IMAS_PREFIX is unset or is not a directory. Points to {!s}. Fall back to 'karel paths'!".format(IMAS_PREFIX))
+            idsdef_dir = Path(os.path.dirname(__file__)) / Path('../../../../working/imas-data-dictionary/')
+            idsdef = Path(idsdef_dir) / Path('IDSDef.xml')
+        else:
+            imas_prefix = Path(os.getenv('IMAS_PREFIX'))
+            imas_include = imas_prefix.joinpath('include')
+            idsdef = imas_include.joinpath('IDSDef.xml')
         imas_entry = imas.ids(shot, run_in, xml_path=idsdef, verbosity=2)
-        idx = imas_entry.create_env_backend(input_user_or_path, input_database, '3', backend, ual_version='4.8.3')
+        idx = imas_entry.create_env_backend(input_user_or_path, input_database, '3', backend)
     # This should then support accessing an IDS using idsVar.<IDSname>.<IDSfield>
 
     # 5.5 Opening an existing Data Entry
