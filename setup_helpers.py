@@ -11,8 +11,15 @@ import shutil
 from itertools import chain
 this_dir = os.path.abspath(os.path.dirname(__file__)) # We need to know where we are for many things
 
-def prepare_ual_sources(safe_ual_patch_version, ual_commit, force=False):
-    """ Use gitpython to grab AL sources from ITER repository """
+def prepare_ual_sources(ual_symver, ual_commit, force=False):
+    """ Use gitpython to grab AL sources from ITER repository
+
+
+    Args:
+      - ual_symver: The 'symver style' version to be pulled. e.g. 4.8.2
+      - ual_commit: The exact commit to be pulled. Should be a hash or equal to
+                    the symver
+    """
     try:
         import git # Import git here, the user might not have it!
     except ModuleNotFoundError:
@@ -27,6 +34,10 @@ def prepare_ual_sources(safe_ual_patch_version, ual_commit, force=False):
     # We need the actual source code (for now) so grab it from ITER
     ual_repo_path = 'src/ual'
     ual_repo_url = 'ssh://git@git.iter.org/imas/access-layer.git'
+
+    logger.info("Trying to pull commit {!r} symver {!r} "
+                "from the {!r} repo at {!r}".format(
+                    ual_commit, ual_symver, ual_repo_path, ual_repo_url))
 
     # Set up a bare repo and fetch the access-layer repository in it
     os.makedirs(ual_repo_path, exist_ok=True)
@@ -47,9 +58,11 @@ def prepare_ual_sources(safe_ual_patch_version, ual_commit, force=False):
 
     # First check if we have the commit already
     head = None
-    for head in repo.heads:
-        if head.name == ual_commit:
-            head = head
+    for local_head in repo.heads:
+        if local_head.name == ual_commit:
+            head = local_head
+            logger.info("Found existing head in local repo with commit {!s}".format(head.commit))
+            break
 
     if head is None:
         logger.info("Commit '{!s}' not found locally, trying remote".format(ual_commit))
@@ -61,16 +74,17 @@ def prepare_ual_sources(safe_ual_patch_version, ual_commit, force=False):
 
         fetch_results = origin.fetch(refspec=refspec)
         if len(fetch_results) == 1:
-            head = repo.create_head('HEAD', ual_commit)
+            head = repo.create_head('HEAD', ual_commit, force=True)
         else:
             raise Exception("Could not create head HEAD from commit '{!s}'".format(ual_commit))
 
     # Check out remote files locally
     head.checkout()
     described_version = repo.git.describe()
-    if safe_ual_patch_version.replace('_', '.') != described_version:
-        raise Exception("Fetched head commit '{!s}' with description '{!s}' does not match UAL_VERSION '{!s}'".format(head.commit, described_version, UAL_VERSION))
-
+    if described_version != ual_symver:
+        raise Exception("Local described version {!r} does"
+                        " not match requested symver {!r}".format(
+                            described_version, ual_symver))
 
     # We should now have the Python HLI files, check
     hli_src = os.path.join(this_dir, ual_repo_path, 'pythoninterface/src/imas')

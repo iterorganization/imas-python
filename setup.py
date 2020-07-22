@@ -35,7 +35,7 @@ logger.info("pyproject.toml support got added in pip 10. Assuming it is availabl
 # HANDLE USER ENVIRONMENT
 ###
 import argparse
-from imaspy.imas_ual_env_parsing import parse_UAL_version_string, sanitise_UAL_patch_version, build_UAL_package_name
+from imaspy.imas_ual_env_parsing import parse_UAL_version_string, sanitise_UAL_symver, build_UAL_package_name
 parser = argparse.ArgumentParser()
 parser.add_argument("--build-ual", action='store_true')
 args, leftovers = parser.parse_known_args()
@@ -75,10 +75,10 @@ if not UAL_VERSION:
     logger.warning('UAL_VERSION is unset. Will not build UAL!')
     UAL_VERSION = '0.0.0'
 
-ual_patch_version, steps_from_version, ual_commit = parse_UAL_version_string(UAL_VERSION)
+ual_symver, steps_from_version, ual_commit = parse_UAL_version_string(UAL_VERSION)
 
-safe_ual_patch_version = sanitise_UAL_patch_version(ual_patch_version)
-ext_module_name = build_UAL_package_name(safe_ual_patch_version, ual_commit)
+safe_ual_symver = sanitise_UAL_symver(ual_symver)
+ext_module_name = build_UAL_package_name(safe_ual_symver, ual_commit)
 
 # We need source files of the Python HLI UAL library
 # to link our build against, the version is grabbed from
@@ -105,7 +105,7 @@ cython_like_ext = '.pyx' if USE_CYTHON else '.c'
 ###
 extensions = []
 
-prepare_ual_sources(safe_ual_patch_version, ual_commit)
+prepare_ual_sources(ual_symver, ual_commit)
 import numpy as np
 ual_module = Extension(
   name = ext_module_name,

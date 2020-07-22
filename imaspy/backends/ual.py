@@ -13,7 +13,7 @@ from os.path import expanduser
 from imaspy.backends.common import WritableIMASDataStore
 from imaspy.ids_classes import ALException
 from imaspy.backends.file_manager import DummyFileManager
-from imaspy.imas_ual_env_parsing import parse_UAL_version_string, sanitise_UAL_patch_version, build_UAL_package_name
+from imaspy.imas_ual_env_parsing import parse_UAL_version_string, sanitise_UAL_symver, build_UAL_package_name
 
 try:
     from imaspy._libs.imasdef import *
@@ -135,7 +135,7 @@ class UALFile():
 
         ual_patch_version, steps_from_version, ual_commit = parse_UAL_version_string(ual_version_string)
 
-        safe_ual_patch_version = sanitise_UAL_patch_version(ual_patch_version)
+        safe_ual_patch_version = sanitise_UAL_symver(ual_patch_version)
         ual_ext_module_name = build_UAL_package_name(safe_ual_patch_version, ual_commit)
 
         if backend_id not in AL_BACKENDS:
