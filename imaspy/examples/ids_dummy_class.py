@@ -1,3 +1,17 @@
+#This file is part of IMASPy.
+#
+#IMASPy is free software: you can redistribute it and/or modify
+#it under the terms of the GNU Lesser General Public License as published by
+#the Free Software Foundation, either version 3 of the License, or
+#(at your option) any later version.
+#
+#IMASPy is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU Lesser General Public License for more details.
+#
+#You should have received a copy of the GNU Lesser General Public License
+#along with IMASPy.  If not, see <https://www.gnu.org/licenses/>.
 import sys
 import os
 import logging
@@ -64,10 +78,20 @@ if __name__ == '__main__':
         run_in = 1
         # 4.4.1 Initializing an empty IDS
         import imaspy as imas
-        idsdef_dir = os.path.join(os.path.dirname(__file__), '../../../imas-data-dictionary/')
-        idsdef = os.path.join(idsdef_dir, 'IDSDef.xml')
+        from pathlib import Path
+        imas.ids = imas.ids_classes.IDSRoot # Enable old-style syntax
+
+        IMAS_PREFIX = os.getenv("IMAS_PREFIX")
+        if not IMAS_PREFIX or not os.path.isdir(IMAS_PREFIX):
+            logger.warning("IMAS_PREFIX is unset or is not a directory. Points to {!s}. Fall back to 'karel paths'!".format(IMAS_PREFIX))
+            idsdef_dir = Path(os.path.dirname(__file__)) / Path('../../../../working/imas-data-dictionary/')
+            idsdef = Path(idsdef_dir) / Path('IDSDef.xml')
+        else:
+            imas_prefix = Path(os.getenv('IMAS_PREFIX'))
+            imas_include = imas_prefix.joinpath('include')
+            idsdef = imas_include.joinpath('IDSDef.xml')
         imas_entry = imas.ids(shot, run_in, xml_path=idsdef, verbosity=2)
-        idx = imas_entry.create_env_backend(input_user_or_path, input_database, '3', backend, ual_version='4.8.2-2-g1fffb6bf')
+        idx = imas_entry.create_env_backend(input_user_or_path, input_database, '3', backend)
     # This should then support accessing an IDS using idsVar.<IDSname>.<IDSfield>
 
     # 5.5 Opening an existing Data Entry

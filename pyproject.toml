@@ -1,0 +1,4 @@
+[build-system]
+# Minimum requirements for the build system to execute.
+requires = ["setuptools>=40.8.0", "wheel", "Cython", "numpy", "gitpython"]
+build-backend = "setuptools.build_meta"

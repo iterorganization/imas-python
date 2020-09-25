@@ -1,3 +1,23 @@
+#This file is part of IMASPy.
+#
+#IMASPy is free software: you can redistribute it and/or modify
+#it under the terms of the GNU Lesser General Public License as published by
+#the Free Software Foundation, either version 3 of the License, or
+#(at your option) any later version.
+#
+#IMASPy is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU Lesser General Public License for more details.
+#
+#You should have received a copy of the GNU Lesser General Public License
+#along with IMASPy.  If not, see <https://www.gnu.org/licenses/>.
+import logging
+
+root_logger = logging.getLogger('imaspy')
+logger = root_logger
+logger.setLevel(logging.WARNING)
+
 import io
 import importlib
 import os
@@ -5,10 +25,32 @@ import os
 from os.path import expanduser
 
 from imaspy.backends.common import WritableIMASDataStore
-from imaspy._libs.imasdef import *
 from imaspy.ids_classes import ALException
 from imaspy.backends.file_manager import DummyFileManager
-from imaspy.imas_ual_env_parsing import parse_UAL_version_string, sanitise_UAL_patch_version, build_UAL_package_name
+from imaspy.imas_ual_env_parsing import parse_UAL_version_string, sanitise_UAL_symver, build_UAL_package_name
+
+try:
+    from imaspy._libs.imasdef import *
+except ImportError:
+    logger.warning('imasdef unavailable, might give trouble when using IMAS-AL related functionality')
+else:
+    AL_BACKENDS = {
+        NO_BACKEND: "NO BACKEND",
+        ASCII_BACKEND: "ASCII BACKEND",
+        MDSPLUS_BACKEND: "MDSPLUS BACKEND",
+        HDF5_BACKEND: "HDF5 BACKEND",
+        MEMORY_BACKEND: "MEMORY BACKEND",
+        UDA_BACKEND: "UDA BACKEND",
+    }
+    PULSE_ACTIONS = {
+        OPEN_PULSE: "OPEN PULSE",
+        FORCE_OPEN_PULSE: "FORCE OPEN PULSE",
+        CREATE_PULSE: "CREATE PULSE",
+        FORCE_CREATE_PULSE: "FORCE CREATE PULSE",
+        CLOSE_PULSE: "CLOSE PULSE",
+        ERASE_PULSE: "ERASE PULSE",
+    }
+
 
 def _find_user_name():
     """ Find user name as needed by UAL. """
@@ -36,32 +78,29 @@ def _find_ual_version():
 
 
 class ALError(Exception):
-   def __init__(self, message, errorStatus=None):
-       self.message = message
-       self.errorStatus = errorStatus
+    ERRORCODES = {
+        -2 : "Context exception",
+        -3 : "Backend exception",
+        -4 : "Abstract low level layer exception",
+        -1 : "Uknown error",
+        None: "errorStatus not passed"
+    }
 
-   def __str__(self):
-       return '{!s} (error status={!s})'.format(self.message, self.errorStatus)
+    def __init__(self, message, errorStatus=None):
+        self.message = message
+        self.errorStatus = errorStatus
+        print(self.al_message)
+
+    @property
+    def al_message(self):
+        return self.ERRORCODES[self.errorStatus]
+
+    def __str__(self):
+        exception_message = "{!s}\nAL message='{!s}'".format(self.message, self.al_message)
+        return exception_message
 
 class PulseNotFoundError(ALError):
     pass
-
-UAL_BACKENDS = [
-    NO_BACKEND,
-    ASCII_BACKEND,
-    MDSPLUS_BACKEND,
-    HDF5_BACKEND,
-    MEMORY_BACKEND,
-    UDA_BACKEND,
-]
-PULSE_ACTIONS = [
-    OPEN_PULSE,
-    FORCE_OPEN_PULSE,
-    CREATE_PULSE,
-    FORCE_CREATE_PULSE,
-    CLOSE_PULSE,
-    ERASE_PULSE,
-]
 
 def get_user_db_directory(user=None):
     """Get the IMAS database directory root for the user.
@@ -110,11 +149,13 @@ class UALFile():
 
         ual_patch_version, steps_from_version, ual_commit = parse_UAL_version_string(ual_version_string)
 
-        safe_ual_patch_version = sanitise_UAL_patch_version(ual_patch_version)
+        safe_ual_patch_version = sanitise_UAL_symver(ual_patch_version)
         ual_ext_module_name = build_UAL_package_name(safe_ual_patch_version, ual_commit)
 
-        if backend_id not in UAL_BACKENDS:
+        if backend_id not in AL_BACKENDS:
             raise Exception("Given backend_id '{!s}' not in allowed backends".format(backend_id))
+
+        backend_str = AL_BACKENDS[backend_id]
 
         self.db_name = db_name
         self.shot = shot
@@ -132,12 +173,12 @@ class UALFile():
         status, idx = ull.ual_begin_pulse_action(backend_id, shot, run,
                                                  user_name, db_name,
                                                  data_version)
+        pulse_action_state = "{!r},{!r},{!r},{!r},{!r}".format(
+            backend_id, shot, run, user_name, db_name,
+            data_version)
         if status != 0:
-            raise ALError("Error calling ual_begin_pulse_action("
-                            "{!s},{!s},'{!s}','{!s}','{!s}')".format(
-                                backend_id, shot, run, user_name, db_name,
-                                data_version),
-                          status)
+            raise ALError("Error calling ual_begin_pulse_action({!r})".format(
+                pulse_action_state), status)
 
         # OPEN_PULSE: Openes the access to the data only if the Data Entry
         #    exists, returns error otherwise
@@ -150,7 +191,7 @@ class UALFile():
         if mode == 'r':
             status = ull.ual_open_pulse(idx, OPEN_PULSE, options)
             if status != 0:
-                raise PulseNotFoundError('No such pulse {!s}'.format(self), status)
+                raise PulseNotFoundError('No such pulse {!r}'.format(self), status)
         elif mode == 'w':
             status = ull.ual_open_pulse(idx, FORCE_CREATE_PULSE, options)
         elif mode == 'a':
@@ -158,11 +199,15 @@ class UALFile():
         elif mode == 'x':
             status = ull.ual_open_pulse(idx, CREATE_PULSE, options)
         else:
-            raise ValueError("Invalid mode: '{!s}'".format(mode))
+            raise ValueError("Invalid mode: {!r}".format(mode))
 
         if status != 0:
-            raise ALError('Error calling ull.ual_open_pulse('
-                            '{!s},{!s},{!s})'.format(idx, OPEN_PULSE, options), status)
+            raise ALError("Error calling ull.ual_open_pulse({!r},{!r},{!r}).\n"
+                          "Pulse action state was ({!s}).\n"
+                          "Backend was {!r}".format(
+                              idx, OPEN_PULSE, options, pulse_action_state,
+                              backend_str),
+                          status)
 
         self.closed = False
         self._context_idx = idx
