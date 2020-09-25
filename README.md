@@ -24,7 +24,7 @@ the main author an email at karelvandeplassche@gmail.com.
 Clone the repository on your local machine. To set up SSH keys for
 GitLab, look here: https://docs.gitlab.com/ee/ssh/
 ``` bash
-git clone git@gitlab.com:imaspy-dev/imaspy.git # Using SSH keys
+git clone git@gitlab.com:klimex/imaspy.git # Using SSH keys
 git clone https://gitlab.com/imaspy-dev/imaspy.git # Using username/password
 ```
 
