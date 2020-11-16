@@ -209,30 +209,31 @@ def get_requires_for_build_sdist(config_settings=None):
     raise Exception("blablabl")
 
 
-setup(
-    name="imaspy",
-    version="0.0.1",
-    packages=find_packages(),
-    install_requires=install_requires,
-    # Duplicate from pyproject.toml for older setuptools
-    setup_requires=["setuptools_scm"],
-    author="Karel van de Plassche",
-    author_email="karelvandeplassche@gmail.com",
-    long_description=long_description,
-    url="https://gitlab.com/Karel-van-de-Plassche/imaspy",
-    license="MIT",
-    classifiers=[
-        "Intended Audience :: Science/Research",
-        "Topic :: Utilities",
-        "License :: OSI Approved :: MIT License",
-        "Natural Language :: English",
-        "Programming Language :: Python :: 3",
-    ],
-    extras_require=optional_reqs,
-    python_requires=">=3",
-    ext_modules=extensions,
-    cmdclass={
-        "get_requires_for_build_wheel": get_requires_for_build_wheel,
-        "get_requires_for_build_sdist": get_requires_for_build_sdist,
-    },
-)
+if __name__ == "__main__":
+    setup(
+        name="imaspy",
+        version="0.0.1",
+        packages=find_packages(),
+        install_requires=install_requires,
+        # Duplicate from pyproject.toml for older setuptools
+        setup_requires=["setuptools_scm"],
+        author="Karel van de Plassche",
+        author_email="karelvandeplassche@gmail.com",
+        long_description=long_description,
+        url="https://gitlab.com/Karel-van-de-Plassche/imaspy",
+        license="MIT",
+        classifiers=[
+            "Intended Audience :: Science/Research",
+            "Topic :: Utilities",
+            "License :: OSI Approved :: MIT License",
+            "Natural Language :: English",
+            "Programming Language :: Python :: 3",
+        ],
+        extras_require=optional_reqs,
+        python_requires=">=3",
+        ext_modules=extensions,
+        cmdclass={
+            "get_requires_for_build_wheel": get_requires_for_build_wheel,
+            "get_requires_for_build_sdist": get_requires_for_build_sdist,
+        },
+    )
