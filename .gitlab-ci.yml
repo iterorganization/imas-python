@@ -116,10 +116,10 @@ flake8:
     - pip install flake8 pyflakes anybadge
   script:
     - mkdir -p ./flake8
-    - flake8 --exit-zero --doctests --statistics --count $(fi  nd $PACKAGE -name '*.py') | tee flake8.txt
+    - flake8 --exit-zero --doctests --statistics --count $(find $PACKAGE -name '*.py') | tee flake8.txt
     - PEP8_VIOLATIONS=$(tail flake8.txt -n1)
     - echo "Flake8 finds $PEP8_VIOLATIONS PEP8 violations"
-    - anybadge -ou --label=flake8 --value=$PEP8_VIOLATIONS --  file=flake8/flake8.svg -c silver
+    - anybadge -ou --label=flake8 --value=$PEP8_VIOLATIONS --file=flake8/flake8.svg -c silver
   artifacts:
     paths:
       - ./flake8/
