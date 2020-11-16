@@ -15,6 +15,20 @@
 import logging
 import time
 
+TRACE_LEVEL_NUM = 5
+logging.addLevelName(TRACE_LEVEL_NUM, "TRACE")
+
+
+def trace(self, message, *args, **kws):
+    if self.isEnabledFor(TRACE_LEVEL_NUM):
+        # Yes, logger takes its '*args' as 'args'.
+        self._log(TRACE_LEVEL_NUM, message, args, **kws)
+        logging.Logger.trace = trace
+
+
+logging.Logger.trace = trace
+logging.TRACE = TRACE_LEVEL_NUM
+
 
 class PrettyFormatter(logging.Formatter):
     """Logging Formatter to add colors and count warning / errors"""
@@ -25,15 +39,16 @@ class PrettyFormatter(logging.Formatter):
     bold_red = "\x1b[31;1m"
     reset = "\x1b[0m"
 
-    format = "%(asctime)s [%(levelname)s] %(message)s @%(filename)s:%(lineno)d"
+    formatstr = "%(asctime)s [%(levelname)s] %(message)s @%(filename)s:%(lineno)d"
     default_time_format = "%H:%M:%S"
 
     FORMATS = {
-        logging.DEBUG: light_grey + format + reset,
-        logging.INFO: format,
-        logging.WARNING: yellow + format + reset,
-        logging.ERROR: red + format + reset,
-        logging.CRITICAL: bold_red + format + reset,
+        logging.TRACE: light_grey + formatstr + reset,
+        logging.DEBUG: light_grey + formatstr + reset,
+        logging.INFO: formatstr,
+        logging.WARNING: yellow + formatstr + reset,
+        logging.ERROR: red + formatstr + reset,
+        logging.CRITICAL: bold_red + formatstr + reset,
     }
 
     def format(self, record):
@@ -43,21 +58,24 @@ class PrettyFormatter(logging.Formatter):
         return formatter.format(record)
 
     def formatTime(self, record, datefmt=None, print_ms=False):
+        # pylint: disable=arguments-differ # Adds print_ms kwarg
         ct = self.converter(record.created)
         if datefmt:
-            s = time.strftime(datefmt, ct)
+            ss = time.strftime(datefmt, ct)
         else:
-            t = time.strftime(self.default_time_format, ct)
+            tt = time.strftime(self.default_time_format, ct)
             if print_ms:
-                s = self.default_msec_format % (t, record.msecs)
+                ss = self.default_msec_format % (tt, record.msecs)
             else:
-                s = t
-        return s
+                ss = tt
+        return ss
 
 
 def test_messages():
+    """ Print out a message on each logging level """
     logger = logging.getLogger("imaspy.testlogger")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.TRACE)
+    logger.trace("Trace message")
     logger.debug("Debug message")
     logger.info("Info message")
     logger.warning("Warning message")
@@ -65,12 +83,17 @@ def test_messages():
     logger.critical("Critical message")
 
 
+def connect_formatter(logger):
+    """ Connect general formatter to given logger """
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.TRACE)
+    ch.setFormatter(PrettyFormatter())
+    logger.addHandler(ch)
+
+
 # Log to console by default, and output it all
-logger = logging.getLogger("imaspy")
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-ch.setFormatter(PrettyFormatter())
-logger.addHandler(ch)
+root_logger = logging.getLogger("imaspy")
+connect_formatter(root_logger)
 
 if __name__ == "__main__":
     test_messages()

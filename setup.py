@@ -23,18 +23,19 @@ So instead, we install packages to the `USER_SITE` there, and do not use
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import os
 import sys
+from pathlib import Path
 
-this_dir = os.path.abspath(
-    os.path.dirname(__file__)
-)  # We need to know where we are for many things
-sys.path.insert(0, this_dir)
+from IPython import embed  # pylint: disable=unused-import # noqa: F401 For debugging
+
+this_file = Path(__file__)
+this_dir = this_file.parent.resolve()  # We need to know where we are for many things
 
 # Set up 'fancy logging' to display messages to the user
 import logging
 import imaspy.setup_logging
 
-imaspy_logger = logging.getLogger("imaspy")
-logger = imaspy_logger
+root_logger = logging.getLogger("imaspy")
+logger = root_logger
 logger.setLevel(logging.INFO)
 
 logger.info("pyproject.toml support got added in pip 10. Assuming it is available")
