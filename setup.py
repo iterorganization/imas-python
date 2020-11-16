@@ -140,50 +140,54 @@ LIBRARIES = "imas"  # We just need the IMAS library
 ### CYTHON COMPILATION ENVIRONMENT
 
 # From https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#multiple-cython-files-in-a-package
-USE_CYTHON = True
-cython_like_ext = ".pyx" if USE_CYTHON else ".c"
+REBUILD_LL = False
+if REBUILD_LL:
+    USE_CYTHON = True
+    cython_like_ext = ".pyx" if USE_CYTHON else ".c"
 
-###
-# Build extention list
-###
-extensions = []
+    ###
+    # Build extention list
+    ###
+    extensions = []
 
-prepare_ual_sources(ual_symver, ual_commit)
-import numpy as np
+    prepare_ual_sources(ual_symver, ual_commit)
+    import numpy as np
 
-ual_module = Extension(
-    name=ext_module_name,
-    sources=[
-        "imaspy/_libs/_ual_lowlevel.pyx"
-    ],  # As these files are copied, easy to find!
-    language=LANGUAGE,
-    library_dirs=[IMAS_PREFIX + "/lib"],
-    libraries=[LIBRARIES],
-    # extra_link_args = [ EXTRALINKARGS ],
-    # extra_compile_args = [ EXTRACOMPILEARGS ],
-    include_dirs=[IMAS_PREFIX + "/include", np.get_include(), pxd_path],
-)
-if "develop" in sys.argv:
-    # Make the dir the .so will be put in
-    # Somehow not made automatically
-    os.makedirs(ext_module_name.split(".")[0], exist_ok=True)
-extensions.append(ual_module)
+    ual_module = Extension(
+        name=ext_module_name,
+        sources=[
+            "imaspy/_libs/_ual_lowlevel.pyx"
+        ],  # As these files are copied, easy to find!
+        language=LANGUAGE,
+        library_dirs=[IMAS_PREFIX + "/lib"],
+        libraries=[LIBRARIES],
+        # extra_link_args = [ EXTRALINKARGS ],
+        # extra_compile_args = [ EXTRACOMPILEARGS ],
+        include_dirs=[IMAS_PREFIX + "/include", np.get_include(), pxd_path],
+    )
+    if "develop" in sys.argv:
+        # Make the dir the .so will be put in
+        # Somehow not made automatically
+        os.makedirs(ext_module_name.split(".")[0], exist_ok=True)
+    extensions.append(ual_module)
 
-###
-# Set up Cython compilation (or not)
-###
+    ###
+    # Set up Cython compilation (or not)
+    ###
 
-if USE_CYTHON:
-    try:
-        from Cython.Build import cythonize
-    except ImportError:
-        logger.critical(
-            "USE_CYTHON is {!s}, but could not import Cython".format(USE_CYTHON)
-        )
+    if USE_CYTHON:
+        try:
+            from Cython.Build import cythonize
+        except ImportError:
+            logger.critical(
+                "USE_CYTHON is {!s}, but could not import Cython".format(USE_CYTHON)
+            )
+        else:
+            extensions = cythonize(extensions)
     else:
-        extensions = cythonize(extensions)
+        extensions = no_cythonize(extensions)
 else:
-    extensions = no_cythonize(extensions)
+    extensions = []
 
 
 with open(os.path.join(this_dir, "README.md"), encoding="utf-8") as file:
