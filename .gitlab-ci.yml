@@ -89,7 +89,7 @@ before_script:
       # Run the real test, pytest
     - which pytest
     - pytest --version
-    - pytest --cov=$(PACKAGE) --cov-report=term --cov-report=xml:$PYTHONTOOLS_DIR/coverage.xml --junit-xml=$PYTHONTOOLS_DIR/junit.xml -m "$PYTEST_MARK" "$PYTHONTOOLS_DIR"
+    - pytest --cov=$PACKAGE --cov-report=term --cov-report=xml:$PYTHONTOOLS_DIR/coverage.xml --junit-xml=$PYTHONTOOLS_DIR/junit.xml -m "$PYTEST_MARK" "$PYTHONTOOLS_DIR"
   # One pipeline has one artifact. We need both the test report _and_ the installed packages to pass on
   artifacts:
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_NAME"
