@@ -6,19 +6,19 @@
 # dimensions
 #
 #
-#Copyright 2014-2020, xarray Developers
+# Copyright 2014-2020, xarray Developers
 #
-#Licensed under the Apache License, Version 2.0 (the "License");
-#you may not use this file except in compliance with the License.
-#You may obtain a copy of the License at
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
 #  https://www.apache.org/licenses/LICENSE-2.0
 #
-#Unless required by applicable law or agreed to in writing, software
-#distributed under the License is distributed on an "AS IS" BASIS,
-#WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#See the License for the specific language governing permissions and
-#limitations under the License.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 from collections.abc import Mapping
 
 import imaspy.backends.xarray_core_indexing as indexing
@@ -31,6 +31,7 @@ class BackendArray(NdimSizeLenMixin, indexing.ExplicitlyIndexed):
     def __array__(self, dtype=None):
         key = indexing.BasicIndexer((slice(None),) * self.ndim)
         return np.asarray(self[key], dtype=dtype)
+
 
 class AbstractDataStore(Mapping):
     __slots__ = ()
@@ -91,6 +92,7 @@ class AbstractDataStore(Mapping):
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.close()
+
 
 class AbstractWritableDataStore(AbstractDataStore):
     __slots__ = ()
@@ -255,13 +257,14 @@ class AbstractWritableDataStore(AbstractDataStore):
                 is_unlimited = dim in unlimited_dims
                 self.set_dimension(dim, length, is_unlimited)
 
+
 class WritableIMASDataStore(AbstractWritableDataStore):
     __slots__ = ()
 
     def encode(self, variables, attributes):
         # Encode all varibles IMAS-style. Equivalent to xarrays CFDataStore, repeated here
         # for reference:
-        #def encode(self, variables, attributes):
+        # def encode(self, variables, attributes):
         #    variables = {k: self.encode_variable(v) for k, v in variables.items()}
         #    attributes = {k: self.encode_attribute(v) for k, v in attributes.items()}
         #    return variables, attributes

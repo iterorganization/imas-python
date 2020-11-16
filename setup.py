@@ -23,13 +23,17 @@ So instead, we install packages to the `USER_SITE` there, and do not use
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import os
 import sys
-this_dir = os.path.abspath(os.path.dirname(__file__)) # We need to know where we are for many things
+
+this_dir = os.path.abspath(
+    os.path.dirname(__file__)
+)  # We need to know where we are for many things
 sys.path.insert(0, this_dir)
 
 # Set up 'fancy logging' to display messages to the user
 import logging
 import imaspy.setup_logging
-imaspy_logger = logging.getLogger('imaspy')
+
+imaspy_logger = logging.getLogger("imaspy")
 logger = imaspy_logger
 logger.setLevel(logging.INFO)
 
@@ -39,9 +43,14 @@ logger.info("pyproject.toml support got added in pip 10. Assuming it is availabl
 # HANDLE USER ENVIRONMENT
 ###
 import argparse
-from imaspy.imas_ual_env_parsing import parse_UAL_version_string, sanitise_UAL_symver, build_UAL_package_name
+from imaspy.imas_ual_env_parsing import (
+    parse_UAL_version_string,
+    sanitise_UAL_symver,
+    build_UAL_package_name,
+)
+
 parser = argparse.ArgumentParser()
-parser.add_argument("--build-ual", action='store_true')
+parser.add_argument("--build-ual", action="store_true")
 args, leftovers = parser.parse_known_args()
 fail_on_ual_fail = args.build_ual
 
@@ -54,30 +63,33 @@ from distutils.version import LooseVersion
 from distutils import sysconfig
 
 
-
 # Try to grab all necessary environment variables.
 # IMAS_PREFIX points to the directory all IMAS components live in
 IMAS_PREFIX = os.getenv("IMAS_PREFIX")
 if not IMAS_PREFIX or not os.path.isdir(IMAS_PREFIX):
-    logger.warning('IMAS_PREFIX is unset or is not a directory. Points to {!s}. Will not build UAL!'.format(IMAS_PREFIX))
-    IMAS_PREFIX = '0.0.0'
+    logger.warning(
+        "IMAS_PREFIX is unset or is not a directory. Points to {!s}. Will not build UAL!".format(
+            IMAS_PREFIX
+        )
+    )
+    IMAS_PREFIX = "0.0.0"
 
 # Legacy code, we do not need an explicit IMAS_VERSION.
 # What is more important, we need the UAL_VERSION we want to link
 # to
 ## Sanity checks, fallback to 0.0.0_0.0.0
-#IMAS_VERSION = os.getenv("IMAS_VERSION")
-#if not IMAS_VERSION or not len(IMAS_VERSION.split("."))>2:
+# IMAS_VERSION = os.getenv("IMAS_VERSION")
+# if not IMAS_VERSION or not len(IMAS_VERSION.split("."))>2:
 #    print('IMAS_VERSION is unset or is not formatted as "0.0.0"')
 #    IMAS_VERSION = "0.0.0"
-#MAJOR = IMAS_VERSION.split(".")[0]
-#MINOR = IMAS_VERSION.split(".")[1]
+# MAJOR = IMAS_VERSION.split(".")[0]
+# MINOR = IMAS_VERSION.split(".")[1]
 
 # Grab the UAL_VERSION to build against
 UAL_VERSION = os.getenv("UAL_VERSION")
 if not UAL_VERSION:
-    logger.warning('UAL_VERSION is unset. Will not build UAL!')
-    UAL_VERSION = '0.0.0'
+    logger.warning("UAL_VERSION is unset. Will not build UAL!")
+    UAL_VERSION = "0.0.0"
 
 ual_symver, steps_from_version, ual_commit = parse_UAL_version_string(UAL_VERSION)
 
@@ -88,12 +100,12 @@ ext_module_name = build_UAL_package_name(safe_ual_symver, ual_commit)
 # to link our build against, the version is grabbed from
 # the environment, and they are saved as syubdirectory of
 # imaspy
-pxd_path = os.path.join(this_dir, 'imaspy/_libs')
+pxd_path = os.path.join(this_dir, "imaspy/_libs")
 
-LANGUAGE = 'c' # Not sure when this is not true
-LIBRARIES = 'imas' # We just need the IMAS library
-#EXTRALINKARGS = '' # This is machine-specific ignore for now
-#EXTRACOMPILEARGS = '' # This is machine-specific ignore for now
+LANGUAGE = "c"  # Not sure when this is not true
+LIBRARIES = "imas"  # We just need the IMAS library
+# EXTRALINKARGS = '' # This is machine-specific ignore for now
+# EXTRACOMPILEARGS = '' # This is machine-specific ignore for now
 
 ###
 # Set up Cython build integration
@@ -102,7 +114,7 @@ LIBRARIES = 'imas' # We just need the IMAS library
 
 # From https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#multiple-cython-files-in-a-package
 USE_CYTHON = True
-cython_like_ext = '.pyx' if USE_CYTHON else '.c'
+cython_like_ext = ".pyx" if USE_CYTHON else ".c"
 
 ###
 # Build extention list
@@ -111,20 +123,23 @@ extensions = []
 
 prepare_ual_sources(ual_symver, ual_commit)
 import numpy as np
+
 ual_module = Extension(
-  name = ext_module_name,
-  sources = [ "imaspy/_libs/_ual_lowlevel.pyx" ], # As these files are copied, easy to find!
-  language = LANGUAGE,
-  library_dirs = [ IMAS_PREFIX + "/lib" ],
-  libraries = [ LIBRARIES ],
-  #extra_link_args = [ EXTRALINKARGS ],
-  #extra_compile_args = [ EXTRACOMPILEARGS ],
-  include_dirs=[ IMAS_PREFIX + "/include", np.get_include(), pxd_path],
+    name=ext_module_name,
+    sources=[
+        "imaspy/_libs/_ual_lowlevel.pyx"
+    ],  # As these files are copied, easy to find!
+    language=LANGUAGE,
+    library_dirs=[IMAS_PREFIX + "/lib"],
+    libraries=[LIBRARIES],
+    # extra_link_args = [ EXTRALINKARGS ],
+    # extra_compile_args = [ EXTRACOMPILEARGS ],
+    include_dirs=[IMAS_PREFIX + "/include", np.get_include(), pxd_path],
 )
 if "develop" in sys.argv:
     # Make the dir the .so will be put in
     # Somehow not made automatically
-    os.makedirs(ext_module_name.split('.')[0], exist_ok=True)
+    os.makedirs(ext_module_name.split(".")[0], exist_ok=True)
 extensions.append(ual_module)
 
 ###
@@ -135,52 +150,55 @@ if USE_CYTHON:
     try:
         from Cython.Build import cythonize
     except ImportError:
-        logger.critical('USE_CYTHON is {!s}, but could not import Cython'.format(USE_CYTHON))
+        logger.critical(
+            "USE_CYTHON is {!s}, but could not import Cython".format(USE_CYTHON)
+        )
     else:
         extensions = cythonize(extensions)
 else:
     extensions = no_cythonize(extensions)
 
 
-with open(os.path.join(this_dir, 'README.md'), encoding='utf-8') as file:
+with open(os.path.join(this_dir, "README.md"), encoding="utf-8") as file:
     long_description = file.read()
 
-with open('requirements.txt') as f:
+with open("requirements.txt") as f:
     requirements = f.read().splitlines()
 
+
 def get_requires_for_build_wheel(config_settings=None):
-    raise Exception('blablabl')
+    raise Exception("blablabl")
+
 
 def get_requires_for_build_sdist(config_settings=None):
-    raise Exception('blablabl')
+    raise Exception("blablabl")
 
 
 setup(
-    name = 'imaspy',
-    version = '0.0.1',
-    packages = find_packages(),
-
+    name="imaspy",
+    version="0.0.1",
+    packages=find_packages(),
     # Get requirements from requirements.txt
-    install_requires = requirements,
-    author = 'Karel van de Plassche',
-    author_email = 'karelvandeplassche@gmail.com',
-    long_description = long_description,
-    url = 'https://gitlab.com/Karel-van-de-Plassche/imaspy',
-    license = 'MIT',
-    classifiers = [
-        'Intended Audience :: Science/Research',
-        'Topic :: Utilities',
-        'License :: OSI Approved :: MIT License',
-        'Natural Language :: English',
-        'Programming Language :: Python :: 3'
+    install_requires=requirements,
+    author="Karel van de Plassche",
+    author_email="karelvandeplassche@gmail.com",
+    long_description=long_description,
+    url="https://gitlab.com/Karel-van-de-Plassche/imaspy",
+    license="MIT",
+    classifiers=[
+        "Intended Audience :: Science/Research",
+        "Topic :: Utilities",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Programming Language :: Python :: 3",
     ],
-    extras_require = {
-        'test': ['coverage', 'pytest', 'pytest-cov'],
+    extras_require={
+        "test": ["coverage", "pytest", "pytest-cov"],
     },
-    python_requires='>=3',
-    ext_modules = extensions,
-    cmdclass = {
-        'get_requires_for_build_wheel': get_requires_for_build_wheel,
-        'get_requires_for_build_sdist': get_requires_for_build_sdist,
-    }
+    python_requires=">=3",
+    ext_modules=extensions,
+    cmdclass={
+        "get_requires_for_build_wheel": get_requires_for_build_wheel,
+        "get_requires_for_build_sdist": get_requires_for_build_sdist,
+    },
 )
