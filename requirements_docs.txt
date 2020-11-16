@@ -1,0 +1,4 @@
+sphinx>=3.2.1
+sphinx_rtd_theme>=0.5
+recommonmark>=0.6
+sphinx-autosummary-accessors>=0.1.2

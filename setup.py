@@ -40,6 +40,7 @@ import argparse
 from pathlib import Path
 import logging
 import importlib
+from itertools import chain
 
 # Use setuptools to build packages
 from setuptools import (
@@ -89,9 +90,7 @@ spec = importlib.util.spec_from_loader(loader.name, loader)
 imas_ual_env_parsing = importlib.util.module_from_spec(spec)
 loader.exec_module(imas_ual_env_parsing)
 
-loader = importlib.machinery.SourceFileLoader(
-    str(this_dir), "setup_helpers.py"
-)
+loader = importlib.machinery.SourceFileLoader(str(this_dir), "setup_helpers.py")
 spec = importlib.util.spec_from_loader(loader.name, loader)
 setup_helpers = importlib.util.module_from_spec(spec)
 loader.exec_module(setup_helpers)
@@ -219,11 +218,13 @@ with open(os.path.join(this_dir, "README.md"), encoding="utf-8") as file:
     long_description = file.read()
 
 optional_reqs = {}
-for req in ["backends_al", "backends_xarray", "core", "examples", "test"]:
+for req in ["backends_al", "backends_xarray", "core", "examples", "test", "docs"]:
     optional_reqs[req] = distutils.text_file.TextFile(
         this_dir / f"requirements_{req}.txt"
     ).readlines()
 install_requires = optional_reqs.pop("core")
+# collect all optional dependencies in a "all" target
+optional_reqs["all"] = list(chain(*optional_reqs.values()))
 
 
 def get_requires_for_build_wheel(config_settings=None):
