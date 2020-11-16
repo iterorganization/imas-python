@@ -169,7 +169,7 @@ if REBUILD_LL:
     ###
     extensions = []
 
-    prepare_ual_sources(ual_symver, ual_commit)
+    setup_helpers.prepare_ual_sources(ual_symver, ual_commit)
     try:
         import numpy as np
     except ImportError:
@@ -210,7 +210,7 @@ if REBUILD_LL:
         else:
             extensions = cythonize(extensions)
     else:
-        extensions = no_cythonize(extensions)
+        extensions = setup_helpers.no_cythonize(extensions)
 else:
     extensions = []
 
