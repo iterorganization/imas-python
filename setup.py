@@ -39,6 +39,7 @@ import os
 import argparse
 from pathlib import Path
 import logging
+import importlib
 
 # Use setuptools to build packages
 from setuptools import (
@@ -47,7 +48,6 @@ from setuptools import (
     find_packages,
     Extension,
 )
-from IPython import embed  # pylint: disable=unused-import # noqa: F401 for debugging
 
 # Check setuptools version before continuing for legacy builds
 if V(setuptools_version) < V("42"):
@@ -64,27 +64,37 @@ plat_indep_include = Path(distutils.sysconfig.get_python_inc())
 this_file = Path(__file__)
 this_dir = this_file.parent.resolve()  # We need to know where we are for many things
 
+package_name = "imaspy"
 
 # Set up 'fancy logging' to display messages to the user
-# pylint: disable=unused-import # Import with side-effects
-import imaspy.setup_logging  # noqa: F401,E402,E501
+# Import with side-effects, it sets the root logger
+loader = importlib.machinery.SourceFileLoader(
+    str(this_dir), package_name + "/setup_logging.py"
+)
+spec = importlib.util.spec_from_loader(loader.name, loader)
+setup_logging = importlib.util.module_from_spec(spec)
+loader.exec_module(setup_logging)
 
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
+logger = logging.getLogger("imaspy")
 
 logger.info("pyproject.toml support got added in pip 10. Assuming it is available")
 
 ###
 # HANDLE USER ENVIRONMENT
 ###
-from imaspy.imas_ual_env_parsing import (  # noqa: E402
-    parse_UAL_version_string,
-    sanitise_UAL_symver,
-    build_UAL_package_name,
+loader = importlib.machinery.SourceFileLoader(
+    str(this_dir), package_name + "/imas_ual_env_parsing.py"
 )
+spec = importlib.util.spec_from_loader(loader.name, loader)
+imas_ual_env_parsing = importlib.util.module_from_spec(spec)
+loader.exec_module(imas_ual_env_parsing)
 
-from setup_helpers import prepare_ual_sources, no_cythonize  # noqa: E402
+loader = importlib.machinery.SourceFileLoader(
+    str(this_dir), "setup_helpers.py"
+)
+spec = importlib.util.spec_from_loader(loader.name, loader)
+setup_helpers = importlib.util.module_from_spec(spec)
+loader.exec_module(setup_helpers)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--build-ual", action="store_true")
@@ -121,10 +131,16 @@ if not UAL_VERSION:
     logger.warning("UAL_VERSION is unset. Will not build UAL!")
     UAL_VERSION = "0.0.0"
 
-ual_symver, steps_from_version, ual_commit = parse_UAL_version_string(UAL_VERSION)
+(
+    ual_symver,
+    steps_from_version,
+    ual_commit,
+) = imas_ual_env_parsing.parse_UAL_version_string(UAL_VERSION)
 
-safe_ual_symver = sanitise_UAL_symver(ual_symver)
-ext_module_name = build_UAL_package_name(safe_ual_symver, ual_commit)
+safe_ual_symver = imas_ual_env_parsing.sanitise_UAL_symver(ual_symver)
+ext_module_name = imas_ual_env_parsing.build_UAL_package_name(
+    safe_ual_symver, ual_commit
+)
 
 # We need source files of the Python HLI UAL library
 # to link our build against, the version is grabbed from
@@ -220,26 +236,33 @@ def get_requires_for_build_sdist(config_settings=None):
 
 if __name__ == "__main__":
     setup(
-        name="imaspy",
-        version="0.0.1",
-        packages=find_packages(),
-        install_requires=install_requires,
-        # Duplicate from pyproject.toml for older setuptools
-        setup_requires=["setuptools_scm"],
-        author="Karel van de Plassche",
-        author_email="karelvandeplassche@gmail.com",
+        name=package_name,
+        description="Pythonic wrappers for the IMAS Access Layer",
         long_description=long_description,
-        url="https://gitlab.com/Karel-van-de-Plassche/imaspy",
-        license="MIT",
+        url="https://gitlab.com/klimex/imaspy",
+        author="Karel van de Plassche",
+        author_email="k.l.vandeplassche@differ.nl",
         classifiers=[
             "Intended Audience :: Science/Research",
-            "Topic :: Utilities",
-            "License :: OSI Approved :: MIT License",
+            "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
             "Natural Language :: English",
             "Programming Language :: Python :: 3",
+            "Topic :: Utilities",
         ],
+        packages=find_packages(),
+        # Include files specified by MANIFEST.in
+        include_package_data=True,
+        # No pyproject.toml for --no-build-installation. Use setup.py instead
+        use_scm_version={
+            "write_to": package_name + "/version.py",
+            # For tarball installs without metadata (e.g. .git repository)
+            "fallback_version": os.getenv("QUALIKIZ_PYTHONTOOLS_VERSION", "0.0.0"),
+        },
+        python_requires=">3.6",
+        # Duplicate from pyproject.toml for older setuptools
+        setup_requires=["setuptools_scm"],
+        install_requires=install_requires,
         extras_require=optional_reqs,
-        python_requires=">=3",
         ext_modules=extensions,
         cmdclass={
             "get_requires_for_build_wheel": get_requires_for_build_wheel,

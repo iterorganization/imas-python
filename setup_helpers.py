@@ -1,15 +1,10 @@
-# Set up 'fancy logging' to display messages to the user
 import logging
-import imaspy
-
-imaspy_logger = logging.getLogger("imaspy")
-logger = imaspy_logger
-logger.setLevel(logging.INFO)
-
-# Now that logging is set up, import the rest of the needed packages
 import os
 import shutil
 from itertools import chain
+
+
+logger = logging.getLogger("imaspy")
 
 this_dir = os.path.abspath(
     os.path.dirname(__file__)
