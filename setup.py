@@ -31,17 +31,20 @@ if sys.version_info < (3, 6):
     )
 
 # Use setuptools to build packages
-import distutils
-import setuptools
+from setuptools import setup, find_packages, __version__ as setuptools_version
 
-setuptools.__version__
+from distutils.version import LooseVersion as V
 
 import os
 import argparse
 from pathlib import Path
 import logging
-
 from IPython import embed  # pylint: disable=unused-import # noqa: F401 For debugging
+# Check setuptools version before continuing for legacy builds
+if V(setuptools_version) < V('42'):
+    raise Exception(f'Setuptools version outdated. Found {setuptools_version}')
+
+
 import distutils.sysconfig
 import distutils.util
 
@@ -206,8 +209,9 @@ setup(
     name="imaspy",
     version="0.0.1",
     packages=find_packages(),
-    # Get requirements from requirements.txt
     install_requires=install_requires,
+    # Duplicate from pyproject.toml for older setuptools
+    setup_requires=["setuptools_scm"],
     author="Karel van de Plassche",
     author_email="karelvandeplassche@gmail.com",
     long_description=long_description,
