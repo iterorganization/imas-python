@@ -1,3 +1,4 @@
+# pylint: disable=wrong-import-position
 """
 Packaging settings. Inspired by a minimal setup.py file, the Pandas cython build
 and the access-layer setup template.
@@ -21,18 +22,41 @@ So instead, we install packages to the `USER_SITE` there, and do not use
 `pip`s `build-isolation`. See [IMAS-584](https://jira.iter.org/browse/IMAS-584)
 """
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
-import os
 import sys
+
+if sys.version_info < (3, 6):
+    sys.exit(
+        "Sorry, Python < 3.6 is not supported. Use a different"
+        " python e.g. 'module swap python Python/3.6.4-foss-2018a'"
+    )
+
+# Use setuptools to build packages
+import distutils
+import setuptools
+
+setuptools.__version__
+
+import os
+import argparse
 from pathlib import Path
+import logging
 
 from IPython import embed  # pylint: disable=unused-import # noqa: F401 For debugging
+import distutils.sysconfig
+import distutils.util
+
+platform = distutils.util.get_platform()  # linux-x86_64
+distutils.util.check_environ()
+import distutils.text_file
+
+plat_indep_libraries = Path(distutils.sysconfig.get_python_lib())
+plat_indep_include = Path(distutils.sysconfig.get_python_inc())
+
+# Set up 'fancy logging' to display messages to the user
+from imaspy.setup_logging import connect_formatter
 
 this_file = Path(__file__)
 this_dir = this_file.parent.resolve()  # We need to know where we are for many things
-
-# Set up 'fancy logging' to display messages to the user
-import logging
-import imaspy.setup_logging
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -43,7 +67,6 @@ logger.info("pyproject.toml support got added in pip 10. Assuming it is availabl
 ###
 # HANDLE USER ENVIRONMENT
 ###
-import argparse
 from imaspy.imas_ual_env_parsing import (
     parse_UAL_version_string,
     sanitise_UAL_symver,
@@ -163,8 +186,12 @@ else:
 with open(os.path.join(this_dir, "README.md"), encoding="utf-8") as file:
     long_description = file.read()
 
-with open("requirements.txt") as f:
-    requirements = f.read().splitlines()
+optional_reqs = {}
+for req in ["backends_al", "backends_xarray", "core", "examples", "test"]:
+    optional_reqs[req] = distutils.text_file.TextFile(
+        this_dir / f"requirements_{req}.txt"
+    ).readlines()
+install_requires = optional_reqs.pop("core")
 
 
 def get_requires_for_build_wheel(config_settings=None):
@@ -180,7 +207,7 @@ setup(
     version="0.0.1",
     packages=find_packages(),
     # Get requirements from requirements.txt
-    install_requires=requirements,
+    install_requires=install_requires,
     author="Karel van de Plassche",
     author_email="karelvandeplassche@gmail.com",
     long_description=long_description,
@@ -193,9 +220,7 @@ setup(
         "Natural Language :: English",
         "Programming Language :: Python :: 3",
     ],
-    extras_require={
-        "test": ["coverage", "pytest", "pytest-cov"],
-    },
+    extras_require=optional_reqs,
     python_requires=">=3",
     ext_modules=extensions,
     cmdclass={

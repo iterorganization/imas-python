@@ -15,19 +15,18 @@
 # Set up logging immediately
 import logging
 import copy
+import xml.etree.ElementTree as ET
+import functools
+import os
+import numbers
+import importlib
+
+import numpy as np
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
 logger.setLevel(logging.WARNING)
 
-import abc
-import functools
-import os
-import numbers
-import importlib
-import numpy as np
-import xml
-import xml.etree.ElementTree as ET
 
 try:
     import imaspy._libs.hli_utils as hli_utils

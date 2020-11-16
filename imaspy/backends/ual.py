@@ -14,18 +14,10 @@
 # along with IMASPy.  If not, see <https://www.gnu.org/licenses/>.
 import logging
 
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.WARNING)
-
-import io
 import importlib
 import os
 
-from os.path import expanduser
-
 from imaspy.backends.common import WritableIMASDataStore
-from imaspy.ids_classes import ALException
 from imaspy.backends.file_manager import DummyFileManager
 from imaspy.imas_ual_env_parsing import (
     parse_UAL_version_string,
@@ -33,7 +25,12 @@ from imaspy.imas_ual_env_parsing import (
     build_UAL_package_name,
 )
 
+root_logger = logging.getLogger("imaspy")
+logger = root_logger
+logger.setLevel(logging.WARNING)
+
 try:
+    # TODO: change to new structure
     from imaspy._libs.imasdef import *
 except ImportError:
     logger.warning(
@@ -312,7 +309,7 @@ class UALFile:
             # * >1 - pulse files
             # Our UALFile should be a 'pulse file', so >1
             # The last four digits are the run number.
-            home = expanduser("~{!s}".format(self.user_name))
+            home = os.path.expanduser("~{!s}".format(self.user_name))
             dbdir = get_user_db_directory(self.user_name)
             mdsplusdir = os.path.join(dbdir, self.db_name, self.data_version)
             treedir = os.path.join(mdsplusdir, str(int(self.run / 10000)))
