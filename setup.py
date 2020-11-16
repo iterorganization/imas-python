@@ -30,36 +30,44 @@ if sys.version_info < (3, 6):
         " python e.g. 'module swap python Python/3.6.4-foss-2018a'"
     )
 
-# Use setuptools to build packages
-from setuptools import setup, find_packages, __version__ as setuptools_version
-
+# Import other stdlib packages
 from distutils.version import LooseVersion as V
-
+import distutils.sysconfig
+import distutils.util
+import distutils.text_file
 import os
 import argparse
 from pathlib import Path
 import logging
-from IPython import embed  # pylint: disable=unused-import # noqa: F401 For debugging
+
+# Use setuptools to build packages
+from setuptools import (
+    setup,
+    __version__ as setuptools_version,
+    find_packages,
+    Extension,
+)
+from IPython import embed  # pylint: disable=unused-import # noqa: F401 for debugging
+
 # Check setuptools version before continuing for legacy builds
-if V(setuptools_version) < V('42'):
-    raise Exception(f'Setuptools version outdated. Found {setuptools_version}')
+if V(setuptools_version) < V("42"):
+    raise Exception(f"Setuptools version outdated. Found {setuptools_version}")
 
 
-import distutils.sysconfig
-import distutils.util
-
+# Collect env-specific settings
 platform = distutils.util.get_platform()  # linux-x86_64
 distutils.util.check_environ()
-import distutils.text_file
 
 plat_indep_libraries = Path(distutils.sysconfig.get_python_lib())
 plat_indep_include = Path(distutils.sysconfig.get_python_inc())
 
-# Set up 'fancy logging' to display messages to the user
-from imaspy.setup_logging import connect_formatter
-
 this_file = Path(__file__)
 this_dir = this_file.parent.resolve()  # We need to know where we are for many things
+
+
+# Set up 'fancy logging' to display messages to the user
+# pylint: disable=unused-import # Import with side-effects
+import imaspy.setup_logging  # noqa: F401,E402,E501
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -70,11 +78,13 @@ logger.info("pyproject.toml support got added in pip 10. Assuming it is availabl
 ###
 # HANDLE USER ENVIRONMENT
 ###
-from imaspy.imas_ual_env_parsing import (
+from imaspy.imas_ual_env_parsing import (  # noqa: E402
     parse_UAL_version_string,
     sanitise_UAL_symver,
     build_UAL_package_name,
 )
+
+from setup_helpers import prepare_ual_sources, no_cythonize  # noqa: E402
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--build-ual", action="store_true")
@@ -82,12 +92,6 @@ args, leftovers = parser.parse_known_args()
 fail_on_ual_fail = args.build_ual
 
 # Now that the environment is defined, import the rest of the needed packages
-from subprocess import call
-import logging
-from setuptools import Command, find_packages, setup, Extension
-from setup_helpers import prepare_ual_sources, no_cythonize
-from distutils.version import LooseVersion
-from distutils import sysconfig
 
 
 # Try to grab all necessary environment variables.
@@ -95,9 +99,8 @@ from distutils import sysconfig
 IMAS_PREFIX = os.getenv("IMAS_PREFIX")
 if not IMAS_PREFIX or not os.path.isdir(IMAS_PREFIX):
     logger.warning(
-        "IMAS_PREFIX is unset or is not a directory. Points to {!s}. Will not build UAL!".format(
-            IMAS_PREFIX
-        )
+        "IMAS_PREFIX is unset or is not a directory. Points to %s. Will not build UAL!",
+        IMAS_PREFIX,
     )
     IMAS_PREFIX = "0.0.0"
 
@@ -151,7 +154,12 @@ if REBUILD_LL:
     extensions = []
 
     prepare_ual_sources(ual_symver, ual_commit)
-    import numpy as np
+    try:
+        import numpy as np
+    except ImportError:
+        logger.critical("REBUILD_LL is %s, but could not import numpy", REBUILD_LL)
+    else:
+        extensions = []
 
     ual_module = Extension(
         name=ext_module_name,
@@ -180,7 +188,8 @@ if REBUILD_LL:
             from Cython.Build import cythonize
         except ImportError:
             logger.critical(
-                "USE_CYTHON is {!s}, but could not import Cython".format(USE_CYTHON)
+                "USE_CYTHON is %s, but could not import Cython",
+                USE_CYTHON,
             )
         else:
             extensions = cythonize(extensions)
