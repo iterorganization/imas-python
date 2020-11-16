@@ -256,7 +256,7 @@ if __name__ == "__main__":
         use_scm_version={
             "write_to": package_name + "/version.py",
             # For tarball installs without metadata (e.g. .git repository)
-            "fallback_version": os.getenv("QUALIKIZ_PYTHONTOOLS_VERSION", "0.0.0"),
+            "fallback_version": os.getenv("IMASPY_PYTHONTOOLS_VERSION", "0.0.0"),
         },
         python_requires=">3.6",
         # Duplicate from pyproject.toml for older setuptools

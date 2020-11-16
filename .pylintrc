@@ -598,8 +598,3 @@ preferred-modules=netCDF4:xarray
 # "BaseException, Exception".
 overgeneral-exceptions=BaseException,
                        Exception
-
-# Cannot combine settings rn. See https://github.com/PyCQA/pylint/issues/618
-#[qualikiz_tools.commands.create]
-#disable=import-outside-toplevel,
-#  line-too-long
