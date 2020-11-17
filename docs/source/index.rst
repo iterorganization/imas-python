@@ -12,9 +12,9 @@ It provides:
 
 - An easy-to-install and easy-to-get started package by
 
-  * Not requiring a IMAS installation
+  * Not requiring an IMAS installation
   * Not strictly requiring matching a Data Dictionary (DD) version
-- An pythononic alternative to the IMAS Python High Level Interface (HLI)
+- An pythonic alternative to the IMAS Python High Level Interface (HLI)
 - Checking of correctness on assign time, instead of database write time
 - Dynamically created in-memory pre-filled data trees from DD XML specifications
 
