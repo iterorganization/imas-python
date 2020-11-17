@@ -96,12 +96,12 @@ extensions = [
     # 'sphinx.ext.doctest',  # numpy
     "sphinx.ext.autosummary",  # For summarizing autodoc-generated files
     "sphinx.ext.extlinks",  # For shortening internal links
-    # 'sphinx.ext.graphviz',  # numpy
+    "sphinx.ext.graphviz",  # Draw Graphs in docs
     # 'sphinx.ext.ifconfig',  # numpy
     # 'matplotlib.sphinxext.plot_directive',  # numpy
     # 'IPython.sphinxext.ipythoGn_console_highlighting',  # numpy
     # 'IPython.sphinxext.ipython_directive',  # numpy
-    # 'sphinx.ext.imgmath',  # numpy
+    "sphinx.ext.mathjax",  # Render math with mathjax
     "sphinx_rtd_theme",  # Theme
     "recommonmark",  # For markdown support, does not support 'full' CommonMark syntax (yet)!
 ]
@@ -347,6 +347,11 @@ intersphinx_mapping = {
     # "jintrac": ("https://users.euro-fusion.org/pages/data-cmg/wiki/", None) Behind password, so cannot link there
 }
 
+# Configuration of sphinx.ext.graphviz
+# See https://www.sphinx-doc.org/en/master/usage/extensions/graphviz.html
+
+# Configuration of sphinx.ext.mathjax
+# See https://www.sphinx-doc.org/en/master/usage/extensions/math.html#module-sphinx.ext.mathjax
 
 def escape_underscores(string):
     return string.replace("_", r"\_")
