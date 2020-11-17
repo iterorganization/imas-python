@@ -3,7 +3,7 @@ FROM archlinux:latest
 LABEL maintainer="Daan van Vugt <dvanvugt@ignitioncomputing.com>"
 
 RUN pacman --sync --noconfirm --refresh --sysupgrade && \
-    pacman --sync --noconfirm --needed python base-devel git python-pip wget cmake boost java-runtime-headless gcc-fortran && \
+    pacman --sync --noconfirm --needed python base-devel git python-pip wget cmake boost jdk11-openjdk jre11-openjdk gcc-fortran && \
     find /var/cache/pacman/pkg -mindepth 1 -delete
 
 RUN pip install --no-cache cython numpy
@@ -29,3 +29,5 @@ RUN mkdir -p MDSplus && cd MDSplus && \
 USER root
 WORKDIR /home/builduser
 RUN pacman -U --noconfirm */*.pkg.tar.zst
+
+# Fetch IMAS packages
