@@ -2,8 +2,14 @@
 FROM archlinux:latest
 LABEL maintainer="Daan van Vugt <dvanvugt@ignitioncomputing.com>"
 
-RUN pacman -Sy --noconfirm --needed base-devel git sudo pyalpm python-pip && \
-    pip install pikaur cython numpy
+RUN pacman --sync --noconfirm --refresh --sysupgrade && \
+    pacman --sync --noconfirm --needed "python" && \
+    find /var/cache/pacman/pkg -mindepth 1 -delete
+
+RUN pacman --sync --noconfirm --needed base-devel git sudo pyalpm python-pip && \
+    find /var/cache/pacman/pkg -mindepth 1 -delete
+
+RUN pip install --no-cache pikaur cython numpy
 
 RUN python -m pikaur -S --noconfirm --needed blitz saxon-he
 
