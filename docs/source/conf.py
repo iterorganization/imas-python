@@ -59,15 +59,28 @@ jintrac_sphinx = "https://users.euro-fusion.org/pages/data-cmg/wiki/"
 # netCDF4 docs
 netcdf4_docs = "https://unidata.github.io/netcdf4-python/netCDF4/index.html"
 
+# ITER docs
+iter_projects = "https://git.iter.org/projects/"
+imas_site = urljoin(iter_projects, "IMAS/")
+imex_site = urljoin(iter_projects, "IMEX/")
+al_cython_url = urljoin(imas_site, "repos/al-cython/")
+al_python_hli_url = urljoin(imas_site, "repos/al-python/")
+al_python_lib_url = urljoin(imas_site, "repos/al-python-lib/")
+issue_url = jira_url = "https://jira.iter.org/browse/"
+
 # Configuration of sphinx.ext.extlinks
 # See https://www.sphinx-doc.org/en/master/usage/extensions/extlinks.html
 # unique name: (base URL, label prefix)
 extlinks = {
     "src": (blob_url + "%s", f"{src_group}/{src_project}/"),
-    "issue": (issue_url + "%s", "#"),
+    "issue": (issue_url + "%s", None),
     "merge": (mr_url + "%s", "!"),
     "jintrac": (jintrac_sphinx + "%s", "jintrac pages "),
     "netcdf4": (netcdf4_docs + "%s", "netcdf4 "),
+    "al_cython": (al_cython_url + "%s", "al_cython "),
+    "al_hli": (al_python_hli_url + "%s", "al_hli"),
+    "al_lib": (al_python_lib_url + "%s", "al_lib"),
+    "pypa": ("https://packaging.python.org/%s", None),
 }
 
 full_version = V(imaspy.__version__)
@@ -343,6 +356,8 @@ intersphinx_mapping = {
     "matplotlib": ("https://matplotlib.org", None),
     "xarray": ("http://xarray.pydata.org/en/stable/", None),
     "dask": ("https://docs.dask.org/en/latest", None),
+    "cython": ("https://cython.readthedocs.io/", None),
+    "gitpython": ("https://gitpython.readthedocs.io/en/stable", None),
     # "netcdf4": ("https://unidata.github.io/netcdf4-python/", None),  # netcdf4 does not have an intersphinx mapping
     # "jintrac": ("https://users.euro-fusion.org/pages/data-cmg/wiki/", None) Behind password, so cannot link there
 }
