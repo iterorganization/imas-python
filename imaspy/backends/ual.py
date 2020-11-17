@@ -160,7 +160,7 @@ class UALFile:
         # Check sanity of input arguments
         if backend_id == MDSPLUS_BACKEND:
             if shot < 1:
-                raise Exception("Shot should be above 1")
+                raise Exception("Shot should be 1 or higher")
             if run > 99999:
                 raise Exception("Shot should be 99999 or lower")
 
