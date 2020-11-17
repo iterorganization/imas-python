@@ -12,6 +12,17 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IMASPy.  If not, see <https://www.gnu.org/licenses/>.
+""" Core IDS classes
+
+Provides the core classes:
+
+* :py:class:`IDSPrimitive`
+* :py:class:`IDSRoot`
+* :py:class:`IDSStructure`
+* :py:class:`IDSStructArray`
+* :py:class:`IDSToplevel`
+"""
+
 # Set up logging immediately
 import logging
 import copy
