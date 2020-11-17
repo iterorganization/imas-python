@@ -41,6 +41,7 @@ from pathlib import Path
 import logging
 import importlib
 from itertools import chain
+import site
 
 # Use setuptools to build packages
 from setuptools import (
@@ -53,6 +54,10 @@ from setuptools import (
 # Check setuptools version before continuing for legacy builds
 if V(setuptools_version) < V("42"):
     raise Exception(f"Setuptools version outdated. Found {setuptools_version}")
+
+# Workaround for https://github.com/pypa/pip/issues/7953
+# Cannot install into user site directory with editable source
+site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 
 # Collect env-specific settings
