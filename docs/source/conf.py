@@ -1,8 +1,10 @@
-# Configuration file for the Sphinx documentation builder.
-#
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""
+Configuration file for the Sphinx documentation builder.
+
+This file only contains a selection of the most common options. For a full
+list see the documentation:
+https://www.sphinx-doc.org/en/master/usage/configuration.html
+"""
 
 # -- Path setup --------------------------------------------------------------
 
@@ -10,37 +12,43 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-import os
 import sys
 import datetime
 from urllib.parse import (
     urljoin,
 )
 
-from pkg_resources import get_distribution  # from setuptools
-import sphinx_autosummary_accessors  # Sphinx extention to format xarray/pandas summaries
+# Sphinx extention to format xarray/pandas summaries
+import sphinx_autosummary_accessors
+
 from jinja2.defaults import DEFAULT_FILTERS
-from IPython import embed  # For debugging
+
+from pkg_resources import parse_version as V
 
 import imaspy
+
 
 print("python exec:", sys.executable)
 print("sys.path:", sys.path)
 
 # -- Project information -----------------------------------------------------
+# The documented project’s name
+project = src_project = PROJECT = "IMASPy"
 
-project = "imaspy"
-gitlab_group = "imaspy"
-copyright = "2016-{!s}, Karel van de Plassche (DIFFER)".format(
-    datetime.datetime.now().year
-)
+# PROJECT_ID=10189354
+PACKAGE = "imaspy"
+PACKAGE_HOST = "gitlab"
+src_group = GROUP = "KLIMEX"
+
+# A copyright statement in the style '2008, Author Name'.
+copyright = f"2016-{datetime.datetime.now().year}, Karel van de Plassche (DIFFER)"
+# The author name(s) of the document
 author = "Karel van de Plassche (DIFFER)"
 src_host = "gitlab.com"
-src_owner = "klimex"
 
 # Parse urls here for convenience, to be re-used
 # gitlab imaspy folder
-repository_url = f"https://{src_host}/{src_owner}/{gitlab_group}/"
+repository_url = f"https://{src_host}/{src_group}/{src_project}/"
 blob_url = urljoin(repository_url, "-/blob/master/")
 issue_url = urljoin(repository_url, "-/issues/")
 mr_url = urljoin(repository_url, "-/merge_requests/")
@@ -48,24 +56,30 @@ mr_url = urljoin(repository_url, "-/merge_requests/")
 # JINTRAC docs
 jintrac_sphinx = "https://users.euro-fusion.org/pages/data-cmg/wiki/"
 
+# netCDF4 docs
+netcdf4_docs = "https://unidata.github.io/netcdf4-python/netCDF4/index.html"
+
 # Configuration of sphinx.ext.extlinks
 # See https://www.sphinx-doc.org/en/master/usage/extensions/extlinks.html
 # unique name: (base URL, label prefix)
 extlinks = {
-    "src": (blob_url + "%s", f"{src_owner}/{gitlab_group}/"),
+    "src": (blob_url + "%s", f"{src_group}/{src_project}/"),
     "issue": (issue_url + "%s", "#"),
     "merge": (mr_url + "%s", "!"),
-    "jintrac": (jintrac_sphinx + "%s", "jintrac pages ")
+    "jintrac": (jintrac_sphinx + "%s", "jintrac pages "),
+    "netcdf4": (netcdf4_docs + "%s", "netcdf4 "),
 }
 
-# The default replacements for |version| and |release|, also used in various
-# other places throughout the built documents.
-#
-# contents of docs/conf.py
-# The short X.Y version (including .devXXXX, rcX, b1 suffixes if present)
-release = get_distribution(project).version
-# The full version, including alpha/beta/rc tags.
-version = ".".join(release.split(".")[:2])
+full_version = V(imaspy.__version__)
+
+# version: The major project version, used as the replacement for |version|.
+#   For example, for the Python documentation, this may be something like 2.6.
+version = full_version.base_version
+
+# release: The full project version, used as the replacement for |release| and
+#   e.g. in the HTML templates. For example, for the Python documentation, this
+#   may be something like 2.6.0rc1
+release = str(full_version)
 
 
 # -- General configuration ---------------------------------------------------
@@ -78,16 +92,17 @@ extensions = [
     "sphinx.ext.githubpages",  # nature theme
     "sphinx.ext.napoleon",  # Support for NumPy and Google style docstrings
     "sphinx.ext.intersphinx",  # Generate links to other documentation files
-    #'sphinx.ext.coverage',  # numpy
-    #'sphinx.ext.doctest',  # numpy
+    # 'sphinx.ext.coverage',  # numpy
+    # 'sphinx.ext.doctest',  # numpy
     "sphinx.ext.autosummary",  # For summarizing autodoc-generated files
     "sphinx.ext.extlinks",  # For shortening internal links
-    #'sphinx.ext.graphviz',  # numpy
-    #'sphinx.ext.ifconfig',  # numpy
-    #'matplotlib.sphinxext.plot_directive',  # numpy
-    #'IPython.sphinxext.ipythoGn_console_highlighting',  # numpy
-    #'IPython.sphinxext.ipython_directive',  # numpy
-    #'sphinx.ext.imgmath',  # numpy
+    # 'sphinx.ext.graphviz',  # numpy
+    # 'sphinx.ext.ifconfig',  # numpy
+    # 'matplotlib.sphinxext.plot_directive',  # numpy
+    # 'IPython.sphinxext.ipythoGn_console_highlighting',  # numpy
+    # 'IPython.sphinxext.ipython_directive',  # numpy
+    # 'sphinx.ext.imgmath',  # numpy
+    "sphinx_rtd_theme",  # Theme
     "recommonmark",  # For markdown support, does not support 'full' CommonMark syntax (yet)!
 ]
 
@@ -140,7 +155,7 @@ html_theme = "sphinx_rtd_theme"
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {"logo_only": True}
+# html_theme_options = {"logo_only": True}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
@@ -213,11 +228,11 @@ html_last_updated_fmt = today_fmt
 # html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "xarraydoc"
+htmlhelp_basename = "imaspy_doc"
 
 
 # -- Extension configuration -------------------------------------------------
-from recommonmark.transform import AutoStructify
+# from recommonmark.transform import AutoStructify
 
 # app setup hook
 # def setup(app):
@@ -250,12 +265,18 @@ autosummary_generate = True
 # Configuration of sphinx.ext.napoleon
 # Support for NumPy and Google style docstrings
 # See https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
-# napoleon_preprocess_types = True #From xarray, not in docs
-napoleon_google_docstring = True
-napoleon_numpy_docstring = False
+# napoleon_google_docstring = True
+# napoleon_numpy_docstring = True
 napoleon_include_init_with_doc = True
 napoleon_include_private_with_doc = True
-napoleon_include_special_with_doc = True
+# napoleon_include_special_with_doc = True
+# napoleon_use_admonition_for_examples = False
+# napoleon_use_admonition_for_notes = False
+# napoleon_use_admonition_for_references = False
+# napoleon_use_ivar = False
+# napoleon_use_param = True
+napoleon_use_keyword = True  # Use the "Keyword Args" syntax
+# napoleon_use_rtype = True
 napoleon_type_aliases = {
     # general terms
     "sequence": ":term:`sequence`",
@@ -305,15 +326,9 @@ napoleon_type_aliases = {
     "pd.Index": "~pandas.Index",
     "pd.NaT": "~pandas.NaT",
 }  # TODO: From xarray, improve!
-# napoleon_use_admonition_for_examples = False # Default
-# napoleon_use_admonition_for_notes = False # Default
-# napoleon_use_admonition_for_references = False # Default
-# napoleon_use_ivar = False # Default
-# napoleon_use_param = True # Defalt
-# napoleon_use_rtype = True # Default
-# napoleon_type_aliases = None # Default
 
 # From xarray, huh?
+# napoleon_preprocess_types = True #From xarray, not in docs
 # numpydoc_class_members_toctree = True
 # numpydoc_show_class_members = False
 
@@ -326,92 +341,13 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     "numba": ("https://numba.pydata.org/numba-doc/latest", None),
     "matplotlib": ("https://matplotlib.org", None),
+    "xarray": ("http://xarray.pydata.org/en/stable/", None),
     "dask": ("https://docs.dask.org/en/latest", None),
-    #"jintrac": ("https://users.euro-fusion.org/pages/data-cmg/wiki/", None) Behind password, so cannot link there
+    # "netcdf4": ("https://unidata.github.io/netcdf4-python/", None),  # netcdf4 does not have an intersphinx mapping
+    # "jintrac": ("https://users.euro-fusion.org/pages/data-cmg/wiki/", None) Behind password, so cannot link there
 }
 
 
-# Set up lexer
-#
-from pygments.lexers import CLexer
-from pygments.lexer import inherit, bygroups
-from pygments.token import Comment
-
-
-class NumPyLexer(CLexer):
-    """
-    Copyright (c) 2005-2020, NumPy Developers.
-    All rights reserved.
-
-    Redistribution and use in source and binary forms, with or without
-    modification, are permitted provided that the following conditions are
-    met:
-
-        * Redistributions of source code must retain the above copyright
-           notice, this list of conditions and the following disclaimer.
-
-        * Redistributions in binary form must reproduce the above
-           copyright notice, this list of conditions and the following
-           disclaimer in the documentation and/or other materials provided
-           with the distribution.
-
-        * Neither the name of the NumPy Developers nor the names of any
-           contributors may be used to endorse or promote products derived
-           from this software without specific prior written permission.
-
-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-    "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-    A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-    OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-    SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-    LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-    DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-    THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-    (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-    """
-
-    name = "NUMPYLEXER"
-
-    tokens = {
-        "statements": [
-            (r"@[a-zA-Z_]*@", Comment.Preproc, "macro"),
-            inherit,
-        ],
-    }
-
-
-# import glob
-# python_files = glob.glob('../../imaspy/**/*.py', recursive=True)
-# code_string = ""
-# automodule_paths = []
-# for file in python_files:
-#    if all([iden not in file for iden in ['__pycache__', 'GPR1D']]):
-#        automodule_path = file[6:-3].replace('/', '.')
-#        automodule_paths.append(automodule_path)
-## If you want a big page with all docs
-##        automodule_string = """
-##.. automodule:: {!s}
-##   :members:
-##   :show-inheritance:
-##
-##""".format(automodule_path)
-##        code_string += automodule_string
-#
-# with open('code.rst', 'w') as f_:
-#    f_.write(code_string)
-#
-# toc_string = """
-# .. autosummary::
-#     :toctree: stubs
-#
-# """
-# for path in automodule_paths:
-#    toc_string += '     ' + path + '\n'
-#
-# with open('code_toc.rst', 'w') as f_:
-#    f_.write(toc_string)
 def escape_underscores(string):
     return string.replace("_", r"\_")
 
