@@ -3,7 +3,7 @@ FROM archlinux:latest
 LABEL maintainer="Daan van Vugt <dvanvugt@ignitioncomputing.com>"
 
 RUN pacman --sync --noconfirm --refresh --sysupgrade && \
-    pacman --sync --noconfirm --needed python base-devel git wget python-pip cmake boost jdk11-openjdk jre11-openjdk gcc-fortran libxslt && \
+    pacman --sync --noconfirm --needed python base-devel git wget python-pip cmake boost jdk11-openjdk jre11-openjdk gcc-fortran libxslt hdf5 doxygen && \
     find /var/cache/pacman/pkg -mindepth 1 -delete
 
 RUN pip install --no-cache cython numpy
@@ -38,10 +38,11 @@ RUN make
 
 ADD access-layer/ /root/access-layer
 WORKDIR /root/access-layer/
-RUN pacman --noconfirm --sync hdf5 doxygen
 ENV IMAS_UDA=no
 ENV IMAS_HDF5=yes
 ENV IMAS_MATLAB=no
 ENV IMAS_MEX=no
 ENV IMAS_JAVA=no
+# where should we place jTraverser.jar so we don't need the classpath?
+ENV CLASSPATH=/usr/java/classes/jTraverser.jar
 RUN ln -s ../data-dictionary xml && make -j
