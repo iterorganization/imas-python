@@ -46,3 +46,12 @@ ENV IMAS_JAVA=no
 # where should we place jTraverser.jar so we don't need the classpath?
 ENV CLASSPATH=/usr/java/classes/jTraverser.jar
 RUN ln -s ../data-dictionary xml && make -j
+
+ENV IMAS_PREFIX=/root/access-layer/
+WORKDIR /root/access-layer/pythoninterface/package/
+RUN pip install --user -e .
+
+# install IMASPy
+WORKDIR /root/
+RUN git clone https://gitlab.com/klimex/imaspy.git && \
+    pip install --user -e imaspy[backends_al,backends_xarray,test]

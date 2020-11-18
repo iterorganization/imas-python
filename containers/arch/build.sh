@@ -6,4 +6,4 @@ git checkout saxon-cmd
 cd ..
 git clone ssh://git@git.iter.org/imas/access-layer.git
 cd access-layer
-git checkout saxon-cmd
+git checkout develop
