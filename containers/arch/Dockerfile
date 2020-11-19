@@ -33,11 +33,15 @@ RUN pacman -U --noconfirm */*.pkg.tar.zst
 # Fetch IMAS packages from this directory (download them beforehand)
 # Since these are not publically accessible we have to do it this way
 ADD data-dictionary/ /root/data-dictionary
+ENV IMAS_VERSION 3.30.0
 WORKDIR /root/data-dictionary/
-RUN make
+#RUN git checkout "$IMAS_VERSION" && make
+RUN git checkout saxon-cmd && make
+#TODO install a second DD version
 
 ADD access-layer/ /root/access-layer
 WORKDIR /root/access-layer/
+ENV UAL_VERSION 4.8.5
 ENV IMAS_UDA=no
 ENV IMAS_HDF5=yes
 ENV IMAS_MATLAB=no
@@ -45,13 +49,18 @@ ENV IMAS_MEX=no
 ENV IMAS_JAVA=no
 # where should we place jTraverser.jar so we don't need the classpath?
 ENV CLASSPATH=/usr/java/classes/jTraverser.jar
-RUN ln -s ../data-dictionary xml && make -j
+RUN git checkout "$UAL_VERSION" && \
+    ln -s ../data-dictionary xml && \
+    make -j
 
-ENV IMAS_PREFIX=/root/access-layer/
+ENV IMAS_PREFIX /root/access-layer/
+ENV C_INCLUDE_PATH /root/access-layer/lowlevel/
+ENV LIBRARY_PATH /root/access-layer/lowlevel/
+ENV LD_LIBRARY_PATH /root/access-layer/lowlevel/
 WORKDIR /root/access-layer/pythoninterface/package/
-RUN pip install --user -e .
+RUN sed -e 's/imas_[^/."]*/imas/g' -i setup.py && pip install -e .
 
 # install IMASPy
 WORKDIR /root/
 RUN git clone https://gitlab.com/klimex/imaspy.git && \
-    pip install --user -e imaspy[backends_al,backends_xarray,test]
+    pip install -e imaspy[backends_xarray,test]
