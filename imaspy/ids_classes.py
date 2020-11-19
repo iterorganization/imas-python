@@ -55,6 +55,7 @@ else:
         "STR": "",
         "INT": EMPTY_INT,
         "FLT": EMPTY_FLOAT,
+        "FLT_0D": EMPTY_FLOAT,
     }
 
 
@@ -338,7 +339,6 @@ class IDSPrimitive(IDSMixin):
                         value.dtype
                     )
                 )
-                embed()
                 raise Exception
         else:
             logger.critical(
@@ -346,7 +346,6 @@ class IDSPrimitive(IDSMixin):
                     type(value)
                 )
             )
-            embed()
             raise Exception
         return value
 
@@ -568,7 +567,8 @@ class IDSRoot:
         )
         for ids in root:
             my_name = ids.get("name")
-            # Only build for equilibrium to KISS
+            if my_name is None:
+                continue
             if my_name not in ["equilibrium", "nbi"]:
                 continue
             logger.debug("{:42.42s} initialization".format(my_name))
