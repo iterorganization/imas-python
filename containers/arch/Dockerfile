@@ -16,10 +16,11 @@ RUN mkdir -p blitz && cd blitz && \
     wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=blitz"  -O PKGBUILD && \
     makepkg
 
+# TODO get saxon 9 for compatibility
 RUN mkdir -p saxon-he && cd saxon-he && \
-    wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=saxon-he" -O PKGBUILD && \
-    wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/saxon-xquery.sh?h=saxon-he" -O saxon-xquery.sh && \
-    wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/saxon-xslt.sh?h=saxon-he" -O saxon-xslt.sh && \
+    wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=saxon-he&id=784e5befd2fe1a4be67e2efb342dd2d29da5a688" -O PKGBUILD && \
+    wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/saxon-xquery.sh?h=saxon-he&id=784e5befd2fe1a4be67e2efb342dd2d29da5a688" -O saxon-xquery.sh && \
+    wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/saxon-xslt.sh?h=saxon-he&id=784e5befd2fe1a4be67e2efb342dd2d29da5a688" -O saxon-xslt.sh && \
     makepkg
 
 RUN mkdir -p MDSplus && cd MDSplus && \
@@ -35,8 +36,9 @@ RUN pacman -U --noconfirm */*.pkg.tar.zst
 ADD data-dictionary/ /root/data-dictionary
 ENV IMAS_VERSION 3.30.0
 WORKDIR /root/data-dictionary/
-#RUN git checkout "$IMAS_VERSION" && make
-RUN git checkout saxon-cmd && make
+ENV CLASSPATH=/usr/share/java/saxon/saxon9he.jar
+RUN git checkout "$IMAS_VERSION" && make
+# 3.30.0 and lower only work with saxon9he.jar
 #TODO install a second DD version
 
 ADD access-layer/ /root/access-layer
@@ -49,9 +51,10 @@ ENV IMAS_MEX=no
 ENV IMAS_JAVA=no
 # where should we place jTraverser.jar so we don't need the classpath?
 ENV CLASSPATH=/usr/java/classes/jTraverser.jar
+# 4.8.5 and up
 RUN git checkout "$UAL_VERSION" && \
     ln -s ../data-dictionary xml && \
-    make -j
+    make -j4
 
 ENV IMAS_PREFIX /root/access-layer/
 ENV C_INCLUDE_PATH /root/access-layer/lowlevel/
