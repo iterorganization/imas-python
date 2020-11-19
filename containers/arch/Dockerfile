@@ -1,5 +1,5 @@
 # Install IMAS, MDSPlus and IMASPy in a docker container based on arch linux
-FROM archlinux:latest
+FROM archlinux:latest AS base
 LABEL maintainer="Daan van Vugt <dvanvugt@ignitioncomputing.com>"
 
 RUN pacman --sync --noconfirm --refresh --sysupgrade && \
@@ -21,7 +21,6 @@ RUN mkdir -p blitz && cd blitz && \
     wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=blitz"  -O PKGBUILD && \
     makepkg
 
-# TODO get saxon 9 for compatibility
 RUN mkdir -p saxon-he && cd saxon-he && \
     wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=saxon-he&id=784e5befd2fe1a4be67e2efb342dd2d29da5a688" -O PKGBUILD && \
     wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/saxon-xquery.sh?h=saxon-he&id=784e5befd2fe1a4be67e2efb342dd2d29da5a688" -O saxon-xquery.sh && \
@@ -44,7 +43,7 @@ WORKDIR /root/
 FROM build AS data_dictionary
 
 # Fetch IMAS packages from this directory (download them beforehand)
-# Since these are not publically accessible we have to do it this way
+# Since these are not publicly accessible we have to do it this way
 ADD data-dictionary/ /root/data-dictionary
 ENV IMAS_VERSION 3.30.0
 ENV CLASSPATH=/usr/share/java/saxon/saxon9he.jar
