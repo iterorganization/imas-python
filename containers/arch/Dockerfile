@@ -3,15 +3,20 @@ FROM archlinux:latest
 LABEL maintainer="Daan van Vugt <dvanvugt@ignitioncomputing.com>"
 
 RUN pacman --sync --noconfirm --refresh --sysupgrade && \
-    pacman --sync --noconfirm --needed python base-devel git wget python-pip cmake boost jdk11-openjdk jre11-openjdk gcc-fortran libxslt hdf5 doxygen && \
+    pacman --sync --noconfirm --needed python base-devel git wget python-pip cmake boost jdk11-openjdk jre11-openjdk gcc-fortran libxslt hdf5 doxygen vim && \
     find /var/cache/pacman/pkg -mindepth 1 -delete
 
 RUN pip install --no-cache cython numpy
 
-RUN useradd -ms /bin/bash builduser
+###################################################
+# Build the build image with IMAS-AL dependencies #
+###################################################
+FROM base AS build
+#RUN useradd -ms /bin/bash builduser
+USER nobody
+WORKDIR /tmp
 
-USER builduser
-WORKDIR /home/builduser
+# Build packages
 RUN mkdir -p blitz && cd blitz && \
     wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=blitz"  -O PKGBUILD && \
     makepkg
@@ -27,43 +32,62 @@ RUN mkdir -p MDSplus && cd MDSplus && \
     wget https://raw.githubusercontent.com/DaanVanVugt/mdsplus-pkgbuild/main/PKGBUILD -q && \
     makepkg
 
+# Install packages in root dir
 USER root
-WORKDIR /home/builduser
-RUN pacman -U --noconfirm */*.pkg.tar.zst
+RUN pacman -U --noconfirm */*.pkg.tar.zst && \
+    rm -rf /tmp/*
+WORKDIR /root/
+
+#####################
+# Build the IMAS-DD #
+#####################
+FROM build AS data_dictionary
 
 # Fetch IMAS packages from this directory (download them beforehand)
 # Since these are not publically accessible we have to do it this way
 ADD data-dictionary/ /root/data-dictionary
 ENV IMAS_VERSION 3.30.0
-WORKDIR /root/data-dictionary/
 ENV CLASSPATH=/usr/share/java/saxon/saxon9he.jar
-RUN git checkout "$IMAS_VERSION" && make
+RUN cd /root/data-dictionary && \
+    git checkout "$IMAS_VERSION" && \
+    make
 # 3.30.0 and lower only work with saxon9he.jar
 #TODO install a second DD version
 
+#####################
+# Build the IMAS-AL #
+#####################
+FROM build AS access_layer
+
 ADD access-layer/ /root/access-layer
-WORKDIR /root/access-layer/
-ENV UAL_VERSION 4.8.5
-ENV IMAS_UDA=no
-ENV IMAS_HDF5=yes
-ENV IMAS_MATLAB=no
-ENV IMAS_MEX=no
-ENV IMAS_JAVA=no
+COPY --from=data_dictionary /root/data-dictionary/ /root/access-layer/xml/
+
+ENV UAL_VERSION=4.8.5
+ENV IMAS_UDA=no \
+    IMAS_HDF5=yes \
+    IMAS_MATLAB=no \
+    IMAS_MEX=no \
+    IMAS_JAVA=no
 # where should we place jTraverser.jar so we don't need the classpath?
 ENV CLASSPATH=/usr/java/classes/jTraverser.jar
 # 4.8.5 and up
-RUN git checkout "$UAL_VERSION" && \
-    ln -s ../data-dictionary xml && \
-    make -j4
+RUN cd /root/access-layer && \
+    git checkout "$UAL_VERSION" && \
+    make -j`nproc`
 
-ENV IMAS_PREFIX /root/access-layer/
-ENV C_INCLUDE_PATH /root/access-layer/lowlevel/
-ENV LIBRARY_PATH /root/access-layer/lowlevel/
-ENV LD_LIBRARY_PATH /root/access-layer/lowlevel/
-WORKDIR /root/access-layer/pythoninterface/package/
-RUN sed -e 's/imas_[^/."]*/imas/g' -i setup.py && pip install -e .
+FROM access_layer AS python_hli
+COPY --from=access_layer /root/access-layer /root/access-layer
+
+ENV IMAS_PREFIX=/root/access-layer/ \
+    IMAS_VERSION=3.30.0
+ENV LIBRARY_PATH=/root/access-layer/lowlevel/ \
+    C_INCLUDE_PATH=/root/access-layer/lowlevel/ \
+    LD_LIBRARY_PATH=/root/access-layer/lowlevel/
+
+RUN cd /root/access-layer/pythoninterface/package/ && \
+    sed -e 's/imas_[^/."]*/imas/g' -i setup.py && \
+    pip install -e .
 
 # install IMASPy
-WORKDIR /root/
 RUN git clone https://gitlab.com/klimex/imaspy.git && \
     pip install -e imaspy[backends_xarray,test]
