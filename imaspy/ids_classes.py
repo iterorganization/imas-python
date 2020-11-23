@@ -13,13 +13,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IMASPy.  If not, see <https://www.gnu.org/licenses/>.
 # Set up logging immediately
-import logging
 import copy
-import xml.etree.ElementTree as ET
 import functools
-import os
-import numbers
 import importlib
+import logging
+import numbers
+import os
+import xml.etree.ElementTree as ET
 
 import numpy as np
 
@@ -29,11 +29,10 @@ logger.setLevel(logging.WARNING)
 
 
 try:
-    import imaspy._libs.hli_utils as hli_utils
-    from imaspy._libs.imasdef import (
+    import imas.hli_utils as hli_utils
+    from imas.imasdef import (
         MDSPLUS_BACKEND,
         OPEN_PULSE,
-        DOUBLE_DATA,
         READ_OP,
         EMPTY_INT,
         FORCE_CREATE_PULSE,
