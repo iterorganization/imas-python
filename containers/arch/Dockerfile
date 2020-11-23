@@ -21,6 +21,7 @@ RUN mkdir -p blitz && cd blitz && \
     wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=blitz"  -O PKGBUILD && \
     makepkg
 
+# We need saxon-he 9 since IMAS DD and AL build tools require this (until _after_ version 3.30.0 for DD and 4.8.5 for AL)
 RUN mkdir -p saxon-he && cd saxon-he && \
     wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/PKGBUILD?h=saxon-he&id=784e5befd2fe1a4be67e2efb342dd2d29da5a688" -O PKGBUILD && \
     wget --quiet "https://aur.archlinux.org/cgit/aur.git/plain/saxon-xquery.sh?h=saxon-he&id=784e5befd2fe1a4be67e2efb342dd2d29da5a688" -O saxon-xquery.sh && \
@@ -87,6 +88,8 @@ RUN cd /root/access-layer/pythoninterface/package/ && \
     sed -e 's/imas_[^/."]*/imas/g' -i setup.py && \
     pip install -e .
 
-# install IMASPy
-RUN git clone https://gitlab.com/klimex/imaspy.git && \
-    pip install -e imaspy[backends_xarray,test]
+# ADD IMASPy
+#RUN git clone https://gitlab.com/klimex/imaspy.git && \
+    #pip install -e imaspy[backends_xarray,test]
+ADD imaspy/ /root/imaspy
+RUN pip install -e imaspy[backends_al,backends_xarray,test]
