@@ -151,7 +151,10 @@ def get_data_dictionary_repo():
         origin = repo.create_remote("origin", url=dd_repo_url)
     logger.info("Set up remote '{!s}' linking to '{!s}'".format(origin, origin.url))
 
-    origin.fetch("--tags")
+    try:
+        origin.fetch("--tags")
+    except git.exc.GitCommandError:
+        logger.warning("Could not fetch tags from %s", list(origin.urls))
     logger.info("Remote tags fetched")
     return repo, origin
 
