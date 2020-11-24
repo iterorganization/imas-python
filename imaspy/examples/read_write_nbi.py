@@ -2,8 +2,12 @@
 # PYTHON WRAPPER TO CALL PION (AND OTIONALLY NEMO)
 # -------------------------------------------------
 
+import copy
+
 # NEEDED MODULES
-import os, copy, sys
+import os
+import sys
+
 from IPython import embed  # Convinience
 
 # INPUT/OUTPUT CONFIGURATION
@@ -78,12 +82,12 @@ if style == "old":
     print("Done.")
 else:
     import imaspy as imas
-    from imaspy._libs.imasdef import MDSPLUS_BACKEND
+    from imas.imasdef import MDSPLUS_BACKEND
     from pathlib import Path
 
     imas.ids = imas.ids_classes.IDSRoot  # Enable old-style syntax
     imas_prefix = Path(os.getenv("IMAS_PREFIX"))
-    imas_include = imas_prefix.joinpath("include")
+    imas_include = imas_prefix.joinpath("xml")
     idsdef = imas_include.joinpath("IDSDef.xml")
     input = imas.ids(shot, run_in, xml_path=idsdef, verbosity=2)  # Create a empty IDSs
     input.open_env_backend(

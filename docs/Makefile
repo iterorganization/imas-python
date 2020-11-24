@@ -28,7 +28,7 @@ clean: Makefile
 
 # This recipe generates source files, so put result in source
 # Seems to overwrite autosummary documentation though! So not using this rn
-MODULE_EXCLUDE="../imaspy/examples/**" "../imaspy/_libs/**"
+MODULE_EXCLUDE="../imaspy/examples/**" "../imas/**"
 apidocs: Makefile
 	sphinx-apidoc --implicit-namespaces -o "$(GENERATEDDIR)" "$(PROJECT_ROOT)/imaspy/" $(MODULE_EXCLUDE)
 

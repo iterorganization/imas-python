@@ -150,7 +150,7 @@ ext_module_name = imas_ual_env_parsing.build_UAL_package_name(
 # to link our build against, the version is grabbed from
 # the environment, and they are saved as syubdirectory of
 # imaspy
-pxd_path = os.path.join(this_dir, "imaspy/_libs")
+pxd_path = os.path.join(this_dir, "imas")
 
 LANGUAGE = "c"  # Not sure when this is not true
 LIBRARIES = "imas"  # We just need the IMAS library
@@ -184,7 +184,7 @@ if REBUILD_LL:
     ual_module = Extension(
         name=ext_module_name,
         sources=[
-            "imaspy/_libs/_ual_lowlevel.pyx"
+            "imas/_ual_lowlevel.pyx"
         ],  # As these files are copied, easy to find!
         language=LANGUAGE,
         library_dirs=[IMAS_PREFIX + "/lib"],

@@ -114,7 +114,7 @@ def prepare_ual_sources(ual_symver, ual_commit, force=False):
 
     # Copy these files into the imaspy directory
     # TODO: This is a bit hacky, do this nicer
-    imaspy_libs_dir = os.path.join(this_dir, "imaspy/_libs")
+    imaspy_libs_dir = os.path.join(this_dir, "imas")
     os.makedirs(imaspy_libs_dir, exist_ok=True)
     # if len(os.listdir(imaspy_libs_dir)) != 0:
     # raise Exception('imaspy libs dir not empty, refusing to overwrite')
@@ -136,13 +136,13 @@ def prepare_ual_sources(ual_symver, ual_commit, force=False):
                     for line in old:
                         if line == "cimport ual_lowlevel_interface as ual\n":
                             new.write(
-                                "cimport imaspy._libs.ual_lowlevel_interface as ual\n"
+                                "cimport imas.ual_lowlevel_interface as ual\n"
                             )
                         elif line == "from imasdef import *\n":
-                            new.write("from imaspy._libs.imasdef import *\n")
+                            new.write("from imas.imasdef import *\n")
                         elif line == "from hli_exception import ALException \n":
                             new.write(
-                                "from imaspy._libs.hli_exception import ALException\n"
+                                "from imas.hli_exception import ALException\n"
                             )
                         else:
                             new.write(line)

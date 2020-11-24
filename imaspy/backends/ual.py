@@ -12,17 +12,16 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IMASPy.  If not, see <https://www.gnu.org/licenses/>.
-import logging
-
 import importlib
+import logging
 import os
 
 from imaspy.backends.common import WritableIMASDataStore
 from imaspy.backends.file_manager import DummyFileManager
 from imaspy.imas_ual_env_parsing import (
+    build_UAL_package_name,
     parse_UAL_version_string,
     sanitise_UAL_symver,
-    build_UAL_package_name,
 )
 
 root_logger = logging.getLogger("imaspy")
@@ -31,7 +30,7 @@ logger.setLevel(logging.WARNING)
 
 try:
     # TODO: change to new structure
-    from imaspy._libs.imasdef import *
+    from imas.imasdef import *
 except ImportError:
     logger.warning(
         "imasdef unavailable, might give trouble when using IMAS-AL related functionality"

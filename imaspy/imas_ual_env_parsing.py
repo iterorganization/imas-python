@@ -49,6 +49,8 @@ def sanitise_UAL_symver(ual_symver):
 
 def build_UAL_package_name(sanitised_UAL_symver, ual_commit):
     """Build the package name for UAL Python packages"""
+    return "imas._ual_lowlevel"
+
     if "." in ual_commit:
         # Release package
         return "ual_{!s}._ual_lowlevel".format(sanitised_UAL_symver)
