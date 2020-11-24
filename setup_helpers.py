@@ -2,6 +2,8 @@ import logging
 import os
 import shutil
 from itertools import chain
+from pathlib import Path
+import re
 
 logger = logging.getLogger("imaspy")
 
@@ -50,7 +52,6 @@ def get_saxon():
     3. /usr/share/java/*
     4. or download it
     """
-    from pathlib import Path
 
     local_saxon_path = os.getcwd() + "/saxon9he.jar"
     if os.path.exists(local_saxon_path):
@@ -74,20 +75,18 @@ def find_saxon_jar():
 
     # This finds multiple versions on my system, but they are symlinked together.
     # take the shortest one.
-    jars = (
-        subprocess.check_output("find /usr/share/java -iname 'saxon*jar'", shell=True,)
-        .stdout.strip()
-        .decode()
-    )
-    # this is not windows-compatible I think...
-    saxon_jar_path = min(jars.split("\n"), key=len)
-    if saxon_jar_path:
+    jars = [
+        path
+        for path in Path("/usr/share/java").rglob("*")
+        if re.match("saxon(.*).jar", path.name, flags=re.IGNORECASE)
+    ]
+
+    if jars:
+        saxon_jar_path = min(jars, key=lambda x: len(x.parts))
         return saxon_jar_path
 
 
 def find_saxon_classpath():
-    import re
-
     if "CLASSPATH" in os.environ:
         saxon_jar_path = re.search("[^:]*saxon[^:]*jar", os.environ["CLASSPATH"])
         if saxon_jar_path:
@@ -95,8 +94,6 @@ def find_saxon_classpath():
 
 
 def find_saxon_bin():
-    import re
-
     saxon_bin = shutil.which("saxon")
     if saxon_bin:
         with open(saxon_bin, "r") as file:
