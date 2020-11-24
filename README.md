@@ -162,7 +162,7 @@ or request developer access to one of the maintainers.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
+This project is licensed to ITER under the MIT License - see the [LICENSE](LICENSE) file
 for details
 
 ## Acknowledgments

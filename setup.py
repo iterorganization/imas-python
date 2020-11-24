@@ -1,4 +1,6 @@
 # pylint: disable=wrong-import-position
+# This file is part of IMASPy.
+# You should have received IMASPy LICENSE file with this project.
 """
 Packaging settings. Inspired by a minimal setup.py file, the Pandas cython build
 and the access-layer setup template.
@@ -249,7 +251,6 @@ if __name__ == "__main__":
         author_email="k.l.vandeplassche@differ.nl",
         classifiers=[
             "Intended Audience :: Science/Research",
-            "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
             "Natural Language :: English",
             "Programming Language :: Python :: 3",
             "Topic :: Utilities",
