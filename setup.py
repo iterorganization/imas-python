@@ -21,8 +21,27 @@ On the ITER cluster we handle the environment by using the `IMAS` module load.
 So instead, we install packages to the `USER_SITE` there, and do not use
 `pip`s `build-isolation`. See [IMAS-584](https://jira.iter.org/browse/IMAS-584)
 """
+import argparse
+import distutils.sysconfig
+import distutils.text_file
+import distutils.util
+import importlib
+import logging
+import os
+import site
+
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import sys
+
+# Import other stdlib packages
+from distutils.version import LooseVersion as V
+from itertools import chain
+from pathlib import Path
+
+# Use setuptools to build packages
+from setuptools import Extension
+from setuptools import __version__ as setuptools_version
+from setuptools import find_packages, setup
 
 if sys.version_info < (3, 6):
     sys.exit(
@@ -30,26 +49,6 @@ if sys.version_info < (3, 6):
         " python e.g. 'module swap python Python/3.6.4-foss-2018a'"
     )
 
-# Import other stdlib packages
-from distutils.version import LooseVersion as V
-import distutils.sysconfig
-import distutils.util
-import distutils.text_file
-import os
-import argparse
-from pathlib import Path
-import logging
-import importlib
-from itertools import chain
-import site
-
-# Use setuptools to build packages
-from setuptools import (
-    setup,
-    __version__ as setuptools_version,
-    find_packages,
-    Extension,
-)
 
 # Check setuptools version before continuing for legacy builds
 if V(setuptools_version) < V("42"):
@@ -102,11 +101,14 @@ loader.exec_module(setup_helpers)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--build-ual", action="store_true")
+parser.add_argument("--build-dd", action="store_true")
 args, leftovers = parser.parse_known_args()
 fail_on_ual_fail = args.build_ual
 
 # Now that the environment is defined, import the rest of the needed packages
 
+if args.build_dd:
+    setup_helpers.prepare_data_dictionaries()
 
 # Try to grab all necessary environment variables.
 # IMAS_PREFIX points to the directory all IMAS components live in
@@ -156,6 +158,7 @@ LANGUAGE = "c"  # Not sure when this is not true
 LIBRARIES = "imas"  # We just need the IMAS library
 # EXTRALINKARGS = '' # This is machine-specific ignore for now
 # EXTRACOMPILEARGS = '' # This is machine-specific ignore for now
+
 
 ###
 # Set up Cython build integration
@@ -208,8 +211,7 @@ if REBUILD_LL:
             from Cython.Build import cythonize
         except ImportError:
             logger.critical(
-                "USE_CYTHON is %s, but could not import Cython",
-                USE_CYTHON,
+                "USE_CYTHON is %s, but could not import Cython", USE_CYTHON,
             )
         else:
             extensions = cythonize(extensions)
@@ -233,10 +235,12 @@ optional_reqs["all"] = list(chain(*optional_reqs.values()))
 
 
 def get_requires_for_build_wheel(config_settings=None):
+    # pyproject.toml
     raise Exception("blablabl")
 
 
 def get_requires_for_build_sdist(config_settings=None):
+    # pyproject.toml?
     raise Exception("blablabl")
 
 

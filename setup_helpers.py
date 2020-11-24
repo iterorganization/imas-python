@@ -1,14 +1,171 @@
 import logging
 import os
 import shutil
+import sys
 from itertools import chain
 
+from IPython import embed
 
 logger = logging.getLogger("imaspy")
 
 this_dir = os.path.abspath(
     os.path.dirname(__file__)
 )  # We need to know where we are for many things
+
+
+def prepare_data_dictionaries():
+    """Build IMAS IDSDef.xml files for each tagged version in the DD repository
+    1. Search for saxon or download it
+    2. Clone the DD repository (ask for user/pass unless ssh key access is available)
+    3. Generate IDSDef.xml and rename to IDSDef_${version}.xml
+    4. Zip all these IDSDefs together and include in wheel
+    """
+    saxon_jar_path = get_saxon()
+    repo, origin = get_data_dictionary_repo()
+    if repo:
+        for tag in repo.tags:
+            logger.debug("Building data dictionary version {tag}", tag)
+            build_data_dictionary(repo, origin, tag, saxon_jar_path)
+
+
+def get_saxon():
+    """Search for saxon*.jar and return the path or download it.
+    The DD build only works by having saxon9he.jar in the CLASSPATH (until 3.30.0).
+    We will 'cheat' a little bit later by symlinking saxon9he.jar to any version
+    of saxon we found.
+
+    Check:
+    1. CLASSPATH
+    2. `which saxon`
+    3. /usr/share/java/*
+    4. or download it
+    """
+    from pathlib import Path
+
+    local_saxon_path = os.getcwd() + "/saxon9he.jar"
+    if os.path.exists(local_saxon_path):
+        logger.debug("Something already at ./saxon9he.jar, not creating anew")
+        return local_saxon_path
+
+    saxon_jar_origin = Path(
+        find_saxon_classpath()
+        or find_saxon_bin()
+        or find_saxon_jar()
+        or download_saxon()
+    )
+    if not saxon_jar_origin.name == "saxon9he.jar":
+        os.symlink(saxon_jar_origin, local_saxon_path)
+        return local_saxon_path
+    return str(saxon_jar_origin)
+
+
+def find_saxon_jar():
+    import subprocess
+
+    # This finds multiple versions on my system, but they are symlinked together.
+    # take the shortest one.
+    jars = (
+        subprocess.run(
+            "find /usr/share/java -iname 'saxon*jar'", shell=True, capture_output=True
+        )
+        .stdout.strip()
+        .decode()
+    )
+    # this is not windows-compatible I think...
+    saxon_jar_path = min(jars.split("\n"), key=len)
+    if saxon_jar_path:
+        return saxon_jar_path
+
+
+def find_saxon_classpath():
+    import re
+
+    if "CLASSPATH" in os.environ:
+        saxon_jar_path = re.search("[^:]*saxon[^:]*jar", os.environ["CLASSPATH"])
+        if saxon_jar_path:
+            return saxon_jar_path.group(0)
+
+
+def find_saxon_bin():
+    import re
+
+    saxon_bin = shutil.which("saxon")
+    if saxon_bin:
+        with open(saxon_bin, "r") as file:
+            for line in file:
+                saxon_jar_path = re.search("[^ ]*saxon[^ ]*jar", line)
+                if saxon_jar_path:
+                    return saxon_jar_path.group(0)
+
+
+def download_saxon():
+    """Downloads a zipfile containing saxon9he.jar and extract it to the current dir.
+    Return the full path to saxon9he.jar"""
+    from io import BytesIO
+    from zipfile import ZipFile
+    from urllib.request import urlopen
+
+    SAXON_PATH = (
+        "https://iweb.dl.sourceforge.net/project/saxon/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip"
+    )
+
+    resp = urlopen(SAXON_PATH)
+    zipfile = ZipFile(BytesIO(resp.read()))
+    path = zipfile.extract("saxon9he.jar")
+    del zipfile
+    return path
+
+
+def get_data_dictionary_repo():
+    try:
+        import git  # Import git here, the user might not have it!
+    except ModuleNotFoundError:
+        logger.warning(
+            "Could not find 'git' module, try 'pip install gitpython'. \
+            Will not build Data Dictionaries!"
+        )
+        return False, False
+
+        # We need the actual source code (for now) so grab it from ITER
+    dd_repo_url = "ssh://git@git.iter.org/imas/data-dictionary.git"
+    dd_repo_path = "data-dictionary"
+
+    logger.info("Trying to pull data dictionary git repo from ITER")
+
+    # Set up a bare repo and fetch the access-layer repository in it
+    os.makedirs(dd_repo_path, exist_ok=True)
+    try:
+        repo = git.Repo(dd_repo_path)
+    except git.exc.InvalidGitRepositoryError:
+        repo = git.Repo.init(dd_repo_path)
+    logger.info("Set up local git repository {!s}".format(repo))
+
+    try:
+        origin = repo.remote()
+    except ValueError:
+        origin = repo.create_remote("origin", url=dd_repo_url)
+    logger.info("Set up remote '{!s}' linking to '{!s}'".format(origin, origin.url))
+
+    origin.fetch("--tags")
+    logger.info("Remote tags fetched")
+    return repo, origin
+
+
+def build_data_dictionary(repo, origin, tag, saxon_jar_path):
+    """Build a single version of the data dictionary given by the tag argument."""
+    import subprocess
+
+    embed()
+    tag.checkout()
+    subprocess.run(
+        "make clean && make",
+        cwd=os.getcwd() + "/data-dictionary",
+        env={"CLASSPATH": saxon_jar_path},
+    )
+    shutil.move(
+        "data-dictionary/IDSDef.xml",
+        "data-dictionary/{version}.xml".format(version=tag),
+    )
 
 
 def prepare_ual_sources(ual_symver, ual_commit, force=False):
