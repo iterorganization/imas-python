@@ -33,7 +33,6 @@ def prepare_data_dictionaries():
             "data-dictionary/IDSDef.zip",
             mode="w",  # this needs w, since zip can have multiple same entries
             compression=ZIP_DEFLATED,
-            compresslevel=6,
         ) as dd_zip:
             for filename in glob.glob("data-dictionary/[0-9]*.xml"):
                 dd_zip.write(filename)
@@ -76,9 +75,7 @@ def find_saxon_jar():
     # This finds multiple versions on my system, but they are symlinked together.
     # take the shortest one.
     jars = (
-        subprocess.check_output(
-            "find /usr/share/java -iname 'saxon*jar'", shell=True,
-        )
+        subprocess.check_output("find /usr/share/java -iname 'saxon*jar'", shell=True,)
         .stdout.strip()
         .decode()
     )
@@ -183,12 +180,10 @@ def build_data_dictionary(repo, origin, tag, saxon_jar_path, rebuild=False):
     # so 1.0.0 comes first, where git checks out IDSDef.xml
     if not os.path.exists("data-dictionary/IDSDef.xml"):
         try:
-            subprocess.run(
-                "make IDSDef.xml",
+            subprocess.check_output(
+                "make IDSDef.xml 2>/dev/null",
                 cwd=os.getcwd() + "/data-dictionary",
                 shell=True,
-                capture_output=True,
-                check=True,
                 env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
             )
         except subprocess.CalledProcessError:
