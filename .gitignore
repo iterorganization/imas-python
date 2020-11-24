@@ -92,3 +92,9 @@ ENV/
 
 # SCM setuptools
 imaspy/version.py
+
+# Saxon symlink or downloaded file
+saxon9he.jar
+
+# IMAS DD
+data-dictionary/
