@@ -21,12 +21,15 @@ It provides:
 For users
 =========
 * Documentation is WIP! :merge:`4`
+* :doc:`iter_cluster`
 
 .. toctree::
    :hidden:
    :caption: Getting Started
+   :maxdepth: 2
 
    self
+   installing
 
 README
 -----------
