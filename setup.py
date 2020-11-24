@@ -99,16 +99,10 @@ spec = importlib.util.spec_from_loader(loader.name, loader)
 setup_helpers = importlib.util.module_from_spec(spec)
 loader.exec_module(setup_helpers)
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--build-ual", action="store_true")
-parser.add_argument("--build-dd", action="store_true")
-args, leftovers = parser.parse_known_args()
-fail_on_ual_fail = args.build_ual
-
 # Now that the environment is defined, import the rest of the needed packages
 
-if args.build_dd:
-    setup_helpers.prepare_data_dictionaries()
+# Prepare DDs if they can be git pulled
+setup_helpers.prepare_data_dictionaries()
 
 # Try to grab all necessary environment variables.
 # IMAS_PREFIX points to the directory all IMAS components live in
@@ -211,7 +205,8 @@ if REBUILD_LL:
             from Cython.Build import cythonize
         except ImportError:
             logger.critical(
-                "USE_CYTHON is %s, but could not import Cython", USE_CYTHON,
+                "USE_CYTHON is %s, but could not import Cython",
+                USE_CYTHON,
             )
         else:
             extensions = cythonize(extensions)
