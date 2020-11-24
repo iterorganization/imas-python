@@ -1,10 +1,7 @@
 import logging
 import os
 import shutil
-import sys
 from itertools import chain
-
-from IPython import embed
 
 logger = logging.getLogger("imaspy")
 
@@ -26,6 +23,20 @@ def prepare_data_dictionaries():
         for tag in repo.tags:
             logger.debug("Building data dictionary version {tag}", tag)
             build_data_dictionary(repo, origin, tag, saxon_jar_path)
+
+        from zipfile import ZipFile, ZIP_DEFLATED
+        import glob
+
+        logger.info("Creating zip file of DD versions")
+
+        with ZipFile(
+            "data-dictionary/IDSDef.zip",
+            mode="w",  # this needs w, since zip can have multiple same entries
+            compression=ZIP_DEFLATED,
+            compresslevel=6,
+        ) as dd_zip:
+            for filename in glob.glob("data-dictionary/[0-9]*.xml"):
+                dd_zip.write(filename)
 
 
 def get_saxon():
@@ -151,21 +162,47 @@ def get_data_dictionary_repo():
     return repo, origin
 
 
-def build_data_dictionary(repo, origin, tag, saxon_jar_path):
-    """Build a single version of the data dictionary given by the tag argument."""
+def build_data_dictionary(repo, origin, tag, saxon_jar_path, rebuild=False):
+    """Build a single version of the data dictionary given by the tag argument
+    if the IDS does not already exist.
+
+    In the data-dictionary repository sometimes IDSDef.xml is stored
+    directly, in which case we do not call make.
+    """
+    if (
+        os.path.exists("data-dictionary/{version}.xml".format(version=tag))
+        and not rebuild
+    ):
+        return
+
     import subprocess
 
-    embed()
-    tag.checkout()
-    subprocess.run(
-        "make clean && make",
-        cwd=os.getcwd() + "/data-dictionary",
-        env={"CLASSPATH": saxon_jar_path},
-    )
-    shutil.move(
-        "data-dictionary/IDSDef.xml",
-        "data-dictionary/{version}.xml".format(version=tag),
-    )
+    repo.git.checkout(tag)
+    # this could cause issues if someone else has added or left IDSDef.xml
+    # in this directory. However, we go through the tags in order
+    # so 1.0.0 comes first, where git checks out IDSDef.xml
+    if not os.path.exists("data-dictionary/IDSDef.xml"):
+        try:
+            subprocess.run(
+                "make IDSDef.xml",
+                cwd=os.getcwd() + "/data-dictionary",
+                shell=True,
+                capture_output=True,
+                check=True,
+                env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
+            )
+        except subprocess.CalledProcessError:
+            logger.warning("Error making DD version {version}", version=tag)
+    # copy and delete original instead of move (to follow symlink)
+    try:
+        shutil.copy(
+            "data-dictionary/IDSDef.xml",
+            "data-dictionary/{version}.xml".format(version=tag),
+            follow_symlinks=True,
+        )
+    except shutil.SameFileError:
+        pass
+    os.remove("data-dictionary/IDSDef.xml")
 
 
 def prepare_ual_sources(ual_symver, ual_commit, force=False):
