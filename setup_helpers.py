@@ -76,8 +76,8 @@ def find_saxon_jar():
     # This finds multiple versions on my system, but they are symlinked together.
     # take the shortest one.
     jars = (
-        subprocess.run(
-            "find /usr/share/java -iname 'saxon*jar'", shell=True, capture_output=True
+        subprocess.check_output(
+            "find /usr/share/java -iname 'saxon*jar'", shell=True,
         )
         .stdout.strip()
         .decode()
