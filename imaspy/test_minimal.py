@@ -3,15 +3,30 @@
 import logging
 
 import imaspy
+import pytest
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
 logger.setLevel(logging.DEBUG)
 
 
-def test_load_minimal():
+@pytest.fixture
+def ids_minimal():
+    from pathlib import Path
+
+    return Path(__file__).parent / "../assets/IDS_minimal.xml"
+
+
+@pytest.fixture
+def ids_minimal_types():
+    from pathlib import Path
+
+    return Path(__file__).parent / "../assets/IDS_minimal_types.xml"
+
+
+def test_load_minimal(ids_minimal):
     ids = imaspy.ids_classes.IDSRoot(
-        0, 0, xml_path="assets/IDS_minimal.xml", verbosity=2
+        0, 0, xml_path=ids_minimal, verbosity=2
     )  # Create a empty IDSs
 
     # Check if the datatypes are loaded correctly
@@ -31,9 +46,9 @@ def test_load_minimal():
     # assert ids.minimal.ids_properties.comment.type == "constant"
 
 
-def test_load_multiple_minimal():
+def test_load_multiple_minimal(ids_minimal, ids_minimal_types):
     ids = imaspy.ids_classes.IDSRoot(
-        0, 0, xml_path="assets/IDS_minimal.xml", verbosity=2
+        0, 0, xml_path=ids_minimal, verbosity=2
     )  # Create a empty IDSs
 
     # Check if the datatypes are loaded correctly
@@ -41,9 +56,9 @@ def test_load_multiple_minimal():
     assert ids.minimal.ids_properties.comment.data_type == "STR_0D"
 
     ids2 = imaspy.ids_classes.IDSRoot(
-        0, 0, xml_path="assets/IDS_minimal.xml", verbosity=2
+        0, 0, xml_path=ids_minimal_types, verbosity=2
     )  # Create a empty IDSs
 
     # Check if the datatypes are loaded correctly
-    assert ids2.minimal.a.data_type == "FLT_0D"
+    assert ids2.minimal.flt_0d.data_type == "FLT_0D"
     assert ids2.minimal.ids_properties.comment.data_type == "STR_0D"

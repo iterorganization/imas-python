@@ -57,7 +57,6 @@ else:
         "STR": "",
         "INT": EMPTY_INT,
         "FLT": EMPTY_FLOAT,
-        "FLT_0D": EMPTY_FLOAT,
     }
 
 
@@ -335,6 +334,8 @@ class IDSPrimitive(IDSMixin):
                 value = np.array(value, dtype=np.float64)
             elif self._ids_type == "INT":
                 value = np.array(value, dtype=np.int64)
+            elif self._ids_type == "STR":
+                value = np.array(value, dtype="<U1")
             else:
                 logger.critical(
                     "Unknown numpy type {!s}, cannot convert from python to IDS type".format(
@@ -472,6 +473,12 @@ def create_leaf_container(name, data_type, **kwargs):
         ndims = 0
     elif data_type == "flt_1d_type":
         ids_type = "FLT"
+        ndims = 1
+    elif data_type == "str_type":
+        ids_type = "STR"
+        ndims = 0
+    elif data_type == "str_1d_type":
+        ids_type = "STR"
         ndims = 1
     else:
         ids_type, ids_dims = data_type.split("_")
