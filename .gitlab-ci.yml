@@ -144,6 +144,11 @@ black:
     - pip install black
     - black --diff --color $PACKAGE
 
+pytest:
+  stage: test
+  script:
+    - pytest $PACKAGE
+
 pages:
   image: python:3.6
   stage: doc
