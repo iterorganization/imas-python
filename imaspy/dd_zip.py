@@ -2,6 +2,7 @@
 # You should have received IMASPy LICENSE file with this project.
 """ Extract DD versions from the provided zip file
 """
+from distutils.version import StrictVersion
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -20,3 +21,15 @@ def get_dd_xml(version):
         raise FileNotFoundError(
             "IMAS DD version not found in data-dictionary/IDSDef.zip"
         )
+
+
+def dd_xml_versions():
+    """Parse data-dictionary/IDSDef.zip to find version numbers available"""
+    dd_prefix_len = len("data-dictionary/")
+    try:
+        with ZipFile(ZIPFILE_LOCATION, mode="r") as dd_zip:
+            return sorted(
+                [f[dd_prefix_len:-4] for f in dd_zip.namelist()], key=StrictVersion
+            )
+    except FileNotFoundError:
+        raise FileNotFoundError("IMAS DD zipfile not found at {path}", ZIPFILE_LOCATION)

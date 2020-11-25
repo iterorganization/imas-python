@@ -572,10 +572,10 @@ class IDSRoot:
 
         if version:
             XMLtreeIDSDef = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
-            logger.info("Generating IDS structures for version {version}", version)
+            logger.info("Generating IDS structures for version %s", version)
         elif xml_path:
             XMLtreeIDSDef = ET.parse(xml_path)
-            logger.info("Generating IDS structures from file {file}", xml_path)
+            logger.info("Generating IDS structures from file %s", xml_path)
         else:
             raise ValueError("version or xml_path are required")
 

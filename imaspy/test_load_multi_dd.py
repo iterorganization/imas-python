@@ -1,10 +1,11 @@
 # A testcase loading multiple data dictionary files (all IMAS data-dictionary files in the zip).
 
 import logging
+from distutils.version import StrictVersion
 
 import imaspy
 import pytest
-from imaspy.dd_zip import get_dd_xml
+from imaspy.dd_zip import dd_xml_versions, get_dd_xml
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -28,8 +29,13 @@ def test_known_failing_version():
 
 
 def test_load_all_dds():
-    # iterate over all versions packaged in our zipfile (at least one)
-    ids = imaspy.ids_classes.IDSRoot(0, 0, version="3.30.0", verbosity=2)
+    """Test loading all of the data dictionaries.
+    Only load those where the NBI IDS exists (3.0.4 and up)
+    """
+    for version in dd_xml_versions()[::-1]:
+        if StrictVersion(version) >= StrictVersion("3.0.4"):
+            # iterate over all versions packaged in our zipfile (at least one)
+            ids = imaspy.ids_classes.IDSRoot(0, 0, version=version, verbosity=1)
 
-    # Check one trivial thing to see if at least something was loaded
-    assert ids.nbi.ids_properties.comment.data_type == "STR_0D"
+            # Check one trivial thing to see if at least something was loaded
+            assert ids.nbi.ids_properties.comment.data_type == "STR_0D"
