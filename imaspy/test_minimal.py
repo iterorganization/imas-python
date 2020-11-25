@@ -2,7 +2,7 @@
 
 import logging
 
-from . import imaspy
+import imaspy
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger

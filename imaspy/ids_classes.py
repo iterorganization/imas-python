@@ -18,6 +18,7 @@ import importlib
 import logging
 import numbers
 import os
+import sys
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -48,7 +49,8 @@ try:
         CLOSE_PULSE,
     )
 except ImportError:
-    logger.critical("IMASPy _libs could not be imported. UAL not available!")
+    logger.critical("IMAS could not be imported. UAL not available!")
+    sys.exit()
 else:
     # Translation dictionary to go from an ids (primitive) type (without the dimensionality) to a default value
     ids_type_to_default = {
@@ -569,8 +571,6 @@ class IDSRoot:
             my_name = ids.get("name")
             if my_name is None:
                 continue
-            if my_name not in ["equilibrium", "nbi"]:
-                continue
             logger.debug("{:42.42s} initialization".format(my_name))
             self._children.append(my_name)
             setattr(self, my_name, IDSToplevel(self, my_name, ids))
@@ -994,7 +994,7 @@ class IDSStructure(IDSMixin):
         }
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
-        for child in structure_xml.getchildren():
+        for child in structure_xml:
             my_name = child.get("name")
             dbg_str = " " * (self.depth + 1) + "- " + my_name
             logger.debug("{:42.42s} initialization".format(dbg_str))
