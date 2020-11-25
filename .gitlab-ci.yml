@@ -1,5 +1,5 @@
 image:
-   name: "python:3.6"
+  name: "registry.gitlab.com/klimex/imaspy:latest"
 
 stages:
   - build
