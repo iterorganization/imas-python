@@ -2,11 +2,14 @@
 # You should have received IMASPy LICENSE file with this project.
 """ Extract DD versions from the provided zip file
 """
+import logging
 from distutils.version import StrictVersion
 from pathlib import Path
 from zipfile import ZipFile
 
-from imas.logger import logger
+root_logger = logging.getLogger("imaspy")
+logger = root_logger
+logger.setLevel(logging.WARNING)
 
 ZIPFILE_LOCATION = Path(__file__).parent.parent / "data-dictionary" / "IDSDef.zip"
 
