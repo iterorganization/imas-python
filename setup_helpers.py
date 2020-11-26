@@ -146,6 +146,8 @@ def get_data_dictionary_repo():
     os.makedirs(dd_repo_path, exist_ok=True)
     try:
         repo = git.Repo(dd_repo_path)
+        # stash any unstaged changes so we can switch branches later
+        repo.git.stash()
     except git.exc.InvalidGitRepositoryError:
         repo = git.Repo.init(dd_repo_path)
     logger.info("Set up local git repository {!s}".format(repo))
