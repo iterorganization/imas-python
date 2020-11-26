@@ -23,10 +23,10 @@ def test_known_version():
 
 
 def test_known_failing_version():
-    """Test if -1.0 is part of the IDSDef.zip"""
+    """Test if 0.0 is part of the IDSDef.zip"""
 
     with pytest.raises(FileNotFoundError):
-        get_dd_xml("-1.0")
+        get_dd_xml("0.0")
 
 
 def test_load_all_dds():
