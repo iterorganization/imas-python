@@ -2,10 +2,10 @@
 # You should have received IMASPy LICENSE file with this project.
 import logging
 import os
+import re
 import shutil
 from itertools import chain
 from pathlib import Path
-import re
 
 logger = logging.getLogger("imaspy")
 
@@ -134,10 +134,13 @@ def get_data_dictionary_repo():
         return False, False
 
         # We need the actual source code (for now) so grab it from ITER
-    dd_repo_url = "ssh://git@git.iter.org/imas/data-dictionary.git"
     dd_repo_path = "data-dictionary"
 
-    logger.info("Trying to pull data dictionary git repo from ITER")
+    if "DD_DIRECTORY" in os.environ:
+        logger.info("Found DD_DIRECTORY, copying")
+        shutil.copytree(os.environ["DD_DIRECTORY"], dd_repo_path)
+    else:
+        logger.info("Trying to pull data dictionary git repo from ITER")
 
     # Set up a bare repo and fetch the access-layer repository in it
     os.makedirs(dd_repo_path, exist_ok=True)
@@ -150,6 +153,7 @@ def get_data_dictionary_repo():
     try:
         origin = repo.remote()
     except ValueError:
+        dd_repo_url = "ssh://git@git.iter.org/imas/data-dictionary.git"
         origin = repo.create_remote("origin", url=dd_repo_url)
     logger.info("Set up remote '{!s}' linking to '{!s}'".format(origin, origin.url))
 
@@ -326,15 +330,11 @@ def prepare_ual_sources(ual_symver, ual_commit, force=False):
                 with open(path, "r") as old, open(target_path, "w") as new:
                     for line in old:
                         if line == "cimport ual_lowlevel_interface as ual\n":
-                            new.write(
-                                "cimport imas.ual_lowlevel_interface as ual\n"
-                            )
+                            new.write("cimport imas.ual_lowlevel_interface as ual\n")
                         elif line == "from imasdef import *\n":
                             new.write("from imas.imasdef import *\n")
                         elif line == "from hli_exception import ALException \n":
-                            new.write(
-                                "from imas.hli_exception import ALException\n"
-                            )
+                            new.write("from imas.hli_exception import ALException\n")
                         else:
                             new.write(line)
             else:

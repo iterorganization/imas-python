@@ -13,13 +13,13 @@ logger.setLevel(logging.DEBUG)
 
 
 def test_known_version():
-    """Test if 3.29.0 is part of the IDSDef.zip
+    """Test if 3.30.0 is part of the IDSDef.zip
     Mostly this tests if IDSDef.zip has been made."""
 
     try:
-        get_dd_xml("3.29.0")
+        get_dd_xml("3.30.0")
     except FileNotFoundError:
-        pytest.fail("3.29.0 not found in IDSDef.zip")
+        pytest.fail("3.30.0 not found in IDSDef.zip")
 
 
 def test_known_failing_version():
