@@ -146,8 +146,6 @@ def get_data_dictionary_repo():
     os.makedirs(dd_repo_path, exist_ok=True)
     try:
         repo = git.Repo(dd_repo_path)
-        # stash any unstaged changes so we can switch branches later
-        repo.git.stash()
     except git.exc.InvalidGitRepositoryError:
         repo = git.Repo.init(dd_repo_path)
     logger.info("Set up local git repository {!s}".format(repo))
@@ -182,7 +180,7 @@ def build_data_dictionary(repo, origin, tag, saxon_jar_path, rebuild=False):
 
     import subprocess
 
-    repo.git.checkout(tag)
+    repo.git.checkout(tag, force=True)
     # this could cause issues if someone else has added or left IDSDef.xml
     # in this directory. However, we go through the tags in order
     # so 1.0.0 comes first, where git checks out IDSDef.xml
