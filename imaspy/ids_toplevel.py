@@ -8,9 +8,9 @@
 
 import numpy as np
 
-from .al_exception import ALException
-from .context_store import context_store
-from .ids_defs import (
+from imaspy.al_exception import ALException
+from imaspy.context_store import context_store
+from imaspy.ids_defs import (
     CHAR_DATA,
     DOUBLE_DATA,
     IDS_TIME_MODE_HOMOGENEOUS,
@@ -20,10 +20,10 @@ from .ids_defs import (
     READ_OP,
     WRITE_OP,
 )
-from .ids_primitive import IDSPrimitive
-from .ids_struct_array import IDSStructArray
-from .ids_structure import IDSStructure
-from .logger import logger, loglevel
+from imaspy.ids_primitive import IDSPrimitive
+from imaspy.ids_struct_array import IDSStructArray
+from imaspy.ids_structure import IDSStructure
+from imaspy.logger import logger, loglevel
 
 
 class IDSToplevel(IDSStructure):

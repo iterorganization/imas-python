@@ -5,7 +5,7 @@
 
 import logging
 
-from .logger import logger
+from imaspy.logger import logger
 
 logger.setLevel(logging.WARNING)
 
@@ -21,6 +21,7 @@ try:
         IDS_TIME_MODES,
         IDS_TIME_MODE_HOMOGENEOUS,
         IDS_TIME_MODE_HETEROGENEOUS,
+        IDS_TIME_MODE_INDEPENDENT,
         WRITE_OP,
         CHAR_DATA,
         INTEGER_DATA,
@@ -28,6 +29,7 @@ try:
         DOUBLE_DATA,
         NODE_TYPE_STRUCTURE,
         CLOSE_PULSE,
+        UDA_BACKEND,
     )
 except ImportError:
     logger.critical("IMASPy _libs could not be imported. UAL not available!")

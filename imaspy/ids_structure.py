@@ -6,12 +6,11 @@
 """
 # Set up logging immediately
 
-from .al_exception import ALException
-from .ids_defs import DOUBLE_DATA, NODE_TYPE_STRUCTURE, READ_OP
-from .ids_mixin import IDSMixin
-from .ids_primitive import IDSPrimitive
-from .ids_struct_array import IDSStructArray, create_leaf_container
-from .logger import logger, loglevel
+from imaspy.al_exception import ALException
+from imaspy.ids_defs import DOUBLE_DATA, NODE_TYPE_STRUCTURE, READ_OP
+from imaspy.ids_mixin import IDSMixin
+from imaspy.ids_primitive import IDSPrimitive
+from imaspy.logger import logger, loglevel
 
 
 class IDSStructure(IDSMixin):
@@ -78,6 +77,8 @@ class IDSStructure(IDSMixin):
                 child_hli = IDSStructure(self, my_name, child)
                 setattr(self, my_name, child_hli)
             elif my_data_type == "struct_array":
+                from imaspy.ids_struct_array import IDSStructArray
+
                 child_hli = IDSStructArray(self, my_name, child)
                 setattr(self, my_name, child_hli)
             else:
@@ -93,6 +94,8 @@ class IDSStructure(IDSMixin):
                     for attr in child.attrib
                     if attr.startswith("coordinate")
                 }
+                from imaspy.ids_struct_array import create_leaf_container
+
                 setattr(
                     self,
                     my_name,
@@ -145,6 +148,8 @@ class IDSStructure(IDSMixin):
             else:
                 # Structure does not exist. It should have been pre-generated
                 raise NotImplementedError("generating new structure from scratch")
+                from imaspy.ids_struct_array import create_leaf_container
+
                 attr = create_leaf_container(key, no_data_type_I_guess, parent=self)
             if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):
                 raise Exception(
@@ -288,6 +293,8 @@ class IDSStructure(IDSMixin):
             dbg_str = " " * self.depth + "- " + child_name
             logger.debug("{:53.53s} del".format(dbg_str))
             rel_path = child.getRelCTXPath(ctx)
+            from imaspy.ids_struct_array import IDSStructArray
+
             if isinstance(child, (IDSStructArray, IDSPrimitive)):
                 status = self._ull.ual_delete_data(ctx, rel_path)
                 if status != 0:

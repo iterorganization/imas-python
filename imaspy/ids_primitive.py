@@ -9,20 +9,18 @@ Provides the class for an IDS Primitive data type
 
 # Set up logging immediately
 import numpy as np
-from IPython import embed
-
-from .al_exception import ALException
-from .context_store import context_store
-from .ids_defs import (
+from imaspy.al_exception import ALException
+from imaspy.context_store import context_store
+from imaspy.ids_defs import (
     CHAR_DATA,
     DOUBLE_DATA,
     INTEGER_DATA,
     hli_utils,
     ids_type_to_default,
 )
-from .ids_mixin import IDSMixin
-from .ids_numeric_array import IDSNumericArray
-from .logger import logger, loglevel
+from imaspy.ids_mixin import IDSMixin
+from imaspy.logger import logger, loglevel
+from IPython import embed
 
 
 class IDSPrimitive(IDSMixin):
@@ -238,7 +236,9 @@ class IDSPrimitive(IDSMixin):
 
 
 def create_leaf_container(name, data_type, **kwargs):
-    """Wrapper to create IDSPrimitive/IDSNumericArray from IDS syntax"""
+    """Wrapper to create IDSPrimitive/IDSNumericArray from IDS syntax.
+    TODO: move this elsewhere.
+    """
     if data_type == "int_type":
         ids_type = "INT"
         ndims = 0
@@ -259,5 +259,8 @@ def create_leaf_container(name, data_type, **kwargs):
             # this is an assumption on user expectation!
             leaf = IDSPrimitive(name, ids_type, ndims, **kwargs)
         else:
+            # Prevent circular import problems
+            from imaspy.ids_numeric_array import IDSNumericArray
+
             leaf = IDSNumericArray(name, ids_type, ndims, **kwargs)
     return leaf

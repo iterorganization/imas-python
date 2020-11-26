@@ -1,12 +1,11 @@
 # This file is part of IMASPy.
 # You should have received IMASPy LICENSE file with this project.
-import sys
-import os
 import logging
+import os
+import sys
 
-from IPython import embed
-import numpy
 import numpy as np
+from IPython import embed
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -70,7 +69,7 @@ if __name__ == "__main__":
         import imaspy as imas
         from pathlib import Path
 
-        imas.ids = imas.ids_classes.IDSRoot  # Enable old-style syntax
+        imas.ids = imas.ids_root.IDSRoot  # Enable old-style syntax
 
         IMAS_PREFIX = os.getenv("IMAS_PREFIX")
         if not IMAS_PREFIX or not os.path.isdir(IMAS_PREFIX):

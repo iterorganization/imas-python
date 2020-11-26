@@ -13,10 +13,9 @@ import xml.etree.ElementTree as ET
 
 # Set up logging immediately
 import numpy as np
-
-from .al_exception import ALException
-from .context_store import context_store
-from .ids_defs import (
+from imaspy.al_exception import ALException
+from imaspy.context_store import context_store
+from imaspy.ids_defs import (
     CLOSE_PULSE,
     DOUBLE_DATA,
     IDS_TIME_MODE_HETEROGENEOUS,
@@ -28,8 +27,8 @@ from .ids_defs import (
     READ_OP,
     UDA_BACKEND,
 )
-from .ids_toplevel import IDSToplevel
-from .logger import logger, loglevel
+from imaspy.ids_toplevel import IDSToplevel
+from imaspy.logger import logger, loglevel
 
 
 class IDSRoot:
