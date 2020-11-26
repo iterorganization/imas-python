@@ -6,12 +6,19 @@ from distutils.version import StrictVersion
 from pathlib import Path
 from zipfile import ZipFile
 
+from imas.logger import logger
+
 ZIPFILE_LOCATION = Path(__file__).parent.parent / "data-dictionary" / "IDSDef.zip"
 
 
 def get_dd_xml(version):
     """Given a version string, try to find {version}.xml in data-dictionary/IDSDef.zip
     and return the unzipped bytes"""
+    if StrictVersion(version) < StrictVersion("3.22.0"):
+        logger.warning(
+            "Version {version} is below lowest supported version of 3.22.0. \
+            Proceed at your own risk."
+        )
     try:
         with ZipFile(ZIPFILE_LOCATION, mode="r") as dd_zip:
             return dd_zip.read("data-dictionary/{version}.xml".format(version=version))

@@ -24,6 +24,7 @@ def prepare_data_dictionaries():
     saxon_jar_path = get_saxon()
     repo, origin = get_data_dictionary_repo()
     if repo:
+        # TODO: only build supported tags? for CI speedup?
         for tag in repo.tags:
             logger.debug("Building data dictionary version {tag}", tag)
             build_data_dictionary(repo, origin, tag, saxon_jar_path)
@@ -138,7 +139,10 @@ def get_data_dictionary_repo():
 
     if "DD_DIRECTORY" in os.environ:
         logger.info("Found DD_DIRECTORY, copying")
-        shutil.copytree(os.environ["DD_DIRECTORY"], dd_repo_path)
+        try:
+            shutil.copytree(os.environ["DD_DIRECTORY"], dd_repo_path)
+        except FileExistsError:
+            pass
     else:
         logger.info("Trying to pull data dictionary git repo from ITER")
 
