@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<IDSs xmlns:fn="http://www.w3.org/2005/02/xpath-functions">
+   <version name="version">0.0.1</version>
+   <IDS name="minimal"
+        maxoccur="1"
+        documentation="A minimal test IMASPy Data Structure (IDS)"
+        lifecycle_status="alpha"
+        lifecycle_version="0.0.1"
+        lifecycle_last_change="0.0.1">
+      <field name="ids_properties"
+             structure_reference="ids_properties"
+             path="ids_properties"
+             path_doc="ids_properties"
+             documentation="Properties of this IDS"
+             data_type="structure">
+         <field name="comment"
+                path="ids_properties/comment"
+                path_doc="ids_properties/comment"
+                documentation="A string comment"
+                data_type="STR_0D"
+                type="constant"/>
+      </field>
+      <field name="a"
+             path="a"
+             path_doc="a"
+             documentation="A float"
+             data_type="FLT_0D"
+             units="unitless"
+             type="static"/>
+   </IDS>
+</IDSs>

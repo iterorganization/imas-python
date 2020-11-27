@@ -18,6 +18,7 @@ import importlib
 import logging
 import numbers
 import os
+import sys
 import xml.etree.ElementTree as ET
 
 import numpy as np
@@ -48,7 +49,8 @@ try:
         CLOSE_PULSE,
     )
 except ImportError:
-    logger.critical("IMASPy _libs could not be imported. UAL not available!")
+    logger.critical("IMAS could not be imported. UAL not available!")
+    sys.exit()
 else:
     # Translation dictionary to go from an ids (primitive) type (without the dimensionality) to a default value
     ids_type_to_default = {
@@ -332,13 +334,14 @@ class IDSPrimitive(IDSMixin):
                 value = np.array(value, dtype=np.float64)
             elif self._ids_type == "INT":
                 value = np.array(value, dtype=np.int64)
+            elif self._ids_type == "STR":
+                value = np.array(value, dtype="<U1")
             else:
                 logger.critical(
                     "Unknown numpy type {!s}, cannot convert from python to IDS type".format(
                         value.dtype
                     )
                 )
-                embed()
                 raise Exception
         else:
             logger.critical(
@@ -346,7 +349,6 @@ class IDSPrimitive(IDSMixin):
                     type(value)
                 )
             )
-            embed()
             raise Exception
         return value
 
@@ -472,6 +474,12 @@ def create_leaf_container(name, data_type, **kwargs):
     elif data_type == "flt_1d_type":
         ids_type = "FLT"
         ndims = 1
+    elif data_type == "str_type":
+        ids_type = "STR"
+        ndims = 0
+    elif data_type == "str_1d_type":
+        ids_type = "STR"
+        ndims = 1
     else:
         ids_type, ids_dims = data_type.split("_")
         ndims = int(ids_dims[:-1])
@@ -568,8 +576,7 @@ class IDSRoot:
         )
         for ids in root:
             my_name = ids.get("name")
-            # Only build for equilibrium to KISS
-            if my_name not in ["equilibrium", "nbi"]:
+            if my_name is None:
                 continue
             logger.debug("{:42.42s} initialization".format(my_name))
             self._children.append(my_name)
@@ -994,7 +1001,7 @@ class IDSStructure(IDSMixin):
         }
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
-        for child in structure_xml.getchildren():
+        for child in structure_xml:
             my_name = child.get("name")
             dbg_str = " " * (self.depth + 1) + "- " + my_name
             logger.debug("{:42.42s} initialization".format(dbg_str))
