@@ -14,6 +14,7 @@ variables:
     PYTHONTOOLS_DIR: "$CI_PROJECT_DIR"
     PYTEST_MARK: ""
     PACKAGE: "imaspy"
+    DD_DIRECTORY: '/root/access-layer/xml'
 
 # Pip's cache doesn't store the python packages
 # https://pip.pypa.io/en/stable/reference/pip_install/#caching
