@@ -19,6 +19,12 @@
                 documentation="A string comment"
                 data_type="STR_0D"
                 type="constant"/>
+         <field name="homogeneous_time"
+                path="ids_properties/homogeneous_time"
+                path_doc="ids_properties/homogeneous_time"
+                documentation="This node must be filled (with 0, 1, or 2) for the IDS to be valid. If 1, the time of this IDS is homogeneous, i.e. the time values for this IDS are stored in the time node just below the root of this IDS. If 0, the time values are stored in the various time fields at lower levels in the tree. In the case only constant or static nodes are filled within the IDS, homogeneous_time must be set to 2"
+                data_type="INT_0D"
+                type="constant"/>
       </field>
       <!-- all 'simple' datatypes, i.e. no structures. Collected from IMAS DD 3.30.0 -->
       <!-- floats -->

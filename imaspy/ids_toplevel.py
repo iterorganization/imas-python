@@ -11,11 +11,9 @@ from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_defs import (
     CHAR_DATA,
-    DOUBLE_DATA,
     IDS_TIME_MODE_HOMOGENEOUS,
     IDS_TIME_MODE_UNKNOWN,
     IDS_TIME_MODES,
-    INTEGER_DATA,
     READ_OP,
     WRITE_OP,
 )
