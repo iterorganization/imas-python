@@ -24,7 +24,7 @@ logger.setLevel(logging.DEBUG)
 def randdims(n):
     """Return a list of n random numbers between 1 and 10 representing
     the shapes in n dimensions"""
-    random.sample(range(1, 10), n)
+    return random.sample(range(1, 10), n)
 
 
 TEST_DATA = {
@@ -50,27 +50,14 @@ def xml():
     return Path(__file__).parent / "../assets/IDS_minimal_types.xml"
 
 
-def test_minimal_io_memory(xml):
-    min_test(MEMORY_BACKEND, xml)
-
-
-def test_minimal_io_mdsplus(xml):
-    min_test(MDSPLUS_BACKEND, xml)
-
-
-def test_minimal_io_hdf5(xml):
-    min_test(HDF5_BACKEND, xml)
-
-
-def test_minimal_io_ascii(xml):
-    min_test(ASCII_BACKEND, xml)
-
-
-def min_test(backend, xml):
-    """Write and then read again a number on our minimal IDS."""
+def test_minimal_io(backend, xml, ids_type):
+    """Write and then read again a number on our minimal IDS.
+    This gets run with all 4 backend options and with all ids_types (+ None to try all)
+    """
     ids = open_ids(backend, xml, "w")
     for k, v in TEST_DATA.items():
-        ids.minimal.__setattr__(k, v)
+        if ids_type is None or k == ids_type:
+            ids.minimal.__setattr__(k, v)
 
     ids.minimal.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     ids.minimal.put()
@@ -83,7 +70,8 @@ def min_test(backend, xml):
         pass
     else:
         for k, v in TEST_DATA.items():
-            assert ids2.minimal.__getattr(k).value == v
+            if ids_type is None or k == ids_type:
+                assert ids2.minimal.__getattr(k).value == v
 
 
 def open_ids(backend, xml_path, mode):

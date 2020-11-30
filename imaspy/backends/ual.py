@@ -219,7 +219,7 @@ class UALFile:
         }
 
         try:
-            status, message = ull.ual_open_pulse(idx, mode_actions[mode], options)
+            status = ull.ual_open_pulse(idx, mode_actions[mode], options)
         except KeyError:
             raise ValueError("Invalid mode: {!r}".format(mode))
 
@@ -230,14 +230,8 @@ class UALFile:
                 raise ALError(
                     "Error calling ull.ual_open_pulse({!r},{!r},{!r}).\n"
                     "Pulse action state was ({!s}).\n"
-                    "Backend was {!r}\n"
-                    "{!s}".format(
-                        idx,
-                        OPEN_PULSE,
-                        options,
-                        pulse_action_state,
-                        backend_str,
-                        message,
+                    "Backend was {!r}\n".format(
+                        idx, OPEN_PULSE, options, pulse_action_state, backend_str,
                     ),
                     status,
                 )
