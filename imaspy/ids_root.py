@@ -15,6 +15,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
+from imaspy.dd_zip import get_dd_xml
 from imaspy.ids_defs import (
     CLOSE_PULSE,
     DOUBLE_DATA,
@@ -38,7 +39,7 @@ class IDSRoot:
     path = ""
 
     @loglevel
-    def __init__(self, s=-1, r=-1, rs=None, rr=None, xml_path=None):
+    def __init__(self, s=-1, r=-1, rs=None, rr=None, version=None, xml_path=None):
         """Initialize a imaspy IDS tree
 
         Dynamically build the imaspy IDS tree from the given xml path.
@@ -46,6 +47,9 @@ class IDSRoot:
         but the structure matches MDSPlus pulsefile. E.g. each Root
         is identified by its shot and run, combining into a UID that
         should be unique per database.
+
+        if version is specified search the local set of IMAS DD definitions
+        for that version. if xml_path is explicitly specified, ignore version.
         """
         setattr(self, "shot", s)
         self.shot = s
@@ -61,15 +65,18 @@ class IDSRoot:
         self.connected = False
         self.expIdx = -1
 
+        if version:
+            XMLtreeIDSDef = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
+            logger.info("Generating IDS structures for version %s", version)
+        elif xml_path:
+            XMLtreeIDSDef = ET.parse(xml_path)
+            logger.info("Generating IDS structures from file %s", xml_path)
+        else:
+            raise ValueError("version or xml_path are required")
+
         # Parse given xml_path and build imaspy IDS structures
-        XMLtreeIDSDef = ET.parse(xml_path)
         root = XMLtreeIDSDef.getroot()
         self._children = []
-        logger.info(
-            "Generating IDS structures from XML file {!s}".format(
-                os.path.abspath(xml_path)
-            )
-        )
         for ids in root:
             my_name = ids.get("name")
             # Only build for equilibrium to KISS

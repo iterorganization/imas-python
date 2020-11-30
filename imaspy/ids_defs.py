@@ -32,7 +32,7 @@ try:
         UDA_BACKEND,
     )
 except ImportError:
-    logger.critical("IMASPy _libs could not be imported. UAL not available!")
+    logger.critical("IMAS could not be imported. UAL not available!")
 else:
     # Translation dictionary to go from an ids (primitive) type (without the dimensionality) to a default value
     ids_type_to_default = {

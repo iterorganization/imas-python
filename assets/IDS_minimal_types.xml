@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<IDSs xmlns:fn="http://www.w3.org/2005/02/xpath-functions">
+   <version name="version">0.0.1</version>
+   <IDS name="minimal"
+        maxoccur="1"
+        documentation="A minimal test IMASPy Data Structure (IDS)"
+        lifecycle_status="alpha"
+        lifecycle_version="0.0.1"
+        lifecycle_last_change="0.0.1">
+      <field name="ids_properties"
+             structure_reference="ids_properties"
+             path="ids_properties"
+             path_doc="ids_properties"
+             documentation="Properties of this IDS"
+             data_type="structure">
+         <field name="comment"
+                path="ids_properties/comment"
+                path_doc="ids_properties/comment"
+                documentation="A string comment"
+                data_type="STR_0D"
+                type="constant"/>
+      </field>
+      <!-- all 'simple' datatypes, i.e. no structures. Collected from IMAS DD 3.30.0 -->
+      <!-- floats -->
+      <field name="flt_0d"
+             path="flt_0d"
+             data_type="FLT_0D"/>
+      <field name="flt_1d"
+             path="flt_1d"
+             data_type="FLT_1D"/>
+      <field name="flt_2d"
+             path="flt_2d"
+             data_type="FLT_2D"/>
+      <field name="flt_3d"
+             path="flt_3d"
+             data_type="FLT_3D"/>
+      <field name="flt_4d"
+             path="flt_4d"
+             data_type="FLT_4D"/>
+      <field name="flt_5d"
+             path="flt_5d"
+             data_type="FLT_5D"/>
+      <field name="flt_6d"
+             path="flt_6d"
+             data_type="FLT_6D"/>
+
+      <!-- strings -->
+      <field name="str_0d"
+             path="str_0d"
+             data_type="STR_0D"/>
+      <field name="str_1d"
+             path="str_1d"
+             data_type="STR_1D"/>
+
+      <!-- ints -->
+      <field name="int_0d"
+             path="int_0d"
+             data_type="INT_0D"/>
+      <field name="int_1d"
+             path="int_1d"
+             data_type="INT_1D"/>
+      <field name="int_2d"
+             path="int_2d"
+             data_type="INT_2D"/>
+      <field name="int_3d"
+             path="int_3d"
+             data_type="INT_3D"/>
+
+      <!-- legacy -->
+      <field name="flt_type"
+             path="flt_type"
+             data_type="flt_type"/>
+      <field name="flt_1d_type"
+             path="flt_1d_type"
+             data_type="flt_1d_type"/>
+      <field name="int_type"
+             path="int_type"
+             data_type="int_type"/>
+      <field name="str_type"
+             path="str_type"
+             data_type="str_type"/>
+      <field name="str_1d_type"
+             path="str_1d_type"
+             data_type="str_1d_type"/>
+   </IDS>
+</IDSs>

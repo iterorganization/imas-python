@@ -66,7 +66,7 @@ class IDSStructure(IDSMixin):
         }
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
-        for child in structure_xml.getchildren():
+        for child in structure_xml:
             my_name = child.get("name")
             dbg_str = " " * (self.depth + 1) + "- " + my_name
             logger.debug("{:42.42s} initialization".format(dbg_str))
