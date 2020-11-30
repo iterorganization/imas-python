@@ -9,7 +9,7 @@
 from imaspy.al_exception import ALException
 from imaspy.ids_defs import DOUBLE_DATA, NODE_TYPE_STRUCTURE, READ_OP
 from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_primitive import IDSPrimitive
+from imaspy.ids_primitive import IDSPrimitive, create_leaf_container
 from imaspy.logger import logger, loglevel
 
 
@@ -94,8 +94,6 @@ class IDSStructure(IDSMixin):
                     for attr in child.attrib
                     if attr.startswith("coordinate")
                 }
-                from imaspy.ids_struct_array import create_leaf_container
-
                 setattr(
                     self,
                     my_name,

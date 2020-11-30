@@ -80,7 +80,7 @@ class IDSRoot:
         for ids in root:
             my_name = ids.get("name")
             # Only build for equilibrium to KISS
-            if my_name not in ["equilibrium", "nbi"]:
+            if my_name is None:
                 continue
             logger.debug("{:42.42s} initialization".format(my_name))
             self._children.append(my_name)
