@@ -101,3 +101,6 @@ data-dictionary/
 containers/arch/imaspy/
 containers/arch/data-dictionary/
 containers/arch/access-layer/
+
+# IDS files
+*.ids

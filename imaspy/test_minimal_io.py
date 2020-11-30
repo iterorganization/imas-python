@@ -8,7 +8,7 @@ import pytest
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     HDF5_BACKEND,
-    IDS_TIME_MODE_HOMOGENEOUS,
+    IDS_TIME_MODE_INDEPENDENT,
     MDSPLUS_BACKEND,
     MEMORY_BACKEND,
 )
@@ -44,13 +44,18 @@ def test_minimal_io_ascii(xml):
 def min_test(backend, xml):
     """Write and then read again a number on our minimal IDS."""
     ids = open_ids(backend, xml, "w")
-    ids.minimal.a = 2
-    ids.minimal.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    ids.minimal.a = 2.0
+    ids.minimal.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     ids.minimal.put()
+    assert ids.minimal.a.value == 2.0
 
     ids2 = open_ids(backend, xml, "a")
     ids2.minimal.get()
-    assert ids2.minimal.a == 2
+    if backend == MEMORY_BACKEND:
+        # this one does not store anything
+        pass
+    else:
+        assert ids2.minimal.a.value == 2.0
 
 
 def open_ids(backend, xml_path, mode):

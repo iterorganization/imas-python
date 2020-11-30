@@ -7,7 +7,6 @@
 # Set up logging immediately
 
 import numpy as np
-
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_defs import (
@@ -56,11 +55,13 @@ class IDSToplevel(IDSStructure):
                 status,
             )
 
-        status, homogeneousTime = self._ull.ual_read_data(
-            ctx, "ids_properties/homogeneous_time", "", INTEGER_DATA, 0
-        )
-        if status != 0:
-            raise ALException("ERROR: homogeneous_time cannot be read.", status)
+        # Read it from our own in_memory store instead of the backend directly.
+        homogeneousTime = self.ids_properties.homogeneous_time
+        # status, homogeneousTime = self._ull.ual_read_data(
+        # ctx, "ids_properties/homogeneous_time", "", INTEGER_DATA, 0
+        # )
+        # if status != 0:
+        # raise ALException("ERROR: homogeneous_time cannot be read.", status)
         status = self._ull.ual_end_action(ctx)
         context_store.pop(ctx)
         if status != 0:
