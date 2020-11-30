@@ -25,23 +25,7 @@ def xml():
     return Path(__file__).parent / "../assets/IDS_minimal.xml"
 
 
-def test_minimal_io_memory(xml):
-    min_test(MEMORY_BACKEND, xml)
-
-
-def test_minimal_io_mdsplus(xml):
-    min_test(MDSPLUS_BACKEND, xml)
-
-
-def test_minimal_io_hdf5(xml):
-    min_test(HDF5_BACKEND, xml)
-
-
-def test_minimal_io_ascii(xml):
-    min_test(ASCII_BACKEND, xml)
-
-
-def min_test(backend, xml):
+def test_minimal_io(backend, xml):
     """Write and then read again a number on our minimal IDS."""
     ids = open_ids(backend, xml, "w")
     ids.minimal.a = 2.0
