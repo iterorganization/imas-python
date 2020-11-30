@@ -30,6 +30,9 @@ try:
         NODE_TYPE_STRUCTURE,
         CLOSE_PULSE,
         UDA_BACKEND,
+        MEMORY_BACKEND,
+        HDF5_BACKEND,
+        ASCII_BACKEND,
     )
 except ImportError:
     logger.critical("IMAS could not be imported. UAL not available!")
