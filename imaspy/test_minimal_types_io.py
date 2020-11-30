@@ -15,6 +15,8 @@ from imaspy.ids_defs import (
     MEMORY_BACKEND,
 )
 
+import imas.hli_exception
+
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
 logger.setLevel(logging.DEBUG)
@@ -29,9 +31,9 @@ def randdims(n):
 
 TEST_DATA = {
     "str_0d": "test",
-    "str_1d": np.asarray(["test0", "test1"]),
+    "str_1d": ["test0", "test1"],
     "str_type": "test_legacy",
-    "str_1d_type": np.asarray(["test0_legacy", "test1_legacy"]),
+    "str_1d_type": ["test0_legacy", "test1_legacy"],
     "flt_type": 2.0,
     "flt_1d_type": np.asarray([3.0, 4.0]),
     "int_type": 5,
@@ -50,9 +52,9 @@ def xml():
     return Path(__file__).parent / "../assets/IDS_minimal_types.xml"
 
 
-def test_minimal_io(backend, xml, ids_type):
+def test_minimal_types_io(backend, xml, ids_type):
     """Write and then read again a number on our minimal IDS.
-    This gets run with all 4 backend options and with all ids_types (+ None to try all)
+    This gets run with all 4 backend options and with all ids_types (+ None->all)
     """
     ids = open_ids(backend, xml, "w")
     for k, v in TEST_DATA.items():
@@ -61,7 +63,6 @@ def test_minimal_io(backend, xml, ids_type):
 
     ids.minimal.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     ids.minimal.put()
-    assert ids.minimal.a.value == 2.0
 
     ids2 = open_ids(backend, xml, "a")
     ids2.minimal.get()

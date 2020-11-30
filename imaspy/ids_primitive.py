@@ -107,7 +107,8 @@ class IDSPrimitive(IDSMixin):
             elif self._ids_type == "INT":
                 value = np.array(value, dtype=np.int64)
             elif self._ids_type == "STR":
-                value = np.array(value, dtype="<U1")
+                # The python lowlevel interface does not handle numpy arrays of strings well
+                value = list(value)
             else:
                 logger.critical(
                     "Unknown numpy type {!s}, cannot convert from python to IDS type".format(
@@ -174,6 +175,7 @@ class IDSPrimitive(IDSMixin):
         logger.debug(
             "   {:50.50s} write".format("/".join([context_store[ctx], rel_path]))
         )
+        # TODO: the data_type argument seems to be unused in the ual_write_data routine, remove it?
         status = self._ull.ual_write_data(
             ctx, rel_path, strTimeBasePath, data, dataType=data_type, dim=self._ndims
         )

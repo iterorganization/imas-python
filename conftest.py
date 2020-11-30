@@ -9,10 +9,25 @@ from imaspy.ids_defs import ASCII_BACKEND, HDF5_BACKEND, MDSPLUS_BACKEND, MEMORY
 from imaspy.test_minimal_types_io import TEST_DATA
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--memory", action="store_true", help="test with memory backend only"
+    )
+    parser.addoption(
+        "--ascii", action="store_true", help="test with ascii backend only"
+    )
+
+
 def pytest_generate_tests(metafunc):
     if "backend" in metafunc.fixturenames:
-        metafunc.parametrize(
-            "backend", [MEMORY_BACKEND, ASCII_BACKEND, MDSPLUS_BACKEND, HDF5_BACKEND]
-        )
+        if metafunc.config.getoption("ascii"):
+            metafunc.parametrize("backend", [ASCII_BACKEND])
+        elif metafunc.config.getoption("memory"):
+            metafunc.parametrize("backend", [MEMORY_BACKEND])
+        else:
+            metafunc.parametrize(
+                "backend",
+                [MEMORY_BACKEND, ASCII_BACKEND, MDSPLUS_BACKEND, HDF5_BACKEND],
+            )
     if "ids_type" in metafunc.fixturenames:
         metafunc.parametrize("ids_type", [None] + list(TEST_DATA.keys()))
