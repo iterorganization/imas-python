@@ -83,7 +83,7 @@ else:
     from imas.imasdef import MDSPLUS_BACKEND
     from pathlib import Path
 
-    imas.ids = imas.ids_classes.IDSRoot  # Enable old-style syntax
+    imas.ids = imas.ids_root.IDSRoot  # Enable old-style syntax
     imas_prefix = Path(os.getenv("IMAS_PREFIX"))
     imas_include = imas_prefix.joinpath("xml")
     idsdef = imas_include.joinpath("IDSDef.xml")
