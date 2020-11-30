@@ -60,5 +60,5 @@ def min_test(backend, xml):
 
 def open_ids(backend, xml_path, mode):
     ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml_path, verbosity=2)
-    ids.open_ual_store(os.environ["USER"], "test", "3", backend, mode=mode)
+    ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode=mode)
     return ids
