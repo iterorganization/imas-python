@@ -59,7 +59,7 @@ def test_minimal_types_io(backend, xml, ids_type):
     ids = open_ids(backend, xml, "w")
     for k, v in TEST_DATA.items():
         if ids_type is None or k == ids_type:
-            ids.minimal.__setattr__(k, v)
+            ids.minimal[k] = v
 
     ids.minimal.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     ids.minimal.put()
@@ -72,7 +72,10 @@ def test_minimal_types_io(backend, xml, ids_type):
     else:
         for k, v in TEST_DATA.items():
             if ids_type is None or k == ids_type:
-                assert ids2.minimal.__getattr(k).value == v
+                if type(v) == np.ndarray:
+                    assert np.array_equal(ids2.minimal[k].value, v)
+                else:
+                    assert ids2.minimal[k].value == v
 
 
 def open_ids(backend, xml_path, mode):
