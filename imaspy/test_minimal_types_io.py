@@ -38,7 +38,7 @@ TEST_DATA = {
     "flt_1d_type": np.asarray([3.0, 4.0]),
     "int_type": 5,
 }
-for i in range(0, 6):
+for i in range(0, 7):
     # dimensions are random
     TEST_DATA["flt_%dd" % i] = np.random.random_sample(size=randdims(i))
     if i < 4:

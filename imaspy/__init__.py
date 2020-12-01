@@ -15,7 +15,7 @@ try:
 
     # Set the package version equal to the one grabbed from the
     # Source Management System
-    # For git-desribe (this repository) it is based on tagged commits
+    # For git-describe (this repository) it is based on tagged commits
     __version__ = __version_from_scm__
 except ModuleNotFoundError:
     pass
