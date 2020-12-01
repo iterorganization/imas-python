@@ -10,9 +10,12 @@ from imaspy.backends import (
     xarray_core_utils,
 )
 
-from .version import version as __version_from_scm__
+try:
+    from .version import version as __version_from_scm__
 
-# Set the package version equal to the one grabbed from the
-# Source Management System
-# For git-desribe (this repository) it is based on tagged commits
-__version__ = __version_from_scm__
+    # Set the package version equal to the one grabbed from the
+    # Source Management System
+    # For git-desribe (this repository) it is based on tagged commits
+    __version__ = __version_from_scm__
+except ModuleNotFoundError:
+    pass

@@ -52,6 +52,8 @@ def xml():
     return Path(__file__).parent / "../assets/IDS_minimal_types.xml"
 
 
+# TODO: use a separate folder for the MDSPLUS DB and clear it after the testcase
+# TODO: since a get() loads the whole IDS splitting this test by ids_type is not so useful maybe
 def test_minimal_types_io(backend, xml, ids_type):
     """Write and then read again a number on our minimal IDS.
     This gets run with all 4 backend options and with all ids_types (+ None->all)
