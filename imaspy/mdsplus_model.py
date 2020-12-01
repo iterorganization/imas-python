@@ -47,7 +47,7 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
         with open(fname, "rb") as file:
             crc = crc32(file.read())
     else:
-        return ValueError("Version OR filename need to be provided, none given")
+        raise ValueError("Version OR filename need to be provided, none given")
 
     cache_dir_name = "%s-%08x" % (xml_name, crc)
     cache_dir_path = str(
@@ -80,9 +80,9 @@ def create_model_ids_xml(cache_dir_path, fname, version):
             [
                 "java",
                 "net.sf.saxon.Transform",
-                "-s:" + fname,
-                "-o:" + str(cache_dir_path / "ids.xml"),
-                "DD_GIT_DESCRIBE=" + (version or fname),
+                "-s:" + str(fname),
+                "-o:" + str(Path(cache_dir_path) / "ids.xml"),
+                "DD_GIT_DESCRIBE=" + str(version or fname),
                 # if this is expected as git describe it might break
                 # if we just pass a filename
                 "UAL_GIT_DESCRIBE=" + os.environ.get("UAL_VERSION", "0.0.0"),
