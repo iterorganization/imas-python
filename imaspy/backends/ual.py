@@ -219,9 +219,17 @@ class UALFile:
         }
 
         try:
-            status = ull.ual_open_pulse(idx, mode_actions[mode], options)
+            status, message = ull.ual_open_pulse(
+                idx, mode_actions[mode], options, return_message=True
+            )
         except KeyError:
             raise ValueError("Invalid mode: {!r}".format(mode))
+        except TypeError:
+            message = ""
+            try:
+                status = ull.ual_open_pulse(idx, mode_actions[mode], options)
+            except KeyError:
+                raise ValueError("Invalid mode: {!r}".format(mode))
 
         if status != 0:
             if mode == "r":
@@ -230,8 +238,14 @@ class UALFile:
                 raise ALError(
                     "Error calling ull.ual_open_pulse({!r},{!r},{!r}).\n"
                     "Pulse action state was ({!s}).\n"
-                    "Backend was {!r}\n".format(
-                        idx, OPEN_PULSE, options, pulse_action_state, backend_str,
+                    "Backend was {!r}\n"
+                    "Backend error: {!s}\n".format(
+                        idx,
+                        OPEN_PULSE,
+                        options,
+                        pulse_action_state,
+                        backend_str,
+                        message,
                     ),
                     status,
                 )

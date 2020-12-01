@@ -10,24 +10,33 @@ from imaspy.test_minimal_types_io import TEST_DATA
 
 
 def pytest_addoption(parser):
-    parser.addoption(
-        "--memory", action="store_true", help="test with memory backend only"
-    )
-    parser.addoption(
-        "--ascii", action="store_true", help="test with ascii backend only"
-    )
+    # if none of these are specified, test with all backends
+    parser.addoption("--mdsplus", action="store_true", help="test with MDSPlus backend")
+    parser.addoption("--memory", action="store_true", help="test with memory backend")
+    parser.addoption("--ascii", action="store_true", help="test with ascii backend")
+    parser.addoption("--hdf5", action="store_true", help="test with HDF5 backend")
 
 
 def pytest_generate_tests(metafunc):
     if "backend" in metafunc.fixturenames:
+        all = True
         if metafunc.config.getoption("ascii"):
             metafunc.parametrize("backend", [ASCII_BACKEND])
-        elif metafunc.config.getoption("memory"):
+            all = False
+        if metafunc.config.getoption("memory"):
             metafunc.parametrize("backend", [MEMORY_BACKEND])
-        else:
+            all = False
+        if metafunc.config.getoption("hdf5"):
+            metafunc.parametrize("backend", [HDF5_BACKEND])
+            all = False
+        if metafunc.config.getoption("mdsplus"):
+            metafunc.parametrize("backend", [MDSPLUS_BACKEND])
+            all = False
+        if all:
             metafunc.parametrize(
                 "backend",
-                [MEMORY_BACKEND, ASCII_BACKEND, MDSPLUS_BACKEND, HDF5_BACKEND],
+                # Do not test with HDF5 backend for now, it is not done
+                [MEMORY_BACKEND, ASCII_BACKEND, MDSPLUS_BACKEND],
             )
     if "ids_type" in metafunc.fixturenames:
         metafunc.parametrize("ids_type", [None] + list(TEST_DATA.keys()))
