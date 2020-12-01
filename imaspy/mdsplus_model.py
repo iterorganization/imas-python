@@ -42,15 +42,17 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
         xml_name = version + ".xml"
         fname = "-"
     elif xml_file:
-        xml_name = Path(xml_file).filename
+        xml_name = Path(xml_file).name
         fname = xml_file
-        with open(fname, "r") as file:
+        with open(fname, "rb") as file:
             crc = crc32(file.read())
     else:
         return ValueError("Version OR filename need to be provided, none given")
 
     cache_dir_name = "%s-%08x" % (xml_name, crc)
-    cache_dir_path = Path(_get_xdg_cache_dir()) / "imaspy" / "mdsplus" / cache_dir_name
+    cache_dir_path = str(
+        Path(_get_xdg_cache_dir()) / "imaspy" / "mdsplus" / cache_dir_name
+    )
 
     if not os.path.isdir(cache_dir_path) or rebuild:
         if not os.path.isdir(cache_dir_path):
