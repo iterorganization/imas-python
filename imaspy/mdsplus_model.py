@@ -3,6 +3,7 @@
 
 import logging
 import os
+import re
 from pathlib import Path
 from subprocess import CalledProcessError, check_output
 from zlib import crc32
@@ -40,13 +41,11 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
         crc = get_dd_xml_crc(version)
         xml_name = version + ".xml"
         fname = "-"
-        stdin = get_dd_xml(version)
     elif xml_file:
         xml_name = Path(xml_file).filename
         fname = xml_file
         with open(fname, "r") as file:
             crc = crc32(file.read())
-        stdin = None
     else:
         return ValueError("Version OR filename need to be provided, none given")
 
@@ -57,27 +56,68 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
         if not os.path.isdir(cache_dir_path):
             os.makedirs(cache_dir_path)
 
-        try:
-            check_output(
-                [
-                    "java",
-                    "net.sf.saxon.Transform",
-                    "-s:" + fname,
-                    "-o:" + str(cache_dir_path / "ids.xml"),
-                    "DD_GIT_DESCRIBE=" + (version or fname),
-                    "UAL_GIT_DESCRIBE=" + os.environ.get("UAL_VERSION", "0.0.0"),
-                    "-xsl:"
-                    + str(Path(__file__).parent / "../assets/IDSDef2MDSpreTree.xsl"),
-                ],
-                input=stdin,
-                env={"CLASSPATH": get_saxon(), "PATH": os.environ["PATH"]},
-            )
-        except CalledProcessError as e:
-            if xml_file:
-                logger.warning("Error making MDSPlus model for {file}", xml_file)
-            else:
-                logger.warning("Error making MDSplus model for {version}", version)
-            raise e
+        logger.info(
+            "Creating and caching MDSPlus model at {path}, this may take a while",
+            cache_dir_path,
+        )
+
+        create_model_ids_xml(cache_dir_path, fname, version)
+
+        create_mdsplus_model(cache_dir_path)
+    else:
+        logger.info("Using cached MDSPlus model at {path}", cache_dir_path)
+
+    return cache_dir_path
+
+
+def create_model_ids_xml(cache_dir_path, fname, version):
+    """Use saxon to compile an ids.xml suitable for creating an mdsplus model."""
+
+    try:
+        check_output(
+            [
+                "java",
+                "net.sf.saxon.Transform",
+                "-s:" + fname,
+                "-o:" + str(cache_dir_path / "ids.xml"),
+                "DD_GIT_DESCRIBE=" + (version or fname),
+                # if this is expected as git describe it might break
+                # if we just pass a filename
+                "UAL_GIT_DESCRIBE=" + os.environ.get("UAL_VERSION", "0.0.0"),
+                "-xsl:"
+                + str(Path(__file__).parent / "../assets/IDSDef2MDSpreTree.xsl"),
+            ],
+            input=get_dd_xml(version) if version else None,
+            env={"CLASSPATH": get_saxon(), "PATH": os.environ["PATH"]},
+        )
+    except CalledProcessError as e:
+        if fname:
+            logger.warning("Error making MDSPlus model IDS.xml for {file}", fname)
+        else:
+            logger.warning("Error making MDSplus model IDS.xml for {version}", version)
+        raise e
+
+
+def create_mdsplus_model(cache_dir_path):
+    """Use jtraverser to compile a valid MDS model file."""
+    try:
+        check_output(
+            [
+                "java",
+                "-Xms1g",  # what do these do?
+                "-Xmx8g",  # what do these do?
+                "-XX:+UseG1GC",  # what do these do?
+                "-cp",
+                jTraverser_jar(),
+                "CompileTree",
+                "ids",
+            ],
+            cwd=cache_dir_path,
+            env={"PATH": os.environ["PATH"], "ids_path": cache_dir_path},
+        )
+    except CalledProcessError as e:
+        logger.warning("Error making MDSPlus model in {path}", cache_dir_path)
+        raise e
 
 
 def _get_xdg_cache_dir():
@@ -87,3 +127,26 @@ def _get_xdg_cache_dir():
     https://standards.freedesktop.org/basedir-spec/basedir-spec-latest.html
     """
     return os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
+
+
+def jTraverser_jar():
+    """Search a few common locations and CLASSPATH for jTraverser.jar
+    which is provided by MDSPlus."""
+    search_dirs = ["/usr/share/java"]
+
+    for component in os.environ.get("CLASSPATH", "").split(":"):
+        if component.endswith(".jar"):
+            if re.search(".*jTraverser.jar", component):
+                return component
+        else:  # assume its a directory (strip any '*' suffix)
+            search_dirs.append(component.rstrip("*"))
+
+    files = []
+    for dir in search_dirs:
+        files += Path(dir).rglob("*")
+
+    jars = [path for path in files if path.name == "jTraverser.jar"]
+
+    if jars:
+        jar_path = min(jars, key=lambda x: len(x.parts))
+        return jar_path

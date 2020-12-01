@@ -11,6 +11,7 @@ from imaspy.imas_ual_env_parsing import (
     parse_UAL_version_string,
     sanitise_UAL_symver,
 )
+from imaspy.mdsplus_model import mdsplus_model_dir
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -163,6 +164,9 @@ class UALFile:
                 raise Exception("Shot should be 1 or higher")
             if run > 99999:
                 raise Exception("Shot should be 99999 or lower")
+
+            # ensure presence of mdsplus dir and set environment ids_dir
+            os.environ["ids_dir"] = mdsplus_model_dir(data_version)
 
         ual_patch_version, steps_from_version, ual_commit = parse_UAL_version_string(
             ual_version_string

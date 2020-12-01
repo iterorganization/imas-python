@@ -31,10 +31,10 @@ def test_known_failing_version():
 
 def test_load_all_dds():
     """Test loading all of the data dictionaries.
-    Only load those where the NBI IDS exists (3.0.4 and up) because we test those.
+    Only load those we support (3.22.0 and up)
     """
     for version in dd_xml_versions()[::-1]:
-        if StrictVersion(version) >= StrictVersion("3.0.4"):
+        if StrictVersion(version) >= StrictVersion("3.22.0"):
             # iterate over all versions packaged in our zipfile (at least one)
             ids = imaspy.ids_root.IDSRoot(0, 0, version=version, verbosity=1)
 
