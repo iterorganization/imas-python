@@ -145,7 +145,9 @@ class IDSStructure(IDSMixin):
                 attr = getattr(self, key)
             else:
                 # Structure does not exist. It should have been pre-generated
-                raise NotImplementedError("generating new structure from scratch")
+                raise NotImplementedError(
+                    "generating new structure from scratch {name}".format(name=key)
+                )
                 from imaspy.ids_struct_array import create_leaf_container
 
                 attr = create_leaf_container(key, no_data_type_I_guess, parent=self)

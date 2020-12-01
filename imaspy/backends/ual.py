@@ -18,7 +18,20 @@ logger.setLevel(logging.WARNING)
 
 try:
     # TODO: change to new structure
-    from imas.imasdef import *
+    from imas.imasdef import (
+        NO_BACKEND,
+        ASCII_BACKEND,
+        MDSPLUS_BACKEND,
+        HDF5_BACKEND,
+        MEMORY_BACKEND,
+        UDA_BACKEND,
+        OPEN_PULSE,
+        FORCE_OPEN_PULSE,
+        CREATE_PULSE,
+        FORCE_CREATE_PULSE,
+        CLOSE_PULSE,
+        ERASE_PULSE,
+    )
 except ImportError:
     logger.warning(
         "imasdef unavailable, might give trouble when using IMAS-AL related functionality"
@@ -198,28 +211,30 @@ class UALFile:
         #    Data Entry already exists) and opens it at the same time
         # FORCE_CREATE_PULSE: Creates an empty Data Entry (overwrites if
         #    Data Entry already exists) and opens it at the same time
-        if mode == "r":
-            status = ull.ual_open_pulse(idx, OPEN_PULSE, options)
-            if status != 0:
-                raise PulseNotFoundError("No such pulse {!r}".format(self), status)
-        elif mode == "w":
-            status = ull.ual_open_pulse(idx, FORCE_CREATE_PULSE, options)
-        elif mode == "a":
-            status = ull.ual_open_pulse(idx, FORCE_OPEN_PULSE, options)
-        elif mode == "x":
-            status = ull.ual_open_pulse(idx, CREATE_PULSE, options)
-        else:
+        mode_actions = {
+            "r": OPEN_PULSE,
+            "w": FORCE_CREATE_PULSE,
+            "a": FORCE_OPEN_PULSE,
+            "x": CREATE_PULSE,
+        }
+
+        try:
+            status = ull.ual_open_pulse(idx, mode_actions[mode], options)
+        except KeyError:
             raise ValueError("Invalid mode: {!r}".format(mode))
 
         if status != 0:
-            raise ALError(
-                "Error calling ull.ual_open_pulse({!r},{!r},{!r}).\n"
-                "Pulse action state was ({!s}).\n"
-                "Backend was {!r}".format(
-                    idx, OPEN_PULSE, options, pulse_action_state, backend_str
-                ),
-                status,
-            )
+            if mode == "r":
+                raise PulseNotFoundError("No such pulse {!r}".format(self), status)
+            else:
+                raise ALError(
+                    "Error calling ull.ual_open_pulse({!r},{!r},{!r}).\n"
+                    "Pulse action state was ({!s}).\n"
+                    "Backend was {!r}\n".format(
+                        idx, OPEN_PULSE, options, pulse_action_state, backend_str,
+                    ),
+                    status,
+                )
 
         self.closed = False
         self._context_idx = idx
