@@ -7,6 +7,8 @@ from distutils.version import StrictVersion
 from pathlib import Path
 from zipfile import ZipFile
 
+import imaspy
+
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
 logger.setLevel(logging.WARNING)
@@ -34,10 +36,12 @@ def fname(version):
 
 
 def print_supported_version_warning(version):
-    if StrictVersion(version) < StrictVersion("3.22.0"):
+    if StrictVersion(version) < imaspy.OLDEST_SUPPORTED_VERSION:
         logger.warning(
-            "Version {version} is below lowest supported version of 3.22.0. \
-            Proceed at your own risk."
+            "Version {version} is below lowest supported version of {last_version}. \
+            Proceed at your own risk.",
+            version,
+            imaspy.OLDEST_SUPPORTED_VERSION,
         )
 
 

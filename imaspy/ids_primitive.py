@@ -193,7 +193,6 @@ class IDSPrimitive(IDSMixin):
         # Strip context from absolute path
         strNodePath = self.getRelCTXPath(ctx)
         strTimeBasePath = self.getTimeBasePath(homogeneousTime)
-        print(strNodePath, self._ndims)
         if self._ids_type == "STR" and self._ndims == 0:
             status, data = self._ull.ual_read_data_string(
                 ctx, strNodePath, strTimeBasePath, CHAR_DATA, 1
