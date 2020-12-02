@@ -6,9 +6,12 @@
 
 # Set up logging immediately
 
+import xml.etree.ElementTree as ET
+
 import numpy as np
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
+from imaspy.dd_zip import get_dd_xml
 from imaspy.ids_defs import (
     CHAR_DATA,
     IDS_TIME_MODE_HOMOGENEOUS,
@@ -31,8 +34,38 @@ class IDSToplevel(IDSStructure):
     """
 
     @loglevel
+    def __init__(
+        self, parent, name, structure_xml, backend_version=None, backend_xml_path=None
+    ):
+        """Save backend_version and backend_xml and build translation layer.
+        """
+        super(IDSToplevel, self).__init__(parent, name, structure_xml)
+
+        if backend_xml_path or backend_version:
+            self._read_backend_xml(backend_version, backend_xml_path)
+
+    @loglevel
+    def _read_backend_xml(self, version=None, xml_path=None):
+        """Find a DD xml from version or path, select the child corresponding to the
+        current name and set the backend properties."""
+        if xml_path:
+            XMLtreeIDSDef = ET.parse(xml_path)
+            logger.debug("Generating backend %s from file %s", self._name, xml_path)
+        elif version:
+            XMLtreeIDSDef = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
+            logger.debug("Generating backend %s for version %s", self.version)
+        else:
+            raise ValueError("version or xml_path are required")
+
+        # Parse given xml_path and build imaspy IDS structures for this toplevel only
+        root = XMLtreeIDSDef.getroot()
+        self.set_backend_properties(
+            root.find("./*[@name='{name}']".format(name=self._name))
+        )
+
+    @loglevel
     def readHomogeneous(self, occurrence):
-        """Read the value of homogeneousTime.
+        """Read the value of homogeneousTime
 
         Returns:
             0: IDS_TIME_MODE_HETEROGENEOUS; Dynamic nodes may be asynchronous, their timebase is located as indicted in the "Coordinates" column of the documentation
@@ -119,7 +152,8 @@ class IDSToplevel(IDSStructure):
                 )
             )
             return
-        data_dictionary_version = self.read_data_dictionary_version(occurrence)
+
+        self._data_dictionary_version = self.read_data_dictionary_version(occurrence)
 
         # TODO: Do not use global context
         status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)

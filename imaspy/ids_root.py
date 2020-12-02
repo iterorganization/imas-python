@@ -39,7 +39,17 @@ class IDSRoot:
     path = ""
 
     @loglevel
-    def __init__(self, s=-1, r=-1, rs=None, rr=None, version=None, xml_path=None):
+    def __init__(
+        self,
+        s=-1,
+        r=-1,
+        rs=None,
+        rr=None,
+        version=None,
+        xml_path=None,
+        backend_version=None,
+        backend_xml_path=None,
+    ):
         """Initialize a imaspy IDS tree
 
         Dynamically build the imaspy IDS tree from the given xml path.
@@ -50,6 +60,13 @@ class IDSRoot:
 
         if version is specified search the local set of IMAS DD definitions
         for that version. if xml_path is explicitly specified, ignore version.
+        version/xml_path is used to build the in_memory store.
+
+        if backend_version is specified use that version to read/write.
+        if backend_xml is specified use that DD xml to read/write (overrides backend_version)
+        if neither is specified, use the backend_version as found in
+          $ids/ids_properties/version_put/data_dictionary
+          (this is a toplevel property, so they could have different versions per toplevel)
         """
         setattr(self, "shot", s)
         self.shot = s
@@ -65,14 +82,14 @@ class IDSRoot:
         self.connected = False
         self.expIdx = -1
 
-        if version:
-            XMLtreeIDSDef = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
-            logger.info("Generating IDS structures for version %s", version)
-            self._version = version
-        elif xml_path:
+        if xml_path:
             XMLtreeIDSDef = ET.parse(xml_path)
             logger.info("Generating IDS structures from file %s", xml_path)
             self._xml_path = xml_path
+        elif version:
+            XMLtreeIDSDef = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
+            logger.info("Generating IDS structures for version %s", version)
+            self._version = version
         else:
             raise ValueError("version or xml_path are required")
 
@@ -86,7 +103,17 @@ class IDSRoot:
                 continue
             logger.debug("{:42.42s} initialization".format(my_name))
             self._children.append(my_name)
-            setattr(self, my_name, IDSToplevel(self, my_name, ids))
+            setattr(
+                self,
+                my_name,
+                IDSToplevel(
+                    self,
+                    my_name,
+                    ids,
+                    backend_version=backend_version,
+                    backend_xml_path=backend_xml_path,
+                ),
+            )
 
     # self.equilibrium = IDSToplevel('equilibrium')
 
@@ -181,7 +208,7 @@ class IDSRoot:
         if backend_type == MDSPLUS_BACKEND:
             from imaspy.mdsplus_model import mdsplus_model_dir
 
-            # ensure presence of mdsplus dir and set environment ids_dir
+            # ensure presence of mdsplus dir and set environment ids_path
             try:
                 _version = self._version
             except AttributeError:
@@ -210,7 +237,7 @@ class IDSRoot:
             ual_version=ual_version,
         )
 
-        # Safe the store internally for magic path detection
+        # Save the store internally for magic path detection
         self._data_store = store
 
         # Do we need to set context like dis?

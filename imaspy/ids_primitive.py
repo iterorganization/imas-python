@@ -65,6 +65,8 @@ class IDSPrimitive(IDSMixin):
             value = self._default
         self._ids_type = ids_type
         self._ndims = ndims
+        self._backend_type = None
+        self._backend_ndims = None
         self._name = name
         self._parent = parent
         self._coordinates = coordinates
@@ -136,25 +138,42 @@ class IDSPrimitive(IDSMixin):
         """
         if self._name is None:
             raise Exception("Location in tree undefined, cannot put in database")
+        write_type = self._backend_type or self._ids_type
+        ndims = self._backend_ndims or self._ndims
+
         # Convert imaspy ids_type to ual scalar_type
-        if self._ids_type == "INT":
+        if write_type == "INT":
             scalar_type = 1
-        elif self._ids_type == "FLT":
+        elif write_type == "FLT":
             scalar_type = 2
-        elif self._ids_type == "CPX":
+        elif write_type == "CPX":  # TODO: Add CPX to ids_minimal_types.xml
             scalar_type = 3
 
         # Check sanity of given data
-        if self._ids_type in ["INT", "FLT", "CPX"] and self._ndims == 0:
-            data = hli_utils.HLIUtils.isScalarFinite(self.value, scalar_type)
-        elif self._ids_type in ["INT", "FLT", "CPX"]:
+        if write_type in ["INT", "FLT", "CPX"] and ndims == 0:
+            # Manually convert value to write_type
+            # TODO: bundle these as 'generic' migrations
+            if write_type == "INT":
+                value = round(self.value)
+            elif write_type == "FLT":
+                value = float(self.value)
+            data = hli_utils.HLIUtils.isScalarFinite(value, scalar_type)
+        elif write_type in ["INT", "FLT", "CPX"]:
+            # Arrays will be converted by isTypeValid
             if not hli_utils.HLIUtils.isTypeValid(self.value, self._name, "NP_ARRAY"):
                 raise Exception
             data = hli_utils.HLIUtils.isFinite(self.value, scalar_type)
         else:
-            data = self.value
+            # TODO: convert data on write time here
+            if write_type == "INT":
+                data = round(self.value)
+            elif write_type == "FLT":
+                data = float(self.value)
+            else:
+                data = self.value
 
         # Do not write if data is the same as the default of the leaf node
+        # TODO: set default of backend xml instead
         if np.all(data == self._default):
             return
 
@@ -164,7 +183,7 @@ class IDSPrimitive(IDSMixin):
         )
         # Call signature
         # ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))
-        data_type = self._ull._getDataType(data)
+        # data_type = self._ull._getDataType(data)
 
         # Strip context from absolute path
         rel_path = self.getRelCTXPath(ctx)
@@ -177,7 +196,7 @@ class IDSPrimitive(IDSMixin):
         )
         # TODO: the data_type argument seems to be unused in the ual_write_data routine, remove it?
         status = self._ull.ual_write_data(
-            ctx, rel_path, strTimeBasePath, data, dataType=data_type, dim=self._ndims
+            ctx, rel_path, strTimeBasePath, data, dataType=write_type, dim=ndims
         )
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
@@ -193,37 +212,46 @@ class IDSPrimitive(IDSMixin):
         # Strip context from absolute path
         strNodePath = self.getRelCTXPath(ctx)
         strTimeBasePath = self.getTimeBasePath(homogeneousTime)
-        if self._ids_type == "STR" and self._ndims == 0:
+        read_type = self._backend_type or self._ids_type
+        ndims = self._backend_ndims or self._ndims
+        # we are not really ready to deal with a change in ndims
+
+        if read_type == "STR" and ndims == 0:
             status, data = self._ull.ual_read_data_string(
                 ctx, strNodePath, strTimeBasePath, CHAR_DATA, 1
             )
-        elif self._ids_type == "STR" and self._ndims == 1:
+        elif read_type == "STR" and ndims == 1:
             status, data = self._ull.ual_read_data_array_string(
                 ctx, strNodePath, strTimeBasePath, CHAR_DATA, 2,
             )
-        elif self._ids_type == "INT" and self._ndims == 0:
+        elif read_type == "INT" and ndims == 0:
             status, data = self._ull.ual_read_data_scalar(
                 ctx, strNodePath, strTimeBasePath, INTEGER_DATA
             )
-        elif self._ids_type == "FLT" and self._ndims == 0:
+        elif read_type == "FLT" and ndims == 0:
             status, data = self._ull.ual_read_data_scalar(
                 ctx, strNodePath, strTimeBasePath, DOUBLE_DATA
             )
-        elif self._ids_type == "FLT" and self._ndims > 0:
+        elif read_type == "FLT" and ndims > 0:
             status, data = self._ull.ual_read_data_array(
                 ctx, strNodePath, strTimeBasePath, DOUBLE_DATA, self._ndims
             )
-        elif self._ids_type == "INT" and self._ndims > 0:
+        elif read_type == "INT" and ndims > 0:
             status, data = self._ull.ual_read_data_array(
                 ctx, strNodePath, strTimeBasePath, INTEGER_DATA, self._ndims
             )
         else:
             logger.critical(
                 "Unknown type {!s} ndims {!s} of field {!s}, skipping for now".format(
-                    self._ids_type, self._ndims, self._name
+                    read_type, ndims, self._name
                 )
             )
             status = data = None
+
+        # TODO: use round() instead of floor() for float -> int
+        # this does not actually convert the data, the in-memory representation
+        # is the same as the backend representation. Python does the data conversion
+        # on comparison time (see test_minimal_conversion.py)
         return status, data
 
     @property
@@ -247,7 +275,25 @@ def create_leaf_container(name, data_type, **kwargs):
     """Wrapper to create IDSPrimitive/IDSNumericArray from IDS syntax.
     TODO: move this elsewhere.
     """
+    ids_type, ndims = parse_dd_type(data_type)
     # legacy support
+    if ndims == 0:
+        leaf = IDSPrimitive(name, ids_type, ndims, **kwargs)
+    else:
+        if ids_type == "STR":
+            # Array of strings should behave more like lists
+            # this is an assumption on user expectation!
+            leaf = IDSPrimitive(name, ids_type, ndims, **kwargs)
+        else:
+            # Prevent circular import problems
+            from imaspy.ids_numeric_array import IDSNumericArray
+
+            leaf = IDSNumericArray(name, ids_type, ndims, **kwargs)
+    return leaf
+
+
+def parse_dd_type(data_type):
+    """Map from data types to ids_type, ids_dims"""
     if data_type == "int_type":
         ids_type = "INT"
         ndims = 0
@@ -266,16 +312,5 @@ def create_leaf_container(name, data_type, **kwargs):
     else:
         ids_type, ids_dims = data_type.split("_")
         ndims = int(ids_dims[:-1])
-    if ndims == 0:
-        leaf = IDSPrimitive(name, ids_type, ndims, **kwargs)
-    else:
-        if ids_type == "STR":
-            # Array of strings should behave more like lists
-            # this is an assumption on user expectation!
-            leaf = IDSPrimitive(name, ids_type, ndims, **kwargs)
-        else:
-            # Prevent circular import problems
-            from imaspy.ids_numeric_array import IDSNumericArray
 
-            leaf = IDSNumericArray(name, ids_type, ndims, **kwargs)
-    return leaf
+    return ids_type, ndims
