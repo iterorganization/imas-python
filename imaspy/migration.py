@@ -2,6 +2,8 @@
 # You should have received IMASPy LICENSE file with this project.
 """ Represents the possible migrations between data dictionaries."""
 
+from distutils.version import StrictVersion
+
 from imaspy.logger import logger
 
 MIGRATIONS = {}  # a dict keyed with "version"
@@ -13,23 +15,25 @@ READ = True
 WRITE = False
 
 
-def register_migration(cls, version):
-    """Register a migration class at this version and for each of its cls.paths"""
-    cls.version = version
+def get_migration_tree(version_mem, version_file, path):
+    vmem = StrictVersion(version_mem)
+    vfile = StrictVersion(version_file)
+    if vmem == vfile:
+        logger.info("migration tree requested for identical versions, returning empty")
+    elif vmem < vfile:
+        vmin = vmem
+        vmax = vfile
+        direction = DOWN
+    else:
+        vmin = vfile
+        vmax = vmem
+        direction = UP
 
-    count = 0
-    for direction in ('up', 'down'):
-        for path in cls.call('{dir}_paths'.format(direction)) + cls.paths():
-            count += 1
-            MIGRATIONS.setdefault(version, {}) \
-                      .setdefault(direction, {}) \
-                      .setdefault(path, []) \
-                      .append(cls)
+    for ver in sorted(MIGRATIONS.keys()):
+        if ver < vmin or ver > vmax:
+            continue
 
-    if count == 0:
-        logger.error('Migration %s defined 0 paths, will not apply', cls)
-
-    return cls
+        MIGRATIONS[ver]
 
 
 class Migration:
@@ -45,43 +49,53 @@ class Migration:
     """
 
     version = None
-    def up_paths(cls):
-        return []
+    up_paths = []
+    down_paths = []
+    paths = []
 
-    def down_paths(cls):
-        return []
-
-    def paths(cls):
-        return []
-
-    def __init__(self, direction, mode):
+    def __init__(self, version):
         """Initialize the migration in direction and read/write mode"""
-        self.up = direction
-        self.read = mode
+        self.version = StrictVersion(version)
+        self.register()
 
-    def read_from(self):
-        """Base method which instructs the access layer to read from one
-        or several fields to construct the in-memory representation.
+    def transform_path(self, up, read, path):
+        return path
 
-        Returns a list of paths, data_types and ndims as a list of tuples.
-        (should this become something like an 'address' object in imaspy?)
-        """
-        raise NotImplementedError("read_from needs to be implemented in your migration")
+    def transform_data(self, up, read, data):
+        return data
 
-    def write_to(self):
-        """Base method which instructs the access layer to write to one or several
-        fields."""
-        raise NotImplementedError("write_to needs to be implemented in your migration")
+    def register(self):
+        """Register a migration object at this version and for each of its paths.
+        Paths may be regexes or strings."""
+        count = 0
+        for direction in ("up", "down"):
+            for path in self.getattr(direction + "_paths") + self.paths:
+                count += 1
+                MIGRATIONS.setdefault(self.version, {}).setdefault(
+                    direction, {}
+                ).setdefault(path, []).append(self)
+
+        if count == 0:
+            logger.error("Migration %s defined 0 paths, will not apply", self)
 
 
 class Rename(Migration):
     """A simple migration which involves only renaming/moving a field."""
 
-    def transform_data(self, data):
+    def __init__(self, version, old_name, new_name):
+        self.old_name = old_name
+        self.new_name = new_name
+
+        self.up_paths = [self.new_name]
+        self.down_paths = [self.old_name]
+
+        super(version)
+
+    def transform_data(self, direction, mode, data):
         return data
 
-    def transform_path(self, path):
-        if self.up
+    def transform_path(self, direction, mode, path):
+        if direction == UP:  # then memory is new and backend is old
             return self.old_name
         else:
             return self.new_name
@@ -90,7 +104,12 @@ class Rename(Migration):
 class Scale(Migration):
     """A simple migration which scales by a constant,
     such that new_value = constant * old_value"""
-    
-    constant = 1
 
-    def read_from(self):
+    def __init__(self, version, path, scale_factor):
+        self.constant = scale_factor
+
+    def transform_data(self, direction, mode, data):
+        if (direction == UP and mode == READ) or (direction == DOWN and mode == WRITE):
+            return data * self.constant
+        else:
+            return data / self.constant
