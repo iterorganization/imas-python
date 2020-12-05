@@ -6,8 +6,8 @@ from distutils.version import StrictVersion
 
 from imaspy.logger import logger
 
-MIGRATIONS = {}  # a dict keyed with "version"
-# containing a dict (up, down) of lists of migrations to run 'up' and 'down'
+MIGRATIONS_UP = {}  # a dict keyed with paths for migrating up (mem newer than file)
+MIGRATIONS_DOWN = {}  # each of the values is a list of migrations
 
 UP = True
 DOWN = False
@@ -16,10 +16,21 @@ WRITE = False
 
 
 def get_migration_tree(version_mem, version_file, path):
+
+    for ver in sorted(MIGRATIONS.keys()):
+        if ver < vmin or ver > vmax:
+            continue
+
+        MIGRATIONS[ver]
+
+def transform_path(version_mem, version_file, mode, path):
+    """Find the list of paths to fetch from/write to"""
+    # For this path, get the list of migrations and walk through them
+    # (there will only be a few, so it is not so expensive)
     vmem = StrictVersion(version_mem)
     vfile = StrictVersion(version_file)
     if vmem == vfile:
-        logger.info("migration tree requested for identical versions, returning empty")
+        return [path]
     elif vmem < vfile:
         vmin = vmem
         vmax = vfile
@@ -29,11 +40,18 @@ def get_migration_tree(version_mem, version_file, path):
         vmax = vmem
         direction = UP
 
-    for ver in sorted(MIGRATIONS.keys()):
-        if ver < vmin or ver > vmax:
-            continue
+    if direction == UP:
+        for migration in MIGRATIONS_UP[path][::-1]:
+            # vmem > vfile, and we would like to know which paths a mem path corresponds to.
+            # we therefore have to go down from vmem to vfile
+            # the migrations are ordered such that the oldest one come first
+            if migration.version > vmem:
+                continue
+            if migration.version < 
 
-        MIGRATIONS[ver]
+def combine_migrations(one, two):
+    """Combine migrations one and two such that they present a single 'front'"""
+    pass
 
 
 class Migration:
@@ -58,22 +76,21 @@ class Migration:
         self.version = StrictVersion(version)
         self.register()
 
-    def transform_path(self, up, read, path):
+    def transform_path(self, direction, mode, path):
         return path
 
-    def transform_data(self, up, read, data):
+    def transform_data(self, direction, mode, data):
         return data
 
     def register(self):
-        """Register a migration object at this version and for each of its paths.
-        Paths may be regexes or strings."""
+        """Register a migration object at this version and for each of its paths."""
         count = 0
-        for direction in ("up", "down"):
-            for path in self.getattr(direction + "_paths") + self.paths:
-                count += 1
-                MIGRATIONS.setdefault(self.version, {}).setdefault(
-                    direction, {}
-                ).setdefault(path, []).append(self)
+        for path in self.up_paths + self.paths:
+            count += 1
+            MIGRATIONS_UP.setdefault(path, []).append(self)
+        for path in self.down_paths + self.paths:
+            count += 1
+            MIGRATIONS_DOWN.setdefault(path, []).append(self)
 
         if count == 0:
             logger.error("Migration %s defined 0 paths, will not apply", self)
@@ -113,3 +130,19 @@ class Scale(Migration):
             return data * self.constant
         else:
             return data / self.constant
+
+
+def check_migration_order():
+    for mig_list in MIGRATIONS_UP + MIGRATIONS_DOWN:
+        check_migration_list_order(mig_list)
+
+
+def check_migration_list_order(mig_list):
+    last_version = None
+    for migration in mig_list:
+        if last_version is None or last_version < migration.version:
+            last_version = migration.version
+        else:
+            logger.critical("Migration %s at %s should be defined earlier",
+                            migration, last_version)
+            return
