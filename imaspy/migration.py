@@ -8,6 +8,7 @@ from imaspy.logger import logger
 
 MIGRATIONS_UP = {}  # a dict keyed with paths for migrating up (mem newer than file)
 MIGRATIONS_DOWN = {}  # each of the values is a list of migrations
+# the migrations are ordered such that the highest version comes first
 
 UP = True
 DOWN = False
@@ -23,35 +24,31 @@ def get_migration_tree(version_mem, version_file, path):
 
         MIGRATIONS[ver]
 
-def transform_path(version_mem, version_file, mode, path):
-    """Find the list of paths to fetch from/write to"""
+
+def transform_path(version_mem, version_file, path):
+    """Given a path at version_mem, what does it correspond to for version_file?"""
     # For this path, get the list of migrations and walk through them
     # (there will only be a few, so it is not so expensive)
     vmem = StrictVersion(version_mem)
     vfile = StrictVersion(version_file)
-    if vmem == vfile:
-        return [path]
+
+    new_path = path
+
+    if vmem > vfile:
+        for migration in filter_migrations(MIGRATIONS_UP.get(path, []), vmem, vfile):
+            new_path = migration.transform_path(UP, new_path)
     elif vmem < vfile:
-        vmin = vmem
-        vmax = vfile
-        direction = DOWN
-    else:
-        vmin = vfile
-        vmax = vmem
-        direction = UP
+        for migration in reversed(
+            filter_migrations(MIGRATIONS_DOWN.get(path, []), vmem, vfile)
+        ):
+            new_path = migration.transform_path(DOWN, new_path)
 
-    if direction == UP:
-        for migration in MIGRATIONS_UP[path][::-1]:
-            # vmem > vfile, and we would like to know which paths a mem path corresponds to.
-            # we therefore have to go down from vmem to vfile
-            # the migrations are ordered such that the oldest one come first
-            if migration.version > vmem:
-                continue
-            if migration.version < 
+    return new_path
 
-def combine_migrations(one, two):
-    """Combine migrations one and two such that they present a single 'front'"""
-    pass
+
+def filter_migrations(migrations, ver1, ver2):
+    """Filter a list of migrations between StrictVersion 1 and 2"""
+    return filter(lambda x: min(ver1, ver2) < x <= max(ver1, ver2), migrations)
 
 
 class Migration:
@@ -76,7 +73,7 @@ class Migration:
         self.version = StrictVersion(version)
         self.register()
 
-    def transform_path(self, direction, mode, path):
+    def transform_path(self, direction, path):
         return path
 
     def transform_data(self, direction, mode, data):
@@ -111,7 +108,7 @@ class Rename(Migration):
     def transform_data(self, direction, mode, data):
         return data
 
-    def transform_path(self, direction, mode, path):
+    def transform_path(self, direction, path):
         if direction == UP:  # then memory is new and backend is old
             return self.old_name
         else:
@@ -143,6 +140,7 @@ def check_migration_list_order(mig_list):
         if last_version is None or last_version < migration.version:
             last_version = migration.version
         else:
-            logger.critical("Migration %s at %s should be defined earlier",
-                            migration, last_version)
+            logger.critical(
+                "Migration %s at %s should be defined earlier", migration, last_version
+            )
             return
