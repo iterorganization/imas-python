@@ -9,7 +9,7 @@
 from imaspy.al_exception import ALException
 from imaspy.ids_defs import DOUBLE_DATA, NODE_TYPE_STRUCTURE, READ_OP
 from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_primitive import IDSPrimitive, create_leaf_container
+from imaspy.ids_primitive import IDSPrimitive, create_leaf_container, parse_dd_type
 from imaspy.logger import logger, loglevel
 
 
@@ -104,6 +104,82 @@ class IDSStructure(IDSMixin):
         # After initialization, always try to convert setting attributes on this structure
         self._convert_ids_types = True
 
+    def set_backend_properties(self, structure_xml):
+        """Walk the union of existing children and those in structure_xml
+        and set backend_type annotations for this element and its children."""
+        from imaspy.ids_struct_array import IDSStructArray
+
+        for child_name in self._children:
+            child = self[child_name]
+            xml_child = structure_xml.find(
+                "field[@name='{name}']".format(name=child_name)
+            )
+
+            if xml_child is None:
+                logger.warning(
+                    "Field %s.%s in memory rep not found in backend xml, "
+                    "will not be written",
+                    self._name,
+                    child_name,
+                )
+                data_type = None
+            else:
+                data_type = xml_child.get("data_type")
+
+            if type(child) == IDSStructure:
+                if xml_child is None or data_type != "structure":
+                    logger.error(
+                        "moving structs is not supported, proceed at your own risk"
+                    )
+                else:
+                    child.set_backend_properties(xml_child)
+            elif type(child) == IDSStructArray:
+                if xml_child is None or data_type != "struct_array":
+                    logger.error(
+                        "moving struct_arrays is not supported, "
+                        "proceed at your own risk"
+                    )
+                else:
+                    child.set_backend_properties(xml_child)
+            else:  # leaf node
+                # this ensures that even if this child does not exist in backend_xml
+                # we set the backend_type to None (otherwise you could have bugs
+                # when switching backend_xml multiple times)
+                if data_type:
+                    child._backend_type, child._backend_ndims = parse_dd_type(data_type)
+                else:
+                    child._backend_type = None
+                    child._backend_ndims = None
+
+                if child._backend_type != child._ids_type:
+                    logger.info(
+                        "Setting up conversion at %s.%s, memory=%s, backend=%s",
+                        self._name,
+                        child._name,
+                        child._ids_type,
+                        child._backend_type,
+                    )
+                if child._backend_ndims != child._ndims:
+                    logger.error(
+                        "Dimensions mismatch at %s.%s, memory=%s, backend=%s",
+                        self._name,
+                        child._name,  # coordinates are empty??
+                        child._ndims,
+                        child._backend_ndims,
+                    )
+
+        for child in structure_xml:
+            try:
+                self[child.get("name")]
+            except KeyError:
+                logger.warning(
+                    "Field %s in backend XML not found in memory representation,\
+                    not available for IO",
+                    child.get("name"),
+                )
+
+        # Now check whether all children of this structure have a backend representation
+
     @property
     def depth(self):
         """Calculate the depth of the leaf node"""
@@ -148,7 +224,6 @@ class IDSStructure(IDSMixin):
                 raise NotImplementedError(
                     "generating new structure from scratch {name}".format(name=key)
                 )
-                from imaspy.ids_struct_array import create_leaf_container
 
                 attr = create_leaf_container(key, no_data_type_I_guess, parent=self)
             if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):

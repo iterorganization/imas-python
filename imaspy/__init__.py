@@ -25,4 +25,4 @@ except ModuleNotFoundError:
     # don't worry about it in that case
     pass
 
-OLDEST_SUPPORTED_VERSION = StrictVersion("3.22.0")
+OLDEST_SUPPORTED_VERSION = StrictVersion("3.21.1")
