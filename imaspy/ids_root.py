@@ -68,7 +68,7 @@ class IDSRoot:
         if version:
             XMLtreeIDSDef = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
             logger.info("Generating IDS structures for version %s", version)
-            self._version = version
+            self._imas_version = version
         elif xml_path:
             XMLtreeIDSDef = ET.parse(xml_path)
             logger.info("Generating IDS structures from file %s", xml_path)
@@ -183,7 +183,7 @@ class IDSRoot:
 
             # ensure presence of mdsplus dir and set environment ids_dir
             try:
-                _version = self._version
+                _version = self._imas_version
             except AttributeError:
                 _version = None
             try:
