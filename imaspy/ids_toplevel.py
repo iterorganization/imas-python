@@ -37,8 +37,7 @@ class IDSToplevel(IDSStructure):
     def __init__(
         self, parent, name, structure_xml, backend_version=None, backend_xml_path=None
     ):
-        """Save backend_version and backend_xml and build translation layer.
-        """
+        """Save backend_version and backend_xml and build translation layer."""
         super(IDSToplevel, self).__init__(parent, name, structure_xml)
 
         if backend_xml_path or backend_version:

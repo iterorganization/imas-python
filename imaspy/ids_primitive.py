@@ -222,7 +222,11 @@ class IDSPrimitive(IDSMixin):
             )
         elif read_type == "STR" and ndims == 1:
             status, data = self._ull.ual_read_data_array_string(
-                ctx, strNodePath, strTimeBasePath, CHAR_DATA, 2,
+                ctx,
+                strNodePath,
+                strTimeBasePath,
+                CHAR_DATA,
+                2,
             )
         elif read_type == "INT" and ndims == 0:
             status, data = self._ull.ual_read_data_scalar(
