@@ -68,9 +68,11 @@ class IDSRoot:
         if version:
             XMLtreeIDSDef = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
             logger.info("Generating IDS structures for version %s", version)
+            self._imas_version = version
         elif xml_path:
             XMLtreeIDSDef = ET.parse(xml_path)
             logger.info("Generating IDS structures from file %s", xml_path)
+            self._xml_path = xml_path
         else:
             raise ValueError("version or xml_path are required")
 
@@ -175,6 +177,26 @@ class IDSRoot:
 
         if silent:
             options += "-silent"
+
+        if backend_type == MDSPLUS_BACKEND:
+            from imaspy.mdsplus_model import mdsplus_model_dir
+
+            # ensure presence of mdsplus dir and set environment ids_dir
+            try:
+                _version = self._imas_version
+            except AttributeError:
+                _version = None
+            try:
+                _xml_path = self._xml_path
+            except AttributeError:
+                _xml_path = None
+
+            if _version:
+                os.environ["ids_path"] = mdsplus_model_dir(_version)
+            else:
+                os.environ["ids_path"] = mdsplus_model_dir(
+                    version=None, xml_file=_xml_path
+                )
 
         store = UALDataStore.open(
             backend_type,

@@ -197,6 +197,10 @@ class IDSPrimitive(IDSMixin):
             status, data = self._ull.ual_read_data_string(
                 ctx, strNodePath, strTimeBasePath, CHAR_DATA, 1
             )
+        elif self._ids_type == "STR" and self._ndims == 1:
+            status, data = self._ull.ual_read_data_array_string(
+                ctx, strNodePath, strTimeBasePath, CHAR_DATA, 2,
+            )
         elif self._ids_type == "INT" and self._ndims == 0:
             status, data = self._ull.ual_read_data_scalar(
                 ctx, strNodePath, strTimeBasePath, INTEGER_DATA
@@ -243,6 +247,7 @@ def create_leaf_container(name, data_type, **kwargs):
     """Wrapper to create IDSPrimitive/IDSNumericArray from IDS syntax.
     TODO: move this elsewhere.
     """
+    # legacy support
     if data_type == "int_type":
         ids_type = "INT"
         ndims = 0

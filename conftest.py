@@ -15,6 +15,7 @@ def pytest_addoption(parser):
     parser.addoption("--memory", action="store_true", help="test with memory backend")
     parser.addoption("--ascii", action="store_true", help="test with ascii backend")
     parser.addoption("--hdf5", action="store_true", help="test with HDF5 backend")
+    parser.addoption("--mini", action="store_true", help="small test with few types")
 
 
 def pytest_generate_tests(metafunc):
@@ -39,4 +40,7 @@ def pytest_generate_tests(metafunc):
                 [MEMORY_BACKEND, ASCII_BACKEND, MDSPLUS_BACKEND],
             )
     if "ids_type" in metafunc.fixturenames:
-        metafunc.parametrize("ids_type", [None] + list(TEST_DATA.keys()))
+        if metafunc.config.getoption("mini"):
+            metafunc.parametrize("ids_type", ["int_0d"])
+        else:
+            metafunc.parametrize("ids_type", [None] + list(TEST_DATA.keys()))
