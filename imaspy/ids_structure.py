@@ -106,7 +106,7 @@ class IDSStructure(IDSMixin):
 
     def set_backend_properties(self, structure_xml):
         """Walk the union of existing children and those in structure_xml
-        and set backend_type annotations for this element and its children."""
+        and set backend annotations for this element and its children."""
         from imaspy.ids_struct_array import IDSStructArray
 
         for child_name in self._children:
@@ -146,10 +146,19 @@ class IDSStructure(IDSMixin):
                 # we set the backend_type to None (otherwise you could have bugs
                 # when switching backend_xml multiple times)
                 if data_type:
+                    child._backend_path = None
                     child._backend_type, child._backend_ndims = parse_dd_type(data_type)
                 else:
+                    child._backend_path = None
                     child._backend_type = None
                     child._backend_ndims = None
+
+                if child._backend_path:
+                    logger.info(
+                        "Setting up mapping from %s (mem) to %s (file)",
+                        self._name,
+                        child._backend_path,
+                    )
 
                 if child._backend_type != child._ids_type:
                     logger.info(
@@ -174,11 +183,9 @@ class IDSStructure(IDSMixin):
             except KeyError:
                 logger.warning(
                     "Field %s in backend XML not found in memory representation,\
-                    not available for IO",
+                    not available for I/O",
                     child.get("name"),
                 )
-
-        # Now check whether all children of this structure have a backend representation
 
     @property
     def depth(self):
