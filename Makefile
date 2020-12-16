@@ -66,6 +66,19 @@ VERSION_STRING=$(shell $(PYTHON) setup.py --version)
 WHEEL_NAME:=$(PACKAGE)-$(VERSION_STRING)-py3-none-any.whl
 SDIST_NAME:=$(PACKAGE)-$(VERSION_STRING).tar.gz
 
+PYTHON_INSTALL_DIR?=install
+PYTHONTOOLS_EXTRAS?='all'
+install_package: wheel sdist
+	@echo [INFO] Installing version '$(VERSION_STRING)'
+	@echo [INFO] With extras $(PYTHONTOOLS_EXTRAS)
+	@echo [INFO] to $(PYTHON_INSTALL_DIR)
+	@echo [INFO] Assuming generated wheel is '$(WHEEL_NAME)'
+	@echo [DEBUG] setuptools version=$(shell $(PYTHON) -c "import setuptools; print(setuptools.__version__)")
+	@echo [DEBUG] setuptools SCM detected version=$(shell $(PYTHON) -c "from setuptools_scm import get_version; print(get_version(root='.'));")
+	@echo [DEBUG] wheel version=$(shell $(PYTHON) -c "import wheel; print(wheel.__version__)")
+	PYTHONUSERBASE=$(JINTRAC_PYTHON_INSTALL_DIR) pip install dist/$(WHEEL_NAME)[$(PYTHONTOOLS_EXTRAS)] --cache-dir=$(JINTRAC_PYTHON_INSTALL_DIR)/pip_cache --user --upgrade
+
+
 # You need write permission the the package repository to do this. We use deploy tokens for this
 # that are tracked by pip. See https://docs.gitlab.com/ee/user/packages/pypi_repository/
 # This involves:
@@ -80,6 +93,13 @@ install_package_from_gitlab:
 
 docs:
 	$(MAKE) -C docs html
+
+PYTEST?=pytest
+COV_FLAGS?=--cov=$(PACKAGE) --cov-report=term --cov-report=xml:./coverage.xml
+JUNIT_FLAGS?=--junit-xml=./junit.xml
+PYTEST_MARK?=
+tests:
+	$(PYTEST) $(COV_FLAGS) $(JUNIT_FLAGS) "$(PYTEST_MARK)" "$(PYTHON_INSTALL_DIR)"
 
 realclean: clean
 	@echo 'Real cleaning $(PROJECT)...'

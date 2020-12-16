@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Bamboo Build script
 
 set -x
@@ -21,9 +21,9 @@ ids_path_old=${ids_path}
 
 export ids_path="${tmp_dir};$ids_path"
 
-# we have to make sure pyal is on PYTHONPATH
-# after all, we are testing this module but
-# we can't load it yet as it wasn't released yet
-export PYTHONPATH=$bamboo_build_working_directory:${PYTHONPATH}
+export PYTHONPATH=$bamboo_build_working_directory/install:${PYTHONPATH}
 
-python3 -m pip install $bamboo_build_working_directory
+make install # installs into local /install folder
+
+# Run tests and generate reports
+make tests
