@@ -12,6 +12,7 @@ module purge
 
 # Use the develop IMAS split repo and pytest
 module load Python/3.6.4-intel-2018a
+module load Cython/0.28.6-intel-2018a-Python-3.6.4
 module load IMAS
 
 

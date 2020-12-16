@@ -1,6 +1,6 @@
 [build-system]
 # Minimum requirements for the build system to execute.
-requires = ["setuptools>=43", "wheel", "setuptools_scm[toml]>=3.4", "Cython", "numpy", "gitpython"]
+requires = ["setuptools>=43", "wheel", "setuptools_scm[toml]>=3.4", "Cython>=0.28", "numpy", "gitpython"]
 # needs saxon9he.jar in CLASSPATH
 
 build-backend = "setuptools.build_meta"
