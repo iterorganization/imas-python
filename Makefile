@@ -1,13 +1,13 @@
 # makefile for qualikiz-pythontools library
 PYTHON?=python
-PIP?=pip
+PIP?=$(PYTHON) -m pip
 ECHO?=$(shell which echo) -e
 PRINTF?=$(shell which printf)
 
 # Variables required for release and bugfix options
-PROJECT=qualikiz-pythontools
-PROJECT_ID=10189354
-PACKAGE=qualikiz_tools
+PROJECT=imaspy
+PROJECT_ID=unknown
+PACKAGE=imaspy
 PACKAGE_HOST=gitlab
 
 # Other variables
@@ -15,7 +15,7 @@ SUBDIRS:=
 
 #####################################################
 
-.PHONY: help clean sdist bdist wheel install_package_jintrac upload_package_to_gitlab install_package_from_gitlab docs realclean
+.PHONY: help clean sdist bdist wheel install_package upload_package_to_gitlab install_package_from_gitlab docs tests realclean
 
 help:
 	@$(ECHO) "Recipes:"
@@ -42,6 +42,7 @@ clean:
 # This creates a sdist package installable with pip
 # On pip install this will re-compile from source compiled components
 sdist:
+	@echo 'Building sdist with PYTHON=$(PYTHON)'
 	$(PYTHON) setup.py sdist
 
 # Build a 'bdist' or 'installable binary distribution' with setuptools
@@ -49,11 +50,13 @@ sdist:
 # This should be pip-installable on the system it was compiled on
 # Not recommended to use this! Use wheels instead
 bdist:
+	@echo 'Building bdist with PYTHON=$(PYTHON)'
 	$(PYTHON) setup.py bdist
 
 # Build a 'wheel' or 'installable universial binary distribution' with setuptools
 # This creates a wheel that can be used with pip
 wheel:
+	@echo 'Building wheel with PYTHON=$(PYTHON)'
 	$(PYTHON) setup.py bdist_wheel
 
 # Get the current version.
@@ -67,8 +70,9 @@ WHEEL_NAME:=$(PACKAGE)-$(VERSION_STRING)-py3-none-any.whl
 SDIST_NAME:=$(PACKAGE)-$(VERSION_STRING).tar.gz
 
 PYTHON_INSTALL_DIR?=install
-PYTHONTOOLS_EXTRAS?='all'
-install_package: wheel sdist
+# TODO: imas dependency not found by setuptoools
+PYTHONTOOLS_EXTRAS?='backends_xarray,test,docs'
+install_package: sdist wheel
 	@echo [INFO] Installing version '$(VERSION_STRING)'
 	@echo [INFO] With extras $(PYTHONTOOLS_EXTRAS)
 	@echo [INFO] to $(PYTHON_INSTALL_DIR)
@@ -76,7 +80,7 @@ install_package: wheel sdist
 	@echo [DEBUG] setuptools version=$(shell $(PYTHON) -c "import setuptools; print(setuptools.__version__)")
 	@echo [DEBUG] setuptools SCM detected version=$(shell $(PYTHON) -c "from setuptools_scm import get_version; print(get_version(root='.'));")
 	@echo [DEBUG] wheel version=$(shell $(PYTHON) -c "import wheel; print(wheel.__version__)")
-	PYTHONUSERBASE=$(JINTRAC_PYTHON_INSTALL_DIR) pip install dist/$(WHEEL_NAME)[$(PYTHONTOOLS_EXTRAS)] --cache-dir=$(JINTRAC_PYTHON_INSTALL_DIR)/pip_cache --user --upgrade
+	PYTHONUSERBASE=$(PYTHON_INSTALL_DIR) pip install dist/$(WHEEL_NAME)[$(PYTHONTOOLS_EXTRAS)] --cache-dir=$(PYTHON_INSTALL_DIR)/pip_cache --user --upgrade
 
 
 # You need write permission the the package repository to do this. We use deploy tokens for this
@@ -99,7 +103,7 @@ COV_FLAGS?=--cov=$(PACKAGE) --cov-report=term --cov-report=xml:./coverage.xml
 JUNIT_FLAGS?=--junit-xml=./junit.xml
 PYTEST_MARK?=
 tests:
-	$(PYTEST) $(COV_FLAGS) $(JUNIT_FLAGS) "$(PYTEST_MARK)" "$(PYTHON_INSTALL_DIR)"
+	$(PYTEST) $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
 
 realclean: clean
 	@echo 'Real cleaning $(PROJECT)...'
