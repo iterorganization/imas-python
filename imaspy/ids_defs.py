@@ -4,6 +4,7 @@
 """
 
 import logging
+from distutils.version import StrictVersion
 
 from imaspy.logger import logger
 
@@ -34,6 +35,12 @@ try:
         HDF5_BACKEND,
         ASCII_BACKEND,
     )
+
+    # TODO: get UAL_VERSION number from hli_utils (if it doesn't exist it's too old)
+    # if StrictVersion(hli_utils.__version__) < 10:  # to be defined
+    # logger.warning(
+    # "Old access layer version detected. The MDSPlus backend will not work with multiple DD versions simultaneously."
+    # )
 except ImportError:
     logger.critical("IMAS could not be imported. UAL not available!")
 else:

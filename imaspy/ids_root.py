@@ -129,6 +129,10 @@ class IDSRoot:
     # self.barometry = barometry.barometry()
     # etc. etc over all lower level IDSs
 
+    def __getitem__(self, key):
+        keyname = str(key)
+        return getattr(self, keyname)
+
     def __str__(self, depth=0):
         space = ""
         for i in range(depth):
