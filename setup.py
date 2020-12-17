@@ -31,6 +31,8 @@ import importlib
 import logging
 import os
 import site
+import pkg_resources
+import ast
 
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import sys
@@ -54,7 +56,11 @@ if sys.version_info < (3, 6):
 
 # Check setuptools version before continuing for legacy builds
 if V(setuptools_version) < V("42"):
-    raise Exception(f"Setuptools version outdated. Found {setuptools_version}")
+    ee = RuntimeError(
+        "Setuptools version outdated. Found"
+        f" {V(setuptools_version)} need at least {V('42')}"
+    )
+    raise ee
 
 # Workaround for https://github.com/pypa/pip/issues/7953
 # Cannot install into user site directory with editable source
@@ -182,9 +188,7 @@ if REBUILD_LL:
 
     ual_module = Extension(
         name=ext_module_name,
-        sources=[
-            "imas/_ual_lowlevel.pyx"
-        ],  # As these files are copied, easy to find!
+        sources=["imas/_ual_lowlevel.pyx"],  # As these files are copied, easy to find!
         language=LANGUAGE,
         library_dirs=[IMAS_PREFIX + "/lib"],
         libraries=[LIBRARIES],
@@ -218,6 +222,8 @@ else:
     extensions = []
 
 
+# long_description
+# By default, an upload's description will render with reStructuredText. If the description is in an alternate format like Markdown, a package may set the long_description_content_type in setup.py to the alternate format.
 with open(os.path.join(this_dir, "README.md"), encoding="utf-8") as file:
     long_description = file.read()
 
@@ -230,22 +236,20 @@ install_requires = optional_reqs.pop("core")
 # collect all optional dependencies in a "all" target
 optional_reqs["all"] = list(chain(*optional_reqs.values()))
 
-
-def get_requires_for_build_wheel(config_settings=None):
-    # pyproject.toml
-    raise Exception("blablabl")
-
-
-def get_requires_for_build_sdist(config_settings=None):
-    # pyproject.toml?
-    raise Exception("blablabl")
-
-
 if __name__ == "__main__":
+    # Legacy setuptools support, e.g. `python setup.py something`
+    # See [PEP-0517](https://www.python.org/dev/peps/pep-0517/) and
+    # [setuptools docs](https://setuptools.readthedocs.io/en/latest/userguide/quickstart.html#basic-use)
+    pyproject: list = distutils.text_file.TextFile("pyproject.toml").readlines()
+    requires_line: str = [line for line in pyproject if "requires =" in line][0]
+    requires: str = requires_line.split("=", 1)[1]
+    setup_requires: list = ast.literal_eval(requires.strip())
+
     setup(
         name=package_name,
         description="Pythonic wrappers for the IMAS Access Layer",
         long_description=long_description,
+        long_description_content_type="text/markdown",
         url="https://gitlab.com/klimex/imaspy",
         author="Karel van de Plassche",
         author_email="k.l.vandeplassche@differ.nl",
@@ -266,12 +270,8 @@ if __name__ == "__main__":
         },
         python_requires=">3.6",
         # Duplicate from pyproject.toml for older setuptools
-        setup_requires=["setuptools_scm"],
+        setup_requires=setup_requires,
         install_requires=install_requires,
         extras_require=optional_reqs,
         ext_modules=extensions,
-        cmdclass={
-            "get_requires_for_build_wheel": get_requires_for_build_wheel,
-            "get_requires_for_build_sdist": get_requires_for_build_sdist,
-        },
     )
