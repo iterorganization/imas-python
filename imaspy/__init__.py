@@ -8,9 +8,13 @@ import pkg_resources
 try:
     __version__ = pkg_resources.get_distribution("imaspy").version
 except Exception:
-    # Local copy or not installed with setuptools.
-    # Disable minimum version checks on downstream libraries.
-    __version__ = "0.0.0"
+    # Try local wrongly install copy
+    try:
+        from version import __version__
+    except Exception:
+        # Local copy or not installed with setuptools.
+        # Disable minimum version checks on downstream libraries.
+        __version__ = "0.0.0"
 
 from imaspy import ids_root, imas_ual_env_parsing, setup_logging
 from imaspy.backends import (
