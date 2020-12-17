@@ -244,6 +244,55 @@ if __name__ == "__main__":
     requires_line: str = [line for line in pyproject if "requires =" in line][0]
     requires: str = requires_line.split("=", 1)[1]
     setup_requires: list = ast.literal_eval(requires.strip())
+    # Rough logic setuptools_scm
+    # See https://pypi.org/project/setuptools-scm/
+    # or Git projects, the version relies on git describe
+    # no distance and clean:
+    #     {tag}
+    # distance and clean:
+    #     {next_version}.dev{distance}+{scm letter}{revision hash}
+    # no distance and not clean:
+    #     {tag}+dYYYYMMDD
+    # distance and not clean:
+    #     {next_version}.dev{distance}+{scm letter}{revision hash}.dYYYYMMDD
+
+    # version_scheme: Configures how the local version number is constructed; either an entrypoint name or a callable.
+    # version_scheme options:
+    # guess-next-dev:
+    #   Automatically guesses the next development version (default). Guesses the upcoming release
+    #   by incrementing the pre-release segment if present, otherwise by incrementing the micro
+    #   segment. Then appends .devN. In case the tag ends with .dev0 the version is not bumped and
+    #   custom .devN versions will trigger a error.
+    # post-release:
+    #   generates post release versions (adds .postN)
+    # python-simplified-semver:
+    #   Basic semantic versioning. Guesses the upcoming release by incrementing the minor segment
+    #   and setting the micro segment to zero if the current branch contains the string 'feature',
+    #   otherwise by incrementing the micro version. Then appends .devN. Not compatible with
+    #   pre-releases.
+    # release-branch-semver:
+    #   Semantic versioning for projects with release branches. The same as guess-next-dev
+    #   (incrementing the pre-release or micro segment) if on a release branch: a branch whose
+    #   name (ignoring namespace) parses as a version that matches the most recent tag up to the
+    #   minor segment. Otherwise if on a non-release branch, increments the minor segment and
+    #   sets the micro segment to zero, then appends .devN.
+    # no-guess-dev:
+    #   Does no next version guessing, just adds .post1.devN
+
+    # local_scheme: Configures how the local version number is constructed; either an entrypoint name or a callable.
+    # local_scheme options:
+    # node-and-date:
+    #   adds the node on dev versions and the date on dirty workdir (default)
+    # node-and-timestamp:
+    #   like node-and-date but with a timestamp of the form {:%Y%m%d%H%M%S} instead
+    # dirty-tag:
+    #   adds +dirty if the current workdir has changes
+    # no-local-version:
+    #   omits local version, useful e.g. because pypi does not support it
+
+    # See https://packaging.python.org/specifications/core-metadata/ for allow version strings
+    # Example PEP 440 string:
+    # Version: 1.0a2
 
     setup(
         name=package_name,
@@ -265,8 +314,12 @@ if __name__ == "__main__":
         # No pyproject.toml for --no-build-installation. Use setup.py instead
         use_scm_version={
             "write_to": package_name + "/version.py",
+            'write_to_template': '"{version}"',
+            "relative_to": this_file,
             # For tarball installs without metadata (e.g. .git repository)
-            "fallback_version": os.getenv("IMASPY_PYTHONTOOLS_VERSION", "0.0.0"),
+            "version_scheme": "guess-next-dev",
+            "local_scheme": "no-local-version",
+            "fallback_version": os.getenv("IMASPY_VERSION", "0.0.0"),
         },
         python_requires=">3.6",
         # Duplicate from pyproject.toml for older setuptools

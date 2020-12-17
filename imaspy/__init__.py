@@ -2,6 +2,15 @@
 # You should have received IMASPy LICENSE file with this project.
 
 from distutils.version import StrictVersion
+import pkg_resources
+
+# First thing for import, try to determine imaspy version
+try:
+    __version__ = pkg_resources.get_distribution("imaspy").version
+except Exception:
+    # Local copy or not installed with setuptools.
+    # Disable minimum version checks on downstream libraries.
+    __version__ = "0.0.0"
 
 from imaspy import ids_root, imas_ual_env_parsing, setup_logging
 from imaspy.backends import (
@@ -11,18 +20,5 @@ from imaspy.backends import (
     xarray_core_indexing,
     xarray_core_utils,
 )
-
-try:
-    from .version import version as __version_from_scm__
-
-    # Set the package version equal to the one grabbed from the
-    # Source Management System
-    # For git-describe (this repository) it is based on tagged commits
-    __version__ = __version_from_scm__
-except ModuleNotFoundError:
-    # .version may not exist if called from setup.py
-    # (through setup_helpers and dd_helpers)
-    # don't worry about it in that case
-    pass
 
 OLDEST_SUPPORTED_VERSION = StrictVersion("3.21.1")
