@@ -9,11 +9,12 @@ Provides the class for an IDS Primitive data type
 
 # Set up logging immediately
 import numpy as np
+from IPython import embed
+
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_mixin import IDSMixin
 from imaspy.logger import logger, loglevel
-from IPython import embed
 
 try:
     from imaspy.ids_defs import (
@@ -113,8 +114,17 @@ class IDSPrimitive(IDSMixin):
             elif self._ids_type == "INT":
                 value = np.array(value, dtype=np.int64)
             elif self._ids_type == "STR":
-                # The python lowlevel interface does not handle numpy arrays of strings well
-                value = list(value)
+                # make sure that all the strings are decoded
+                # numpy str_ objects are not handled nicely, convert to python list
+                if isinstance(value, np.ndarray):
+                    value = list(
+                        [
+                            str(val, encoding="UTF-8")
+                            if isinstance(val, bytes)
+                            else val
+                            for val in value
+                        ]
+                    )
             else:
                 logger.critical(
                     "Unknown numpy type {!s}, cannot convert from python to IDS type".format(

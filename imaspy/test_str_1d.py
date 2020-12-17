@@ -10,6 +10,7 @@ import pytest
 from imaspy.ids_defs import (
     IDS_TIME_MODE_INDEPENDENT,
     MEMORY_BACKEND,
+    ASCII_BACKEND
 )
 from imaspy.test_helpers import randdims
 
@@ -40,6 +41,10 @@ def test_str_1d_empty(backend, xml):
     if backend == MEMORY_BACKEND:
         # this one does not store anything between instantiations
         pass
+    elif backend == ASCII_BACKEND:
+        pytest.skip(
+            "Known issue with ASCII backend and 1d strings, see https://jira.iter.org/browse/IMAS-3463"
+        )
     else:
         assert ids2.minimal.str_1d.value == []
 
