@@ -72,7 +72,7 @@ SDIST_NAME:=$(PACKAGE)-$(VERSION_STRING).tar.gz
 PYTHON_INSTALL_DIR?=install
 # TODO: imas dependency not found by setuptoools
 PYTHONTOOLS_EXTRAS?='backends_xarray,test,docs'
-install_package: sdist wheel
+install_package:
 	@echo [INFO] Installing version '$(VERSION_STRING)'
 	@echo [INFO] With extras $(PYTHONTOOLS_EXTRAS)
 	@echo [INFO] to $(PYTHON_INSTALL_DIR)
