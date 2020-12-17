@@ -56,11 +56,10 @@ if sys.version_info < (3, 6):
 
 # Check setuptools version before continuing for legacy builds
 if V(setuptools_version) < V("42"):
-    ee = RuntimeError(
+    raise RuntimeError(
         "Setuptools version outdated. Found"
         f" {V(setuptools_version)} need at least {V('42')}"
     )
-    raise ee
 
 # Workaround for https://github.com/pypa/pip/issues/7953
 # Cannot install into user site directory with editable source
