@@ -9,8 +9,6 @@ Provides the class for an IDS Primitive data type
 
 # Set up logging immediately
 import numpy as np
-from IPython import embed
-
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_mixin import IDSMixin
