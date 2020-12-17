@@ -12,18 +12,22 @@ import numpy as np
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.dd_zip import get_dd_xml
-from imaspy.ids_defs import (
-    CHAR_DATA,
-    IDS_TIME_MODE_HOMOGENEOUS,
-    IDS_TIME_MODE_UNKNOWN,
-    IDS_TIME_MODES,
-    READ_OP,
-    WRITE_OP,
-)
 from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.logger import logger, loglevel
+
+try:
+    from imaspy.ids_defs import (
+        CHAR_DATA,
+        IDS_TIME_MODE_HOMOGENEOUS,
+        IDS_TIME_MODE_UNKNOWN,
+        IDS_TIME_MODES,
+        READ_OP,
+        WRITE_OP,
+    )
+except:
+    logger.critical("IMAS could not be imported. UAL not available!")
 
 
 class IDSToplevel(IDSStructure):

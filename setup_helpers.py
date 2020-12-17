@@ -5,8 +5,6 @@ import os
 import shutil
 from itertools import chain
 
-from imaspy.dd_helpers import prepare_data_dictionaries
-
 logger = logging.getLogger("imaspy")
 
 this_dir = os.path.abspath(

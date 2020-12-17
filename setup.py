@@ -109,9 +109,6 @@ loader.exec_module(setup_helpers)
 
 # Now that the environment is defined, import the rest of the needed packages
 
-# Prepare DDs if they can be git pulled
-setup_helpers.prepare_data_dictionaries()
-
 # Try to grab all necessary environment variables.
 # IMAS_PREFIX points to the directory all IMAS components live in
 IMAS_PREFIX = os.getenv("IMAS_PREFIX")
@@ -328,3 +325,7 @@ if __name__ == "__main__":
         extras_require=optional_reqs,
         ext_modules=extensions,
     )
+
+    # Prepare DDs if they can be git pulled
+    from imaspy.dd_helpers import prepare_data_dictionaries
+    prepare_data_dictionaries()

@@ -11,16 +11,20 @@ Provides the class for an IDS Primitive data type
 import numpy as np
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.ids_defs import (
-    CHAR_DATA,
-    DOUBLE_DATA,
-    INTEGER_DATA,
-    hli_utils,
-    ids_type_to_default,
-)
 from imaspy.ids_mixin import IDSMixin
 from imaspy.logger import logger, loglevel
 from IPython import embed
+
+try:
+    from imaspy.ids_defs import (
+        CHAR_DATA,
+        DOUBLE_DATA,
+        INTEGER_DATA,
+        hli_utils,
+        ids_type_to_default,
+    )
+except:
+    logger.critical("IMAS could not be imported. UAL not available!")
 
 
 class IDSPrimitive(IDSMixin):

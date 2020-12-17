@@ -16,20 +16,25 @@ import numpy as np
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.dd_zip import get_dd_xml
-from imaspy.ids_defs import (
-    CLOSE_PULSE,
-    DOUBLE_DATA,
-    IDS_TIME_MODE_HETEROGENEOUS,
-    IDS_TIME_MODE_INDEPENDENT,
-    IDS_TIME_MODE_UNKNOWN,
-    INTEGER_DATA,
-    MDSPLUS_BACKEND,
-    OPEN_PULSE,
-    READ_OP,
-    UDA_BACKEND,
-)
+
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.logger import logger, loglevel
+
+try:
+    from imaspy.ids_defs import (
+        CLOSE_PULSE,
+        DOUBLE_DATA,
+        IDS_TIME_MODE_HETEROGENEOUS,
+        IDS_TIME_MODE_INDEPENDENT,
+        IDS_TIME_MODE_UNKNOWN,
+        INTEGER_DATA,
+        MDSPLUS_BACKEND,
+        OPEN_PULSE,
+        READ_OP,
+        UDA_BACKEND,
+    )
+except:
+    logger.critical("IMAS could not be imported. UAL not available!")
 
 
 class IDSRoot:

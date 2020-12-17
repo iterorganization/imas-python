@@ -5,8 +5,12 @@ import logging
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.logger import logger, loglevel
+
+try:
+    from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_HOMOGENEOUS
+except:
+    logger.critical("IMAS could not be imported. UAL not available!")
 
 logger.setLevel(logging.WARNING)
 

@@ -7,10 +7,14 @@
 # Set up logging immediately
 
 from imaspy.al_exception import ALException
-from imaspy.ids_defs import DOUBLE_DATA, NODE_TYPE_STRUCTURE, READ_OP
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_primitive import IDSPrimitive, create_leaf_container, parse_dd_type
 from imaspy.logger import logger, loglevel
+
+try:
+    from imaspy.ids_defs import DOUBLE_DATA, NODE_TYPE_STRUCTURE, READ_OP
+except:
+    logger.critical("IMAS could not be imported. UAL not available!")
 
 
 class IDSStructure(IDSMixin):
