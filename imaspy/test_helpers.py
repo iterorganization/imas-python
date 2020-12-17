@@ -35,7 +35,7 @@ def random_data(ids_type, ndims):
         if ndims == 0:
             return random_string()
         elif ndims == 1:
-            return np.asarray([random_string() for i in range(random.randint(0, 3))])
+            return [random_string() for i in range(random.randint(0, 3))]
         else:
             raise NotImplementedError(
                 "Strings of dimension 2 or higher " "are not supported"

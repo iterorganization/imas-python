@@ -324,9 +324,8 @@ class IDSStructure(IDSMixin):
     ):
         # Retrieve full IDS data from the open database.
         raise NotImplementedError(
-            "{!s}.getSlice(time_requested, interpolation_method, occurrence=0, data_store=None)".format(
-                self
-            )
+            "{!s}.getSlice(time_requested, interpolation_method"
+            ", occurrence=0, data_store=None)".format(self)
         )
 
     @loglevel

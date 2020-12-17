@@ -38,7 +38,7 @@ def fname(version):
 def print_supported_version_warning(version):
     if StrictVersion(version) < imaspy.OLDEST_SUPPORTED_VERSION:
         logger.warning(
-            "Version {version} is below lowest supported version of {last_version}. \
+            "Version %s is below lowest supported version of %s.\
             Proceed at your own risk.",
             version,
             imaspy.OLDEST_SUPPORTED_VERSION,
