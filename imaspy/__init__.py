@@ -1,7 +1,7 @@
 # This file is part of IMASPy.
 # You should have received IMASPy LICENSE file with this project.
 
-from distutils.version import StrictVersion
+from distutils.version import StrictVersion as V
 import pkg_resources
 
 # First thing for import, try to determine imaspy version
@@ -25,4 +25,4 @@ from imaspy.backends import (
     xarray_core_utils,
 )
 
-OLDEST_SUPPORTED_VERSION = StrictVersion("3.21.1")
+OLDEST_SUPPORTED_VERSION = V("3.21.1")

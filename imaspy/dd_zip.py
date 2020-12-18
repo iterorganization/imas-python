@@ -3,7 +3,7 @@
 """ Extract DD versions from the provided zip file
 """
 import logging
-from distutils.version import StrictVersion
+from distutils.version import StrictVersion as V
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -36,7 +36,7 @@ def fname(version):
 
 
 def print_supported_version_warning(version):
-    if StrictVersion(version) < imaspy.OLDEST_SUPPORTED_VERSION:
+    if V(version) < imaspy.OLDEST_SUPPORTED_VERSION:
         logger.warning(
             "Version %s is below lowest supported version of %s.\
             Proceed at your own risk.",
@@ -63,7 +63,5 @@ def dd_xml_versions():
     """Parse data-dictionary/IDSDef.zip to find version numbers available"""
     dd_prefix_len = len("data-dictionary/")
     return safe_get(
-        lambda dd_zip: sorted(
-            [f[dd_prefix_len:-4] for f in dd_zip.namelist()], key=StrictVersion
-        )
+        lambda dd_zip: sorted([f[dd_prefix_len:-4] for f in dd_zip.namelist()], key=V)
     )

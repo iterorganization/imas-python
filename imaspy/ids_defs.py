@@ -4,7 +4,6 @@
 """
 
 import logging
-from distutils.version import StrictVersion
 
 from imaspy.logger import logger
 
@@ -13,27 +12,27 @@ logger.setLevel(logging.WARNING)
 try:
     import imas.hli_utils as hli_utils
     from imas.imasdef import (
-        MDSPLUS_BACKEND,
-        OPEN_PULSE,
-        READ_OP,
+        ASCII_BACKEND,
+        CHAR_DATA,
+        CLOSE_PULSE,
+        DOUBLE_DATA,
+        EMPTY_FLOAT,
         EMPTY_INT,
         FORCE_CREATE_PULSE,
+        HDF5_BACKEND,
+        IDS_TIME_MODE_HETEROGENEOUS,
+        IDS_TIME_MODE_HOMOGENEOUS,
+        IDS_TIME_MODE_INDEPENDENT,
         IDS_TIME_MODE_UNKNOWN,
         IDS_TIME_MODES,
-        IDS_TIME_MODE_HOMOGENEOUS,
-        IDS_TIME_MODE_HETEROGENEOUS,
-        IDS_TIME_MODE_INDEPENDENT,
-        WRITE_OP,
-        CHAR_DATA,
         INTEGER_DATA,
-        EMPTY_FLOAT,
-        DOUBLE_DATA,
-        NODE_TYPE_STRUCTURE,
-        CLOSE_PULSE,
-        UDA_BACKEND,
+        MDSPLUS_BACKEND,
         MEMORY_BACKEND,
-        HDF5_BACKEND,
-        ASCII_BACKEND,
+        NODE_TYPE_STRUCTURE,
+        OPEN_PULSE,
+        READ_OP,
+        UDA_BACKEND,
+        WRITE_OP,
     )
 
     # TODO: get UAL_VERSION number from hli_utils (if it doesn't exist it's too old)

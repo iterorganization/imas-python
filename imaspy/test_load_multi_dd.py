@@ -2,7 +2,7 @@
 # (all IMAS data-dictionary files in the zip with version >= min).
 
 import logging
-from distutils.version import StrictVersion
+from distutils.version import StrictVersion as V
 
 import imaspy
 import pytest
@@ -35,7 +35,7 @@ def test_load_all_dds():
     Only load those we support (OLDEST_SUPPORTED_VERSION and up)
     """
     for version in dd_xml_versions()[::-1]:
-        if StrictVersion(version) >= imaspy.OLDEST_SUPPORTED_VERSION:
+        if V(version) >= imaspy.OLDEST_SUPPORTED_VERSION:
             # iterate over all versions packaged in our zipfile (at least one)
             ids = imaspy.ids_root.IDSRoot(0, 0, version=version, verbosity=1)
 

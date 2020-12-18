@@ -2,7 +2,7 @@
 # You should have received IMASPy LICENSE file with this project.
 """ Represents the possible migrations between data dictionaries."""
 
-from distutils.version import StrictVersion
+from distutils.version import StrictVersion as V
 
 from imaspy.logger import logger
 
@@ -29,8 +29,8 @@ def transform_path(version_mem, version_file, path):
     """Given a path at version_mem, what does it correspond to for version_file?"""
     # For this path, get the list of migrations and walk through them
     # (there will only be a few, so it is not so expensive)
-    vmem = StrictVersion(version_mem)
-    vfile = StrictVersion(version_file)
+    vmem = V(version_mem)
+    vfile = V(version_file)
 
     new_path = path
 
@@ -47,7 +47,7 @@ def transform_path(version_mem, version_file, path):
 
 
 def filter_migrations(migrations, ver1, ver2):
-    """Filter a list of migrations between StrictVersion 1 and 2"""
+    """Filter a list of migrations between version 1 and 2"""
     return filter(lambda x: min(ver1, ver2) < x <= max(ver1, ver2), migrations)
 
 
@@ -70,7 +70,7 @@ class Migration:
 
     def __init__(self, version):
         """Initialize the migration in direction and read/write mode"""
-        self.version = StrictVersion(version)
+        self.version = V(version)
         self.register()
 
     def transform_path(self, direction, path):
