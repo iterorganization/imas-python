@@ -1,13 +1,15 @@
-import random
-import numpy as np
 import logging
+import random
 import string
 
+import numpy as np
+
 # TODO: import these from imaspy (i.e. expose them publicly?)
+from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT
+from imaspy.ids_root import IDSRoot
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.ids_root import IDSRoot
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -50,6 +52,8 @@ def random_data(ids_type, ndims):
 
 
 def fill_with_random_data(structure):
+    """Fill a structure with random data.
+    Sets homogeneous_time to independent _always_."""
     for child_name in structure._children:
         child = structure[child_name]
 
@@ -59,7 +63,10 @@ def fill_with_random_data(structure):
             if len(child.value) == 0:
                 # make 3 copies of _element_structure and fill those
                 child.append([child._element_structure] * 3)
-                for a in child.values:
+                for a in child.value:
                     fill_with_random_data(a)
         else:  # leaf node
-            child.value = random_data(child._ids_type, child._ndims)
+            if child_name == "homogeneous_time":
+                child.value = IDS_TIME_MODE_INDEPENDENT
+            else:
+                child.value = random_data(child._ids_type, child._ndims)

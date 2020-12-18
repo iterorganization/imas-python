@@ -90,9 +90,10 @@ class IDSStructure(IDSMixin):
                 # leaf node. Just naively try to generate one
                 tbp = child.get("timebasepath")
                 if tbp is not None:
-                    logger.critical(
-                        "Found a timebasepath of {!s}! Should not happen".format(tbp)
-                    )
+                    pass
+                    # logger.critical(
+                    # "Found a timebasepath of {!s}! Should not happen".format(tbp)
+                    # )
                 coordinates = {
                     attr: child.attrib[attr]
                     for attr in child.attrib

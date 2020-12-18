@@ -6,6 +6,7 @@
 # Same for ids_type, with all types
 
 from imaspy.ids_defs import ASCII_BACKEND, HDF5_BACKEND, MDSPLUS_BACKEND, MEMORY_BACKEND
+from imaspy.ids_root import IDSRoot
 from imaspy.test_minimal_types_io import TEST_DATA
 
 
@@ -44,3 +45,9 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize("ids_type", ["int_0d"])
         else:
             metafunc.parametrize("ids_type", [None] + list(TEST_DATA.keys()))
+
+    if "ids_name" in metafunc.fixturenames:
+        if metafunc.config.getoption("mini"):
+            metafunc.parametrize("ids_name", ["pulse_schedule"])
+        else:
+            metafunc.parametrize("ids_name", IDSRoot()._children)

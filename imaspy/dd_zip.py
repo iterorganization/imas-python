@@ -65,3 +65,8 @@ def dd_xml_versions():
     return safe_get(
         lambda dd_zip: sorted([f[dd_prefix_len:-4] for f in dd_zip.namelist()], key=V)
     )
+
+
+def latest_dd_version():
+    """Find the latest version in data-dictionary/IDSDef.zip"""
+    return dd_xml_versions()[-1]

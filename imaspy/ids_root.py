@@ -15,8 +15,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.dd_zip import get_dd_xml
-
+from imaspy.dd_zip import get_dd_xml, latest_dd_version
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.logger import logger, loglevel
 
@@ -91,12 +90,12 @@ class IDSRoot:
             XMLtreeIDSDef = ET.parse(xml_path)
             logger.info("Generating IDS structures from file %s", xml_path)
             self._xml_path = xml_path
-        elif version:
+        else:
+            if version is None:
+                version = latest_dd_version()
             XMLtreeIDSDef = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
             logger.info("Generating IDS structures for version %s", version)
             self._imas_version = version
-        else:
-            raise ValueError("version or xml_path are required")
 
         # Parse given xml_path and build imaspy IDS structures
         root = XMLtreeIDSDef.getroot()
