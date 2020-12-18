@@ -34,8 +34,8 @@ try:
         HDF5_BACKEND,
         ASCII_BACKEND,
     )
-except ImportError:
-    logger.critical("IMAS could not be imported. UAL not available!")
+except ImportError as ee:
+    logger.critical("IMAS could not be imported. UAL not available! %s", ee)
 else:
     # Translation dictionary to go from an ids (primitive) type (without the dimensionality) to a default value
     ids_type_to_default = {

@@ -9,8 +9,8 @@ from imaspy.logger import logger, loglevel
 
 try:
     from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_HOMOGENEOUS
-except:
-    logger.critical("IMAS could not be imported. UAL not available!")
+except ImportError as ee:
+    logger.critical("IMAS could not be imported. UAL not available! %s", ee)
 
 logger.setLevel(logging.WARNING)
 

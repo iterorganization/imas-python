@@ -13,7 +13,6 @@ from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_mixin import IDSMixin
 from imaspy.logger import logger, loglevel
-from IPython import embed
 
 try:
     from imaspy.ids_defs import (
@@ -121,7 +120,6 @@ class IDSPrimitive(IDSMixin):
                         value.dtype
                     )
                 )
-                embed()
                 raise Exception
         else:
             logger.critical(
@@ -129,7 +127,6 @@ class IDSPrimitive(IDSMixin):
                     type(value)
                 )
             )
-            embed()
             raise Exception
         return value
 
