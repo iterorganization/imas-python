@@ -39,13 +39,13 @@ def test_latest_dd_autofill(ids_name, backend):
 
     ids[ids_name].put()
 
-    ids2 = open_ids(backend, "a")
-    ids2[ids_name].get()
-
     if backend == MEMORY_BACKEND:
         # this one does not store anything between instantiations
         pass
     else:
+        ids2 = open_ids(backend, "a")
+        ids2[ids_name].get()
+
         if backend == ASCII_BACKEND:
             logger.warn("Skipping ASCII backend tests for empty arrays")
             compare_children(

@@ -69,16 +69,21 @@ class IDSMixin:
                 # strTimeBasePath = self._coordinates['coordinate1']
                 try:  # see if we can get a value out of the thing
                     homogeneousTime = homogeneousTime.value
-                except:
+                except AttributeError:
                     pass
                 if homogeneousTime == IDS_TIME_MODE_HOMOGENEOUS:
                     strTimeBasePath = "/time"
                 elif homogeneousTime == IDS_TIME_MODE_HETEROGENEOUS:
                     strTimeBasePath = self.getAOSPath(ignore_nbc_change) + "/time"
                 else:
+                    from IPython import embed
+
+                    embed()
                     raise ALException(
                         "Unexpected call to function getTimeBasePath(cls, homogeneousTime) \
-                        with undefined homogeneous time."
+                        with undefined homogeneous time. {!s}".format(
+                            homogeneousTime
+                        )
                     )
                 pass
             elif (
