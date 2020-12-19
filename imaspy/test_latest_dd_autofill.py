@@ -11,11 +11,11 @@ import pytest
 
 import imaspy
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
-from imaspy.test_helpers import fill_with_random_data, visit_children
+from imaspy.test_helpers import compare_children, fill_with_random_data, visit_children
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def test_latest_dd_autofill_consistency(ids_name):
@@ -46,16 +46,10 @@ def test_latest_dd_autofill(ids_name, backend):
         # this one does not store anything between instantiations
         pass
     else:
-        for (k1, node1), (k2, node2) in zip(
-            ids[ids_name].items(), ids2[ids_name].items()
-        ):
-            if isinstance(node1, np.ndarray):
-                assert np.array_equal(node1.value, node2.value)
-            else:
-                assert node1.value == node2.value
+        compare_children(ids[ids_name], ids2[ids_name])
 
 
-def open_ids(backend, mode):
-    ids = imaspy.ids_root.IDSRoot(1, 0, verbosity=1)
+def open_ids(backend, mode, verbosity=1):
+    ids = imaspy.ids_root.IDSRoot(1, 0, verbosity=verbosity)
     ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode=mode)
     return ids

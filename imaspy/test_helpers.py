@@ -54,7 +54,8 @@ def random_data(ids_type, ndims):
 
 def fill_with_random_data(structure):
     """Fill a structure with random data.
-    Sets homogeneous_time to independent _always_."""
+    Sets homogeneous_time to independent _always_.
+    TODO: also test other time types"""
     for child_name in structure._children:
         child = structure[child_name]
 
@@ -75,8 +76,7 @@ def fill_with_random_data(structure):
 
 
 def visit_children(structure, fun):
-    """Fill a structure with random data.
-    Sets homogeneous_time to independent _always_."""
+    """walk all children of this structure in order and execute fun on them"""
     for child_name in structure._children:
         child = structure[child_name]
 
@@ -87,3 +87,21 @@ def visit_children(structure, fun):
                 visit_children(a, fun)
         else:  # leaf node
             fun(child)
+
+
+def compare_children(st1, st2):
+    """Perform a deep compare of two structures using asserts."""
+    for (name1, child1), (name2, child2) in zip(st1.items(), st2.items()):
+        assert name1 == name2
+        assert type(child1) == type(child2)
+
+        if type(child1) in [IDSStructure, IDSToplevel, IDSRoot]:
+            compare_children(child1, child2)
+        elif type(child1) == IDSStructArray:
+            for a, b in zip(child1.value, child2.value):
+                compare_children(a, b)
+        else:  # leaf node
+            if isinstance(child1.value, np.ndarray):
+                assert np.array_equal(child1.value, child2.value)
+            else:
+                assert child1.value == child2.value

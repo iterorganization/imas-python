@@ -67,6 +67,10 @@ class IDSMixin:
                 # Should Walk up the tree
                 # Just stupid copy for now
                 # strTimeBasePath = self._coordinates['coordinate1']
+                try:  # see if we can get a value out of the thing
+                    homogeneousTime = homogeneousTime.value
+                except:
+                    pass
                 if homogeneousTime == IDS_TIME_MODE_HOMOGENEOUS:
                     strTimeBasePath = "/time"
                 elif homogeneousTime == IDS_TIME_MODE_HETEROGENEOUS:
