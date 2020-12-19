@@ -187,12 +187,12 @@ class IDSPrimitive(IDSMixin):
 
         # Do not write if data is the same as the default of the leaf node
         # TODO: set default of backend xml instead
-        if np.array_equals(data, self._default):
+        if np.array_equal(data, self._default):
             return
 
-        dbg_str = " " + " " * self.depth + "- " + self._name
+        dbg_str = " " + " " * self.depth + "- {!s}"
         dbg_str += (" {:" + str(max(0, 53 - len(dbg_str))) + "s}").format(
-            "(" + str(data) + ")"
+            self._name, "(" + str(data) + ")"
         )
         # Call signature
         # ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))

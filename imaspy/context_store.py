@@ -61,7 +61,6 @@ class ContextStore(dict):
                     continue
                 key, val = line.split("=")
                 info[key.strip()] = val.strip()
-            print("ctx", ctx, info)
 
 
 # Keep a single 'global' variable context_store
