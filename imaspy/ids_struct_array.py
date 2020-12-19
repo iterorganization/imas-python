@@ -65,8 +65,12 @@ class IDSStructArray(IDSStructure, IDSMixin):
         # Save the converted structure_xml for later reference, and adding new
         # empty structures to the AoS
         self._element_structure = IDSStructure(self, name + "_el", structure_xml)
+        # do not set _parent as it causes loops with deepcopy
+        self._element_structure._parent = None
+        # instead the append() method will set it
+
         # Do not try to convert ids_types by default.
-        # As soon as a copy is made, set this to True
+        # Instead the append() method will set this
         self._element_structure._convert_ids_types = (
             False  # Enable converting after copy
         )
@@ -113,6 +117,8 @@ class IDSStructArray(IDSStructure, IDSMixin):
         for e in elements:
             # Just blindly append for now
             # TODO: Maybe check if user is not trying to append weird elements
+            e._convert_ids_types = True
+            e._parent = self
             self.value.append(e)
 
     def resize(self, nbelt, keep=False):
@@ -182,15 +188,15 @@ class IDSStructArray(IDSStructure, IDSMixin):
             return
         if aosCtx > 0:
             context_store[aosCtx] = (
-                context_store[parentCtx] + "/" + nodePath + "/" + str(0)
+                context_store[parentCtx] + "/" + nodePath + "/" + str(1)
             )
         self.resize(size)
         for i in range(size):
-            self.value[i].get(aosCtx, homogeneousTime)
-            self._ull.ual_iterate_over_arraystruct(aosCtx, 1)
             context_store.update(
                 aosCtx, context_store[parentCtx] + "/" + nodePath + "/" + str(i + 1)
             )  # Update context
+            self.value[i].get(aosCtx, homogeneousTime)
+            self._ull.ual_iterate_over_arraystruct(aosCtx, 1)
 
         if aosCtx > 0:
             context_store.pop(aosCtx)
@@ -225,8 +231,11 @@ class IDSStructArray(IDSStructure, IDSMixin):
         context_store[aosCtx] = context_store[parentCtx] + "/" + nodePath + "/" + str(0)
 
         for i in range(size):
+            context_store.update(
+                aosCtx, context_store[parentCtx] + "/" + nodePath + "/" + str(i + 1)
+            )  # Update context
             # This loops over the whole array
-            dbg_str = " " * self.depth + "- [" + str(i) + "]"
+            dbg_str = " " * self.depth + "- [" + str(i + 1) + "]"
             logger.debug("{:53.53s} put".format(dbg_str))
             self.value[i].put(aosCtx, homogeneousTime)
             status = self._ull.ual_iterate_over_arraystruct(aosCtx, 1)
@@ -237,9 +246,6 @@ class IDSStructArray(IDSStructure, IDSMixin):
                     ),
                     status,
                 )
-            context_store.update(
-                aosCtx, context_store[parentCtx] + "/" + nodePath + "/" + str(i + 1)
-            )  # Update context
 
         status = self._ull.ual_end_action(aosCtx)
         context_store.pop(aosCtx)

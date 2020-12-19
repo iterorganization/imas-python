@@ -1,3 +1,4 @@
+import copy
 import logging
 import random
 import string
@@ -61,8 +62,9 @@ def fill_with_random_data(structure):
             fill_with_random_data(child)
         elif type(child) == IDSStructArray:
             if len(child.value) == 0:
-                # make 3 copies of _element_structure and fill those
-                child.append([child._element_structure] * 3)
+                child.append(copy.deepcopy(child._element_structure))
+                child.append(copy.deepcopy(child._element_structure))
+                child.append(copy.deepcopy(child._element_structure))
                 for a in child.value:
                     fill_with_random_data(a)
         else:  # leaf node

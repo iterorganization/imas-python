@@ -41,8 +41,13 @@ class IDSMixin:
                 # TODO: Might need to be recursive.
                 rel_path = "/".join(split[1:])
         else:
+            from IPython import embed
+
+            embed()
             raise Exception(
-                "Could not strip context from absolute path {!s}".format(self.path)
+                "Could not strip context from absolute path {!s}, store: {!s}".format(
+                    self.path, context_store
+                )
             )
         # logger.debug('Got context {!s} with abspath {!s}, relpath is {!s}'
         # .format(ctx, self.path, rel_path))
@@ -92,15 +97,6 @@ class IDSMixin:
     @property
     def path(self):
         """Build absolute path from node to root"""
-        # Probably superseded by the property below
-        my_path = self._name
-        if hasattr(self, "_parent"):
-            my_path = self._parent.path + "/" + my_path
-        return my_path
-
-    @property
-    def path(self):
-        """Build absolute path from node to root"""
         my_path = self._name
         if hasattr(self, "_parent"):
             # prevent circular import problems.
@@ -110,7 +106,7 @@ class IDSMixin:
 
             if isinstance(self._parent, IDSStructArray):
                 my_path = "{!s}/{!s}".format(
-                    self._parent.path, self._parent.value.index(self)
+                    self._parent.path, self._parent.value.index(self) + 1
                 )
             else:
                 my_path = self._parent.path + "/" + my_path
