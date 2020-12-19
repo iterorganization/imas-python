@@ -109,6 +109,18 @@ class IDSStructure(IDSMixin):
         # After initialization, always try to convert setting attributes on this structure
         self._convert_ids_types = True
 
+    def keys(self):
+        """Behave like a dictionary by defining a keys() method"""
+        return self._children
+
+    def values(self):
+        """Behave like a dictionary by defining a values() method"""
+        return map(self.__getitem__, self._children)
+
+    def items(self):
+        """Behave like a dictionary by defining an items() method"""
+        return zip(self.keys(), self.values())
+
     def set_backend_properties(self, structure_xml):
         """Walk the union of existing children and those in structure_xml
         and set backend annotations for this element and its children."""

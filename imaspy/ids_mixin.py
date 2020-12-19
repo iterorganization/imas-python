@@ -41,7 +41,9 @@ class IDSMixin:
                 # TODO: Might need to be recursive.
                 rel_path = "/".join(split[1:])
         else:
-            raise Exception("Could not strip context from absolute path")
+            raise Exception(
+                "Could not strip context from absolute path {!s}".format(self.path)
+            )
         # logger.debug('Got context {!s} with abspath {!s}, relpath is {!s}'
         # .format(ctx, self.path, rel_path))
         return rel_path

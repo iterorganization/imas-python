@@ -5,7 +5,7 @@ import string
 import numpy as np
 
 # TODO: import these from imaspy (i.e. expose them publicly?)
-from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT
+from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_root import IDSRoot
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
@@ -67,6 +67,21 @@ def fill_with_random_data(structure):
                     fill_with_random_data(a)
         else:  # leaf node
             if child_name == "homogeneous_time":
-                child.value = IDS_TIME_MODE_INDEPENDENT
+                child.value = IDS_TIME_MODE_HOMOGENEOUS
             else:
                 child.value = random_data(child._ids_type, child._ndims)
+
+
+def visit_children(structure, fun):
+    """Fill a structure with random data.
+    Sets homogeneous_time to independent _always_."""
+    for child_name in structure._children:
+        child = structure[child_name]
+
+        if type(child) in [IDSStructure, IDSToplevel, IDSRoot]:
+            visit_children(child, fun)
+        elif type(child) == IDSStructArray:
+            for a in child.value:
+                visit_children(a, fun)
+        else:  # leaf node
+            fun(child)

@@ -70,10 +70,6 @@ class IDSStructArray(IDSStructure, IDSMixin):
         self._element_structure._convert_ids_types = (
             False  # Enable converting after copy
         )
-        # Do not store a reference to the parent. We will set this explicitly
-        # each time a new instance is created, as all instances share the same
-        # parent, this structure itself.
-        self._element_structure._parent = None
 
         # Initialize with an 0-lenght list
         self.value = []
