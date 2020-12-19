@@ -29,11 +29,11 @@ def test_minimal_types_str_1d_decode(xml):
     assert ids.minimal.str_1d.value == ["test", "test2"]
 
 
-def test_minimal_types_str_1d_decode_and_put(backend, xml):
+def test_minimal_types_str_1d_decode_and_put(backend, xml, worker_id):
     """The access layer changed 1d string types to bytes.
     This is unexpected, especially since on read it is converted from bytes to string
     again (which implies that the proper form for in python is as strings)"""
-    ids = open_ids(backend, xml, "w")
+    ids = open_ids(backend, xml, "w", worker_id)
     ids.minimal.str_1d = [b"test", b"test2"]
     ids.minimal.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
 

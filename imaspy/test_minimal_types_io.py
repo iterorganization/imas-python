@@ -66,7 +66,7 @@ def test_minimal_types_io(backend, xml, ids_type, worker_id):
                     assert ids2.minimal[k].value == v
 
 
-def open_ids(backend, xml_path, mode):
+def open_ids(backend, xml_path, mode, worker_id):
     ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml_path)
     ids.open_ual_store(
         os.environ.get("USER", "root"), "test", worker_id, backend, mode=mode
