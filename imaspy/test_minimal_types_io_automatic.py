@@ -43,17 +43,17 @@ def test_minimal_types_str_1d_decode_and_put(backend, xml):
 
 
 # TODO: use a separate folder for the MDSPLUS DB and clear it after the testcase
-def test_minimal_types_io_automatic(backend, xml):
+def test_minimal_types_io_automatic(backend, xml, worker_id):
     """Write and then read again a number on our minimal IDS.
     This gets run with all 4 backend options and with all ids_types (+ None->all)
     """
-    ids = open_ids(backend, xml, "w")
+    ids = open_ids(backend, xml, "w", worker_id)
     fill_with_random_data(ids)
 
     ids.minimal.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     ids.minimal.put()
 
-    ids2 = open_ids(backend, xml, "a")
+    ids2 = open_ids(backend, xml, "a", worker_id)
     ids2.minimal.get()
     if backend == MEMORY_BACKEND:
         # this one does not store anything between instantiations
@@ -75,7 +75,9 @@ def test_minimal_types_io_automatic(backend, xml):
                     assert ids2.minimal[k].value == ids.minimal[k].value
 
 
-def open_ids(backend, xml_path, mode):
+def open_ids(backend, xml_path, mode, worker_id):
     ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml_path)
-    ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode=mode)
+    ids.open_ual_store(
+        os.environ.get("USER", "root"), "test", worker_id, backend, mode=mode
+    )
     return ids

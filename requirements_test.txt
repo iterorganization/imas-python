@@ -1,3 +1,4 @@
 # Have at least the same as ITER cluster
 pytest>=5.4.1
 pytest-cov>=0.6
+pytest-xdist
