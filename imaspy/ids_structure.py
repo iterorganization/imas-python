@@ -119,7 +119,8 @@ class IDSStructure(IDSMixin):
 
     def items(self):
         """Behave like a dictionary by defining an items() method"""
-        return zip(self.keys(), self.values())
+        # define values inline, because some IDSes overwrite values
+        return zip(self.keys(), map(self.__getitem__, self._children))
 
     def set_backend_properties(self, structure_xml):
         """Walk the union of existing children and those in structure_xml
