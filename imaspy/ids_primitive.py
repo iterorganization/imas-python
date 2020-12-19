@@ -9,6 +9,7 @@ Provides the class for an IDS Primitive data type
 
 # Set up logging immediately
 import numpy as np
+
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_mixin import IDSMixin
@@ -186,7 +187,7 @@ class IDSPrimitive(IDSMixin):
 
         # Do not write if data is the same as the default of the leaf node
         # TODO: set default of backend xml instead
-        if np.all(data == self._default):
+        if np.array_equals(data, self._default):
             return
 
         dbg_str = " " + " " * self.depth + "- " + self._name

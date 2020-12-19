@@ -4,6 +4,7 @@ import random
 import string
 
 import numpy as np
+import pytest
 
 # TODO: import these from imaspy (i.e. expose them publicly?)
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
@@ -89,19 +90,26 @@ def visit_children(structure, fun):
             fun(child)
 
 
-def compare_children(st1, st2):
+def compare_children(st1, st2, _ascii_empty_array_skip=False):
     """Perform a deep compare of two structures using asserts."""
     for (name1, child1), (name2, child2) in zip(st1.items(), st2.items()):
         assert name1 == name2
         assert type(child1) == type(child2)
 
         if type(child1) in [IDSStructure, IDSToplevel, IDSRoot]:
-            compare_children(child1, child2)
+            compare_children(
+                child1, child2, _ascii_empty_array_skip=_ascii_empty_array_skip
+            )
         elif type(child1) == IDSStructArray:
             for a, b in zip(child1.value, child2.value):
-                compare_children(a, b)
+                compare_children(a, b, _ascii_empty_array_skip=_ascii_empty_array_skip)
         else:  # leaf node
-            if isinstance(child1.value, np.ndarray):
-                assert np.array_equal(child1.value, child2.value)
+            if isinstance(child1.value, np.ndarray) or isinstance(child1.value, list):
+                if (
+                    len(child1.value) == 0 or len(child2.value) == 0
+                ) and _ascii_empty_array_skip:
+                    pass
+                else:
+                    assert np.array_equal(child1.value, child2.value)
             else:
                 assert child1.value == child2.value
