@@ -130,7 +130,6 @@ class IDSPrimitive(IDSMixin):
                         value.dtype
                     )
                 )
-                embed()
                 raise Exception
         else:
             logger.critical(
@@ -138,7 +137,6 @@ class IDSPrimitive(IDSMixin):
                     type(value)
                 )
             )
-            embed()
             raise Exception
         return value
 
