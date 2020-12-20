@@ -68,10 +68,11 @@ class IDSStructure(IDSMixin):
         self._coordinates = get_coordinates(structure_xml)
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
+
+        log_string = " " * self.depth + " - % -38s initialization"
         for child in structure_xml:
             my_name = child.get("name")
-            dbg_str = " " * (self.depth + 1) + "- " + my_name
-            logger.debug("{:42.42s} initialization".format(dbg_str))
+            logger.debug(log_string, my_name)
             self._children.append(my_name)
             # Decide what to do based on the data_type attribute
             my_data_type = child.get("data_type")
