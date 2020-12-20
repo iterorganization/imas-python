@@ -10,6 +10,7 @@ This contains references to :py:class:`IDSStructure`s
 import numbers
 
 import numpy as np
+
 from imaspy.ids_primitive import IDSPrimitive
 
 

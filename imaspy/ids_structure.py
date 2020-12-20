@@ -6,7 +6,7 @@
 """
 # Set up logging immediately
 
-from functools import lru_cache
+from functools import cached_property
 
 from imaspy.al_exception import ALException
 from imaspy.ids_mixin import IDSMixin
@@ -202,9 +202,7 @@ class IDSStructure(IDSMixin):
                     child.get("name"),
                 )
 
-    @property
-    @lru_cache(1024)
-    # TODO: consider setting this as a 'real' property instead of this function
+    @cached_property
     def depth(self):
         """Calculate the depth of the leaf node"""
         my_depth = 0

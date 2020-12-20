@@ -2,6 +2,7 @@
 # You should have received IMASPy LICENSE file with this project.
 
 import logging
+from functools import cached_property
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
@@ -102,7 +103,7 @@ class IDSMixin:
         # This is probably wrong! Should walk up the tree
         return self._name
 
-    @property
+    @cached_property
     def path(self):
         """Build absolute path from node to root"""
         my_path = self._name

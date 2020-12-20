@@ -12,7 +12,7 @@ import copy
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_structure import IDSStructure
+from imaspy.ids_structure import IDSStructure, get_coordinates
 from imaspy.logger import logger
 
 
@@ -57,11 +57,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         self._convert_ids_types = False
         self._name = name
         self._parent = parent
-        self._coordinates = {
-            attr: structure_xml.attrib[attr]
-            for attr in structure_xml.attrib
-            if attr.startswith("coordinate")
-        }
+        self._coordinates = get_coordinates(structure_xml)
         # Save the converted structure_xml for later reference, and adding new
         # empty structures to the AoS
         self._element_structure = IDSStructure(self, name + "_el", structure_xml)
