@@ -62,11 +62,7 @@ class IDSStructure(IDSMixin):
         # As we cannot restore the parent from just a string, save a reference
         # to the parent. Take care when (deep)copying this!
         self._parent = parent
-        self._coordinates = {
-            attr: structure_xml.attrib[attr]
-            for attr in structure_xml.attrib
-            if attr.startswith("coordinate")
-        }
+        self._coordinates = get_coordinates(structure_xml)
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
         for child in structure_xml:
@@ -93,13 +89,11 @@ class IDSStructure(IDSMixin):
                     # logger.critical(
                     # "Found a timebasepath of {!s}! Should not happen".format(tbp)
                     # )
-                # this corresponds to a large fraction of the work in __init__,
+                # this corresponds to a large fraction of the work in __init__, (5% of test total!)
                 # cythonize perhaps?
-                coordinates = {
-                    attr: child.attrib[attr]
-                    for attr in child.attrib
-                    if attr.startswith("coordinate")
-                }
+                # most fields have only coordinate1, out of 6 total (sometimes more)
+                # maybe work iteratively?
+                coordinates = get_coordinates(child)
                 setattr(
                     self,
                     my_name,
@@ -407,3 +401,13 @@ class IDSStructure(IDSMixin):
                         status,
                     )
         return 0
+
+
+def get_coordinates(el):
+    """Given an XML element, extract the coordinate attributes from el.attrib"""
+    coords = {}
+    for dim in range(1, 6):
+        key = "coordinate" + str(dim)
+        if key in el.attrib:
+            coords[key] = el.attrib[key]
+    return coords
