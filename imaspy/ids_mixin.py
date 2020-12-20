@@ -108,16 +108,14 @@ class IDSMixin:
         """Build absolute path from node to root"""
         my_path = self._name
         if hasattr(self, "_parent"):
-            # prevent circular import problems.
-            # TODO: use a property of self._parent to decide how to build
-            # the path, instead of its type
-            from imaspy.ids_struct_array import IDSStructArray
-
-            if isinstance(self._parent, IDSStructArray):
-                my_path = "{!s}/{!s}".format(
-                    self._parent.path, self._parent.value.index(self) + 1
-                )
-            else:
+            try:
+                if self._parent._array_type:
+                    my_path = "{!s}/{!s}".format(
+                        self._parent.path, self._parent.value.index(self) + 1
+                    )
+                else:
+                    my_path = self._parent.path + "/" + my_path
+            except AttributeError:
                 my_path = self._parent.path + "/" + my_path
         return my_path
 

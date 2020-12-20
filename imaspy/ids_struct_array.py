@@ -71,6 +71,9 @@ class IDSStructArray(IDSStructure, IDSMixin):
             False  # Enable converting after copy
         )
 
+        # signal that this is an array-type addressing
+        self._array_type = True
+
         # set maxoccur
         self._maxoccur = None
         try:
