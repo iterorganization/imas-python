@@ -29,6 +29,7 @@ class IDSStructure(IDSMixin):
     """
 
     _MAX_OCCURRENCES = None
+    _convert_ids_types = False
 
     def getNodeType(self):
         raise NotImplementedError("{!s}.getNodeType()".format(self))
@@ -233,11 +234,7 @@ class IDSStructure(IDSMixin):
         want to always bypass this mechanism (I know I do!)
         """
         # TODO: Check if this heuristic is sufficient
-        if (
-            not key.startswith("_")
-            and hasattr(self, "_convert_ids_types")
-            and self._convert_ids_types
-        ):
+        if self._convert_ids_types and not key[0] == "_":
             # Convert IDS type on set time. Never try this for hidden attributes!
             if hasattr(self, key):
                 attr = getattr(self, key)
@@ -247,7 +244,7 @@ class IDSStructure(IDSMixin):
                     "generating new structure from scratch {name}".format(name=key)
                 )
 
-                attr = create_leaf_container(key, no_data_type_I_guess, parent=self)
+                # attr = create_leaf_container(key, no_data_type_I_guess, parent=self)
             if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):
                 raise Exception(
                     "Trying to set structure field {!s} with non-structure.".format(key)
@@ -256,7 +253,7 @@ class IDSStructure(IDSMixin):
             try:
                 attr.value = value
             except Exception as ee:
-                raise
+                raise ee
             else:
                 object.__setattr__(self, key, attr)
         else:
