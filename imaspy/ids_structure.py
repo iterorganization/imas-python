@@ -410,4 +410,6 @@ def get_coordinates(el):
         key = "coordinate" + str(dim)
         if key in el.attrib:
             coords[key] = el.attrib[key]
+        else:
+            break
     return coords
