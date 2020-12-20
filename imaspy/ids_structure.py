@@ -8,7 +8,7 @@
 
 from imaspy.al_exception import ALException
 from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_primitive import IDSPrimitive, create_leaf_container, parse_dd_type
+from imaspy.ids_primitive import DD_TYPES, IDSPrimitive, create_leaf_container
 from imaspy.logger import logger
 
 try:
@@ -93,6 +93,8 @@ class IDSStructure(IDSMixin):
                     # logger.critical(
                     # "Found a timebasepath of {!s}! Should not happen".format(tbp)
                     # )
+                # this corresponds to a large fraction of the work in __init__,
+                # cythonize perhaps?
                 coordinates = {
                     attr: child.attrib[attr]
                     for attr in child.attrib
@@ -164,7 +166,7 @@ class IDSStructure(IDSMixin):
                 # when switching backend_xml multiple times)
                 if data_type:
                     child._backend_path = None
-                    child._backend_type, child._backend_ndims = parse_dd_type(data_type)
+                    child._backend_type, child._backend_ndims = DD_TYPES[data_type]
                 else:
                     child._backend_path = None
                     child._backend_type = None

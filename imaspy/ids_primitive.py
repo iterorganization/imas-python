@@ -27,6 +27,24 @@ except:
     logger.critical("IMAS could not be imported. UAL not available!")
 
 
+# TODO: can we use the builtin methods here instead?
+DD_TYPES = {
+    "STR_0D": ("STR", 0),
+    "STR_1D": ("STR", 1),
+    "str_type": ("STR", 0),
+    "str_1d_type": ("STR", 1),
+    "flt_type": ("FLT", 0),
+    "flt_1d_type": ("FLT", 1),
+    "int_type": ("INT", 0),
+}
+
+for i in range(0, 7):
+    # dimensions are random
+    DD_TYPES["FLT_%dD" % i] = ("FLT", i)
+    if i < 4:
+        DD_TYPES["INT_%dD" % i] = ("INT", i)
+
+
 class IDSPrimitive(IDSMixin):
     """IDS leaf node
 
@@ -287,7 +305,7 @@ def create_leaf_container(name, data_type, **kwargs):
     """Wrapper to create IDSPrimitive/IDSNumericArray from IDS syntax.
     TODO: move this elsewhere.
     """
-    ids_type, ndims = parse_dd_type(data_type)
+    ids_type, ndims = DD_TYPES[data_type]
     # legacy support
     if ndims == 0:
         leaf = IDSPrimitive(name, ids_type, ndims, **kwargs)
@@ -302,27 +320,3 @@ def create_leaf_container(name, data_type, **kwargs):
 
             leaf = IDSNumericArray(name, ids_type, ndims, **kwargs)
     return leaf
-
-
-def parse_dd_type(data_type):
-    """Map from data types to ids_type, ids_dims"""
-    if data_type == "int_type":
-        ids_type = "INT"
-        ndims = 0
-    elif data_type == "flt_type":
-        ids_type = "FLT"
-        ndims = 0
-    elif data_type == "flt_1d_type":
-        ids_type = "FLT"
-        ndims = 1
-    elif data_type == "str_type":
-        ids_type = "STR"
-        ndims = 0
-    elif data_type == "str_1d_type":
-        ids_type = "STR"
-        ndims = 1
-    else:
-        ids_type, ids_dims = data_type.split("_")
-        ndims = int(ids_dims[:-1])
-
-    return ids_type, ndims
