@@ -3,8 +3,9 @@
 import logging
 import os
 
-import imaspy
 import pytest
+
+import imaspy
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     HDF5_BACKEND,

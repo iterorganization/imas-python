@@ -13,11 +13,13 @@ import xml.etree.ElementTree as ET
 
 # Set up logging immediately
 import numpy as np
+
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.dd_zip import get_dd_xml, latest_dd_version
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.logger import logger, loglevel
+from imaspy.mdsplus_model import mdsplus_model_dir
 
 try:
     from imaspy.ids_defs import (
@@ -214,8 +216,6 @@ class IDSRoot:
             options += "-silent"
 
         if backend_type == MDSPLUS_BACKEND:
-            from imaspy.mdsplus_model import mdsplus_model_dir
-
             # ensure presence of mdsplus dir and set environment ids_path
             try:
                 _version = self._imas_version

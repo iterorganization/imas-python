@@ -15,7 +15,7 @@ from imaspy.test_helpers import compare_children, fill_with_random_data, visit_c
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 def test_latest_dd_autofill_consistency(ids_name):
@@ -47,7 +47,7 @@ def test_latest_dd_autofill(ids_name, backend):
         ids2[ids_name].get()
 
         if backend == ASCII_BACKEND:
-            logger.warn("Skipping ASCII backend tests for empty arrays")
+            logger.warning("Skipping ASCII backend tests for empty arrays")
             compare_children(
                 ids[ids_name], ids2[ids_name], _ascii_empty_array_skip=True
             )

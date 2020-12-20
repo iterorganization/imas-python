@@ -59,7 +59,7 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
             os.makedirs(cache_dir_path)
 
         logger.info(
-            "Creating and caching MDSPlus model at {path}, this may take a while",
+            "Creating and caching MDSPlus model at %s, this may take a while",
             cache_dir_path,
         )
 
@@ -67,7 +67,7 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
 
         create_mdsplus_model(cache_dir_path)
     else:
-        logger.info("Using cached MDSPlus model at {path}", cache_dir_path)
+        logger.info("Using cached MDSPlus model at %s", cache_dir_path)
 
     return cache_dir_path
 

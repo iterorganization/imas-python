@@ -75,7 +75,16 @@ class IDSStructArray(IDSStructure, IDSMixin):
             False  # Enable converting after copy
         )
 
-        # Initialize with an 0-lenght list
+        # set maxoccur
+        self._maxoccur = None
+        try:
+            self._maxoccur = int(structure_xml.attrib["maxoccur"])
+        except ValueError:
+            pass
+        except KeyError:
+            pass
+
+        # Initialize with an 0-length list
         self.value = []
 
         self._convert_ids_types = True
@@ -117,6 +126,16 @@ class IDSStructArray(IDSStructure, IDSMixin):
         for e in elements:
             # Just blindly append for now
             # TODO: Maybe check if user is not trying to append weird elements
+            if self._maxoccur and len(self.value) >= self._maxoccur:
+                raise ValueError(
+                    "Maxoccur is set to %s for %s, not adding %s"
+                    % (
+                        self._maxoccur,
+                        self._base_path,
+                        elt,
+                    )
+                )
+                return
             e._convert_ids_types = True
             e._parent = self
             self.value.append(e)

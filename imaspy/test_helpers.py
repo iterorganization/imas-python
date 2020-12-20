@@ -64,9 +64,8 @@ def fill_with_random_data(structure):
             fill_with_random_data(child)
         elif type(child) == IDSStructArray:
             if len(child.value) == 0:
-                child.append(copy.deepcopy(child._element_structure))
-                child.append(copy.deepcopy(child._element_structure))
-                child.append(copy.deepcopy(child._element_structure))
+                for i in range(child._maxoccur or 3):
+                    child.append(copy.deepcopy(child._element_structure))
                 for a in child.value:
                     fill_with_random_data(a)
         else:  # leaf node
