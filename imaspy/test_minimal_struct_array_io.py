@@ -43,9 +43,9 @@ def test_minimal_struct_array_maxoccur(backend, xml):
         a.append(copy.deepcopy(a._element_structure))
 
 
-def test_minimal_struct_array_io(backend, xml):
+def test_minimal_struct_array_io(backend, xml, worker_id):
     """Write and then read again a number on our minimal IDS."""
-    ids = open_ids(backend, xml, "w")
+    ids = open_ids(backend, xml, "w", worker_id)
     a = ids.minimal_struct_array.struct_array
     ids.minimal_struct_array.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     a.append(copy.deepcopy(a._element_structure))
@@ -60,7 +60,7 @@ def test_minimal_struct_array_io(backend, xml):
     assert a[0].a.flt_0d.value == 2.0
     assert a[1].a.flt_0d.value == 4.0
 
-    ids2 = open_ids(backend, xml, "a")
+    ids2 = open_ids(backend, xml, "a", worker_id)
     ids2.minimal_struct_array.get()
     if backend == MEMORY_BACKEND:
         # this one does not store anything between instantiations
@@ -70,7 +70,9 @@ def test_minimal_struct_array_io(backend, xml):
         assert ids2.minimal_struct_array.struct_array[1].a.flt_0d.value == 4.0
 
 
-def open_ids(backend, xml_path, mode):
+def open_ids(backend, xml_path, mode, worker_id):
     ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml_path)
-    ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode=mode)
+    ids.open_ual_store(
+        os.environ.get("USER", "root"), "test", worker_id, backend, mode=mode
+    )
     return ids

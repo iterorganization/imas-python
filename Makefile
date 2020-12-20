@@ -103,7 +103,7 @@ COV_FLAGS?=--cov=$(PACKAGE) --cov-report=term --cov-report=xml:./coverage.xml
 JUNIT_FLAGS?=--junit-xml=./junit.xml
 PYTEST_MARK?=
 tests:
-	$(PYTEST) $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
+	$(PYTEST) -n auto $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
 
 minitests:
 	$(PYTEST) --mini $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
