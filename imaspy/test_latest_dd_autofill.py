@@ -19,7 +19,7 @@ logger.setLevel(logging.DEBUG)
 
 
 def test_latest_dd_autofill_consistency(ids_name):
-    ids = imaspy.ids_root.IDSRoot(1, 0, verbosity=1)
+    ids = imaspy.ids_root.IDSRoot(1, 0)
     fill_with_random_data(ids[ids_name])
 
     # check that each element in ids[ids_name] has _parent set.
@@ -55,7 +55,7 @@ def test_latest_dd_autofill(ids_name, backend):
             compare_children(ids[ids_name], ids2[ids_name])
 
 
-def open_ids(backend, mode, verbosity=1):
-    ids = imaspy.ids_root.IDSRoot(1, 0, verbosity=verbosity)
+def open_ids(backend, mode):
+    ids = imaspy.ids_root.IDSRoot(1, 0)
     ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode=mode)
     return ids

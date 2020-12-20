@@ -26,7 +26,7 @@ def ids_minimal_types():
 
 def test_load_minimal(ids_minimal):
     ids = imaspy.ids_root.IDSRoot(
-        0, 0, xml_path=ids_minimal, verbosity=2
+        0, 0, xml_path=ids_minimal
     )  # Create a empty IDSs
 
     # Check if the datatypes are loaded correctly
@@ -48,7 +48,7 @@ def test_load_minimal(ids_minimal):
 
 def test_load_multiple_minimal(ids_minimal, ids_minimal_types):
     ids = imaspy.ids_root.IDSRoot(
-        0, 0, xml_path=ids_minimal, verbosity=2
+        0, 0, xml_path=ids_minimal
     )  # Create a empty IDSs
 
     # Check if the datatypes are loaded correctly
@@ -56,7 +56,7 @@ def test_load_multiple_minimal(ids_minimal, ids_minimal_types):
     assert ids.minimal.ids_properties.comment.data_type == "STR_0D"
 
     ids2 = imaspy.ids_root.IDSRoot(
-        0, 0, xml_path=ids_minimal_types, verbosity=2
+        0, 0, xml_path=ids_minimal_types
     )  # Create a empty IDSs
 
     # Check if the datatypes are loaded correctly

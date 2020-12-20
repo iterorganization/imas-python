@@ -37,7 +37,7 @@ def test_load_all_dds():
     for version in dd_xml_versions()[::-1]:
         if V(version) >= imaspy.OLDEST_SUPPORTED_VERSION:
             # iterate over all versions packaged in our zipfile (at least one)
-            ids = imaspy.ids_root.IDSRoot(0, 0, version=version, verbosity=1)
+            ids = imaspy.ids_root.IDSRoot(0, 0, version=version)
 
             # Check one trivial thing to see if at least something was loaded
             assert ids.nbi.ids_properties.comment.data_type == "STR_0D"

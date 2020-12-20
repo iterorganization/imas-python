@@ -19,7 +19,7 @@ def ids_minimal_types():
 
 def test_load_minimal_types(ids_minimal_types):
     """Check if the standard datatypes are loaded correctly"""
-    ids = imaspy.ids_root.IDSRoot(0, 0, xml_path=ids_minimal_types, verbosity=2)
+    ids = imaspy.ids_root.IDSRoot(0, 0, xml_path=ids_minimal_types)
 
     assert ids.minimal.flt_0d.data_type == "FLT_0D"
     assert ids.minimal.flt_1d.data_type == "FLT_1D"
@@ -40,7 +40,7 @@ def test_load_minimal_types(ids_minimal_types):
 
 def test_load_minimal_types_legacy(ids_minimal_types):
     """Check if the legacy datatypes are loaded correctly"""
-    ids = imaspy.ids_root.IDSRoot(0, 0, xml_path=ids_minimal_types, verbosity=2)
+    ids = imaspy.ids_root.IDSRoot(0, 0, xml_path=ids_minimal_types)
 
     assert ids.minimal.flt_type.data_type == "FLT_0D"
     assert ids.minimal.flt_1d_type.data_type == "FLT_1D"

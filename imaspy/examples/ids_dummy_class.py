@@ -86,7 +86,7 @@ if __name__ == "__main__":
             imas_prefix = Path(os.getenv("IMAS_PREFIX"))
             imas_include = imas_prefix.joinpath("include")
             idsdef = imas_include.joinpath("IDSDef.xml")
-        imas_entry = imas.ids(shot, run_in, xml_path=idsdef, verbosity=2)
+        imas_entry = imas.ids(shot, run_in, xml_path=idsdef)
         idx = imas_entry.create_env_backend(
             input_user_or_path, input_database, "3", backend
         )

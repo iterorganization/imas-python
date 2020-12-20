@@ -25,7 +25,7 @@ def xml2():
 
 def test_minimal_io_read_flt_int(backend, xml1, xml2):
     """Write and then read again a number on our minimal IDS."""
-    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml1, verbosity=2)
+    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml1)
     ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode="w")
     ids.minimal.a = 2.4
     ids.minimal.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
@@ -34,7 +34,7 @@ def test_minimal_io_read_flt_int(backend, xml1, xml2):
 
     # xml2 changed a float to an int
     ids2 = imaspy.ids_root.IDSRoot(
-        1, 0, xml_path=xml2, backend_xml_path=xml1, verbosity=2
+        1, 0, xml_path=xml2, backend_xml_path=xml1
     )
     ids2.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode="a")
     ids2.minimal.get()
@@ -47,7 +47,7 @@ def test_minimal_io_read_flt_int(backend, xml1, xml2):
 
 def test_minimal_io_read_int_flt(backend, xml1, xml2):
     """Write and then read again a number on our minimal IDS."""
-    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml2, verbosity=2)
+    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml2)
     ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode="w")
     ids.minimal.a = 2
     ids.minimal.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
@@ -56,7 +56,7 @@ def test_minimal_io_read_int_flt(backend, xml1, xml2):
 
     # xml2 changed a float to an int
     ids2 = imaspy.ids_root.IDSRoot(
-        1, 0, xml_path=xml1, backend_xml_path=xml2, verbosity=2
+        1, 0, xml_path=xml1, backend_xml_path=xml2
     )
     ids2.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode="a")
     ids2.minimal.get()
@@ -70,7 +70,7 @@ def test_minimal_io_read_int_flt(backend, xml1, xml2):
 def test_minimal_io_write_int_flt(backend, xml1, xml2):
     """Write and then read again a number on our minimal IDS."""
     ids = imaspy.ids_root.IDSRoot(
-        1, 0, xml_path=xml2, backend_xml_path=xml1, verbosity=2
+        1, 0, xml_path=xml2, backend_xml_path=xml1
     )
     ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode="w")
     ids.minimal.a = 2
@@ -79,7 +79,7 @@ def test_minimal_io_write_int_flt(backend, xml1, xml2):
     assert ids.minimal.a.value == 2
 
     # xml2 changed a float to an int
-    ids2 = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml1, verbosity=2)
+    ids2 = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml1)
     ids2.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode="a")
     ids2.minimal.get()
     if backend == MEMORY_BACKEND:
@@ -92,7 +92,7 @@ def test_minimal_io_write_int_flt(backend, xml1, xml2):
 def test_minimal_io_write_flt_int(backend, xml1, xml2):
     """Write and then read again a number on our minimal IDS."""
     ids = imaspy.ids_root.IDSRoot(
-        1, 0, xml_path=xml1, backend_xml_path=xml2, verbosity=2
+        1, 0, xml_path=xml1, backend_xml_path=xml2
     )
     ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode="w")
     ids.minimal.a = 2.6
@@ -101,7 +101,7 @@ def test_minimal_io_write_flt_int(backend, xml1, xml2):
     assert ids.minimal.a.value == 2.6
 
     # xml2 changed a float to an int
-    ids2 = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml2, verbosity=2)
+    ids2 = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml2)
     ids2.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode="a")
     ids2.minimal.get()
     if backend == MEMORY_BACKEND:

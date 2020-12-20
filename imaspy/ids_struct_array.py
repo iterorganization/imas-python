@@ -13,7 +13,7 @@ from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure
-from imaspy.logger import logger, loglevel
+from imaspy.logger import logger
 
 
 class IDSStructArray(IDSStructure, IDSMixin):
@@ -186,7 +186,6 @@ class IDSStructArray(IDSStructure, IDSMixin):
             )
         )
 
-    @loglevel
     def get(self, parentCtx, homogeneousTime):
         """Get data from UAL backend storage format and overwrite data in node
 

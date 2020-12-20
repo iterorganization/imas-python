@@ -18,7 +18,7 @@ from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.dd_zip import get_dd_xml, latest_dd_version
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.logger import logger, loglevel
+from imaspy.logger import logger
 from imaspy.mdsplus_model import mdsplus_model_dir
 
 try:
@@ -44,7 +44,6 @@ class IDSRoot:
     depth = 0
     path = ""
 
-    @loglevel
     def __init__(
         self,
         s=-1,

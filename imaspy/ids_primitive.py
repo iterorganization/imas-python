@@ -13,7 +13,7 @@ import numpy as np
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_mixin import IDSMixin
-from imaspy.logger import logger, loglevel
+from imaspy.logger import logger
 
 try:
     from imaspy.ids_defs import (
@@ -34,7 +34,6 @@ class IDSPrimitive(IDSMixin):
     Lives entirely in-memory until 'put' into a database.
     """
 
-    @loglevel
     def __init__(
         self, name, ids_type, ndims, parent=None, value=None, coordinates=None
     ):
@@ -140,7 +139,6 @@ class IDSPrimitive(IDSMixin):
             raise Exception
         return value
 
-    @loglevel
     def put(self, ctx, homogeneousTime):
         """Put data into UAL backend storage format
 
@@ -212,7 +210,6 @@ class IDSPrimitive(IDSMixin):
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
 
-    @loglevel
     def get(self, ctx, homogeneousTime):
         """Get data from UAL backend storage format
 

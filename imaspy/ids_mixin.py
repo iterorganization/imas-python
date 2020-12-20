@@ -5,7 +5,7 @@ import logging
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.logger import logger, loglevel
+from imaspy.logger import logger
 
 try:
     from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_HOMOGENEOUS
@@ -16,7 +16,6 @@ logger.setLevel(logging.WARNING)
 
 
 class IDSMixin:
-    @loglevel
     def getRelCTXPath(self, ctx):
         """ Get the path relative to given context from an absolute path"""
         # This could be replaced with the fullPath() method provided by the LL-UAL

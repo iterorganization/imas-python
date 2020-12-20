@@ -28,7 +28,7 @@ def xml():
 
 
 def test_minimal_struct_array_maxoccur(backend, xml):
-    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml, verbosity=2)
+    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml)
     ids.minimal_struct_array.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
 
     # Can't we do this transparently?
@@ -71,6 +71,6 @@ def test_minimal_struct_array_io(backend, xml):
 
 
 def open_ids(backend, xml_path, mode):
-    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml_path, verbosity=2)
+    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml_path)
     ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode=mode)
     return ids

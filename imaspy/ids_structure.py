@@ -9,7 +9,7 @@
 from imaspy.al_exception import ALException
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_primitive import IDSPrimitive, create_leaf_container, parse_dd_type
-from imaspy.logger import logger, loglevel
+from imaspy.logger import logger
 
 try:
     from imaspy.ids_defs import DOUBLE_DATA, NODE_TYPE_STRUCTURE, READ_OP
@@ -37,7 +37,6 @@ class IDSStructure(IDSMixin):
 
     # def __copy__(self):
     #    raise NotImplementedError
-    @loglevel
     def __init__(self, parent, name, structure_xml):
         """Initialize IDSStructure from XML specification
 
@@ -265,7 +264,6 @@ class IDSStructure(IDSMixin):
         else:
             object.__setattr__(self, key, value)
 
-    @loglevel
     def readTime(self, occurrence):
         raise NotImplementedError("{!s}.readTime(occurrence)".format(self))
         time = []
@@ -294,7 +292,6 @@ class IDSStructure(IDSMixin):
             )
         return time
 
-    @loglevel
     def get(self, ctx, homogeneousTime):
         """Get data from UAL backend storage format and overwrite data in node
 
@@ -332,7 +329,6 @@ class IDSStructure(IDSMixin):
                     "Unable to get simple field {!s}, seems empty".format(child_name)
                 )
 
-    @loglevel
     def getSlice(
         self, time_requested, interpolation_method, occurrence=0, data_store=None
     ):
@@ -342,14 +338,12 @@ class IDSStructure(IDSMixin):
             ", occurrence=0, data_store=None)".format(self)
         )
 
-    @loglevel
     def _getData(self, ctx, homogeneousTime, nodePath, analyzeTime):
         """ A deeped way of getting data?? using 'traverser' whatever that is """
         raise NotImplementedError(
             "{!s}._getData(ctx, homogeneousTime, nodePath, analyzeTime)".format(self)
         )
 
-    @loglevel
     def put(self, ctx, homogeneousTime):
         """Put data into UAL backend storage format
 
@@ -369,7 +363,6 @@ class IDSStructure(IDSMixin):
                     logger.debug("{:53.53s} put".format(dbg_str))
                 child.put(ctx, homogeneousTime)
 
-    @loglevel
     def putSlice(self, ctx, homogeneousTime):
         # Store IDS data time slice to the open database.
         raise NotImplementedError("{!s}.putSlice(ctx, homogeneousTime)".format(self))
@@ -384,7 +377,6 @@ class IDSStructure(IDSMixin):
             "IDSs should not set context directly, set on Root node instead"
         )
 
-    @loglevel
     def delete(self, ctx):
         """Delete data from UAL backend storage"""
         for child_name in self._children:

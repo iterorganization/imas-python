@@ -44,7 +44,7 @@ idsdef_dir = <path to IDSDef.xml>
 idsdef = os.path.join(idsdef_dir, 'IDSDef.xml')
 shot = 1234
 run_in = 0
-imas_entry = imas.ids(shot, run_in, xml_path=idsdef, verbosity=2)
+imas_entry = imas.ids(shot, run_in, xml_path=idsdef)
 ```
 
 We end up with a `IDSRoot` instance that is pre-filled with all defaults and

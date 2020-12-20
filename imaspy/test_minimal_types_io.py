@@ -69,6 +69,6 @@ def test_minimal_types_io(backend, xml, ids_type):
 
 
 def open_ids(backend, xml_path, mode):
-    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml_path, verbosity=2)
+    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml_path)
     ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode=mode)
     return ids

@@ -9,13 +9,14 @@
 import xml.etree.ElementTree as ET
 
 import numpy as np
+
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.dd_zip import get_dd_xml
 from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
-from imaspy.logger import logger, loglevel
+from imaspy.logger import logger
 
 try:
     from imaspy.ids_defs import (
@@ -37,7 +38,6 @@ class IDSToplevel(IDSStructure):
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
 
-    @loglevel
     def __init__(
         self, parent, name, structure_xml, backend_version=None, backend_xml_path=None
     ):
@@ -47,7 +47,6 @@ class IDSToplevel(IDSStructure):
         if backend_xml_path or backend_version:
             self._read_backend_xml(backend_version, backend_xml_path)
 
-    @loglevel
     def _read_backend_xml(self, version=None, xml_path=None):
         """Find a DD xml from version or path, select the child corresponding to the
         current name and set the backend properties."""
@@ -66,7 +65,6 @@ class IDSToplevel(IDSStructure):
             root.find("./*[@name='{name}']".format(name=self._name))
         )
 
-    @loglevel
     def readHomogeneous(self, occurrence):
         """Read the value of homogeneousTime
 
@@ -104,7 +102,6 @@ class IDSToplevel(IDSStructure):
             )
         return homogeneousTime
 
-    @loglevel
     def read_data_dictionary_version(self, occurrence):
         data_dictionary_version = ""
         path = self._name
@@ -133,7 +130,6 @@ class IDSToplevel(IDSStructure):
             )
         return data_dictionary_version
 
-    @loglevel
     def get(self, occurrence=0, **kwargs):
         """Get data from UAL backend storage format and overwrite data in node
 
@@ -177,7 +173,6 @@ class IDSToplevel(IDSStructure):
                 "Error calling ual_end_action() for {!s}".format(self._name), status
             )
 
-    @loglevel
     def deleteData(self, occurrence=0):
         """Delete UAL backend storage data
 
@@ -228,7 +223,6 @@ class IDSToplevel(IDSStructure):
             )
         return 0
 
-    @loglevel
     def to_ualstore(self, ual_data_store, path=None, occurrence=0):
         """Put data into UAL backend storage format
 
@@ -295,7 +289,6 @@ class IDSToplevel(IDSStructure):
         )
         self.setPulseCtx(idx)
 
-    @loglevel
     def put(self, occurrence=0, data_store=None):
         if data_store is None:
             data_store = self._data_store

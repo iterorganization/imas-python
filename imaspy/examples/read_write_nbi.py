@@ -87,7 +87,7 @@ else:
     imas_prefix = Path(os.getenv("IMAS_PREFIX"))
     imas_include = imas_prefix.joinpath("xml")
     idsdef = imas_include.joinpath("IDSDef.xml")
-    input = imas.ids(shot, run_in, xml_path=idsdef, verbosity=2)  # Create a empty IDSs
+    input = imas.ids(shot, run_in, xml_path=idsdef)  # Create a empty IDSs
     input.open_env_backend(
         input_user_or_path, input_database, "3", MDSPLUS_BACKEND
     )  # Start a new 'pulse action', linking IDSs to input database
