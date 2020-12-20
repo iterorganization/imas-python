@@ -18,16 +18,16 @@ logger = root_logger
 logger.setLevel(logging.DEBUG)
 
 
-def randdims(n):
-    """Return a list of n random numbers between 1 and 10 representing
+def randdims(ndims):
+    """Return a list of n random numbers representing
     the shapes in n dimensions"""
-    return random.sample(range(1, 10), n)
+    return random.sample(range(1, 7), ndims)
 
 
 def random_string():
     return "".join(
         random.choice(string.ascii_uppercase + string.digits)
-        for i in range(random.randint(0, 1024))
+        for i in range(random.randint(0, 128))
     )
 
 
@@ -44,9 +44,9 @@ def random_data(ids_type, ndims):
             raise NotImplementedError(
                 "Strings of dimension 2 or higher " "are not supported"
             )
-        return np.random.randint(0, 1000, size=randdims(ndims))
+        return np.random.randint(0, 2 ** 31 - 1, size=randdims(ndims))
     elif ids_type == "INT":
-        return np.random.randint(0, 1000, size=randdims(ndims))
+        return np.random.randint(0, 2 ** 31 - 1, size=randdims(ndims))
     elif ids_type == "FLT":
         return np.random.random_sample(size=randdims(ndims))
     else:
@@ -62,12 +62,12 @@ def fill_with_random_data(structure):
 
         if type(child) in [IDSStructure, IDSToplevel, IDSRoot]:
             fill_with_random_data(child)
-        elif type(child) == IDSStructArray:
+        elif isinstance(child, IDSStructArray):
             if len(child.value) == 0:
-                for i in range(child._maxoccur or 3):
+                for _ in range(child._maxoccur or 3):
                     child.append(copy.deepcopy(child._element_structure))
-                for a in child.value:
-                    fill_with_random_data(a)
+                for ch in child.value:
+                    fill_with_random_data(ch)
         else:  # leaf node
             if child_name == "homogeneous_time":
                 child.value = IDS_TIME_MODE_HOMOGENEOUS
@@ -99,11 +99,13 @@ def compare_children(st1, st2, _ascii_empty_array_skip=False):
             compare_children(
                 child1, child2, _ascii_empty_array_skip=_ascii_empty_array_skip
             )
-        elif type(child1) == IDSStructArray:
-            for a, b in zip(child1.value, child2.value):
-                compare_children(a, b, _ascii_empty_array_skip=_ascii_empty_array_skip)
+        elif isinstance(child1, IDSStructArray):
+            for ch1, ch2 in zip(child1.value, child2.value):
+                compare_children(
+                    ch1, ch2, _ascii_empty_array_skip=_ascii_empty_array_skip
+                )
         else:  # leaf node
-            if isinstance(child1.value, np.ndarray) or isinstance(child1.value, list):
+            if isinstance(child1.value, (list, np.ndarray)):
                 if (
                     len(child1.value) == 0 or len(child2.value) == 0
                 ) and _ascii_empty_array_skip:
