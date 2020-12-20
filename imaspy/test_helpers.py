@@ -15,7 +15,7 @@ from imaspy.ids_toplevel import IDSToplevel
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 
 def randdims(ndims):

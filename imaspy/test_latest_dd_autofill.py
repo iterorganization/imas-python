@@ -15,7 +15,7 @@ from imaspy.test_helpers import compare_children, fill_with_random_data, visit_c
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 
 def test_latest_dd_autofill_consistency(ids_name):

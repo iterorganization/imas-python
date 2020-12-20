@@ -11,7 +11,7 @@ from imaspy.dd_zip import dd_xml_versions, get_dd_xml
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 
 def test_known_version():
