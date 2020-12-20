@@ -1,4 +1,8 @@
 #!/bin/sh
 # Test installed package
 
-make tests
+if [ "$1" == "mini" ]; then
+				make minitests
+else
+				make tests
+fi

@@ -7,4 +7,4 @@ my_dir=$(dirname $0)
 . $my_dir/20_setenv_imaspy.sh
 . $my_dir/30_build_imaspy.sh
 . $my_dir/40_install_imaspy.sh
-. $my_dir/50_pytest_imaspy.sh
+. $my_dir/50_pytest_imaspy.sh ${2:=mini}

@@ -105,6 +105,9 @@ PYTEST_MARK?=
 tests:
 	$(PYTEST) $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
 
+minitests:
+	$(PYTEST) --mini $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
+
 realclean: clean
 	@echo 'Real cleaning $(PROJECT)...'
 	rm -f dist/*
