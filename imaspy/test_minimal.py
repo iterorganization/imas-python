@@ -2,12 +2,13 @@
 
 import logging
 
-import imaspy
 import pytest
+
+import imaspy
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 @pytest.fixture
@@ -25,9 +26,7 @@ def ids_minimal_types():
 
 
 def test_load_minimal(ids_minimal):
-    ids = imaspy.ids_root.IDSRoot(
-        0, 0, xml_path=ids_minimal
-    )  # Create a empty IDSs
+    ids = imaspy.ids_root.IDSRoot(0, 0, xml_path=ids_minimal)  # Create a empty IDSs
 
     # Check if the datatypes are loaded correctly
     assert ids.minimal.a.data_type == "FLT_0D"
@@ -47,9 +46,7 @@ def test_load_minimal(ids_minimal):
 
 
 def test_load_multiple_minimal(ids_minimal, ids_minimal_types):
-    ids = imaspy.ids_root.IDSRoot(
-        0, 0, xml_path=ids_minimal
-    )  # Create a empty IDSs
+    ids = imaspy.ids_root.IDSRoot(0, 0, xml_path=ids_minimal)  # Create a empty IDSs
 
     # Check if the datatypes are loaded correctly
     assert ids.minimal.a.data_type == "FLT_0D"

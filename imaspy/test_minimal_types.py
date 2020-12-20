@@ -2,12 +2,13 @@
 
 import logging
 
-import imaspy
 import pytest
+
+import imaspy
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # TODO: unify into single file
 @pytest.fixture

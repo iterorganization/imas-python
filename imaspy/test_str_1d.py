@@ -4,19 +4,16 @@ import logging
 import os
 import string
 
-import imaspy
 import numpy as np
 import pytest
-from imaspy.ids_defs import (
-    IDS_TIME_MODE_INDEPENDENT,
-    MEMORY_BACKEND,
-    ASCII_BACKEND
-)
+
+import imaspy
+from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.test_helpers import randdims
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 @pytest.fixture

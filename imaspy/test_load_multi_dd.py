@@ -4,13 +4,14 @@
 import logging
 from distutils.version import StrictVersion as V
 
-import imaspy
 import pytest
+
+import imaspy
 from imaspy.dd_zip import dd_xml_versions, get_dd_xml
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def test_known_version():
