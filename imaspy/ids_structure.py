@@ -93,10 +93,6 @@ class IDSStructure(IDSMixin):
                     # logger.critical(
                     # "Found a timebasepath of {!s}! Should not happen".format(tbp)
                     # )
-                # this corresponds to a large fraction of the work in __init__, (5% of test total!)
-                # cythonize perhaps?
-                # most fields have only coordinate1, out of 6 total (sometimes more)
-                # maybe work iteratively?
                 coordinates = get_coordinates(child)
                 setattr(
                     self,

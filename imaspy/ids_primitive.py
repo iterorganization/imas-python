@@ -78,12 +78,6 @@ class IDSPrimitive(IDSMixin):
                     self.__class__, ndims
                 )
             )
-        if ndims == 0:
-            self._default = ids_type_to_default[ids_type]
-        else:
-            self._default = np.full((1,) * ndims, ids_type_to_default[ids_type])
-        if value is None:
-            value = self._default
         self._ids_type = ids_type
         self._ndims = ndims
         self._backend_type = None
@@ -91,11 +85,22 @@ class IDSPrimitive(IDSMixin):
         self._name = name
         self._parent = parent
         self._coordinates = coordinates
-        self.value = value
+
+    @property
+    def _default(self):
+        if self._ndims == 0:
+            return ids_type_to_default[self._ids_type]
+        else:
+            return np.full((1,) * self._ndims, ids_type_to_default[self._ids_type])
 
     @property
     def value(self):
-        return self.__value
+        """Return the value of this IDSPrimitive if it is set,
+        otherwise return the default"""
+        try:
+            return self.__value
+        except AttributeError:
+            return self._default
 
     @value.setter
     def value(self, setter_value):
