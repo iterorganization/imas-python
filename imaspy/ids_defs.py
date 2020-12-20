@@ -34,14 +34,8 @@ try:
         UDA_BACKEND,
         WRITE_OP,
     )
-
-    # TODO: get UAL_VERSION number from hli_utils (if it doesn't exist it's too old)
-    # if StrictVersion(hli_utils.__version__) < 10:  # to be defined
-    # logger.warning(
-    # "Old access layer version detected. The MDSPlus backend will not work with multiple DD versions simultaneously."
-    # )
-except ImportError:
-    logger.critical("IMAS could not be imported. UAL not available!")
+except ImportError as ee:
+    logger.critical("IMAS could not be imported. UAL not available! %s", ee)
 else:
     # Translation dictionary to go from an ids (primitive) type (without the dimensionality) to a default value
     ids_type_to_default = {
