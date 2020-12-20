@@ -403,13 +403,28 @@ class IDSStructure(IDSMixin):
         return 0
 
 
+# TODO: cythonize this?
 def get_coordinates(el):
     """Given an XML element, extract the coordinate attributes from el.attrib"""
     coords = {}
-    for dim in range(1, 6):
-        key = "coordinate" + str(dim)
-        if key in el.attrib:
-            coords[key] = el.attrib[key]
-        else:
-            break
+    if "coordinate1" in el.attrib:
+        coords["coordinate1"] = el.attrib["coordinate1"]
+        if "coordinate2" in el.attrib:
+            coords["coordinate2"] = el.attrib["coordinate2"]
+            if "coordinate3" in el.attrib:
+                coords["coordinate3"] = el.attrib["coordinate3"]
+                if "coordinate4" in el.attrib:
+                    coords["coordinate4"] = el.attrib["coordinate4"]
+                    if "coordinate5" in el.attrib:
+                        coords["coordinate5"] = el.attrib["coordinate5"]
+                        if "coordinate6" in el.attrib:
+                            coords["coordinate6"] = el.attrib["coordinate6"]
     return coords
+
+    # This is ugly code, but it is around 3.5x faster than the below!
+    # for dim in range(1, 6):
+    # key = "coordinate" + str(dim)
+    # if key in el.attrib:
+    # coords[key] = el.attrib[key]
+    # else:
+    # break
