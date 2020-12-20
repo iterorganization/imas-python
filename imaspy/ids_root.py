@@ -9,14 +9,13 @@ Provides the class for an IDS Primitive data type
 
 import importlib
 import os
-import xml.etree.ElementTree as ET
 
 # Set up logging immediately
 import numpy as np
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.dd_zip import get_dd_xml, latest_dd_version
+from imaspy.dd_zip import dd_etree, latest_dd_version
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.logger import logger
 from imaspy.mdsplus_model import mdsplus_model_dir
@@ -87,21 +86,18 @@ class IDSRoot:
         self.connected = False
         self.expIdx = -1
 
+        ver = version or latest_dd_version()
         if xml_path:
-            XMLtreeIDSDef = ET.parse(xml_path)
             logger.info("Generating IDS structures from file %s", xml_path)
             self._xml_path = xml_path
         else:
-            if version is None:
-                version = latest_dd_version()
-            XMLtreeIDSDef = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
             logger.info("Generating IDS structures for version %s", version)
-            self._imas_version = version
+            self._imas_version = ver
+        tree = dd_etree(version=ver, xml_path=xml_path)
 
         # Parse given xml_path and build imaspy IDS structures
-        root = XMLtreeIDSDef.getroot()
         self._children = []
-        for ids in root:
+        for ids in tree.getroot():
             my_name = ids.get("name")
             # Only build for equilibrium to KISS
             if my_name is None:

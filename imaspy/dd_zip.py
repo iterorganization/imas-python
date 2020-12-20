@@ -3,7 +3,9 @@
 """ Extract DD versions from the provided zip file
 """
 import logging
+import xml.etree.ElementTree as ET
 from distutils.version import StrictVersion as V
+from functools import lru_cache
 from pathlib import Path
 from zipfile import ZipFile
 
@@ -14,6 +16,19 @@ logger = root_logger
 logger.setLevel(logging.WARNING)
 
 ZIPFILE_LOCATION = Path(__file__).parent.parent / "data-dictionary" / "IDSDef.zip"
+
+
+# for version conversion we would expect 2 to be sufficient. Give it some extra space.
+@lru_cache(maxsize=4)
+def dd_etree(version=None, xml_path=None):
+    """Get an ElementTree describing a DD by version or path"""
+    if xml_path:
+        tree = ET.parse(xml_path)
+    elif version:
+        tree = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
+    else:
+        raise ValueError("version or xml_path are required")
+    return tree
 
 
 def get_dd_xml(version):

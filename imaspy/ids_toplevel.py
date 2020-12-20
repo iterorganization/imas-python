@@ -12,7 +12,7 @@ import numpy as np
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.dd_zip import get_dd_xml
+from imaspy.dd_zip import dd_etree
 from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
@@ -49,18 +49,20 @@ class IDSToplevel(IDSStructure):
 
     def _read_backend_xml(self, version=None, xml_path=None):
         """Find a DD xml from version or path, select the child corresponding to the
-        current name and set the backend properties."""
+        current name and set the backend properties.
+
+        This is defined on the Toplevel and not on the Root because that allows
+        IDSes to be read from different versions. Still use the ElementTree memoization
+        so performance will not suffer too much from this.
+        """
         if xml_path:
-            XMLtreeIDSDef = ET.parse(xml_path)
             logger.debug("Generating backend %s from file %s", self._name, xml_path)
         elif version:
-            XMLtreeIDSDef = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
-            logger.debug("Generating backend %s for version %s", self.version)
-        else:
-            raise ValueError("version or xml_path are required")
+            logger.debug("Generating backend %s for version %s", self._name, version)
+        tree = dd_etree(version=version, xml_path=xml_path)
 
         # Parse given xml_path and build imaspy IDS structures for this toplevel only
-        root = XMLtreeIDSDef.getroot()
+        root = tree.getroot()
         self.set_backend_properties(
             root.find("./*[@name='{name}']".format(name=self._name))
         )
