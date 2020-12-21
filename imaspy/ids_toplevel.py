@@ -21,9 +21,13 @@ from imaspy.logger import logger
 try:
     from imaspy.ids_defs import (
         CHAR_DATA,
+        EMPTY_INT,
+        IDS_TIME_MODE_HETEROGENEOUS,
         IDS_TIME_MODE_HOMOGENEOUS,
+        IDS_TIME_MODE_INDEPENDENT,
         IDS_TIME_MODE_UNKNOWN,
         IDS_TIME_MODES,
+        INTEGER_DATA,
         READ_OP,
         WRITE_OP,
     )
@@ -81,27 +85,34 @@ class IDSToplevel(IDSStructure):
         else:
             path = self._name + "/" + str(occurrence)
 
-        status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
-        context_store[ctx] = context_store[self._idx] + "/" + path
-        if status != 0:
-            raise ALException(
-                "Error calling ual_begin_global_action() in readHomogeneous() operation",
-                status,
+        # only read from the backend if it is not defined locally.
+        homogeneousTime = self.ids_properties.homogeneous_time
+
+        if homogeneousTime.value == EMPTY_INT:
+            status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
+            context_store[ctx] = context_store[self._idx] + "/" + path
+            if status != 0:
+                raise ALException(
+                    "Error calling ual_begin_global_action() in readHomogeneous()"
+                    "operation",
+                    status,
+                )
+
+            status, homogeneousTime = self._ull.ual_read_data(
+                ctx, "ids_properties/homogeneous_time", "", INTEGER_DATA, 0
             )
 
-        # Read it from our own in_memory store instead of the backend directly.
-        homogeneousTime = self.ids_properties.homogeneous_time
-        # status, homogeneousTime = self._ull.ual_read_data(
-        # ctx, "ids_properties/homogeneous_time", "", INTEGER_DATA, 0
-        # )
-        # if status != 0:
-        # raise ALException("ERROR: homogeneous_time cannot be read.", status)
-        status = self._ull.ual_end_action(ctx)
-        context_store.pop(ctx)
-        if status != 0:
-            raise ALException(
-                "Error calling ual_end_action() in readHomogeneous() operation", status
-            )
+            if status != 0:
+                raise ALException("ERROR: homogeneous_time cannot be read.", status)
+
+            status = self._ull.ual_end_action(ctx)
+            context_store.pop(ctx)
+
+            if status != 0:
+                raise ALException(
+                    "Error calling ual_end_action() in readHomogeneous() operation",
+                    status,
+                )
         return homogeneousTime
 
     def read_data_dictionary_version(self, occurrence):
@@ -146,7 +157,11 @@ class IDSToplevel(IDSStructure):
             path = self._name + "/" + str(occurrence)
 
         homogeneousTime = self.readHomogeneous(occurrence)
-        if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
+        if homogeneousTime not in (
+            IDS_TIME_MODE_HOMOGENEOUS,
+            IDS_TIME_MODE_HETEROGENEOUS,
+            IDS_TIME_MODE_INDEPENDENT,
+        ):
             logger.error(
                 "Unknown time mode {!s}, stop getting of {!s}".format(
                     homogeneousTime, self._name

@@ -13,7 +13,7 @@ from imaspy.test_helpers import randdims
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.WARNING)
 
 
 @pytest.fixture

@@ -80,9 +80,6 @@ class IDSMixin:
                 elif homogeneousTime == IDS_TIME_MODE_HETEROGENEOUS:
                     strTimeBasePath = self.getAOSPath(ignore_nbc_change) + "/time"
                 else:
-                    from IPython import embed
-
-                    embed()
                     raise ALException(
                         "Unexpected call to function getTimeBasePath(cls, homogeneousTime) \
                         with undefined homogeneous time. {!s}".format(

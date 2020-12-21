@@ -53,6 +53,7 @@ class IDSRoot:
         xml_path=None,
         backend_version=None,
         backend_xml_path=None,
+        _lazy=True,
     ):
         """Initialize a imaspy IDS tree
 
@@ -106,7 +107,6 @@ class IDSRoot:
 
         for ids in self._tree.getroot():
             my_name = ids.get("name")
-            # Only build for equilibrium to KISS
             if my_name is None:
                 continue
             if my_name == "version":
@@ -119,13 +119,30 @@ class IDSRoot:
                 else:
                     logger.info("found version %s", ids.text)
             else:
-                logger.debug("{:42.42s} lazy init".format(my_name))
+                if _lazy:
+                    logger.debug("{:42.42s} lazy init".format(my_name))
+                else:
+                    logger.debug("{:42.42s} tree init".format(my_name))
+                    setattr(
+                        self,
+                        my_name,
+                        IDSToplevel(
+                            self,
+                            my_name,
+                            ids,
+                            backend_version=self._backend_version,
+                            backend_xml_path=self._backend_xml_path,
+                        ),
+                    )
                 self._children.append(my_name)
 
     def __getattr__(self, key):
         """Lazy get ids toplevel attributes"""
-        # our getattr is only called if the attribute is not found.
-        # therefore we should only run once per toplevel here
+        try:
+            return super().__getattribute__(key)
+        except AttributeError:
+            pass
+
         if key in self._children:
             ids = self._tree.getroot().find("./*[@name='{name}']".format(name=key))
             if ids:
@@ -140,9 +157,7 @@ class IDSRoot:
                         backend_xml_path=self._backend_xml_path,
                     ),
                 )
-            return object.__getattribute__(self, key)
-
-        raise AttributeError
+        return super().__getattribute__(key)
 
     # self.equilibrium = IDSToplevel('equilibrium')
 

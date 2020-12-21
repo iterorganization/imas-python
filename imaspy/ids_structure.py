@@ -250,14 +250,10 @@ class IDSStructure(IDSMixin):
                     "Trying to set structure field {!s} with non-structure.".format(key)
                 )
 
-            try:
-                attr.value = value
-            except Exception as ee:
-                raise ee
-            else:
-                object.__setattr__(self, key, attr)
+            attr.value = value
+            # super().__setattr__(key, attr)
         else:
-            object.__setattr__(self, key, value)
+            super().__setattr__(key, value)
 
     def readTime(self, occurrence):
         raise NotImplementedError("{!s}.readTime(occurrence)".format(self))

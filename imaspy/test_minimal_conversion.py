@@ -11,7 +11,7 @@ from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.WARNING)
 
 
 @pytest.fixture
