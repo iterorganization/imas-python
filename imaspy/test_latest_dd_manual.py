@@ -7,6 +7,7 @@ import os
 
 import imaspy
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
+from imaspy.test_helpers import open_ids
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -14,9 +15,9 @@ logger.setLevel(logging.WARNING)
 
 
 # TODO: use a separate folder for the MDSPLUS DB and clear it after the testcase
-def test_latest_dd_manual(backend):
+def test_latest_dd_manual(backend, worker_id, tmp_path):
     """Write and then read again a full IDSRoot and a single IDSToplevel."""
-    ids = open_ids(backend, "w")
+    ids = open_ids(backend, "w", worker_id, tmp_path)
     ids_name = "pulse_schedule"
     ids[ids_name].ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     ids[ids_name].ids_properties.comment = "test"
@@ -29,13 +30,7 @@ def test_latest_dd_manual(backend):
         # this one does not store anything between instantiations
         pass
     else:
-        ids2 = open_ids(backend, "a")
+        ids2 = open_ids(backend, "a", worker_id, tmp_path)
         ids2[ids_name].get()
 
         assert ids2[ids_name].ids_properties.comment.value == "test"
-
-
-def open_ids(backend, mode):
-    ids = imaspy.ids_root.IDSRoot(1, 0, _lazy=False)
-    ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", backend, mode=mode)
-    return ids

@@ -11,7 +11,12 @@ import pytest
 
 import imaspy
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
-from imaspy.test_helpers import compare_children, fill_with_random_data, visit_children
+from imaspy.test_helpers import (
+    compare_children,
+    fill_with_random_data,
+    open_ids,
+    visit_children,
+)
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -19,7 +24,7 @@ logger.setLevel(logging.DEBUG)
 
 
 def test_latest_dd_autofill_consistency(ids_name):
-    ids = imaspy.ids_root.IDSRoot(1, 0, verbosity=1)
+    ids = imaspy.ids_root.IDSRoot(1, 0)
     fill_with_random_data(ids[ids_name])
 
     # check that each element in ids[ids_name] has _parent set.
@@ -32,9 +37,9 @@ def has_parent(child):
 
 
 # TODO: use a separate folder for the MDSPLUS DB and clear it after the testcase
-def test_latest_dd_autofill(ids_name, backend, worker_id):
+def test_latest_dd_autofill(ids_name, backend, worker_id, tmp_path):
     """Write and then read again a full IDSRoot and all IDSToplevels."""
-    ids = open_ids(backend, "w", worker_id)
+    ids = open_ids(backend, "w", worker_id, tmp_path)
     fill_with_random_data(ids[ids_name])
 
     ids[ids_name].put()
@@ -43,7 +48,7 @@ def test_latest_dd_autofill(ids_name, backend, worker_id):
         # this one does not store anything between instantiations
         pass
     else:
-        ids2 = open_ids(backend, "a", worker_id)
+        ids2 = open_ids(backend, "a", worker_id, tmp_path)
         ids2[ids_name].get()
 
         if backend == ASCII_BACKEND:
@@ -53,11 +58,3 @@ def test_latest_dd_autofill(ids_name, backend, worker_id):
             )
         else:
             compare_children(ids[ids_name], ids2[ids_name])
-
-
-def open_ids(backend, mode, worker_id, verbosity=1):
-    ids = imaspy.ids_root.IDSRoot(1, 0, verbosity=verbosity)
-    ids.open_ual_store(
-        os.environ.get("USER", "root"), "test", worker_id, backend, mode=mode
-    )
-    return ids

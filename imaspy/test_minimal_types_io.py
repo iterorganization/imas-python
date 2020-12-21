@@ -1,3 +1,11 @@
+def open_ids(backend, xml_path, mode, worker_id):
+    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml_path)
+    ids.open_ual_store(
+        os.environ.get("USER", "root"), "test", worker_id, backend, mode=mode
+    )
+    return ids
+
+
 # A minimal testcase loading an IDS file and checking that the structure built is ok
 
 import logging
@@ -8,7 +16,7 @@ import pytest
 
 import imaspy
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
-from imaspy.test_helpers import randdims
+from imaspy.test_helpers import open_ids, randdims
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger

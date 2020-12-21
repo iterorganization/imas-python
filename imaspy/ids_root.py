@@ -276,7 +276,7 @@ class IDSRoot:
             tokamak,
             self.shot,
             self.run,
-            user_name=user,
+            user_name=str(user),
             data_version=version,
             mode=mode,
             options=options,

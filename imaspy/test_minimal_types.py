@@ -1,6 +1,7 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
 
 import logging
+from pathlib import Path
 
 import pytest
 
@@ -10,11 +11,9 @@ root_logger = logging.getLogger("imaspy")
 logger = root_logger
 logger.setLevel(logging.WARNING)
 
-# TODO: unify into single file
+
 @pytest.fixture
 def ids_minimal_types():
-    from pathlib import Path
-
     return Path(__file__).parent / "../assets/IDS_minimal_types.xml"
 
 

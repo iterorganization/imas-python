@@ -6,6 +6,8 @@ import string
 import numpy as np
 import pytest
 
+import imaspy
+
 # TODO: import these from imaspy (i.e. expose them publicly?)
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_root import IDSRoot
@@ -114,3 +116,14 @@ def compare_children(st1, st2, _ascii_empty_array_skip=False):
                     assert np.array_equal(child1.value, child2.value)
             else:
                 assert child1.value == child2.value
+
+
+def open_ids(backend, mode, worker_id, tmp_path, xml_path=None):
+    """Open an IDS in a standardised way, with a tmpdir in place of the user argument"""
+    if worker_id == "master":
+        shot = 1
+    else:
+        shot = int(worker_id[2:]) + 1
+    ids = imaspy.ids_root.IDSRoot(shot, 0, xml_path=xml_path)
+    ids.open_ual_store(tmp_path, "test", "3", backend, mode=mode)
+    return ids
