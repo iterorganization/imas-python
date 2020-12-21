@@ -10,7 +10,8 @@ export PYTHONUSERBASE=$PYTHON_INSTALL_DIR
 module load GCC/10.2.0
 module load Python/3.8.6-GCCcore-10.2.0
 module load Saxon-HE
-module load MDSplus
+module load MDSplus/7.96.12-GCCcore-9.3.0
+module load MDSplus-Java
 module load HDF5/1.12.0-gompi-2020a
 module list
 

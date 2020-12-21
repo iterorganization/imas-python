@@ -50,11 +50,9 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
         raise ValueError("Version OR filename need to be provided, none given")
 
     cache_dir_name = "%s-%08x" % (xml_name, crc)
-    cache_dir_path = str(
-        Path(_get_xdg_cache_dir()) / "imaspy" / "mdsplus" / cache_dir_name
-    )
+    cache_dir_path = Path(_get_xdg_cache_dir()) / "imaspy" / "mdsplus" / cache_dir_name
 
-    if not os.path.isdir(cache_dir_path) or rebuild:
+    if not model_exists(cache_dir_path) or rebuild:
         if not os.path.isdir(cache_dir_path):
             os.makedirs(cache_dir_path)
 
@@ -69,8 +67,15 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
     else:
         logger.info("Using cached MDSPlus model at %s", cache_dir_path)
 
-    return cache_dir_path
+    return str(cache_dir_path)
 
+def model_exists(path):
+    return all(
+        map(lambda f: os.path.isfile(path / f),
+            ["ids.xml",
+             "ids_model.characteristics",
+             "ids_model.datafile",
+             "ids_model.tree"]))
 
 def create_model_ids_xml(cache_dir_path, fname, version):
     """Use saxon to compile an ids.xml suitable for creating an mdsplus model."""
@@ -94,9 +99,9 @@ def create_model_ids_xml(cache_dir_path, fname, version):
         )
     except CalledProcessError as e:
         if fname:
-            logger.warning("Error making MDSPlus model IDS.xml for {file}", fname)
+            logger.error("Error making MDSPlus model IDS.xml for {file}", fname)
         else:
-            logger.warning("Error making MDSplus model IDS.xml for {version}", version)
+            logger.error("Error making MDSplus model IDS.xml for {version}", version)
         raise e
 
 
@@ -114,11 +119,13 @@ def create_mdsplus_model(cache_dir_path):
                 "CompileTree",
                 "ids",
             ],
-            cwd=cache_dir_path,
-            env={"PATH": os.environ["PATH"], "ids_path": cache_dir_path},
+            cwd=str(cache_dir_path),
+            env={"PATH": os.environ["PATH"],
+                 "LD_LIBRARY_PATH": os.environ["LD_LIBRARY_PATH"],
+                 "ids_path": str(cache_dir_path)},
         )
     except CalledProcessError as e:
-        logger.warning("Error making MDSPlus model in {path}", cache_dir_path)
+        logger.error("Error making MDSPlus model in {path}", cache_dir_path)
         raise e
 
 
@@ -152,3 +159,5 @@ def jTraverser_jar():
     if jars:
         jar_path = min(jars, key=lambda x: len(x.parts))
         return jar_path
+    else:
+        logger.error("jTraverser.jar not found, cannot build MDSPlus models.")
