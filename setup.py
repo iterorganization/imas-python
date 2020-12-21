@@ -24,6 +24,7 @@ So instead, we install packages to the `USER_SITE` there, and do not use
 `pip`s `build-isolation`. See [IMAS-584](https://jira.iter.org/browse/IMAS-584)
 """
 import argparse
+import ast
 import distutils.sysconfig
 import distutils.text_file
 import distutils.util
@@ -31,8 +32,6 @@ import importlib
 import logging
 import os
 import site
-import pkg_resources
-import ast
 
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import sys
@@ -42,10 +41,13 @@ from distutils.version import LooseVersion as V
 from itertools import chain
 from pathlib import Path
 
+import pkg_resources
+
 # Use setuptools to build packages
 from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
+from setuptools.command.build_py import build_py as _build_py
 
 if sys.version_info < (3, 6):
     sys.exit(
@@ -156,6 +158,33 @@ LANGUAGE = "c"  # Not sure when this is not true
 LIBRARIES = "imas"  # We just need the IMAS library
 # EXTRALINKARGS = '' # This is machine-specific ignore for now
 # EXTRACOMPILEARGS = '' # This is machine-specific ignore for now
+
+
+class BuildDDCommand(distutils.cmd.Command):
+    """A custom command to build the data dictionaries."""
+
+    description = "build IDSDef.zip"
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        """Prepare DDs if they can be git pulled"""
+        from imaspy.dd_helpers import prepare_data_dictionaries
+
+        prepare_data_dictionaries()
+
+
+class BuildPyCommand(_build_py):
+    """Subclass the build_py command to also build the DD"""
+
+    def run(self):
+        self.run_command("build_DD")
+        super().run()
 
 
 ###
@@ -280,9 +309,5 @@ if __name__ == "__main__":
         install_requires=install_requires,
         extras_require=optional_reqs,
         ext_modules=extensions,
+        cmdclass={"build_py": BuildPyCommand, "build_DD": BuildDDCommand},
     )
-
-    # Prepare DDs if they can be git pulled
-    from imaspy.dd_helpers import prepare_data_dictionaries
-
-    prepare_data_dictionaries()

@@ -24,7 +24,7 @@ def prepare_data_dictionaries():
     repo, origin = get_data_dictionary_repo()
     if repo:
         for tag in repo.tags:
-            if V(tag) > V("3.21.1"):
+            if V(str(tag)) > V("3.21.1"):
                 logger.debug("Building data dictionary version %s", tag)
                 build_data_dictionary(repo, origin, tag, saxon_jar_path)
 
