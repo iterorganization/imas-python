@@ -86,6 +86,9 @@ class IDSRoot:
         self.connected = False
         self.expIdx = -1
 
+        self._imas_version = None
+        self._xml_path = None
+
         ver = version or latest_dd_version()
         if xml_path:
             logger.info("Generating IDS structures from file %s", xml_path)
@@ -100,18 +103,28 @@ class IDSRoot:
 
         # Parse given xml_path and build imaspy IDS structures
         self._children = []
-        self._xml_children = []
+
         for ids in self._tree.getroot():
             my_name = ids.get("name")
             # Only build for equilibrium to KISS
             if my_name is None:
                 continue
-            logger.debug("{:42.42s} lazy init".format(my_name))
-            self._children.append(my_name)
+            if my_name == "version":
+                if ids.text != self._imas_version and self._imas_version is not None:
+                    logger.error(
+                        "Version on file label %s does not match expected version %s",
+                        ids.text,
+                        self._imas_version,
+                    )
+                else:
+                    logger.info("found version %s", ids.text)
+            else:
+                logger.debug("{:42.42s} lazy init".format(my_name))
+                self._children.append(my_name)
 
     def __getattr__(self, key):
         """Lazy get ids toplevel attributes"""
-        # getattr is only called if the attribute is not found.
+        # our getattr is only called if the attribute is not found.
         # therefore we should only run once per toplevel here
         if key in self._children:
             ids = self._tree.getroot().find("./*[@name='{name}']".format(name=key))
@@ -128,6 +141,7 @@ class IDSRoot:
                     ),
                 )
             return object.__getattribute__(self, key)
+
         raise AttributeError
 
     # self.equilibrium = IDSToplevel('equilibrium')
@@ -141,7 +155,7 @@ class IDSRoot:
 
     def __getitem__(self, key):
         keyname = str(key)
-        return getattr(self, keyname)
+        return self.__getattr__(keyname)
 
     def __str__(self, depth=0):
         space = ""
