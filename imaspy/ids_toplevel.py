@@ -157,15 +157,9 @@ class IDSToplevel(IDSStructure):
             path = self._name + "/" + str(occurrence)
 
         homogeneousTime = self.readHomogeneous(occurrence)
-        if homogeneousTime not in (
-            IDS_TIME_MODE_HOMOGENEOUS,
-            IDS_TIME_MODE_HETEROGENEOUS,
-            IDS_TIME_MODE_INDEPENDENT,
-        ):
+        if homogeneousTime not in IDS_TIME_MODES:
             logger.error(
-                "Unknown time mode {!s}, stop getting of {!s}".format(
-                    homogeneousTime, self._name
-                )
+                "Unknown time mode %s, stop getting of %s", homogeneousTime, self._name
             )
             return
 
