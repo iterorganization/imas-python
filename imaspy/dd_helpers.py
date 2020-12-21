@@ -5,8 +5,11 @@ import logging
 import os
 import re
 import shutil
+import subprocess
 from distutils.version import StrictVersion as V
+from io import BytesIO
 from pathlib import Path
+from urllib.request import urlopen
 from zipfile import ZIP_DEFLATED, ZipFile
 
 logger = logging.getLogger("imaspy")
@@ -21,12 +24,12 @@ def prepare_data_dictionaries():
     4. Zip all these IDSDefs together and include in wheel
     """
     saxon_jar_path = get_saxon()
-    repo, origin = get_data_dictionary_repo()
+    repo = get_data_dictionary_repo()
     if repo:
         for tag in repo.tags:
             if V(str(tag)) > V("3.21.1"):
                 logger.debug("Building data dictionary version %s", tag)
-                build_data_dictionary(repo, origin, tag, saxon_jar_path)
+                build_data_dictionary(repo, tag, saxon_jar_path)
 
         logger.info("Creating zip file of DD versions")
 
@@ -106,9 +109,6 @@ def find_saxon_bin():
 def download_saxon():
     """Downloads a zipfile containing saxon9he.jar and extract it to the current dir.
     Return the full path to saxon9he.jar"""
-    from io import BytesIO
-    from urllib.request import urlopen
-    from zipfile import ZipFile
 
     SAXON_PATH = (
         "https://iweb.dl.sourceforge.net/project/saxon/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip"
@@ -163,10 +163,10 @@ def get_data_dictionary_repo():
     except git.exc.GitCommandError:
         logger.warning("Could not fetch tags from %s", list(origin.urls))
     logger.info("Remote tags fetched")
-    return repo, origin
+    return repo
 
 
-def build_data_dictionary(repo, origin, tag, saxon_jar_path, rebuild=False):
+def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
     """Build a single version of the data dictionary given by the tag argument
     if the IDS does not already exist.
 
@@ -178,8 +178,6 @@ def build_data_dictionary(repo, origin, tag, saxon_jar_path, rebuild=False):
         and not rebuild
     ):
         return
-
-    import subprocess
 
     repo.git.checkout(tag, force=True)
     # this could cause issues if someone else has added or left IDSDef.xml
