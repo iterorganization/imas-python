@@ -93,28 +93,42 @@ class IDSRoot:
         else:
             logger.info("Generating IDS structures for version %s", version)
             self._imas_version = ver
-        tree = dd_etree(version=ver, xml_path=xml_path)
+        self._tree = dd_etree(version=ver, xml_path=xml_path)
+
+        self._backend_version = backend_version
+        self._backend_xml_path = backend_xml_path
 
         # Parse given xml_path and build imaspy IDS structures
         self._children = []
-        for ids in tree.getroot():
+        self._xml_children = []
+        for ids in self._tree.getroot():
             my_name = ids.get("name")
             # Only build for equilibrium to KISS
             if my_name is None:
                 continue
-            logger.debug("{:42.42s} initialization".format(my_name))
+            logger.debug("{:42.42s} lazy init".format(my_name))
             self._children.append(my_name)
-            setattr(
-                self,
-                my_name,
-                IDSToplevel(
+
+    def __getattr__(self, key):
+        """Lazy get ids toplevel attributes"""
+        # getattr is only called if the attribute is not found.
+        # therefore we should only run once per toplevel here
+        if key in self._children:
+            ids = self._tree.getroot().find("./*[@name='{name}']".format(name=key))
+            if ids:
+                setattr(
                     self,
-                    my_name,
-                    ids,
-                    backend_version=backend_version,
-                    backend_xml_path=backend_xml_path,
-                ),
-            )
+                    key,
+                    IDSToplevel(
+                        self,
+                        key,
+                        ids,
+                        backend_version=self._backend_version,
+                        backend_xml_path=self._backend_xml_path,
+                    ),
+                )
+            return object.__getattribute__(self, key)
+        raise AttributeError
 
     # self.equilibrium = IDSToplevel('equilibrium')
 
