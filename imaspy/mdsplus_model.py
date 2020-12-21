@@ -161,3 +161,17 @@ def jTraverser_jar():
         return jar_path
     else:
         logger.error("jTraverser.jar not found, cannot build MDSPlus models.")
+
+
+def ensure_data_dir(user, tokamak, version):
+    """Ensure that a data dir exists with a similar algorithm that
+    the MDSplus backend uses to set the data path.
+    See also mdsplus_backend.cpp:751 (setDataEnv)"""
+    if user == "public":
+        dir = Path(os.environ["IMAS_HOME"]) / "shared" / "imasdb" / tokamak / version
+    elif user[0] == "/":
+        dir = Path(user) / tokamak / version
+    else:
+        dir = Path.home() / "public" / "imasdb" / tokamak / version
+
+    dir.mkdir(parents=True, exist_ok=True)

@@ -18,7 +18,7 @@ from imaspy.context_store import context_store
 from imaspy.dd_zip import dd_etree, latest_dd_version
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.logger import logger
-from imaspy.mdsplus_model import mdsplus_model_dir
+from imaspy.mdsplus_model import mdsplus_model_dir, ensure_data_dir
 
 try:
     from imaspy.ids_defs import (
@@ -270,6 +270,9 @@ class IDSRoot:
                 os.environ["ids_path"] = mdsplus_model_dir(
                     version=None, xml_file=_xml_path
                 )
+
+            # ensure presence of model dir
+            ensure_data_dir(str(user), tokamak, version)
 
         store = UALDataStore.open(
             backend_type,

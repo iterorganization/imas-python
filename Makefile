@@ -102,11 +102,12 @@ PYTEST?=pytest
 COV_FLAGS?=--cov=$(PACKAGE) --cov-report=term --cov-report=xml:./coverage.xml
 JUNIT_FLAGS?=--junit-xml=./junit.xml
 PYTEST_MARK?=
+PYTEST_FLAGS?=
 tests:
-	$(PYTEST) -n auto $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
+	$(PYTEST) $(PYTEST_FLAGS) $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
 
 minitests:
-	$(PYTEST) --mini -n auto $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
+	$(PYTEST) --mini $(PYTEST_FLAGS) $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
 
 realclean: clean
 	@echo 'Real cleaning $(PROJECT)...'

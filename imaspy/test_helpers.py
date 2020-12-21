@@ -125,5 +125,6 @@ def open_ids(backend, mode, worker_id, tmp_path, xml_path=None):
     else:
         shot = int(worker_id[2:]) + 1
     ids = imaspy.ids_root.IDSRoot(shot, 0, xml_path=xml_path)
+    # TODO: don't hardcode 3 here, get it from the version number
     ids.open_ual_store(tmp_path, "test", "3", backend, mode=mode)
     return ids
