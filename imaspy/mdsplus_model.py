@@ -67,6 +67,8 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
     else:
         logger.info("Using cached MDSPlus model at %s", cache_dir_path)
 
+    # chmod the model-dir to read-only
+    os.chmod(cache_dir_path, 0o555)
     return str(cache_dir_path)
 
 def model_exists(path):
@@ -99,9 +101,9 @@ def create_model_ids_xml(cache_dir_path, fname, version):
         )
     except CalledProcessError as e:
         if fname:
-            logger.error("Error making MDSPlus model IDS.xml for {file}", fname)
+            logger.error("Error making MDSPlus model IDS.xml for %s", fname)
         else:
-            logger.error("Error making MDSplus model IDS.xml for {version}", version)
+            logger.error("Error making MDSplus model IDS.xml for %s", version)
         raise e
 
 
