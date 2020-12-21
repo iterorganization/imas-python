@@ -6,7 +6,10 @@
 """
 # Set up logging immediately
 
-from functools import cached_property
+try:
+    from functools import cached_property
+except ImportError:
+    from cached_property import cached_property
 
 from imaspy.al_exception import ALException
 from imaspy.ids_mixin import IDSMixin

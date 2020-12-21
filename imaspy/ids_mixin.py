@@ -2,7 +2,11 @@
 # You should have received IMASPy LICENSE file with this project.
 
 import logging
-from functools import cached_property
+
+try:
+    from functools import cached_property
+except ImportError:
+    from cached_property import cached_property
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
