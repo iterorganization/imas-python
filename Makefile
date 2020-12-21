@@ -106,7 +106,7 @@ tests:
 	$(PYTEST) -n auto $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
 
 minitests:
-	$(PYTEST) --mini $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
+	$(PYTEST) --mini -n auto $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
 
 realclean: clean
 	@echo 'Real cleaning $(PROJECT)...'
