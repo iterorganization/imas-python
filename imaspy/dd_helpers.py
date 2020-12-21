@@ -1,10 +1,13 @@
-# Helper functions to build IDSDef.xml
+"""Helper functions to build IDSDef.xml"""
 
+import glob
 import logging
 import os
 import re
 import shutil
+from distutils.version import StrictVersion as V
 from pathlib import Path
+from zipfile import ZIP_DEFLATED, ZipFile
 
 logger = logging.getLogger("imaspy")
 logger.setLevel(logging.WARNING)
@@ -20,15 +23,15 @@ def prepare_data_dictionaries():
     saxon_jar_path = get_saxon()
     repo, origin = get_data_dictionary_repo()
     if repo:
-        # TODO: only build supported tags? for CI speedup?
         for tag in repo.tags:
-            logger.debug("Building data dictionary version {tag}", tag)
-            build_data_dictionary(repo, origin, tag, saxon_jar_path)
-
-        from zipfile import ZipFile, ZIP_DEFLATED
-        import glob
+            if V(tag) > V("3.21.1"):
+                logger.debug("Building data dictionary version %s", tag)
+                build_data_dictionary(repo, origin, tag, saxon_jar_path)
 
         logger.info("Creating zip file of DD versions")
+
+        if os.path.isfile("data-dictionary/IDSDef.zip"):
+            logger.warning("Overwriting data-dictionary/IDSDef.zip")
 
         with ZipFile(
             "data-dictionary/IDSDef.zip",
@@ -104,8 +107,8 @@ def download_saxon():
     """Downloads a zipfile containing saxon9he.jar and extract it to the current dir.
     Return the full path to saxon9he.jar"""
     from io import BytesIO
-    from zipfile import ZipFile
     from urllib.request import urlopen
+    from zipfile import ZipFile
 
     SAXON_PATH = (
         "https://iweb.dl.sourceforge.net/project/saxon/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip"
