@@ -13,7 +13,7 @@ from imaspy.dd_zip import get_dd_xml, get_dd_xml_crc
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 
 def mdsplus_model_dir(version, xml_file=None, rebuild=False):

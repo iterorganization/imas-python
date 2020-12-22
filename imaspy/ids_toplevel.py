@@ -46,7 +46,12 @@ class IDSToplevel(IDSStructure):
         self, parent, name, structure_xml, backend_version=None, backend_xml_path=None
     ):
         """Save backend_version and backend_xml and build translation layer."""
-        super(IDSToplevel, self).__init__(parent, name, structure_xml)
+        super().__init__(parent, name, structure_xml)
+
+        # Set an explicit backend_version or xml path
+        # these will be used when put() or get() is called.
+        self._backend_version = backend_version
+        self._backend_xml_path = backend_xml_path
 
         if backend_xml_path or backend_version:
             self._read_backend_xml(backend_version, backend_xml_path)
@@ -163,7 +168,32 @@ class IDSToplevel(IDSStructure):
             )
             return
 
-        self._data_dictionary_version = self.read_data_dictionary_version(occurrence)
+        backend_version = self.read_data_dictionary_version(occurrence)
+        if self._backend_xml_path:
+            # If we have specified a preference backend_version is completely ignored.
+            logger.info("using backend_xml_path %s", self._backend_xml_path)
+        elif self._backend_version:
+            # If we have specified a preference:
+            if backend_version != self._backend_version:
+                logger.warning(
+                    "Specified backend version '%s' does not "
+                    "correspond to version_put '%s'",
+                    self._backend_version,
+                    backend_version,
+                )
+                backend_version = self._backend_version
+            logger.info("using backend_version %s", self._backend_version)
+
+        # if any of the xml_paths are specified we always build migrations
+        # if the backend version does not match the current version we also build them
+        if (
+            self._backend_xml_path
+            or self._parent._xml_path
+            or backend_version != self._parent._imas_version
+        ):
+            self._read_backend_xml(
+                version=backend_version, xml_path=self._backend_xml_path
+            )
 
         # TODO: Do not use global context
         status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)

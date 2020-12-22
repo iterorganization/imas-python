@@ -20,7 +20,7 @@ from imaspy.test_helpers import (
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 
 def test_latest_dd_autofill_consistency(ids_name):

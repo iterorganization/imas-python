@@ -164,6 +164,10 @@ class IDSRoot:
                 )
         return super().__getattribute__(key)
 
+    @property
+    def _version(self):
+        return self._imas_version
+
     # self.equilibrium = IDSToplevel('equilibrium')
 
     # Do not use this now

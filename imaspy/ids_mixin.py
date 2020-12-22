@@ -17,7 +17,7 @@ try:
 except ImportError as ee:
     logger.critical("IMAS could not be imported. UAL not available! %s", ee)
 
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 
 class IDSMixin:

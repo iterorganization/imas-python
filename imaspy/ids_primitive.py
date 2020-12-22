@@ -303,6 +303,55 @@ class IDSPrimitive(IDSMixin):
         """Combine imaspy ids_type and ndims to UAL data_type"""
         return "{!s}_{!s}D".format(self._ids_type, self._ndims)
 
+    def set_backend_properties(self, xml_child):
+        """Set the backend properties on this IDSPrimitive"""
+
+        if xml_child is None:
+            logger.warning(
+                "Field %s in memory rep not found in backend xml, "
+                "will not be written",
+                self.path,
+            )
+            data_type = None
+            return
+
+        data_type = xml_child.get("data_type")
+
+        # this ensures that even if this self does not exist in backend_xml
+        # we set the backend_type to None (otherwise you could have bugs
+        # when switching backend_xml multiple times)
+        if data_type:
+            self._backend_path = None
+            self._backend_type, self._backend_ndims = DD_TYPES[data_type]
+        else:
+            self._backend_path = None
+            self._backend_type = None
+            self._backend_ndims = None
+
+        if self._backend_path:
+            logger.info(
+                "Setting up mapping from %s (mem) to %s (file)",
+                self._name,
+                self._backend_path,
+            )
+
+        if self._backend_type != self._ids_type:
+            logger.info(
+                "Setting up conversion at %s.%s, memory=%s, backend=%s",
+                self._name,
+                self._name,
+                self._ids_type,
+                self._backend_type,
+            )
+        if self._backend_ndims != self._ndims:
+            logger.error(
+                "Dimensions mismatch at %s.%s, memory=%s, backend=%s",
+                self._name,
+                self._name,  # coordinates are empty??
+                self._ndims,
+                self._backend_ndims,
+            )
+
 
 def create_leaf_container(name, data_type, **kwargs):
     """Wrapper to create IDSPrimitive/IDSNumericArray from IDS syntax.

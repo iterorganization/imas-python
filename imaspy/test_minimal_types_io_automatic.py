@@ -15,7 +15,7 @@ from imaspy.test_minimal_types_io import TEST_DATA
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 
 @pytest.fixture

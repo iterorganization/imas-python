@@ -57,6 +57,9 @@ class IDSStructArray(IDSStructure, IDSMixin):
         # signal that this is an array-type addressing
         self._array_type = True
 
+        # Which xml settings to use for backends
+        self._backend_child_xml = None
+
         # set maxoccur
         self._maxoccur = None
         try:
@@ -73,7 +76,10 @@ class IDSStructArray(IDSStructure, IDSMixin):
 
     @property
     def _element_structure(self):
-        return IDSStructure(self, self._name + "_el", self._structure_xml)
+        struct = IDSStructure(self, self._name + "_el", self._structure_xml)
+        if self._backend_child_xml:
+            struct.set_backend_properties(self._backend_child_xml)
+        return struct
 
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)
@@ -257,3 +263,25 @@ class IDSStructArray(IDSStructure, IDSMixin):
             raise ALException(
                 'ERROR: ual_end_action failed for "{!s}"'.format(self._name), status
             )
+
+    def set_backend_properties(self, structure_xml):
+        """set the (structure) backend properties of each child
+        and store the structure_xml for new children"""
+
+        # Only do this once per structure_xml so repeated calls are not expensive
+        if self._last_backend_xml_hash == hash(structure_xml):
+            return
+        self._last_backend_xml_hash = hash(structure_xml)
+
+        child_name = (
+            self.value[0] if len(self.value) > 0 else self._element_structure
+        )._name
+        # TODO: deal with renames
+        xml_child = structure_xml.find("field[@name='{name}']".format(name=child_name))
+
+        for child in self.value:
+            child.set_backend_properties(xml_child)
+
+        # Set _backend_xml_structure which can be used to set_backend_properties
+        # on future self._element_structure s
+        self._backend_child_xml = xml_child

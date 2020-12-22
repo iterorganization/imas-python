@@ -13,7 +13,7 @@ from urllib.request import urlopen
 from zipfile import ZIP_DEFLATED, ZipFile
 
 logger = logging.getLogger("imaspy")
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 
 def prepare_data_dictionaries():

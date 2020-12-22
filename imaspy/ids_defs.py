@@ -7,7 +7,7 @@ import logging
 
 from imaspy.logger import logger
 
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 try:
     import imas.hli_utils as hli_utils

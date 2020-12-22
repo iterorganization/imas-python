@@ -11,7 +11,7 @@ from imaspy.test_helpers import open_ids
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 
 # TODO: use a separate folder for the MDSPLUS DB and clear it after the testcase

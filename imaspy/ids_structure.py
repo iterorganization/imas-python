@@ -12,6 +12,7 @@ except ImportError:
     from cached_property import cached_property
 
 import logging
+from distutils.version import StrictVersion as V
 
 from imaspy.al_exception import ALException
 from imaspy.ids_mixin import IDSMixin
@@ -35,6 +36,7 @@ class IDSStructure(IDSMixin):
 
     _MAX_OCCURRENCES = None
     _convert_ids_types = False
+    _last_backend_xml_hash = None
 
     def getNodeType(self):
         raise NotImplementedError("{!s}.getNodeType()".format(self))
@@ -71,6 +73,7 @@ class IDSStructure(IDSMixin):
         # to the parent. Take care when (deep)copying this!
         self._parent = parent
         self._coordinates = get_coordinates(structure_xml)
+        self._structure_xml = structure_xml
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
 
@@ -128,85 +131,137 @@ class IDSStructure(IDSMixin):
     def set_backend_properties(self, structure_xml):
         """Walk the union of existing children and those in structure_xml
         and set backend annotations for this element and its children."""
-        from imaspy.ids_struct_array import IDSStructArray
+
+        # Only do this once per structure_xml so repeated calls are not expensive
+        if self._last_backend_xml_hash == hash(structure_xml):
+            return
+        self._last_backend_xml_hash = hash(structure_xml)
+
+        try:
+            del self._backend_version  # Delete the cached_property cache
+        except AttributeError:
+            pass
+
+        up = V(self._version) > V(
+            self._backend_version
+        )  # True if backend older than frontend
+        # if they were the same we shouldn't be here
+        if V(self._version) == V(self._backend_version):
+            logger.warning("Setting backend properties even though versions same...")
+
+        # TODO: better naming (structure_xml -> backend etc)
+        # TODO: warn if backend xmls are not found in memory, so that you know
+        # what you are missing?
+
+        # change_nbc_version was introduced in version 3.28.0 (with changes
+        # going back to 3.26.0). For versions older than that there is no
+        # rename information available!
+        if max(V(self._version), V(self._backend_version)) < V("3.28.0"):
+            logger.warning(
+                "Rename information was added in 3.28.0. It is highly "
+                "recommended to at least use this version."
+            )
 
         for child_name in self._children:
             child = self[child_name]
-            xml_child = structure_xml.find(
-                "field[@name='{name}']".format(name=child_name)
-            )
+            # Decide whether we should look for an element with a different name
+            # or the same one. when migrating up the current in_memory xml
+            # contains information about migrations.
+            xml_child = None
+            if up:
+                cur_mem_child_xml = self._structure_xml.find(
+                    "field[@name='{name}']".format(name=child_name)
+                )
+                if "change_nbc_previous_name" in cur_mem_child_xml.attrib:
+                    # if the version at which the change happened is > the backend
+                    # and <= our version we need to take it into account
+                    if (
+                        V(self._backend_version)
+                        < V(cur_mem_child_xml.attrib["change_nbc_version"])
+                        <= V(self._version)
+                    ):
+                        child_name = cur_mem_child_xml.attrib[
+                            "change_nbc_previous_name"
+                        ]
+                        logger.info(
+                            "Mapping field %s.%s->%s",
+                            self._name,
+                            child._name,
+                            child_name,
+                        )
+                        # in principle this doesn't have to mean that we have
+                        # the right element but in most cases it will.
+                        # it would not, for instance, if between two versions
+                        # an element is renamed and a different, new element
+                        #  takes its place. We will cross that bridge when we get to it.
+            else:
+                # the memory version is older, so the migration information
+                # will be in the backend. We must first search for a field
+                # which could have been renamed to the current one, and after
+                # that check the current name.
+                xml_child = structure_xml.find(
+                    "field[@change_nbc_previous_name='{!s}']".format(child._name)
+                )
+                # qualify the found xml_child to see if it was renamed within
+                # our version range
+                if xml_child:
+                    if (
+                        not V(self._version)
+                        < V(xml_child.attrib["change_nbc_version"])
+                        <= V(self._backend_version)
+                    ):
+                        xml_child = None
+                    else:
+                        logger.info(
+                            "Mapping field %s.%s->%s",
+                            self._name,
+                            child._name,
+                            child_name,
+                        )
+
+            # if the above 2 procedures did not find the child try a direct name search
+            if xml_child is None:
+                xml_child = structure_xml.find(
+                    "field[@name='{name}']".format(name=child_name)
+                )
 
             if xml_child is None:
-                logger.warning(
-                    "Field %s.%s in memory rep not found in backend xml, "
-                    "will not be written",
-                    self._name,
-                    child_name,
-                )
-                data_type = None
-            else:
-                data_type = xml_child.get("data_type")
-
-            if type(child) == IDSStructure:
-                if xml_child is None or data_type != "structure":
-                    logger.error(
-                        "moving structs is not supported, proceed at your own risk"
-                    )
-                else:
-                    child.set_backend_properties(xml_child)
-            elif type(child) == IDSStructArray:
-                if xml_child is None or data_type != "struct_array":
-                    logger.error(
-                        "moving struct_arrays is not supported, "
-                        "proceed at your own risk"
-                    )
-                else:
-                    child.set_backend_properties(xml_child)
-            else:  # leaf node
-                # this ensures that even if this child does not exist in backend_xml
-                # we set the backend_type to None (otherwise you could have bugs
-                # when switching backend_xml multiple times)
-                if data_type:
-                    child._backend_path = None
-                    child._backend_type, child._backend_ndims = DD_TYPES[data_type]
-                else:
-                    child._backend_path = None
-                    child._backend_type = None
-                    child._backend_ndims = None
-
-                if child._backend_path:
-                    logger.info(
-                        "Setting up mapping from %s (mem) to %s (file)",
-                        self._name,
-                        child._backend_path,
-                    )
-
-                if child._backend_type != child._ids_type:
-                    logger.info(
-                        "Setting up conversion at %s.%s, memory=%s, backend=%s",
+                # if the xml_child was not found make some noise
+                if up:
+                    logger.warning(
+                        "No matching child %s found for %s.%s.",
+                        child_name,
                         self._name,
                         child._name,
-                        child._ids_type,
-                        child._backend_type,
                     )
-                if child._backend_ndims != child._ndims:
-                    logger.error(
-                        "Dimensions mismatch at %s.%s, memory=%s, backend=%s",
+                else:
+                    logger.warning(
+                        "Tried to find renamed field %s for %s.%s but failed, skipping.",
+                        child_name,
                         self._name,
-                        child._name,  # coordinates are empty??
-                        child._ndims,
-                        child._backend_ndims,
+                        child._name,
                     )
 
-        for child in structure_xml:
-            try:
-                self[child.get("name")]
-            except KeyError:
-                logger.warning(
-                    "Field %s in backend XML not found in memory representation,\
-                    not available for I/O",
-                    child.get("name"),
-                )
+            else:
+                child.set_backend_properties(xml_child)
+
+    @cached_property
+    def _version(self):
+        """Return the data dictionary version of this in-memory structure."""
+        if hasattr(self, "_imas_version"):
+            return self._imas_version
+        elif hasattr(self, "_parent"):
+            return self._parent._version
+        else:
+            return None
+
+    @cached_property
+    def _backend_version(self):
+        """Return the data dictionary version of the backend structure."""
+        if hasattr(self, "_parent"):
+            return self._parent._backend_version
+        else:
+            return None
 
     @cached_property
     def depth(self):

@@ -13,7 +13,7 @@ import imaspy
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 ZIPFILE_LOCATION = Path(__file__).parent.parent / "data-dictionary" / "IDSDef.zip"
 

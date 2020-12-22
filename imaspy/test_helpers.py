@@ -16,7 +16,7 @@ from imaspy.ids_toplevel import IDSToplevel
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 
 BASE_STRING = string.ascii_uppercase + string.digits
 
@@ -128,9 +128,9 @@ def open_ids(backend, mode, worker_id, tmp_path, **kwargs):
     if "version" in kwargs:
         ver = kwargs["version"].split(".")[0]
     else:
-        logger.warning("no version specified, hardcoding 3")
+        logger.warning("no version specified in test, hardcoding 3")
         ver = 3
 
-    ids.open_ual_store(tmp_path, "test", ver, backend, mode=mode)
+    ids.open_ual_store(tmp_path, "test", str(ver), backend, mode=mode)
 
     return ids
