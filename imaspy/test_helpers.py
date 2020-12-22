@@ -116,13 +116,21 @@ def compare_children(st1, st2, _ascii_empty_array_skip=False):
                 assert child1.value == child2.value
 
 
-def open_ids(backend, mode, worker_id, tmp_path, xml_path=None):
+def open_ids(backend, mode, worker_id, tmp_path, **kwargs):
     """Open an IDS in a standardised way, with a tmpdir in place of the user argument"""
     if worker_id == "master":
         shot = 1
     else:
         shot = int(worker_id[2:]) + 1
-    ids = imaspy.ids_root.IDSRoot(shot, 0, xml_path=xml_path)
-    # TODO: don't hardcode 3 here, get it from the version number
-    ids.open_ual_store(tmp_path, "test", "3", backend, mode=mode)
+
+    ids = imaspy.ids_root.IDSRoot(shot, 0, **kwargs)
+
+    if "version" in kwargs:
+        ver = kwargs["version"].split(".")[0]
+    else:
+        logger.warning("no version specified, hardcoding 3")
+        ver = 3
+
+    ids.open_ual_store(tmp_path, "test", ver, backend, mode=mode)
+
     return ids

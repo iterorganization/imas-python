@@ -38,11 +38,6 @@ class IDSStructArray(IDSStructure, IDSMixin):
     def __init__(self, parent, name, structure_xml, base_path_in="element"):
         """Initialize IDSStructArray from XML specification
 
-        Initializes in-memory an IDSStructArray. The XML should contain
-        all direct descendants of the node. To avoid duplication,
-        none of the XML structure is saved directly, so this transformation
-        might be irreversible.
-
         Args:
           - parent: Parent structure. Can be anything, but at database write
                     time should be something with a path attribute

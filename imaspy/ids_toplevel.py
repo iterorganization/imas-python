@@ -253,8 +253,9 @@ class IDSToplevel(IDSStructure):
         # Determine the time_mode.
         homogeneousTime = self.ids_properties.homogeneous_time.value
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
-            logger.warning(
-                "IDS {!s} is found to be EMPTY (homogeneous_time undefined). PUT quits with no action."
+            logger.error(
+                "IDS %s is found to be EMPTY (homogeneous_time undefined). PUT quits with no action.",
+                self,
             )
             return
         if homogeneousTime not in IDS_TIME_MODES:

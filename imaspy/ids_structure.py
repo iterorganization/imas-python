@@ -294,9 +294,7 @@ class IDSStructure(IDSMixin):
         Tries to dynamically build all needed information for the UAL.
         """
         if len(self._children) == 0:
-            logger.warning(
-                'Trying to get structure "{!s}" with 0 children'.format(self._name)
-            )
+            logger.warning('Trying to get structure "%s" with 0 children', self._name)
         if logger.level <= logging.DEBUG:
             log_string = " " * self.depth + " - % -38s get"
         for child_name in self._children:
@@ -310,22 +308,18 @@ class IDSStructure(IDSMixin):
                 status, data = child.get(ctx, homogeneousTime)
             else:
                 logger.critical(
-                    "Unknown type {!s} for field {!s}! Skipping".format(
-                        type(child), child_name
-                    )
+                    "Unknown type %s for field %s! Skipping", type(child), child_name
                 )
             if status == 0 and data is not None:
                 setattr(self, child_name, data)
             elif status != 0:
                 logger.critical(
-                    "Unable to get simple field {!s}, UAL return code {!s}".format(
-                        child_name, status
-                    )
+                    "Unable to get simple field %s, UAL return code %s",
+                    child_name,
+                    status,
                 )
             else:
-                logger.debug(
-                    "Unable to get simple field {!s}, seems empty".format(child_name)
-                )
+                logger.debug("Unable to get simple field %s, seems empty", child_name)
 
     def getSlice(
         self, time_requested, interpolation_method, occurrence=0, data_store=None
