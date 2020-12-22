@@ -19,18 +19,18 @@ logger.setLevel(logging.WARNING)
 try:
     # TODO: change to new structure
     from imas.imasdef import (
-        NO_BACKEND,
         ASCII_BACKEND,
-        MDSPLUS_BACKEND,
-        HDF5_BACKEND,
-        MEMORY_BACKEND,
-        UDA_BACKEND,
-        OPEN_PULSE,
-        FORCE_OPEN_PULSE,
-        CREATE_PULSE,
-        FORCE_CREATE_PULSE,
         CLOSE_PULSE,
+        CREATE_PULSE,
         ERASE_PULSE,
+        FORCE_CREATE_PULSE,
+        FORCE_OPEN_PULSE,
+        HDF5_BACKEND,
+        MDSPLUS_BACKEND,
+        MEMORY_BACKEND,
+        NO_BACKEND,
+        OPEN_PULSE,
+        UDA_BACKEND,
     )
 except ImportError:
     logger.warning(
@@ -219,17 +219,9 @@ class UALFile:
         }
 
         try:
-            status, message = ull.ual_open_pulse(
-                idx, mode_actions[mode], options, return_message=True
-            )
-        except KeyError:
-            raise ValueError("Invalid mode: {!r}".format(mode))
-        except TypeError:
-            message = ""
-            try:
-                status = ull.ual_open_pulse(idx, mode_actions[mode], options)
-            except KeyError:
-                raise ValueError("Invalid mode: {!r}".format(mode))
+            status = ull.ual_open_pulse(idx, mode_actions[mode], options)
+        except KeyError as ee:
+            raise ValueError("Invalid mode: {!r}".format(mode)) from ee
 
         if status != 0:
             if mode == "r":
