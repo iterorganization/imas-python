@@ -71,13 +71,20 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
     os.chmod(cache_dir_path, 0o555)
     return str(cache_dir_path)
 
+
 def model_exists(path):
     return all(
-        map(lambda f: os.path.isfile(path / f),
-            ["ids.xml",
-             "ids_model.characteristics",
-             "ids_model.datafile",
-             "ids_model.tree"]))
+        map(
+            lambda f: os.path.isfile(path / f),
+            [
+                "ids.xml",
+                "ids_model.characteristics",
+                "ids_model.datafile",
+                "ids_model.tree",
+            ],
+        )
+    )
+
 
 def create_model_ids_xml(cache_dir_path, fname, version):
     """Use saxon to compile an ids.xml suitable for creating an mdsplus model."""
@@ -122,9 +129,11 @@ def create_mdsplus_model(cache_dir_path):
                 "ids",
             ],
             cwd=str(cache_dir_path),
-            env={"PATH": os.environ["PATH"],
-                 "LD_LIBRARY_PATH": os.environ["LD_LIBRARY_PATH"],
-                 "ids_path": str(cache_dir_path)},
+            env={
+                "PATH": os.environ["PATH"],
+                "LD_LIBRARY_PATH": os.environ["LD_LIBRARY_PATH"],
+                "ids_path": str(cache_dir_path),
+            },
         )
     except CalledProcessError as e:
         logger.error("Error making MDSPlus model in {path}", cache_dir_path)
@@ -176,4 +185,7 @@ def ensure_data_dir(user, tokamak, version):
     else:
         dir = Path.home() / "public" / "imasdb" / tokamak / version
 
-    dir.mkdir(parents=True, exist_ok=True)
+    for index in range(10):
+        # this is a bit brute force. We could also calculate the index from
+        # the run number. But it's only 10 directories...
+        (dir / str(index)).mkdir(parents=True, exist_ok=True)
