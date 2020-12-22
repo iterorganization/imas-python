@@ -211,10 +211,6 @@ class IDSPrimitive(IDSMixin):
         if np.array_equal(data, self._default):
             return
 
-        dbg_str = " " + " " * self.depth + "- {!s}".format(self._name)
-        dbg_str += (" {:" + str(max(1, 53 - len(dbg_str))) + "s}").format(
-            "(" + str(data) + ")"
-        )
         # Call signature
         # ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))
         # data_type = self._ull._getDataType(data)
