@@ -25,25 +25,9 @@ class IDSMixin:
         """ Get the path relative to given context from an absolute path"""
         # This could be replaced with the fullPath() method provided by the LL-UAL
         if self.path.startswith(context_store[ctx]):
-            # If the given path indeed starts with the context path. This should
-            # always be the case. Grab the part of the path _after_ the context
-            # path string
-            if context_store[ctx] == "/":
-                # The root context is special, it does not have a slash before
-                rel_path = self.path[len(context_store[ctx]) :]
-            else:
-                rel_path = self.path[len(context_store[ctx]) + 1 :]
-            split = rel_path.split("/")
-            try:
-                # Check if the first part of the path is a number. If it is,
-                # strip it, it is implied by context
-                int(split[0])
-            except (ValueError):
-                pass
-            else:
-                # Starts with numeric, strip. Is captured in context
-                # TODO: Might need to be recursive.
-                rel_path = "/".join(split[1:])
+            # strip the context path as well as any numeric indices
+            # (those are handled by the context store)
+            return self.path[len(context_store[ctx]) :].lstrip("/0123456789")
         else:
             from IPython import embed
 
@@ -53,9 +37,6 @@ class IDSMixin:
                     self.path, context_store
                 )
             )
-        # logger.debug('Got context {!s} with abspath {!s}, relpath is {!s}'
-        # .format(ctx, self.path, rel_path))
-        return rel_path
 
     def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):
         strTimeBasePath = ""
