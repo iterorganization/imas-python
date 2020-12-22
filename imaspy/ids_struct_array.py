@@ -7,8 +7,6 @@ This contains references to :py:class:`IDSStructure`s
 """
 
 
-import copy
-
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_mixin import IDSMixin
@@ -31,7 +29,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         logger.warning(
             "getAoSElement is deprecated, you should never need this", FutureWarning
         )
-        return copy.deepcopy(self._element_structure)
+        return self._element_structure
 
     @staticmethod
     def getBackendInfo(parentCtx, index, homogeneousTime):  # Is this specific?
@@ -58,18 +56,8 @@ class IDSStructArray(IDSStructure, IDSMixin):
         self._name = name
         self._parent = parent
         self._coordinates = get_coordinates(structure_xml)
-        # Save the converted structure_xml for later reference, and adding new
-        # empty structures to the AoS
-        self._element_structure = IDSStructure(self, name + "_el", structure_xml)
-        # do not set _parent as it causes loops with deepcopy
-        self._element_structure._parent = None
-        # instead the append() method will set it
-
-        # Do not try to convert ids_types by default.
-        # Instead the append() method will set this
-        self._element_structure._convert_ids_types = (
-            False  # Enable converting after copy
-        )
+        # Save structure_xml for later reference
+        self._structure_xml = structure_xml
 
         # signal that this is an array-type addressing
         self._array_type = True
@@ -87,6 +75,10 @@ class IDSStructArray(IDSStructure, IDSMixin):
         self.value = []
 
         self._convert_ids_types = True
+
+    @property
+    def _element_structure(self):
+        return IDSStructure(self, self._name + "_el", self._structure_xml)
 
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)
@@ -158,7 +150,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         if nbelt > cur:
             new_els = []
             for _ in range(nbelt - cur):
-                new_el = copy.deepcopy(self._element_structure)
+                new_el = self._element_structure
                 new_el._parent = self
                 new_el._convert_ids_types = True
                 new_els.append(new_el)

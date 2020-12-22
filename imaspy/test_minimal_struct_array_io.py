@@ -1,6 +1,5 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
 
-import copy
 import logging
 import os
 
@@ -38,10 +37,10 @@ def test_minimal_struct_array_maxoccur(backend, xml):
     # such that it automatically makes the struct if it did not exist?
     # maxoccur is 2, so the next one should raise an exception
     a = ids.minimal_struct_array.struct_array
-    a.append(copy.deepcopy(a._element_structure))
-    a.append(copy.deepcopy(a._element_structure))
+    a.append(a._element_structure)
+    a.append(a._element_structure)
     with pytest.raises(ValueError):
-        a.append(copy.deepcopy(a._element_structure))
+        a.append(a._element_structure)
 
 
 def test_minimal_struct_array_io(backend, xml, worker_id, tmp_path):
@@ -49,12 +48,13 @@ def test_minimal_struct_array_io(backend, xml, worker_id, tmp_path):
     ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=xml)
     a = ids.minimal_struct_array.struct_array
     ids.minimal_struct_array.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
-    a.append(copy.deepcopy(a._element_structure))
+    a.append(a._element_structure)
 
     # TODO: these are nested one too deeply in my opinion.
-    # (a struct array contains an array of structures directly, without the intermediate one?)
+    # (a struct array contains an array of structures directly,
+    #  without the intermediate one?)
     a[0].a.flt_0d = 2.0
-    a.append(copy.deepcopy(a._element_structure))
+    a.append(a._element_structure)
     a[1].a.flt_0d = 4.0
 
     ids.minimal_struct_array.put()

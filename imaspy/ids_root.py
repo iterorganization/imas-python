@@ -10,6 +10,11 @@ Provides the class for an IDS Primitive data type
 import importlib
 import os
 
+try:
+    from functools import cached_property
+except ImportError:
+    from cached_property import cached_property
+
 # Set up logging immediately
 import numpy as np
 
@@ -18,7 +23,7 @@ from imaspy.context_store import context_store
 from imaspy.dd_zip import dd_etree, latest_dd_version
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.logger import logger
-from imaspy.mdsplus_model import mdsplus_model_dir, ensure_data_dir
+from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 
 try:
     from imaspy.ids_defs import (
@@ -546,7 +551,7 @@ class IDSRoot:
             raise ALException("ERROR calling ual_end_action().", status)
         return status, timeList
 
-    @property
+    @cached_property
     def _ull(self):
         ctx_path = context_store[self.expIdx]
         if ctx_path != "/":

@@ -120,8 +120,9 @@ class IDSMixin:
                 my_path = self._parent.path + "/" + my_path
         return my_path
 
-    @property
+    @cached_property
     def _ull(self):
-        if not hasattr(self, "_parent"):
-            raise Exception("ULL directly connected to {!s}".format(self))
-        return self._parent._ull
+        try:
+            return self._parent._ull
+        except AttributeError as ee:
+            raise Exception("ULL directly connected to %s", self) from ee
