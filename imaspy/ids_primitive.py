@@ -7,9 +7,9 @@ Provides the class for an IDS Primitive data type
 * :py:class:`IDSPrimitive`
 """
 
+import logging
 import numbers
 
-# Set up logging immediately
 import numpy as np
 
 from imaspy.al_exception import ALException
@@ -224,10 +224,10 @@ class IDSPrimitive(IDSMixin):
         # TODO: Check ignore_nbc_change
         strTimeBasePath = self.getTimeBasePath(homogeneousTime)
 
-        logger.info("{:54.54s} write".format(dbg_str))
-        logger.debug(
-            "   {:50.50s} write".format("/".join([context_store[ctx], rel_path]))
-        )
+        if logger.level <= logging.DEBUG:
+            log_string = " " * self.depth + " - % -38s write"
+            logger.debug(log_string, "/".join([context_store[ctx], rel_path]))
+
         # TODO: the data_type argument seems to be unused in the ual_write_data routine, remove it?
         status = self._ull.ual_write_data(
             ctx, rel_path, strTimeBasePath, data, dataType=write_type, dim=ndims

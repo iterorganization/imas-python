@@ -11,6 +11,8 @@ try:
 except ImportError:
     from cached_property import cached_property
 
+import logging
+
 from imaspy.al_exception import ALException
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_primitive import DD_TYPES, IDSPrimitive, create_leaf_container
@@ -72,10 +74,13 @@ class IDSStructure(IDSMixin):
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
 
-        log_string = " " * self.depth + " - % -38s initialization"
+        if logger.level <= logging.DEBUG:
+            log_string = " " * self.depth + " - % -38s initialization"
+
         for child in structure_xml:
             my_name = child.get("name")
-            logger.debug(log_string, my_name)
+            if logger.level <= logging.DEBUG:
+                logger.debug(log_string, my_name)
             self._children.append(my_name)
             # Decide what to do based on the data_type attribute
             my_data_type = child.get("data_type")
@@ -292,9 +297,11 @@ class IDSStructure(IDSMixin):
             logger.warning(
                 'Trying to get structure "{!s}" with 0 children'.format(self._name)
             )
+        if logger.level <= logging.DEBUG:
+            log_string = " " * self.depth + " - % -38s get"
         for child_name in self._children:
-            dbg_str = " " * self.depth + "- " + child_name
-            logger.debug("{:53.53s} get".format(dbg_str))
+            if logger.level <= logging.DEBUG:
+                logger.debug(log_string, child_name)
             child = getattr(self, child_name)
             if isinstance(child, IDSStructure):
                 child.get(ctx, homogeneousTime)
@@ -348,10 +355,12 @@ class IDSStructure(IDSMixin):
             )
         for child_name in self._children:
             child = getattr(self, child_name)
-            dbg_str = " " * self.depth + "- " + child_name
+            if logger.level <= logging.DEBUG:
+                log_string = " " * self.depth + " - % -38s put"
             if child is not None:
                 if not isinstance(child, IDSPrimitive):
-                    logger.debug("{:53.53s} put".format(dbg_str))
+                    if logger.level <= logging.DEBUG:
+                        logger.debug(log_string, child_name)
                 child.put(ctx, homogeneousTime)
 
     def putSlice(self, ctx, homogeneousTime):
@@ -372,8 +381,9 @@ class IDSStructure(IDSMixin):
         """Delete data from UAL backend storage"""
         for child_name in self._children:
             child = getattr(self, child_name)
-            dbg_str = " " * self.depth + "- " + child_name
-            logger.debug("{:53.53s} del".format(dbg_str))
+            if logger.level <= logging.DEBUG:
+                log_string = " " * self.depth + " - % -38s del"
+                logger.debug(log_string, child_name)
             rel_path = child.getRelCTXPath(ctx)
             from imaspy.ids_struct_array import IDSStructArray
 

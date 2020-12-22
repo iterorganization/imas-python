@@ -19,6 +19,8 @@ root_logger = logging.getLogger("imaspy")
 logger = root_logger
 logger.setLevel(logging.WARNING)
 
+BASE_STRING = string.ascii_uppercase + string.digits
+
 
 def randdims(ndims):
     """Return a list of n random numbers representing
@@ -27,10 +29,7 @@ def randdims(ndims):
 
 
 def random_string():
-    return "".join(
-        random.choice(string.ascii_uppercase + string.digits)
-        for i in range(random.randint(0, 128))
-    )
+    return "".join(random.choice(BASE_STRING) for i in range(random.randint(0, 128)))
 
 
 def random_data(ids_type, ndims):

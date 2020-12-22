@@ -157,7 +157,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         cur = len(self.value)
         if nbelt > cur:
             new_els = []
-            for ii in range(nbelt - cur):
+            for _ in range(nbelt - cur):
                 new_el = copy.deepcopy(self._element_structure)
                 new_el._parent = self
                 new_el._convert_ids_types = True
