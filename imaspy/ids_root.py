@@ -141,6 +141,8 @@ class IDSRoot:
 
     def __getattr__(self, key):
         """Lazy get ids toplevel attributes"""
+        # this seems to eat attributeerrors,
+        # for instance with accessing self.imas_version (which needs an underscore.)
         try:
             return super().__getattribute__(key)
         except AttributeError:
@@ -264,31 +266,32 @@ class IDSRoot:
         if backend_type == MDSPLUS_BACKEND:
             # ensure presence of mdsplus dir and set environment ids_path
             try:
-                _version = self._backend_version or self.imas_version
+                _backend_version = self._backend_version or self._imas_version
             except AttributeError:
-                _version = None
+                _backend_version = None
             try:
-                _xml_path = self._backend_xml_path or self.xml_path
+                _backend_xml_path = self._backend_xml_path or self._xml_path
             except AttributeError:
-                _xml_path = None
+                _backend_xml_path = None
             # This does not cover the case of reading an idstoplevel
             # and only then finding out which version it is. But,
             # I think that the model dir is not required if there is an existing
             # file.
 
-            if _version:
-                os.environ["ids_path"] = mdsplus_model_dir(_version)
-            elif _xml_path:
+            if _backend_xml_path:
                 os.environ["ids_path"] = mdsplus_model_dir(
-                    version=None, xml_file=_xml_path
+                    version=None, xml_file=_backend_xml_path
                 )
+            elif _backend_version:
+                os.environ["ids_path"] = mdsplus_model_dir(_backend_version)
             else:
                 # This doesn't actually matter much, since if we are auto-loading
                 # the backend version it is an existing file and we don't need
                 # the model (I think). If we are not auto-loading then one of
                 # the above two conditions should be true.
                 logger.warning(
-                    "No backend version information available, not building MDSPlus model"
+                    "No backend version information available, "
+                    "not building MDSPlus model"
                 )
 
             # ensure presence of model dir
