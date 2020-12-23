@@ -274,7 +274,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         """set the (structure) backend properties of each child
         and store the structure_xml for new children"""
 
-        up, skip = IDSMixin.set_backend_properties(self, structure_xml)
+        _, skip = IDSMixin.set_backend_properties(self, structure_xml)
         # skip if structure_xml was already seen
         if skip:
             return

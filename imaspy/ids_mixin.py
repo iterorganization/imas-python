@@ -84,11 +84,11 @@ class IDSMixin:
     def getAOSPath(self, ignore_nbc_change=1):
         # TODO: Fix in case it gives trouble
         # This is probably wrong! Should walk up the tree
-        return self._name
+        return self._backend_name or self._name
 
     @cached_property
     def path(self):
-        """Build absolute path from node to root in backend coordinates"""
+        """Build absolute path from node to root _in backend coordinates_"""
         my_path = self._backend_name or self._name
         if hasattr(self, "_parent"):
             try:

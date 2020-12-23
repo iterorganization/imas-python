@@ -358,6 +358,11 @@ class IDSToplevel(IDSStructure):
     def put(self, occurrence=0, data_store=None):
         if data_store is None:
             data_store = self._data_store
+            self.ids_properties.version_put.data_dictionary = (
+                self._backend_version or self._version
+            )
+            # TODO: self.ids_properties.version_put.access_layer =  # get the access layer version number here
+            self.ids_properties.version_put.access_layer_language = "Python"
         self.to_ualstore(data_store, path=None, occurrence=occurrence)
 
     @property

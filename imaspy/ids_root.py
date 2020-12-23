@@ -124,9 +124,7 @@ class IDSRoot:
                 else:
                     logger.info("found version %s", ids.text)
             else:
-                if _lazy:
-                    logger.debug("{:42.42s} lazy init".format(my_name))
-                else:
+                if not _lazy:
                     logger.debug("{:42.42s} tree init".format(my_name))
                     setattr(
                         self,
@@ -151,6 +149,7 @@ class IDSRoot:
         if key in self._children:
             ids = self._tree.getroot().find("./*[@name='{name}']".format(name=key))
             if ids:
+                logger.debug("{:42.42s} lazy init".format(key))
                 setattr(
                     self,
                     key,
@@ -265,13 +264,17 @@ class IDSRoot:
         if backend_type == MDSPLUS_BACKEND:
             # ensure presence of mdsplus dir and set environment ids_path
             try:
-                _version = self._imas_version
+                _version = self._backend_version or self.imas_version
             except AttributeError:
                 _version = None
             try:
-                _xml_path = self._xml_path
+                _xml_path = self._backend_xml_path or self.xml_path
             except AttributeError:
                 _xml_path = None
+            # This does not cover the case of reading an idstoplevel
+            # and only then finding out which version it is. But,
+            # I think that the model dir is not required if there is an existing
+            # file.
 
             if _version:
                 os.environ["ids_path"] = mdsplus_model_dir(_version)

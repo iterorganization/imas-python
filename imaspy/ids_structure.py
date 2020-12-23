@@ -418,7 +418,12 @@ class IDSStructure(IDSMixin):
             from imaspy.ids_struct_array import IDSStructArray
 
             if isinstance(child, (IDSStructArray, IDSPrimitive)):
-                status = self._ull.ual_delete_data(ctx, rel_path)
+                try:
+                    status = self._ull.ual_delete_data(ctx, rel_path)
+                except Exception as e:
+                    from IPython import embed
+
+                    embed()
                 if status != 0:
                     raise ALException(
                         'ERROR: ual_delete_data failed for "{!s}". Status code {!s}'.format(
