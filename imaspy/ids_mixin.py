@@ -2,6 +2,7 @@
 # You should have received IMASPy LICENSE file with this project.
 
 import logging
+from distutils.version import StrictVersion as V
 
 try:
     from functools import cached_property
@@ -87,8 +88,8 @@ class IDSMixin:
 
     @cached_property
     def path(self):
-        """Build absolute path from node to root"""
-        my_path = self._name
+        """Build absolute path from node to root in backend coordinates"""
+        my_path = self._backend_name or self._name
         if hasattr(self, "_parent"):
             try:
                 if self._parent._array_type:
@@ -101,9 +102,56 @@ class IDSMixin:
                 my_path = self._parent.path + "/" + my_path
         return my_path
 
+    def reset_path(self):
+        try:
+            del self.path
+        except AttributeError:  # this happens if self.path has not been cached yet
+            pass
+
     @cached_property
     def _ull(self):
         try:
             return self._parent._ull
         except AttributeError as ee:
             raise Exception("ULL directly connected to %s", self) from ee
+
+    def visit_children(self, fun, leaf_only=False):
+        """walk all children of this structure in order and execute fun on them"""
+        # you will have fun
+        if hasattr(self, "__iter__"):
+            for child in self:
+                if not leaf_only:
+                    fun(child)
+                child.visit_children(fun, leaf_only)
+
+    def set_backend_properties(self, structure_xml):
+        """Walk existing children to match those in structure_xml, then
+        set backend annotations for this element and its children."""
+
+        # Only do this once per structure_xml so repeated calls are not expensive
+        if self._last_backend_xml_hash == hash(structure_xml):
+            # We need to delete the self._path cache on all children of this one
+            # without duplicating the work maybe.
+            # only walk all children when the rest of the work is skipped, otherwise
+            # the recursiveness of set_backend_properties solves it
+            self.reset_path()
+            self.visit_children(IDSMixin.reset_path)
+            return None, False
+        self._last_backend_xml_hash = hash(structure_xml)
+
+        self.reset_path()
+        try:
+            del self._backend_version  # Delete the cached_property cache
+            # if the structure_xml is the same then resetting the _backend_version
+            # has no effect, as set_backend_properties will not be called anyway.
+        except AttributeError:
+            pass
+
+        up = V(self._version) > V(
+            self._backend_version
+        )  # True if backend older than frontend
+        # if they were the same we shouldn't be here
+
+        self._backend_name = structure_xml.attrib["name"]
+
+        return up, False

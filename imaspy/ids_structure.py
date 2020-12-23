@@ -63,10 +63,12 @@ class IDSStructure(IDSMixin):
           - structure_xml: Object describing the structure of the IDS. Usually
                            an instance of `xml.etree.ElementTree.Element`
         """
+        # TODO: move some of these to IDSMixin
         # To ease setting values at this stage, do not try to cast values
         # to canonical forms
         self._convert_ids_types = False
         self._name = name
+        self._backend_name = None
         self._base_path = name
         self._children = []  # Store the children as a list of strings.
         # As we cannot restore the parent from just a string, save a reference
@@ -129,39 +131,14 @@ class IDSStructure(IDSMixin):
         return zip(self.keys(), map(self.__getitem__, self._children))
 
     def set_backend_properties(self, structure_xml):
-        """Walk the union of existing children and those in structure_xml
-        and set backend annotations for this element and its children."""
-
-        # Only do this once per structure_xml so repeated calls are not expensive
-        if self._last_backend_xml_hash == hash(structure_xml):
+        """Loop over a structure's backend properties and those of its children"""
+        # set my own properties
+        up, skip = super().set_backend_properties(structure_xml)
+        # skip if structure_xml was already seen
+        if skip:
             return
-        self._last_backend_xml_hash = hash(structure_xml)
 
-        try:
-            del self._backend_version  # Delete the cached_property cache
-        except AttributeError:
-            pass
-
-        up = V(self._version) > V(
-            self._backend_version
-        )  # True if backend older than frontend
-        # if they were the same we shouldn't be here
-        if V(self._version) == V(self._backend_version):
-            logger.warning("Setting backend properties even though versions same...")
-
-        # TODO: better naming (structure_xml -> backend etc)
-        # TODO: warn if backend xmls are not found in memory, so that you know
-        # what you are missing?
-
-        # change_nbc_version was introduced in version 3.28.0 (with changes
-        # going back to 3.26.0). For versions older than that there is no
-        # rename information available!
-        if max(V(self._version), V(self._backend_version)) < V("3.28.0"):
-            logger.warning(
-                "Rename information was added in 3.28.0. It is highly "
-                "recommended to at least use this version."
-            )
-
+        # recurse to my children
         for child_name in self._children:
             child = self[child_name]
             # Decide whether we should look for an element with a different name
@@ -216,7 +193,7 @@ class IDSStructure(IDSMixin):
                             "Mapping field %s.%s->%s",
                             self._name,
                             child._name,
-                            child_name,
+                            xml_child.attrib["name"],
                         )
 
             # if the above 2 procedures did not find the child try a direct name search
@@ -244,6 +221,10 @@ class IDSStructure(IDSMixin):
 
             else:
                 child.set_backend_properties(xml_child)
+
+    def __iter__(self):
+        """Iterate over this structure's children"""
+        return iter(map(self.__getitem__, self._children))
 
     @cached_property
     def _version(self):

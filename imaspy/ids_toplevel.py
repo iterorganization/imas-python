@@ -7,6 +7,7 @@
 # Set up logging immediately
 
 import xml.etree.ElementTree as ET
+from distutils.version import StrictVersion as V
 
 import numpy as np
 
@@ -75,6 +76,29 @@ class IDSToplevel(IDSStructure):
         self.set_backend_properties(
             root.find("./*[@name='{name}']".format(name=self._name))
         )
+
+    def set_backend_properties(self, structure_xml):
+        """Set backend properties for this IDSToplevel and provide some logging"""
+        if V(self._version) == V(self._backend_version):
+            logger.warning(
+                "Setting backend properties for %s even though versions same...",
+                self._name,
+            )
+
+        # TODO: better naming (structure_xml -> backend etc)
+        # TODO: warn if backend xmls are not found in memory, so that you know
+        # what you are missing?
+
+        # change_nbc_version was introduced in version 3.28.0 (with changes
+        # going back to 3.26.0). For versions older than that there is no
+        # rename information available!
+        if max(V(self._version), V(self._backend_version)) < V("3.28.0"):
+            logger.warning(
+                "Rename information was added in 3.28.0. It is highly "
+                "recommended to at least use this version."
+            )
+
+        super().set_backend_properties(structure_xml)
 
     def readHomogeneous(self, occurrence):
         """Read the value of homogeneousTime

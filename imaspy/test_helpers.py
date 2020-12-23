@@ -75,20 +75,6 @@ def fill_with_random_data(structure):
                 child.value = random_data(child._ids_type, child._ndims)
 
 
-def visit_children(structure, fun):
-    """walk all children of this structure in order and execute fun on them"""
-    for child_name in structure._children:
-        child = structure[child_name]
-
-        if type(child) in [IDSStructure, IDSToplevel, IDSRoot]:
-            visit_children(child, fun)
-        elif type(child) == IDSStructArray:
-            for a in child.value:
-                visit_children(a, fun)
-        else:  # leaf node
-            fun(child)
-
-
 def compare_children(st1, st2, _ascii_empty_array_skip=False):
     """Perform a deep compare of two structures using asserts."""
     for (name1, child1), (name2, child2) in zip(st1.items(), st2.items()):

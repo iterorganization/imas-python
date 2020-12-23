@@ -11,12 +11,7 @@ import pytest
 
 import imaspy
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
-from imaspy.test_helpers import (
-    compare_children,
-    fill_with_random_data,
-    open_ids,
-    visit_children,
-)
+from imaspy.test_helpers import compare_children, fill_with_random_data, open_ids
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -28,7 +23,7 @@ def test_latest_dd_autofill_consistency(ids_name):
     fill_with_random_data(ids[ids_name])
 
     # check that each element in ids[ids_name] has _parent set.
-    visit_children(ids[ids_name], has_parent)
+    ids[ids_name].visit_children(has_parent, leaf_only=False)
 
 
 def has_parent(child):

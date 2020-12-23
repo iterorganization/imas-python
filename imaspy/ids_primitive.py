@@ -84,6 +84,7 @@ class IDSPrimitive(IDSMixin):
         self._ndims = ndims
         self._backend_type = None
         self._backend_ndims = None
+        self._backend_name = None
         self._name = name
         self._parent = parent
         self._coordinates = coordinates
@@ -321,14 +322,18 @@ class IDSPrimitive(IDSMixin):
         # we set the backend_type to None (otherwise you could have bugs
         # when switching backend_xml multiple times)
         if data_type:
-            self._backend_path = None
             self._backend_type, self._backend_ndims = DD_TYPES[data_type]
         else:
-            self._backend_path = None
             self._backend_type = None
             self._backend_ndims = None
 
-        if self._backend_path:
+        # only set backend name if different from name
+        if xml_child.get("name") != self._name:
+            self._backend_name = xml_child.get("name")
+        else:
+            self._backend_name = None
+
+        if self._backend_name:
             logger.info(
                 "Setting up mapping from %s (mem) to %s (file)",
                 self._name,
@@ -337,17 +342,15 @@ class IDSPrimitive(IDSMixin):
 
         if self._backend_type != self._ids_type:
             logger.info(
-                "Setting up conversion at %s.%s, memory=%s, backend=%s",
-                self._name,
-                self._name,
+                "Setting up conversion at %s, memory=%s, backend=%s",
+                self._path,
                 self._ids_type,
                 self._backend_type,
             )
         if self._backend_ndims != self._ndims:
             logger.error(
-                "Dimensions mismatch at %s.%s, memory=%s, backend=%s",
-                self._name,
-                self._name,  # coordinates are empty??
+                "Dimensions mismatch at %s, memory=%s, backend=%s",
+                self._path,
                 self._ndims,
                 self._backend_ndims,
             )

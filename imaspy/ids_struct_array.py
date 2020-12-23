@@ -7,6 +7,8 @@ This contains references to :py:class:`IDSStructure`s
 """
 
 
+from distutils.version import StrictVersion as V
+
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_mixin import IDSMixin
@@ -59,6 +61,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
 
         # Which xml settings to use for backends
         self._backend_child_xml = None
+        self._backend_name = None
 
         # set maxoccur
         self._maxoccur = None
@@ -104,6 +107,9 @@ class IDSStructArray(IDSStructure, IDSMixin):
                 except Exception as ee:
                     raise ee
         self.value[list_idx] = value
+
+    def __iter__(self):
+        return iter(self.value)
 
     def append(self, elt):
         """Append elements to the end of the array of structures.
@@ -268,20 +274,15 @@ class IDSStructArray(IDSStructure, IDSMixin):
         """set the (structure) backend properties of each child
         and store the structure_xml for new children"""
 
-        # Only do this once per structure_xml so repeated calls are not expensive
-        if self._last_backend_xml_hash == hash(structure_xml):
+        up, skip = IDSMixin.set_backend_properties(self, structure_xml)
+        # skip if structure_xml was already seen
+        if skip:
             return
-        self._last_backend_xml_hash = hash(structure_xml)
 
-        child_name = (
-            self.value[0] if len(self.value) > 0 else self._element_structure
-        )._name
-        # TODO: deal with renames
-        xml_child = structure_xml.find("field[@name='{name}']".format(name=child_name))
-
+        # the children have the same structure_xml as the current element
         for child in self.value:
-            child.set_backend_properties(xml_child)
+            child.set_backend_properties(structure_xml)
 
         # Set _backend_xml_structure which can be used to set_backend_properties
         # on future self._element_structure s
-        self._backend_child_xml = xml_child
+        self._backend_child_xml = structure_xml
