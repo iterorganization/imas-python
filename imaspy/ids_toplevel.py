@@ -79,7 +79,11 @@ class IDSToplevel(IDSStructure):
 
     def set_backend_properties(self, structure_xml):
         """Set backend properties for this IDSToplevel and provide some logging"""
-        if V(self._version) == V(self._backend_version):
+        if (
+            self._version
+            and self._backend_version
+            and V(self._version) == V(self._backend_version)
+        ):
             logger.warning(
                 "Setting backend properties for %s even though versions same...",
                 self._name,
@@ -92,7 +96,11 @@ class IDSToplevel(IDSStructure):
         # change_nbc_version was introduced in version 3.28.0 (with changes
         # going back to 3.26.0). For versions older than that there is no
         # rename information available!
-        if max(V(self._version), V(self._backend_version)) < V("3.28.0"):
+        if (
+            self._version
+            and self._backend_version
+            and max(V(self._version), V(self._backend_version)) < V("3.28.0")
+        ):
             logger.warning(
                 "Rename information was added in 3.28.0. It is highly "
                 "recommended to at least use this version."
@@ -210,10 +218,8 @@ class IDSToplevel(IDSStructure):
 
         # if any of the xml_paths are specified we always build migrations
         # if the backend version does not match the current version we also build them
-        if (
-            self._backend_xml_path
-            or self._parent._xml_path
-            or backend_version != self._parent._imas_version
+        if self._backend_xml_path or (
+            backend_version and backend_version != self._parent._imas_version
         ):
             self._read_backend_xml(
                 version=backend_version, xml_path=self._backend_xml_path
@@ -358,11 +364,12 @@ class IDSToplevel(IDSStructure):
     def put(self, occurrence=0, data_store=None):
         if data_store is None:
             data_store = self._data_store
-            self.ids_properties.version_put.data_dictionary = (
-                self._backend_version or self._version
-            )
-            # TODO: self.ids_properties.version_put.access_layer =  # get the access layer version number here
-            self.ids_properties.version_put.access_layer_language = "Python"
+            if hasattr(self.ids_properties, "version_put"):
+                self.ids_properties.version_put.data_dictionary = (
+                    self._backend_version or self._version
+                )
+                # TODO: self.ids_properties.version_put.access_layer =  # get the access layer version number here
+                self.ids_properties.version_put.access_layer_language = "Python"
         self.to_ualstore(data_store, path=None, occurrence=occurrence)
 
     @property

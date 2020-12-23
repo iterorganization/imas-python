@@ -278,9 +278,17 @@ class IDSRoot:
 
             if _version:
                 os.environ["ids_path"] = mdsplus_model_dir(_version)
-            else:
+            elif _xml_path:
                 os.environ["ids_path"] = mdsplus_model_dir(
                     version=None, xml_file=_xml_path
+                )
+            else:
+                # This doesn't actually matter much, since if we are auto-loading
+                # the backend version it is an existing file and we don't need
+                # the model (I think). If we are not auto-loading then one of
+                # the above two conditions should be true.
+                logger.warning(
+                    "No backend version information available, not building MDSPlus model"
                 )
 
             # ensure presence of model dir

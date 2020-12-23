@@ -230,14 +230,12 @@ class UALFile:
                 raise ALError(
                     "Error calling ull.ual_open_pulse({!r},{!r},{!r}).\n"
                     "Pulse action state was ({!s}).\n"
-                    "Backend was {!r}\n"
-                    "Backend error: {!s}\n".format(
+                    "Backend was {!r}\n".format(
                         idx,
                         OPEN_PULSE,
                         options,
                         pulse_action_state,
                         backend_str,
-                        message,
                     ),
                     status,
                 )

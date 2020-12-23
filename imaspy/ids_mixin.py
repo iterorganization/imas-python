@@ -147,10 +147,13 @@ class IDSMixin:
         except AttributeError:
             pass
 
-        up = V(self._version) > V(
-            self._backend_version
+        up = self._version and V(self._version) > V(
+            self._backend_version or self._version
         )  # True if backend older than frontend
         # if they were the same we shouldn't be here
+        # if self._backend_version is undefined we are loading raw xml files
+        # TODO: get the version number from the file in that case
+        # for now just assume it's a down migration.
 
         self._backend_name = structure_xml.attrib["name"]
 

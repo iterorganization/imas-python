@@ -120,6 +120,12 @@ class IDSPrimitive(IDSMixin):
         else:
             self.__value = self.cast_value(setter_value)
 
+    def __eq__(self, other):
+        if self._ndims >= 1:
+            return np.array_equal(self.value, other.value)
+        else:
+            return self.value == other.value
+
     def cast_value(self, value):
         # Cast list-likes to arrays
         if isinstance(value, (list, tuple)):
@@ -343,14 +349,14 @@ class IDSPrimitive(IDSMixin):
         if self._backend_type != self._ids_type:
             logger.info(
                 "Setting up conversion at %s, memory=%s, backend=%s",
-                self._path,
+                self.path,
                 self._ids_type,
                 self._backend_type,
             )
         if self._backend_ndims != self._ndims:
             logger.error(
                 "Dimensions mismatch at %s, memory=%s, backend=%s",
-                self._path,
+                self.path,
                 self._ndims,
                 self._backend_ndims,
             )
