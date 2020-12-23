@@ -100,7 +100,7 @@ class IDSRoot:
             logger.info("Generating IDS structures from file %s", xml_path)
             self._xml_path = xml_path
         else:
-            logger.info("Generating IDS structures for version %s", version)
+            logger.info("Generating IDS structures for version %s", ver)
             self._imas_version = ver
         self._tree = dd_etree(version=ver, xml_path=xml_path)
 

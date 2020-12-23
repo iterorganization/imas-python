@@ -103,10 +103,10 @@ class IDSMixin:
         return my_path
 
     def reset_path(self):
-        try:
-            del self.path
-        except AttributeError:  # this happens if self.path has not been cached yet
-            pass
+        if "path" in self.__dict__:
+            del self.__dict__["path"]  # Delete the cached_property cache
+            # this is how it works for functools cached_property.
+            # how is it for cached_property package?
 
     @cached_property
     def _ull(self):
@@ -124,6 +124,24 @@ class IDSMixin:
                     fun(child)
                 child.visit_children(fun, leaf_only)
 
+    @cached_property
+    def _version(self):
+        """Return the data dictionary version of this in-memory structure."""
+        if hasattr(self, "_imas_version"):
+            return self._imas_version
+        elif hasattr(self, "_parent"):
+            return self._parent._version
+        else:
+            return None
+
+    @cached_property
+    def backend_version(self):
+        """Return the data dictionary version of the backend structure."""
+        if hasattr(self, "_parent"):
+            return self._parent.backend_version
+        else:
+            return None
+
     def set_backend_properties(self, structure_xml):
         """Walk existing children to match those in structure_xml, then
         set backend annotations for this element and its children."""
@@ -140,18 +158,16 @@ class IDSMixin:
         self._last_backend_xml_hash = hash(structure_xml)
 
         self.reset_path()
-        try:
-            del self._backend_version  # Delete the cached_property cache
-            # if the structure_xml is the same then resetting the _backend_version
-            # has no effect, as set_backend_properties will not be called anyway.
-        except AttributeError:
-            pass
+        if "backend_version" in self.__dict__:
+            del self.__dict__["backend_version"]  # Delete the cached_property cache
+            # this is how it works for functools cached_property.
+            # how is it for cached_property package?
 
         up = self._version and V(self._version) > V(
-            self._backend_version or self._version
+            self.backend_version or self._version
         )  # True if backend older than frontend
         # if they were the same we shouldn't be here
-        # if self._backend_version is undefined we are loading raw xml files
+        # if self.backend_version is undefined we are loading raw xml files
         # TODO: get the version number from the file in that case
         # for now just assume it's a down migration.
 

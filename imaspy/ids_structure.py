@@ -153,7 +153,7 @@ class IDSStructure(IDSMixin):
                     # if the version at which the change happened is > the backend
                     # and <= our version we need to take it into account
                     if (
-                        V(self._backend_version)
+                        V(self.backend_version)
                         < V(cur_mem_child_xml.attrib["change_nbc_version"])
                         <= V(self._version)
                     ):
@@ -177,7 +177,7 @@ class IDSStructure(IDSMixin):
                 # which could have been renamed to the current one, and after
                 # that check the current name.
                 xml_child = structure_xml.find(
-                    "field[@change_nbc_previous_name='{!s}']".format(child._name)
+                    "field[@change_nbc_previous_name='{name}']".format(name=child._name)
                 )
                 # qualify the found xml_child to see if it was renamed within
                 # our version range
@@ -185,7 +185,7 @@ class IDSStructure(IDSMixin):
                     if (
                         not V(self._version)
                         < V(xml_child.attrib["change_nbc_version"])
-                        <= V(self._backend_version)
+                        <= V(self.backend_version)
                     ):
                         xml_child = None
                     else:
@@ -225,24 +225,6 @@ class IDSStructure(IDSMixin):
     def __iter__(self):
         """Iterate over this structure's children"""
         return iter(map(self.__getitem__, self._children))
-
-    @cached_property
-    def _version(self):
-        """Return the data dictionary version of this in-memory structure."""
-        if hasattr(self, "_imas_version"):
-            return self._imas_version
-        elif hasattr(self, "_parent"):
-            return self._parent._version
-        else:
-            return None
-
-    @cached_property
-    def _backend_version(self):
-        """Return the data dictionary version of the backend structure."""
-        if hasattr(self, "_parent"):
-            return self._parent._backend_version
-        else:
-            return None
 
     @cached_property
     def depth(self):

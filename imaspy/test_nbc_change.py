@@ -12,7 +12,7 @@ from imaspy.test_helpers import compare_children, fill_with_random_data, open_id
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def test_pulse_schedule_aos_renamed_up(backend, worker_id, tmp_path):
@@ -71,7 +71,7 @@ def test_pulse_schedule_aos_renamed_autodetect_up(backend, worker_id, tmp_path):
         )
         ids2[ids_name].get()
 
-        assert ids2[ids_name].ec.antenna[0].name.value == "test"
+        assert ids2[ids_name].ec.launcher[0].name.value == "test"
 
 
 def test_pulse_schedule_aos_renamed_down(backend, worker_id, tmp_path):
@@ -130,7 +130,7 @@ def test_pulse_schedule_aos_renamed_autodetect_down(backend, worker_id, tmp_path
         )
         ids2[ids_name].get()
 
-        assert ids2[ids_name].ec.antenna[0].name.value == "test"
+        assert ids2[ids_name].ec.launcher[0].name.value == "test"
 
 
 def test_pulse_schedule_aos_renamed_autofill_up(backend, worker_id, tmp_path):

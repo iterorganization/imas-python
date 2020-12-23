@@ -6,10 +6,14 @@
 
 # Set up logging immediately
 
-import xml.etree.ElementTree as ET
 from distutils.version import StrictVersion as V
 
 import numpy as np
+
+try:
+    from functools import cached_property
+except ImportError:
+    from cached_property import cached_property
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
@@ -66,9 +70,11 @@ class IDSToplevel(IDSStructure):
         so performance will not suffer too much from this.
         """
         if xml_path:
-            logger.debug("Generating backend %s from file %s", self._name, xml_path)
+            self._backend_xml_path = xml_path
+            logger.info("Generating backend %s from file %s", self._name, xml_path)
         elif version:
-            logger.debug("Generating backend %s for version %s", self._name, version)
+            self._backend_version = version
+            logger.info("Generating backend %s for version %s", self._name, version)
         tree = dd_etree(version=version, xml_path=xml_path)
 
         # Parse given xml_path and build imaspy IDS structures for this toplevel only
@@ -379,6 +385,10 @@ class IDSToplevel(IDSStructure):
     @property
     def _idx(self):
         return self._data_store._idx
+
+    @cached_property
+    def backend_version(self):
+        return self.__getattribute__("_backend_version")
 
     @classmethod
     def getMaxOccurrences(self):
