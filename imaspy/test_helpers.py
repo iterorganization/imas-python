@@ -95,7 +95,12 @@ def compare_children(st1, st2, _ascii_empty_array_skip=False):
                 if (
                     len(child1.value) == 0 or len(child2.value) == 0
                 ) and _ascii_empty_array_skip:
-                    pass
+                    # check that they are both empty, or one is [] and one is ['']
+                    assert (
+                        (len(child1.value) == 0 and child2.value == [""])
+                        or (len(child2.value) == 0 and child1.value == [""])
+                        or (len(child1.value) == 0 and len(child2.value) == 0)
+                    )
                 else:
                     assert np.array_equal(child1.value, child2.value)
             else:

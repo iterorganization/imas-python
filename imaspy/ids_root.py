@@ -78,7 +78,7 @@ class IDSRoot:
           $ids/ids_properties/version_put/data_dictionary
           (this is a toplevel property, so they could have different versions per toplevel)
         """
-        setattr(self, "shot", s)
+
         self.shot = s
         self.run = r
 
@@ -123,6 +123,7 @@ class IDSRoot:
                     )
                 else:
                     logger.info("found version %s", ids.text)
+                self._imas_version = ids.text
             else:
                 if not _lazy:
                     logger.debug("{:42.42s} tree init".format(my_name))
@@ -141,8 +142,6 @@ class IDSRoot:
 
     def __getattr__(self, key):
         """Lazy get ids toplevel attributes"""
-        # this seems to eat attributeerrors,
-        # for instance with accessing self.imas_version (which needs an underscore.)
         try:
             return super().__getattribute__(key)
         except AttributeError:

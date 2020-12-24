@@ -14,6 +14,7 @@ import numpy as np
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
+from imaspy.ids_defs import DD_TYPES
 from imaspy.ids_mixin import IDSMixin
 from imaspy.logger import logger
 
@@ -25,26 +26,8 @@ try:
         hli_utils,
         ids_type_to_default,
     )
-except:
+except ImportError:
     logger.critical("IMAS could not be imported. UAL not available!")
-
-
-# TODO: can we use the builtin methods here instead?
-DD_TYPES = {
-    "STR_0D": ("STR", 0),
-    "STR_1D": ("STR", 1),
-    "str_type": ("STR", 0),
-    "str_1d_type": ("STR", 1),
-    "flt_type": ("FLT", 0),
-    "flt_1d_type": ("FLT", 1),
-    "int_type": ("INT", 0),
-}
-
-for i in range(0, 7):
-    # dimensions are random
-    DD_TYPES["FLT_%dD" % i] = ("FLT", i)
-    if i < 4:
-        DD_TYPES["INT_%dD" % i] = ("INT", i)
 
 
 class IDSPrimitive(IDSMixin):
@@ -74,20 +57,22 @@ class IDSPrimitive(IDSMixin):
                    default data matching given ids_type and ndims
           - coordinates: Data coordinates of the node
         """
+        super().__init__(parent, name, coordinates=coordinates)
+
         if ids_type != "STR" and ndims != 0 and self.__class__ == IDSPrimitive:
             raise Exception(
-                "{!s} should be 0D! Got ndims={:d}. Instantiate using IDSNumericArray instead".format(
+                "{!s} should be 0D! Got ndims={:d}. "
+                "Instantiate using IDSNumericArray instead".format(
                     self.__class__, ndims
                 )
             )
+
+        if value is not None:
+            self.__value = value
         self._ids_type = ids_type
         self._ndims = ndims
         self._backend_type = None
         self._backend_ndims = None
-        self._backend_name = None
-        self._name = name
-        self._parent = parent
-        self._coordinates = coordinates
 
     @property
     def _default(self):
@@ -343,7 +328,7 @@ class IDSPrimitive(IDSMixin):
             logger.info(
                 "Setting up mapping from %s (mem) to %s (file)",
                 self._name,
-                self._backend_path,
+                self.backend_path,
             )
 
         if self._backend_type != self._ids_type:

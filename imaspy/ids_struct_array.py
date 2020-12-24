@@ -48,13 +48,10 @@ class IDSStructArray(IDSStructure, IDSMixin):
           - structure_xml: Object describing the structure of the IDS. Usually
                            an instance of `xml.etree.ElementTree.Element`
         """
+        super().__init__(parent, name, structure_xml)
+
         self._base_path = base_path_in
         self._convert_ids_types = False
-        self._name = name
-        self._parent = parent
-        self._coordinates = get_coordinates(structure_xml)
-        # Save structure_xml for later reference
-        self._structure_xml = structure_xml
 
         # signal that this is an array-type addressing
         self._array_type = True
@@ -280,7 +277,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             return
 
         # the children have the same structure_xml as the current element
-        for child in self.value:
+        for child in self:
             child.set_backend_properties(structure_xml)
 
         # Set _backend_xml_structure which can be used to set_backend_properties

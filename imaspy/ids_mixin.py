@@ -11,6 +11,7 @@ except ImportError:
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
+from imaspy.ids_defs import DD_TYPES
 from imaspy.logger import logger
 
 try:
@@ -22,6 +23,28 @@ logger.setLevel(logging.INFO)
 
 
 class IDSMixin:
+    """The base class which unifies properties of structure, struct_array, toplevel, root
+    and primitive nodes (IDSPrimitive and IDSNumericArray)"""
+
+    def __init__(self, parent, name, coordinates=None, structure_xml=None):
+        """Setup basic properties for a tree node (leaf or non-leaf) such as
+        name, _parent, _backend_name etc."""
+        self._name = name
+        self._parent = parent
+
+        self._coordinates = coordinates
+
+        # As we cannot restore the parent from just a string, save a reference
+        # to the parent. Take care when (deep)copying this!
+        self._structure_xml = structure_xml
+        if structure_xml and self._coordinates is None:
+            self._coordinates = get_coordinates(structure_xml)
+
+        self._last_backend_xml_hash = None
+
+        self._last_backend_xml_hash = None
+        self._backend_name = None
+
     def getRelCTXPath(self, ctx):
         """ Get the path relative to given context from an absolute path"""
         # This could be replaced with the fullPath() method provided by the LL-UAL
@@ -91,11 +114,17 @@ class IDSMixin:
         """Build absolute path from node to root _in backend coordinates_"""
         my_path = self._backend_name or self._name
         if hasattr(self, "_parent"):
+            # these exceptions may be slow. (But cached, so not so bad?)
             try:
                 if self._parent._array_type:
-                    my_path = "{!s}/{!s}".format(
-                        self._parent.path, self._parent.value.index(self) + 1
-                    )
+                    try:
+                        my_path = "{!s}/{!s}".format(
+                            self._parent.path, self._parent.value.index(self) + 1
+                        )
+                    except ValueError as e:
+                        from IPython import embed
+
+                        embed()
                 else:
                     my_path = self._parent.path + "/" + my_path
             except AttributeError:
@@ -127,24 +156,26 @@ class IDSMixin:
     @cached_property
     def _version(self):
         """Return the data dictionary version of this in-memory structure."""
-        if hasattr(self, "_imas_version"):
-            return self._imas_version
-        elif hasattr(self, "_parent"):
+        if hasattr(self, "_parent"):
             return self._parent._version
-        else:
-            return None
 
     @cached_property
     def backend_version(self):
         """Return the data dictionary version of the backend structure."""
         if hasattr(self, "_parent"):
             return self._parent.backend_version
-        else:
-            return None
 
     def set_backend_properties(self, structure_xml):
         """Walk existing children to match those in structure_xml, then
-        set backend annotations for this element and its children."""
+        set backend annotations for this element and its children.
+
+        Returns up, skip.
+        - up: True if memory version is newer than backend version, otherwise False
+        - skip: True if the _last_backend_xml_hash == hash of structure_xml
+          this implies we don't need to reset the backend properties
+          of all children, only their path
+
+        """
 
         # Only do this once per structure_xml so repeated calls are not expensive
         if self._last_backend_xml_hash == hash(structure_xml):
@@ -174,3 +205,30 @@ class IDSMixin:
         self._backend_name = structure_xml.attrib["name"]
 
         return up, False
+
+
+# TODO: cythonize this?
+def get_coordinates(el):
+    """Given an XML element, extract the coordinate attributes from el.attrib"""
+    coords = {}
+    if "coordinate1" in el.attrib:
+        coords["coordinate1"] = el.attrib["coordinate1"]
+        if "coordinate2" in el.attrib:
+            coords["coordinate2"] = el.attrib["coordinate2"]
+            if "coordinate3" in el.attrib:
+                coords["coordinate3"] = el.attrib["coordinate3"]
+                if "coordinate4" in el.attrib:
+                    coords["coordinate4"] = el.attrib["coordinate4"]
+                    if "coordinate5" in el.attrib:
+                        coords["coordinate5"] = el.attrib["coordinate5"]
+                        if "coordinate6" in el.attrib:
+                            coords["coordinate6"] = el.attrib["coordinate6"]
+    return coords
+
+    # This is ugly code, but it is around 3.5x faster than the below!
+    # for dim in range(1, 6):
+    # key = "coordinate" + str(dim)
+    # if key in el.attrib:
+    # coords[key] = el.attrib[key]
+    # else:
+    # break

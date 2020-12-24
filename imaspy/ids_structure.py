@@ -15,8 +15,8 @@ import logging
 from distutils.version import StrictVersion as V
 
 from imaspy.al_exception import ALException
-from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_primitive import DD_TYPES, IDSPrimitive, create_leaf_container
+from imaspy.ids_mixin import IDSMixin, get_coordinates
+from imaspy.ids_primitive import IDSPrimitive, create_leaf_container
 from imaspy.logger import logger
 
 try:
@@ -35,8 +35,6 @@ class IDSStructure(IDSMixin):
     """
 
     _MAX_OCCURRENCES = None
-    _convert_ids_types = False
-    _last_backend_xml_hash = None
 
     def getNodeType(self):
         raise NotImplementedError("{!s}.getNodeType()".format(self))
@@ -63,19 +61,14 @@ class IDSStructure(IDSMixin):
           - structure_xml: Object describing the structure of the IDS. Usually
                            an instance of `xml.etree.ElementTree.Element`
         """
-        # TODO: move some of these to IDSMixin
         # To ease setting values at this stage, do not try to cast values
         # to canonical forms
-        self._convert_ids_types = False
-        self._name = name
-        self._backend_name = None
+        # Since __setattr__ looks for _convert_ids_types we set it through __dict__
+        self.__dict__["_convert_ids_types"] = False
+        super().__init__(parent, name, structure_xml=structure_xml)
+
         self._base_path = name
         self._children = []  # Store the children as a list of strings.
-        # As we cannot restore the parent from just a string, save a reference
-        # to the parent. Take care when (deep)copying this!
-        self._parent = parent
-        self._coordinates = get_coordinates(structure_xml)
-        self._structure_xml = structure_xml
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
 
@@ -400,12 +393,7 @@ class IDSStructure(IDSMixin):
             from imaspy.ids_struct_array import IDSStructArray
 
             if isinstance(child, (IDSStructArray, IDSPrimitive)):
-                try:
-                    status = self._ull.ual_delete_data(ctx, rel_path)
-                except Exception as e:
-                    from IPython import embed
-
-                    embed()
+                status = self._ull.ual_delete_data(ctx, rel_path)
                 if status != 0:
                     raise ALException(
                         'ERROR: ual_delete_data failed for "{!s}". Status code {!s}'.format(
@@ -423,30 +411,3 @@ class IDSStructure(IDSMixin):
                         status,
                     )
         return 0
-
-
-# TODO: cythonize this?
-def get_coordinates(el):
-    """Given an XML element, extract the coordinate attributes from el.attrib"""
-    coords = {}
-    if "coordinate1" in el.attrib:
-        coords["coordinate1"] = el.attrib["coordinate1"]
-        if "coordinate2" in el.attrib:
-            coords["coordinate2"] = el.attrib["coordinate2"]
-            if "coordinate3" in el.attrib:
-                coords["coordinate3"] = el.attrib["coordinate3"]
-                if "coordinate4" in el.attrib:
-                    coords["coordinate4"] = el.attrib["coordinate4"]
-                    if "coordinate5" in el.attrib:
-                        coords["coordinate5"] = el.attrib["coordinate5"]
-                        if "coordinate6" in el.attrib:
-                            coords["coordinate6"] = el.attrib["coordinate6"]
-    return coords
-
-    # This is ugly code, but it is around 3.5x faster than the below!
-    # for dim in range(1, 6):
-    # key = "coordinate" + str(dim)
-    # if key in el.attrib:
-    # coords[key] = el.attrib[key]
-    # else:
-    # break

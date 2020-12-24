@@ -43,3 +43,20 @@ else:
         "INT": EMPTY_INT,
         "FLT": EMPTY_FLOAT,
     }
+
+
+DD_TYPES = {
+    "STR_0D": ("STR", 0),
+    "STR_1D": ("STR", 1),
+    "str_type": ("STR", 0),
+    "str_1d_type": ("STR", 1),
+    "flt_type": ("FLT", 0),
+    "flt_1d_type": ("FLT", 1),
+    "int_type": ("INT", 0),
+}
+
+for i in range(0, 7):
+    # dimensions are random
+    DD_TYPES["FLT_%dD" % i] = ("FLT", i)
+    if i < 4:
+        DD_TYPES["INT_%dD" % i] = ("INT", i)

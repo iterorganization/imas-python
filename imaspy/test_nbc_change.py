@@ -7,7 +7,9 @@ by writing them as the old and reading as new and vice-versa
 
 import logging
 
-from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
+import pytest
+
+from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
 from imaspy.test_helpers import compare_children, fill_with_random_data, open_ids
 
 root_logger = logging.getLogger("imaspy")
@@ -191,3 +193,39 @@ def test_pulse_schedule_aos_renamed_autofill_up(backend, worker_id, tmp_path):
                 assert ch1[new].reference.time == ch2[old].reference.time
                 assert ch1[new].reference_type == ch2[old].reference_type
                 assert ch1[new].envelope_type == ch2[old].envelope_type
+
+
+def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
+    """Create an ids, autofill it, save it as a newer version, read it back
+    and check that it's the same."""
+
+    ids = open_ids(
+        backend, "w", worker_id, tmp_path, version="3.25.0", backend_version="3.30.0"
+    )
+    try:
+        ids[ids_name]
+    except AttributeError:
+        pytest.skip("IDS %s not defined for version 3.25.0" % (ids_name,))
+    fill_with_random_data(ids[ids_name])
+
+    ids[ids_name].put()
+
+    if backend == MEMORY_BACKEND:
+        # this one does not store anything between instantiations
+        pass
+    else:
+        ids2 = open_ids(
+            backend,
+            "a",
+            worker_id,
+            tmp_path,
+            version="3.25.0",
+        )
+        ids2[ids_name].get()
+
+        if backend == ASCII_BACKEND:
+            compare_children(
+                ids[ids_name], ids2[ids_name], _ascii_empty_array_skip=True
+            )
+        else:
+            compare_children(ids[ids_name], ids2[ids_name])

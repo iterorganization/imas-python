@@ -79,6 +79,21 @@ class IDSToplevel(IDSStructure):
 
         # Parse given xml_path and build imaspy IDS structures for this toplevel only
         root = tree.getroot()
+        ver = root.find("version")
+        if ver:
+            if ver.text != version:
+                if version is None:
+                    self._backend_version = ver.text
+                    logger.info("Found backend version %s", self._backend_version)
+                else:
+                    logger.warning(
+                        "Backend version %s does not match file %s, proceeding anyway.",
+                        version,
+                        ver.text,
+                    )
+        else:
+            logger.warning("No version number found in file %s", xml_path)
+
         self.set_backend_properties(
             root.find("./*[@name='{name}']".format(name=self._name))
         )
@@ -222,8 +237,7 @@ class IDSToplevel(IDSStructure):
                 backend_version = self._backend_version
             logger.info("using backend_version %s", self._backend_version)
 
-        # if any of the xml_paths are specified we always build migrations
-        # if the backend version does not match the current version we also build them
+        # building the backend_xml is only necessary in some cases
         if self._backend_xml_path or (
             backend_version and backend_version != self._parent._imas_version
         ):
