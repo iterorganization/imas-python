@@ -229,3 +229,45 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
             )
         else:
             compare_children(ids[ids_name], ids2[ids_name])
+
+
+def test_pulse_schedule_change_backend_live(backend, worker_id, tmp_path):
+    """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
+    in version 3.26.0."""
+
+    if backend == MEMORY_BACKEND:
+        pytest.skip(
+            "memory backend does not support reading again from different structure"
+        )
+    pytest.skip("Needs implementation of close_ual_store")
+
+    ids = open_ids(backend, "w", worker_id, tmp_path, version="3.25.0")
+    ids_name = "pulse_schedule"
+    fill_with_random_data(ids[ids_name])
+    ids[ids_name].put()
+    ids.close()
+
+    ids2 = open_ids(
+        backend,
+        "a",
+        worker_id,
+        tmp_path,
+        version="3.25.0",
+    )
+    ids2[ids_name].get()
+
+    # now change backend to 3.28.0 and save it
+    ids2[ids_name]._read_backend_xml(version="3.28.0")
+    # TODO: close the old ual store
+    ids2.open_ual_store(tmp_path, "test", "3", backend, mode="w")
+    ids2[ids_name].put()
+
+    # now from a third root check the results
+    ids3 = open_ids(
+        backend,
+        "a",
+        worker_id,
+        tmp_path,
+        version="3.25.0",
+    )
+    compare_children(ids[ids_name], ids3[ids_name])
