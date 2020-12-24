@@ -4,7 +4,6 @@
 
 * :py:class:`IDSStructure`
 """
-# Set up logging immediately
 
 try:
     from functools import cached_property

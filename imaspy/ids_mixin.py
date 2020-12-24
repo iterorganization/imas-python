@@ -148,10 +148,12 @@ class IDSMixin:
         """walk all children of this structure in order and execute fun on them"""
         # you will have fun
         if hasattr(self, "__iter__"):
+            if not leaf_only:
+                fun(self)
             for child in self:
-                if not leaf_only:
-                    fun(child)
                 child.visit_children(fun, leaf_only)
+        else:  # it must be a child then?
+            fun(self)
 
     @cached_property
     def _version(self):

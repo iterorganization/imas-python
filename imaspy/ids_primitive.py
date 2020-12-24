@@ -69,6 +69,8 @@ class IDSPrimitive(IDSMixin):
 
         if value is not None:
             self.__value = value
+        else:
+            self.__value = None
         self._ids_type = ids_type
         self._ndims = ndims
         self._backend_type = None
@@ -109,7 +111,10 @@ class IDSPrimitive(IDSMixin):
         if self._ndims >= 1:
             return np.array_equal(self.value, other.value)
         else:
-            return self.value == other.value
+            if hasattr(other, "value"):
+                return self.value == other.value
+            else:
+                return self.value == other
 
     def cast_value(self, value):
         # Cast list-likes to arrays

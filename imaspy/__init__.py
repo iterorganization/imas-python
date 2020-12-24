@@ -2,6 +2,7 @@
 # You should have received IMASPy LICENSE file with this project.
 
 from distutils.version import StrictVersion as V
+
 import pkg_resources
 
 # First thing for import, try to determine imaspy version
@@ -16,7 +17,14 @@ except Exception:
         # Disable minimum version checks on downstream libraries.
         __version__ = "0.0.0"
 
-from imaspy import ids_root, imas_ual_env_parsing, setup_logging
+from imaspy import (
+    ids_primitive,
+    ids_root,
+    ids_struct_array,
+    ids_structure,
+    imas_ual_env_parsing,
+    setup_logging,
+)
 from imaspy.backends import (
     common,
     file_manager,

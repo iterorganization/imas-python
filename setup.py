@@ -310,4 +310,11 @@ if __name__ == "__main__":
         extras_require=optional_reqs,
         ext_modules=extensions,
         cmdclass={"build_py": BuildPyCommand, "build_DD": BuildDDCommand},
+        entry_points={
+            "console_scripts": [
+                "ids_convert = imaspy.tools:convert",
+                "ids_info = imaspy.tools:info",
+                "ids_print = imaspy.tools:tree",
+            ]
+        },
     )
