@@ -28,12 +28,15 @@ def info():
             if args.name and ids._name != args.name:
                 ids = ids[args.name]
 
-            print("% 22s = %s" % ("name", ids._name))
+            print(ids._name)
 
-            def pr(a):
-                print("% 22s = %s" % (a._name, a.value))
-
-            ids.ids_properties.visit_children(pr, leaf_only=True)
+            print(
+                format_tree(
+                    ids.ids_properties,
+                    format_node=format_node_value,
+                    get_children=all_children,
+                )
+            )
 
 
 def convert():
