@@ -87,10 +87,9 @@ class IDSPrimitive(IDSMixin):
     def value(self):
         """Return the value of this IDSPrimitive if it is set,
         otherwise return the default"""
-        try:
-            return self.__value
-        except AttributeError:
+        if self.__value is None:
             return self._default
+        return self.__value
 
     @value.setter
     def value(self, setter_value):
@@ -172,6 +171,11 @@ class IDSPrimitive(IDSMixin):
         write_type = self._backend_type or self._ids_type
         ndims = self._backend_ndims or self._ndims
 
+        # Do not write if data is the same as the default of the leaf node
+        # TODO: set default of backend xml instead
+        if np.array_equal(self.value, self._default) or self.value is None:
+            return
+
         # Convert imaspy ids_type to ual scalar_type
         if write_type == "INT":
             scalar_type = 1
@@ -202,11 +206,6 @@ class IDSPrimitive(IDSMixin):
                 data = float(self.value)
             else:
                 data = self.value
-
-        # Do not write if data is the same as the default of the leaf node
-        # TODO: set default of backend xml instead
-        if np.array_equal(data, self._default):
-            return
 
         # Call signature
         # ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))
