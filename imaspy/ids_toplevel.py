@@ -69,18 +69,20 @@ class IDSToplevel(IDSStructure):
         IDSes to be read from different versions. Still use the ElementTree memoization
         so performance will not suffer too much from this.
         """
-        if xml_path:
+        if xml_path is not None:
             self._backend_xml_path = xml_path
             logger.info("Generating backend %s from file %s", self._name, xml_path)
-        elif version:
+        elif version is not None:
             self._backend_version = version
             logger.info("Generating backend %s for version %s", self._name, version)
+        else:
+            return
         tree = dd_etree(version=version, xml_path=xml_path)
 
         # Parse given xml_path and build imaspy IDS structures for this toplevel only
         root = tree.getroot()
         ver = root.find("version")
-        if ver:
+        if ver is not None:
             if ver.text != version:
                 if version is None:
                     self._backend_version = ver.text
@@ -92,7 +94,9 @@ class IDSToplevel(IDSStructure):
                         ver.text,
                     )
         else:
-            logger.warning("No version number found in file %s", xml_path)
+            # The version number in DD xml files was introduced in 3.30.0
+            if version is not None and V(version) >= V("3.30.0"):
+                logger.warning("No version number found in file %s", xml_path)
 
         self.set_backend_properties(
             root.find("./*[@name='{name}']".format(name=self._name))
@@ -100,16 +104,6 @@ class IDSToplevel(IDSStructure):
 
     def set_backend_properties(self, structure_xml):
         """Set backend properties for this IDSToplevel and provide some logging"""
-        if (
-            self._version
-            and self._backend_version
-            and V(self._version) == V(self._backend_version)
-        ):
-            logger.warning(
-                "Setting backend properties for %s even though versions same...",
-                self._name,
-            )
-
         # TODO: better naming (structure_xml -> backend etc)
         # TODO: warn if backend xmls are not found in memory, so that you know
         # what you are missing?
