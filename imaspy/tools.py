@@ -42,32 +42,35 @@ def convert():
     raise NotImplementedError()
 
 
+def tree_print(a):
+    """Pretty-print an IDS tree"""
+    if isinstance(a, imaspy.ids_primitive.IDSPrimitive):
+        if not np.array_equal(a.value, a._default):
+            print(
+                "%s- %- 24s%s = %s"
+                % ((a.depth - 1) * "  ", a._name, (6 - a.depth) * "  ", a.value)
+            )
+    else:
+        print("%s- %s" % ((a.depth - 1) * "  ", a._name))
+
+
 def tree():
     """Pretty-print a tree of non-default variables."""
     args = _default_parser().parse_args()
 
-    for file in args.file:
-        if not os.path.isfile(file):
-            logger.error("File %s not found", file)
-        else:
-            ids = open_from_file(file)
+    try:
+        for file in args.file:
+            if not os.path.isfile(file):
+                logger.error("File %s not found", file)
+            else:
+                ids = open_from_file(file)
 
-            if args.name and ids._name != args.name:
-                ids = ids[args.name]
+                if args.name and ids._name != args.name:
+                    ids = ids[args.name]
 
-            print("% 22s = %s" % ("name", ids._name))
-
-            def pr(a):
-                print("% 22s = %s" % (a._name, a.value))
-
-    def pr(a):
-        if isinstance(a, imaspy.ids_primitive.IDSPrimitive):
-            if not np.array_equal(a.value, a._default):
-                print("%s% 22s = %s" % (a.depth * " ", a._name, a.value))
-        else:
-            print("%s% 22s" % (a.depth * " ", a._name))
-
-    ids.visit_children(pr)
+            ids.visit_children(tree_print)
+    except BrokenPipeError:
+        pass
 
 
 ENDINGS = {
