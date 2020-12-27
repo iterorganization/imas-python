@@ -47,3 +47,16 @@ def test_load_minimal_types_legacy(ids_minimal_types):
     assert ids.minimal.int_type.data_type == "INT_0D"
     assert ids.minimal.str_type.data_type == "STR_0D"
     assert ids.minimal.str_1d_type.data_type == "STR_1D"
+
+
+def test_numeric_array_value(ids_minimal_types):
+    ids = imaspy.ids_root.IDSRoot(0, 0, xml_path=ids_minimal_types)
+
+    assert not ids.minimal.flt_0d.has_value
+    assert not ids.minimal.flt_1d.has_value
+
+    ids.minimal.flt_0d.value = 7.4
+    assert ids.minimal.flt_0d.has_value
+
+    ids.minimal.flt_1d.value = [1.3, 3.4]
+    assert ids.minimal.flt_1d.has_value

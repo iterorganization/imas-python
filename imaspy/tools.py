@@ -6,6 +6,7 @@ import os.path
 import pathlib
 
 import numpy as np
+from tree_format import format_tree
 
 import imaspy
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MDSPLUS_BACKEND
@@ -54,23 +55,68 @@ def tree_print(a):
         print("%s- %s" % ((a.depth - 1) * "  ", a._name))
 
 
+def format_node(el):
+    return el._name
+
+
+def format_node_value(el):
+    if isinstance(el, imaspy.ids_primitive.IDSPrimitive):
+        return "%- 22s%s = %s" % (el._name, "    " * (6 - el.depth), el.value)
+    return el._name
+
+
+def has_value(el):
+    return el.has_value
+
+
+def all_children(el):
+    return el.__iter__()
+
+
+def nonempty_children(el):
+    return filter(has_value, el)
+
+
 def tree():
     """Pretty-print a tree of non-default variables."""
-    args = _default_parser().parse_args()
+    parser = _default_parser()
+    parser.add_argument(
+        "-s",
+        "--structure",
+        action="store_true",
+        help="show structure only, don't print values",
+    )
+    parser.add_argument(
+        "-a",
+        "--all",
+        action="store_true",
+        help="show all values (including empty/default)",
+    )
+    args = parser.parse_args()
 
-    try:
-        for file in args.file:
-            if not os.path.isfile(file):
-                logger.error("File %s not found", file)
-            else:
-                ids = open_from_file(file)
+    print_f = format_node_value
+    if args.all:
+        children_f = all_children
+    else:
+        children_f = nonempty_children
 
-                if args.name and ids._name != args.name:
-                    ids = ids[args.name]
+    if args.structure:
+        print_f = format_node
+        children_f = all_children
 
-            ids.visit_children(tree_print)
-    except BrokenPipeError:
-        pass
+    for file in args.file:
+        if not os.path.isfile(file):
+            logger.error("File %s not found", file)
+        else:
+            ids = open_from_file(file)
+
+            if args.name and ids._name != args.name:
+                ids = ids[args.name]
+
+            try:
+                print(format_tree(ids, format_node=print_f, get_children=children_f))
+            except BrokenPipeError:
+                pass
 
 
 ENDINGS = {

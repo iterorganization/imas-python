@@ -109,6 +109,11 @@ class IDSStructure(IDSMixin):
         # After initialization, always try to convert setting attributes on this structure
         self._convert_ids_types = True
 
+    @property
+    def has_value(self):
+        """True if any of the children has a non-default value"""
+        return any(map(lambda el: el.has_value, self))
+
     def keys(self):
         """Behave like a dictionary by defining a keys() method"""
         return self._children
