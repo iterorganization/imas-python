@@ -9,6 +9,7 @@ import numpy as np
 from tree_format import format_tree
 
 import imaspy
+from imaspy.dd_zip import latest_dd_version
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MDSPLUS_BACKEND
 from imaspy.logger import logger
 
@@ -43,19 +44,53 @@ def convert():
     """Convert an IMAS data structure (all idses or specific ones) to
     a specific or the latest version. Can also provide info about
     which version was used to create a specific IDS"""
-    raise NotImplementedError()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "file",
+        help="file to open",
+        type=pathlib.Path,
+    )
+    parser.add_argument(
+        "version",
+        default=latest_dd_version(),
+        help="version to convert to (default {!s})".format(latest_dd_version()),
+        nargs="?",
+    )
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="count",
+        default=0,
+        help="verbosity (repeat for more output)",
+    )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        help="print only errors",
+    )
+    args = parser.parse_args()
 
-
-def tree_print(a):
-    """Pretty-print an IDS tree"""
-    if isinstance(a, imaspy.ids_primitive.IDSPrimitive):
-        if not np.array_equal(a.value, a._default):
-            print(
-                "%s- %- 24s%s = %s"
-                % ((a.depth - 1) * "  ", a._name, (6 - a.depth) * "  ", a.value)
-            )
+    if args.quiet:
+        logger.setLevel(logging.ERROR)
     else:
-        print("%s- %s" % ((a.depth - 1) * "  ", a._name))
+        if args.verbose == 0:
+            logger.setLevel(logging.WARNING)
+        elif args.verbose == 1:
+            logger.setLevel(logging.INFO)
+        elif args.verbose == 2:
+            logger.setLevel(logging.DEBUG)
+
+    if not os.path.isfile(args.file):
+        logger.error("File %s not found", args.file)
+    else:
+        ids = open_from_file(args.file, args.version)
+
+        # now switch the backend to the requested version
+        ids._read_backend_xml(version=args.version)
+
+        # and write the IDS
+        ids.put()
 
 
 def format_node(el):
@@ -130,7 +165,7 @@ ENDINGS = {
 }
 
 
-def open_from_file(file):
+def open_from_file(file, version=None):
     """Given a filename as an argument, try to open that with the latest version."""
 
     backend = ENDINGS[file.suffix]
@@ -145,7 +180,7 @@ def open_from_file(file):
         raise ValueError("Could not identify backend from filename %s" % file)
 
     ids = imaspy.ids_root.IDSRoot(
-        int(shot), int(run)
+        int(shot), int(run), version=version
     )  # use the latest version by default
     ids.open_ual_store(file.parent, tree_name, "3", backend, mode="r")
 
