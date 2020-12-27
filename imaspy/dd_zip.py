@@ -15,11 +15,16 @@ the data-dictionary/ folder within the IMASPy package.
 
 1. `$$IMASPY_DDZIP`
 2. `./IDSDef.zip`
-3. `.config/imaspy/IDSDef.zip`
+3. `~/.config/imaspy/IDSDef.zip`
 4. `__file__/../../data-dictionary/IDSDef.zip`
 
 All files are checked, i.e. if your .config/imaspy/IDSDef.zip is outdated
 the IMASPy-packaged version will be used.
+
+The `data-dictionary/IDSDef.zip` provided with the package can be updated
+with the `python setup.py build_DD` command, which is also performed on install
+if you have access to the ITER data-dictionary git repo.
+Reinstalling imaspy thus also will give you access to the latest DD versions.
 """
 import logging
 import os
