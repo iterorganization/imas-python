@@ -26,6 +26,7 @@ from imaspy.logger import logger
 try:
     from imaspy.ids_defs import (
         CHAR_DATA,
+        CLOSEST_INTERP,
         EMPTY_INT,
         IDS_TIME_MODE_HETEROGENEOUS,
         IDS_TIME_MODE_HOMOGENEOUS,
@@ -33,7 +34,11 @@ try:
         IDS_TIME_MODE_UNKNOWN,
         IDS_TIME_MODES,
         INTEGER_DATA,
+        LINEAR_INTERP,
+        PREVIOUS_INTERP,
         READ_OP,
+        UNDEFINED_INTERP,
+        UNDEFINED_TIME,
         WRITE_OP,
     )
 except:
@@ -265,8 +270,54 @@ class IDSToplevel(IDSStructure):
                 "Error calling ual_end_action() for {!s}".format(self._name), status
             )
 
+    def getSlice(
+        self, time_requested, interpolation_method=CLOSEST_INTERP, occurrence=0
+    ):
+        """Get a slice from the backend.
+
+        @param[in] time_requested time of the slice
+        - UNDEFINED_TIME if not relevant (e.g to append a slice or replace the last slice)
+        @param[in] interpolation_method mode for interpolation:
+        - CLOSEST_INTERP take the slice at the closest time
+        - PREVIOUS_INTERP take the slice at the previous time
+        - LINEAR_INTERP interpolate the slice between the values of the previous and next slice
+        - UNDEFINED_INTERP if not relevant (for write operations)
+        """
+        # TODO: is this one allowed to use on non-toplevels?
+        # TODO: there is a mismatch between get() and toplevel get() which
+        # proves problematic here.
+        # TODO: this is something that only StructArrays should support, right?
+        if occurrence == 0:
+            path = self.path
+        else:
+            path = self.path + "/" + str(occurrence)
+
+        if interpolation_method not in [
+            CLOSEST_INTERP,
+            LINEAR_INTERP,
+            PREVIOUS_INTERP,
+            UNDEFINED_INTERP,
+        ]:
+            logger.error(
+                "getSlice called with unexpected interpolation method %s",
+                interpolation_method,
+            )
+
+        self._is_slice = True
+        status, ctx = self._ull.ual_begin_slice_action(
+            self._idx, path, READ_OP, time_requested, interpolation_method
+        )
+        if status != 0:
+            raise ALException(
+                "Error calling ual_begin_slice_action() for {!s}".format(path),
+                status,
+            )
+        context_store[ctx] = context_store[self._idx].rstrip("/") + path
+
+        self.get(ctx=ctx)
+
     def putSlice(self, occurrence=0, ctx=None):
-        """Put a single slice into the backend"""
+        """Put a single slice into the backend. only append is supported"""
         homogeneousTime = self.readHomogeneous(occurrence=occurrence)
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
             logger.error("%s has unknown homogeneous_time, putSlice aborts", self.path)
@@ -287,8 +338,34 @@ class IDSToplevel(IDSStructure):
                 "ERROR: homogeneous_time=independent is invalid for putSlice."
             )
 
+        path = "/" + self._name
+
         # TODO: check if stored time mode is same (or empty)
-        # TODO: write all dynamic values (recurse putSlice)
+
+        self._is_slice = True
+
+        status, ctx = self._ull.ual_begin_slice_action(
+            self._idx, path, WRITE_OP, UNDEFINED_TIME, UNDEFINED_INTERP
+        )
+        if status != 0:
+            raise ALException(
+                "Error calling ual_begin_slice_action() for {!s}".format(path),
+                status,
+            )
+        context_store[ctx] = context_store[self._idx].rstrip("/") + path
+
+        # write only values where type == dynamic
+        # time is dynamic, so that gets updated
+        # nota bene that this does not call IDSToplevel's put, but IDSStructure's
+        super().put(ctx, homogeneousTime, types=["dynamic"])
+
+        status = self._ull.ual_end_action(ctx)
+        if status != 0:
+            raise ALException(
+                "Error calling ual_end_action() for {!s}".format(path),
+                status,
+            )
+        context_store.pop(ctx)
 
     def deleteData(self, occurrence=0):
         """Delete UAL backend storage data
@@ -410,12 +487,12 @@ class IDSToplevel(IDSStructure):
     def put(self, occurrence=0, data_store=None):
         if data_store is None:
             data_store = self._data_store
-            if hasattr(self.ids_properties, "version_put"):
-                self.ids_properties.version_put.data_dictionary = (
-                    self._backend_version or self._version
-                )
-                # TODO: self.ids_properties.version_put.access_layer =  # get the access layer version number here
-                self.ids_properties.version_put.access_layer_language = "Python"
+        if hasattr(self.ids_properties, "version_put"):
+            self.ids_properties.version_put.data_dictionary = (
+                self._backend_version or self._version
+            )
+            # TODO: self.ids_properties.version_put.access_layer =  # get the access layer version number here
+            self.ids_properties.version_put.access_layer_language = "Python"
         self.to_ualstore(data_store, path=None, occurrence=occurrence)
 
     @property

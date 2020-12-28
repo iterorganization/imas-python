@@ -147,6 +147,9 @@ class IDSRoot:
         except AttributeError:
             pass
 
+        if key == "_children":
+            return []
+
         if key in self._children:
             ids = self._tree.getroot().find("./*[@name='{name}']".format(name=key))
             if ids:
@@ -576,3 +579,15 @@ class IDSRoot:
         ual_file = self._data_store._manager.acquire()
         ull = importlib.import_module(ual_file.ual_module_name)
         return ull
+
+    # copied since IDSMixin is not used by IDSRoot
+    def __getstate__(self):
+        """Override getstate so _ull is not passed along. Otherwise we have
+        problems deepcopying elements"""
+
+        state = self.__dict__.copy()
+        try:
+            del state["_ull"]
+        except KeyError:
+            pass
+        return state

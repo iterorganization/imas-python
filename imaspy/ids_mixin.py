@@ -140,6 +140,17 @@ class IDSMixin:
         except AttributeError as ee:
             raise Exception("ULL directly connected to %s", self) from ee
 
+    def __getstate__(self):
+        """Override getstate so _ull is not passed along. Otherwise we have
+        problems deepcopying elements"""
+
+        state = self.__dict__.copy()
+        try:
+            del state["_ull"]
+        except KeyError:
+            pass
+        return state
+
     def visit_children(self, fun, leaf_only=False):
         """walk all children of this structure in order and execute fun on them"""
         # you will have fun

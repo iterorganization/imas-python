@@ -20,10 +20,6 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_HOMOGENEOUS,
     IDS_TIME_MODE_INDEPENDENT,
     IDS_TIME_MODE_UNKNOWN,
-    IDS_TIME_MODES,
-    LINEAR_INTERP,
-    PREVIOUS_INTERP,
-    UNDEFINED_INTERP,
 )
 from imaspy.ids_mixin import IDSMixin, get_coordinates
 from imaspy.ids_primitive import DD_TYPES, IDSPrimitive, create_leaf_container
@@ -117,7 +113,11 @@ class IDSStructure(IDSMixin):
                     self,
                     my_name,
                     create_leaf_container(
-                        my_name, my_data_type, parent=self, coordinates=coordinates
+                        my_name,
+                        my_data_type,
+                        parent=self,
+                        coordinates=coordinates,
+                        var_type=child.get("type"),
                     ),
                 )
         # After initialization, always try to convert setting attributes on this structure
@@ -350,67 +350,13 @@ class IDSStructure(IDSMixin):
             else:
                 logger.debug("Unable to get simple field %s, seems empty", child_name)
 
-    def getSlice(
-        self, time_requested, interpolation_method=CLOSEST_INTERP, occurrence=0
-    ):
-        """Get a slice from the backend.
-
-        @param[in] time_requested time of the slice
-        - UNDEFINED_TIME if not relevant (e.g to append a slice or replace the last slice)
-        @param[in] interpolation_method mode for interpolation:
-        - CLOSEST_INTERP take the slice at the closest time
-        - PREVIOUS_INTERP take the slice at the previous time
-        - LINEAR_INTERP interpolate the slice between the values of the previous and next slice
-        - UNDEFINED_INTERP if not relevant (for write operations)
-        """
-        # TODO: is this one allowed to use on non-toplevels?
-        # TODO: there is a mismatch between get() and toplevel get() which
-        # proves problematic here.
-        # TODO: this is something that only StructArrays should support, right?
-        if occurrence == 0:
-            path = self.path
-        else:
-            path = self.path + "/" + str(occurrence)
-
-        if interpolation_method not in [
-            CLOSEST_INTERP,
-            LINEAR_INTERP,
-            PREVIOUS_INTERP,
-            UNDEFINED_INTERP,
-        ]:
-            logger.error(
-                "getSlice called with unexpected interpolation method %s",
-                interpolation_method,
-            )
-
-        self._is_slice = True
-        status, ctx = self._ull.ual_begin_slice_action(
-            self._idx, path, READ_OP, time_requested, interpolation_method
-        )
-        if status != 0:
-            raise ALException(
-                "Error calling ual_begin_slice_action() for {!s}".format(path),
-                status,
-            )
-        context_store[ctx] = context_store[self._idx].rstrip("/") + path
-
-        # TODO: fix this, the method call is different between the two
-        from imaspy.ids_toplevel import IDSToplevel
-
-        if isinstance(self, IDSToplevel):
-            self.get(ctx=ctx)
-        else:
-            self.get(ctx, self.readHomogeneous(occurrence))
-            context_store.pop(ctx)
-            status = self._ull.ual_end_action(ctx)
-
     def _getData(self, ctx, homogeneousTime, nodePath, analyzeTime):
         """ A deeped way of getting data?? using 'traverser' whatever that is """
         raise NotImplementedError(
             "{!s}._getData(ctx, homogeneousTime, nodePath, analyzeTime)".format(self)
         )
 
-    def put(self, ctx, homogeneousTime):
+    def put(self, ctx, homogeneousTime, **kwargs):
         """Put data into UAL backend storage format
 
         As all children _should_ support being put, just call `put` blindly.
@@ -429,7 +375,7 @@ class IDSStructure(IDSMixin):
                 if not isinstance(child, IDSPrimitive):
                     if logger.level <= logging.DEBUG:
                         logger.debug(log_string, child_name)
-                child.put(ctx, homogeneousTime)
+                child.put(ctx, homogeneousTime, **kwargs)
 
     def setPulseCtx(self, ctx):
         raise DeprecationWarning(

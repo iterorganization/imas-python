@@ -38,7 +38,14 @@ class IDSPrimitive(IDSMixin):
     """
 
     def __init__(
-        self, name, ids_type, ndims, parent=None, value=None, coordinates=None
+        self,
+        name,
+        ids_type,
+        ndims,
+        parent=None,
+        value=None,
+        coordinates=None,
+        var_type="dynamic",
     ):
         """Initialize IDSPrimitive
 
@@ -56,6 +63,7 @@ class IDSPrimitive(IDSMixin):
                    IDSPrimitive.cast_value. If not given, will be filled by
                    default data matching given ids_type and ndims
           - coordinates: Data coordinates of the node
+          - var_type: 'static', 'dynamic', or 'const'
         """
         super().__init__(parent, name, coordinates=coordinates)
 
@@ -72,6 +80,7 @@ class IDSPrimitive(IDSMixin):
         else:
             self.__value = None
         self._ids_type = ids_type
+        self._var_type = var_type
         self._ndims = ndims
         self._backend_type = None
         self._backend_ndims = None
@@ -96,7 +105,6 @@ class IDSPrimitive(IDSMixin):
         otherwise return the default"""
         if self.__value is None:
             return self._default
-        return self.__value
 
     @value.setter
     def value(self, setter_value):
@@ -114,13 +122,15 @@ class IDSPrimitive(IDSMixin):
             self.__value = self.cast_value(setter_value)
 
     def __eq__(self, other):
-        if self._ndims >= 1:
-            return np.array_equal(self.value, other.value)
+        if isinstance(other, IDSPrimitive):
+            ref = other.value
         else:
-            if hasattr(other, "value"):
-                return self.value == other.value
-            else:
-                return self.value == other
+            ref = other
+
+        if self._ndims >= 1:
+            return np.array_equal(self.value, ref)
+        else:
+            return self.value == ref
 
     def cast_value(self, value):
         # Cast list-likes to arrays
@@ -167,7 +177,7 @@ class IDSPrimitive(IDSMixin):
             raise Exception
         return value
 
-    def put(self, ctx, homogeneousTime):
+    def put(self, ctx, homogeneousTime, **kwargs):
         """Put data into UAL backend storage format
 
         Does minor sanity checking before calling the cython backend.
@@ -175,13 +185,17 @@ class IDSPrimitive(IDSMixin):
         """
         if self._name is None:
             raise Exception("Location in tree undefined, cannot put in database")
+        if "types" in kwargs:
+            if self._var_type not in kwargs["types"]:
+                logger.debug(
+                    "Skipping write of %s because var_type %s not in %s",
+                    self._name,
+                    self._var_type,
+                    kwargs["types"],
+                )
+                return
         write_type = self._backend_type or self._ids_type
         ndims = self._backend_ndims or self._ndims
-
-        # Do not write if data is the same as the default of the leaf node
-        # TODO: set default of backend xml instead
-        if np.array_equal(self.value, self._default) or self.value is None:
-            return
 
         # Convert imaspy ids_type to ual scalar_type
         if write_type == "INT":
@@ -213,6 +227,11 @@ class IDSPrimitive(IDSMixin):
                 data = float(self.value)
             else:
                 data = self.value
+
+        # Do not write if data is the same as the default of the leaf node
+        # TODO: set default of backend xml instead
+        if np.array_equal(data, self._default):
+            return
 
         # Call signature
         # ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))

@@ -223,7 +223,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             raise Exception("Could not strip context from absolute path")
         return rel_path
 
-    def put(self, parentCtx, homogeneousTime):
+    def put(self, parentCtx, homogeneousTime, **kwargs):
         """Put data into UAL backend storage format
 
         As all children _should_ support being put, just call `put` blindly.
@@ -250,7 +250,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             # This loops over the whole array
             dbg_str = " " * self.depth + "- [" + str(i + 1) + "]"
             logger.debug("{:53.53s} put".format(dbg_str))
-            self.value[i].put(aosCtx, homogeneousTime)
+            self.value[i].put(aosCtx, homogeneousTime, **kwargs)
             status = self._ull.ual_iterate_over_arraystruct(aosCtx, 1)
             if status != 0:
                 raise ALException(

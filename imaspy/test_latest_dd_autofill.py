@@ -2,6 +2,7 @@
 data dictionary version.
 """
 
+import copy
 import logging
 import os
 from pathlib import Path
@@ -31,8 +32,7 @@ def has_parent(child):
     assert child._parent is not None
 
 
-# TODO: use a separate folder for the MDSPLUS DB and clear it after the testcase
-def test_latest_dd_autofill(ids_name, backend, worker_id, tmp_path):
+def test_latest_dd_autofill_separate(ids_name, backend, worker_id, tmp_path):
     """Write and then read again a full IDSRoot and all IDSToplevels."""
     ids = open_ids(backend, "w", worker_id, tmp_path)
     fill_with_random_data(ids[ids_name])
@@ -53,3 +53,32 @@ def test_latest_dd_autofill(ids_name, backend, worker_id, tmp_path):
             )
         else:
             compare_children(ids[ids_name], ids2[ids_name])
+
+
+def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
+    """Write and then read again a full IDSRoot and all IDSToplevels."""
+    ids = open_ids(backend, "w", worker_id, tmp_path)
+    fill_with_random_data(ids[ids_name])
+
+    ids[ids_name].put()
+    ids_ref = copy.deepcopy(ids)
+    # the deepcopy comes after the put() since that updates dd version and AL lang
+
+    # test also that deepcopy parents are properly set:
+    assert id(ids_ref) == id(ids_ref[ids_name]._parent)
+
+    ids[ids_name].get()
+
+    if backend == MEMORY_BACKEND:
+        pytest.skip("memory backend does not support get() properly.")
+
+    # basic comparison first
+    assert (
+        ids[ids_name].ids_properties.comment == ids_ref[ids_name].ids_properties.comment
+    )
+
+    if backend == ASCII_BACKEND:
+        logger.warning("Skipping ASCII backend tests for empty arrays")
+        compare_children(ids[ids_name], ids_ref[ids_name], _ascii_empty_array_skip=True)
+    else:
+        compare_children(ids[ids_name], ids_ref[ids_name])
