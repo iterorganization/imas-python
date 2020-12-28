@@ -15,6 +15,7 @@ try:
         ASCII_BACKEND,
         CHAR_DATA,
         CLOSE_PULSE,
+        CLOSEST_INTERP,
         DOUBLE_DATA,
         EMPTY_FLOAT,
         EMPTY_INT,
@@ -26,12 +27,15 @@ try:
         IDS_TIME_MODE_UNKNOWN,
         IDS_TIME_MODES,
         INTEGER_DATA,
+        LINEAR_INTERP,
         MDSPLUS_BACKEND,
         MEMORY_BACKEND,
         NODE_TYPE_STRUCTURE,
         OPEN_PULSE,
+        PREVIOUS_INTERP,
         READ_OP,
         UDA_BACKEND,
+        UNDEFINED_INTERP,
         WRITE_OP,
     )
 except ImportError as ee:

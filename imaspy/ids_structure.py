@@ -14,8 +14,15 @@ import logging
 from distutils.version import StrictVersion as V
 
 from imaspy.al_exception import ALException
+from imaspy.context_store import context_store
+from imaspy.ids_defs import (
+    CLOSEST_INTERP,
+    LINEAR_INTERP,
+    PREVIOUS_INTERP,
+    UNDEFINED_INTERP,
+)
 from imaspy.ids_mixin import IDSMixin, get_coordinates
-from imaspy.ids_primitive import IDSPrimitive, create_leaf_container
+from imaspy.ids_primitive import DD_TYPES, IDSPrimitive, create_leaf_container
 from imaspy.logger import logger
 
 try:
@@ -34,6 +41,7 @@ class IDSStructure(IDSMixin):
     """
 
     _MAX_OCCURRENCES = None
+    _convert_ids_types = False
 
     def getNodeType(self):
         raise NotImplementedError("{!s}.getNodeType()".format(self))
@@ -70,6 +78,8 @@ class IDSStructure(IDSMixin):
         self._children = []  # Store the children as a list of strings.
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
+
+        self._is_slice = False
 
         if logger.level <= logging.DEBUG:
             log_string = " " * self.depth + " - % -38s initialization"
@@ -337,13 +347,58 @@ class IDSStructure(IDSMixin):
                 logger.debug("Unable to get simple field %s, seems empty", child_name)
 
     def getSlice(
-        self, time_requested, interpolation_method, occurrence=0, data_store=None
+        self, time_requested, interpolation_method=CLOSEST_INTERP, occurrence=0
     ):
-        # Retrieve full IDS data from the open database.
-        raise NotImplementedError(
-            "{!s}.getSlice(time_requested, interpolation_method"
-            ", occurrence=0, data_store=None)".format(self)
+        """Get a slice from the backend.
+
+        @param[in] time_requested time of the slice
+        - UNDEFINED_TIME if not relevant (e.g to append a slice or replace the last slice)
+        @param[in] interpolation_method mode for interpolation:
+        - CLOSEST_INTERP take the slice at the closest time
+        - PREVIOUS_INTERP take the slice at the previous time
+        - LINEAR_INTERP interpolate the slice between the values of the previous and next slice
+        - UNDEFINED_INTERP if not relevant (for write operations)
+        """
+        # TODO: is this one allowed to use on non-toplevels?
+        # TODO: there is a mismatch between get() and toplevel get() which
+        # proves problematic here.
+        # TODO: this is something that only StructArrays should support, right?
+        if occurrence == 0:
+            path = self.path
+        else:
+            path = self.path + "/" + str(occurrence)
+
+        if interpolation_method not in [
+            CLOSEST_INTERP,
+            LINEAR_INTERP,
+            PREVIOUS_INTERP,
+            UNDEFINED_INTERP,
+        ]:
+            logger.error(
+                "getSlice called with unexpected interpolation method %s",
+                interpolation_method,
+            )
+
+        self._is_slice = True
+        status, ctx = self._ull.ual_begin_slice_action(
+            self._idx, path, READ_OP, time_requested, interpolation_method
         )
+        if status != 0:
+            raise ALException(
+                "Error calling ual_begin_slice_action() for {!s}".format(path),
+                status,
+            )
+        context_store[ctx] = context_store[self._idx].rstrip("/") + path
+
+        # TODO: fix this, the method call is different between the two
+        from imaspy.ids_toplevel import IDSToplevel
+
+        if isinstance(self, IDSToplevel):
+            self.get(ctx=ctx)
+        else:
+            self.get(ctx, self.readHomogeneous(occurrence))
+            context_store.pop(ctx)
+            status = self._ull.ual_end_action(ctx)
 
     def _getData(self, ctx, homogeneousTime, nodePath, analyzeTime):
         """ A deeped way of getting data?? using 'traverser' whatever that is """

@@ -53,13 +53,9 @@ class IDSMixin:
             # (those are handled by the context store)
             return self.path[len(context_store[ctx]) :].lstrip("/0123456789")
         else:
-            from IPython import embed
-
-            embed()
             raise Exception(
-                "Could not strip context from absolute path {!s}, store: {!s}".format(
-                    self.path, context_store
-                )
+                "Could not strip context from absolute path {!s}, "
+                "ctx: {!s}, store: {!s}".format(self.path, ctx, context_store)
             )
 
     def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):

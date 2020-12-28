@@ -127,9 +127,14 @@ class IDSToplevel(IDSStructure):
         """Read the value of homogeneousTime
 
         Returns:
-            0: IDS_TIME_MODE_HETEROGENEOUS; Dynamic nodes may be asynchronous, their timebase is located as indicted in the "Coordinates" column of the documentation
-            1: IDS_TIME_MODE_HOMOGENEOUS; All dynamic nodes are synchronous, their common timebase is the "time" node that is the child of the nearest parent IDS
-            2: IDS_TIME_MODE_INDEPENDENT; No dynamic node is filled in the IDS (dynamic nodes _will_ be skipped by the Access Layer)
+            0: IDS_TIME_MODE_HETEROGENEOUS; Dynamic nodes may be asynchronous,
+               their timebase is located as indicated in the "Coordinates"
+               column of the documentation
+            1: IDS_TIME_MODE_HOMOGENEOUS; All dynamic nodes are synchronous,
+               their common timebase is the "time" node that is the child of
+               the nearest parent IDS
+            2: IDS_TIME_MODE_INDEPENDENT; No dynamic node is filled in the IDS
+               (dynamic nodes _will_ be skipped by the Access Layer)
         """
         homogeneousTime = IDS_TIME_MODE_UNKNOWN
         if occurrence == 0:
@@ -195,7 +200,7 @@ class IDSToplevel(IDSStructure):
             )
         return data_dictionary_version
 
-    def get(self, occurrence=0, **kwargs):
+    def get(self, occurrence=0, ctx=None, **kwargs):
         """Get data from UAL backend storage format and overwrite data in node
 
         Tries to dynamically build all needed information for the UAL. As this
@@ -209,7 +214,7 @@ class IDSToplevel(IDSStructure):
             path = self._name + "/" + str(occurrence)
 
         homogeneousTime = self.readHomogeneous(occurrence)
-        if homogeneousTime not in IDS_TIME_MODES:
+        if homogeneousTime.value not in IDS_TIME_MODES:
             logger.error(
                 "Unknown time mode %s, stop getting of %s", homogeneousTime, self._name
             )
@@ -239,14 +244,17 @@ class IDSToplevel(IDSStructure):
                 version=backend_version, xml_path=self._backend_xml_path
             )
 
-        # TODO: Do not use global context
-        status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
-        if status != 0:
-            raise ALException(
-                "Error calling ual_begin_global_action() for {!s}".format(self._name),
-                status,
-            )
-        context_store[ctx] = context_store[self._idx] + path
+        if ctx is None:
+            # TODO: Do not use global context
+            status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
+            if status != 0:
+                raise ALException(
+                    "Error calling ual_begin_global_action() for {!s}".format(
+                        self._name
+                    ),
+                    status,
+                )
+            context_store[ctx] = context_store[self._idx] + path
 
         logger.debug("{:53.53s} get".format(self._name))
         super().get(ctx, homogeneousTime, **kwargs)
