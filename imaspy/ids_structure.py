@@ -17,6 +17,10 @@ from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_defs import (
     CLOSEST_INTERP,
+    IDS_TIME_MODE_HOMOGENEOUS,
+    IDS_TIME_MODE_INDEPENDENT,
+    IDS_TIME_MODE_UNKNOWN,
+    IDS_TIME_MODES,
     LINEAR_INTERP,
     PREVIOUS_INTERP,
     UNDEFINED_INTERP,
@@ -426,10 +430,6 @@ class IDSStructure(IDSMixin):
                     if logger.level <= logging.DEBUG:
                         logger.debug(log_string, child_name)
                 child.put(ctx, homogeneousTime)
-
-    def putSlice(self, ctx, homogeneousTime):
-        # Store IDS data time slice to the open database.
-        raise NotImplementedError("{!s}.putSlice(ctx, homogeneousTime)".format(self))
 
     def setPulseCtx(self, ctx):
         raise DeprecationWarning(

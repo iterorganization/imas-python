@@ -143,9 +143,9 @@ class IDSToplevel(IDSStructure):
             path = self._name + "/" + str(occurrence)
 
         # only read from the backend if it is not defined locally.
-        homogeneousTime = self.ids_properties.homogeneous_time
+        homogeneousTime = self.ids_properties.homogeneous_time.value
 
-        if homogeneousTime.value == EMPTY_INT:
+        if homogeneousTime == EMPTY_INT:
             status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
             context_store[ctx] = context_store[self._idx] + "/" + path
             if status != 0:
@@ -214,7 +214,7 @@ class IDSToplevel(IDSStructure):
             path = self._name + "/" + str(occurrence)
 
         homogeneousTime = self.readHomogeneous(occurrence)
-        if homogeneousTime.value not in IDS_TIME_MODES:
+        if homogeneousTime not in IDS_TIME_MODES:
             logger.error(
                 "Unknown time mode %s, stop getting of %s", homogeneousTime, self._name
             )
@@ -245,7 +245,6 @@ class IDSToplevel(IDSStructure):
             )
 
         if ctx is None:
-            # TODO: Do not use global context
             status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
             if status != 0:
                 raise ALException(
@@ -265,6 +264,31 @@ class IDSToplevel(IDSStructure):
             raise ALException(
                 "Error calling ual_end_action() for {!s}".format(self._name), status
             )
+
+    def putSlice(self, occurrence=0, ctx=None):
+        """Put a single slice into the backend"""
+        homogeneousTime = self.readHomogeneous(occurrence=occurrence)
+        if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
+            logger.error("%s has unknown homogeneous_time, putSlice aborts", self.path)
+            return
+        if homogeneousTime not in IDS_TIME_MODES:
+            raise ALException(
+                "ERROR: ids_properties.homogeneous_time={!s} should be set to "
+                "IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_HOMOGENEOUS or "
+                "IDS_TIME_MODE_INDEPENDENT.".format(homogeneousTime)
+            )
+        if homogeneousTime == IDS_TIME_MODE_HOMOGENEOUS and len(self.time.value) == 0:
+            raise ALException(
+                "ERROR: the IDS%time vector of an homogeneous_time IDS must have a non-zero length."
+            )
+            return
+        if homogeneousTime == IDS_TIME_MODE_INDEPENDENT:
+            raise ALException(
+                "ERROR: homogeneous_time=independent is invalid for putSlice."
+            )
+
+        # TODO: check if stored time mode is same (or empty)
+        # TODO: write all dynamic values (recurse putSlice)
 
     def deleteData(self, occurrence=0):
         """Delete UAL backend storage data
@@ -336,8 +360,8 @@ class IDSToplevel(IDSStructure):
         homogeneousTime = self.ids_properties.homogeneous_time.value
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
             logger.error(
-                "IDS %s is found to be EMPTY (homogeneous_time undefined). PUT quits with no action.",
-                self,
+                "IDS {!s} is found to be empty (homogeneous_time undefined). "
+                "PUT quits with no action.".format(self.path)
             )
             return
         if homogeneousTime not in IDS_TIME_MODES:
