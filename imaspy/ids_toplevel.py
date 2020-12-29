@@ -128,7 +128,7 @@ class IDSToplevel(IDSStructure):
 
         super().set_backend_properties(structure_xml)
 
-    def readHomogeneous(self, occurrence):
+    def readHomogeneous(self, occurrence, always_read=False):
         """Read the value of homogeneousTime
 
         Returns:
@@ -150,7 +150,7 @@ class IDSToplevel(IDSStructure):
         # only read from the backend if it is not defined locally.
         homogeneousTime = self.ids_properties.homogeneous_time.value
 
-        if homogeneousTime == EMPTY_INT:
+        if homogeneousTime in [EMPTY_INT, IDS_TIME_MODE_UNKNOWN] or always_read:
             status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
             context_store[ctx] = context_store[self._idx] + "/" + path
             if status != 0:
@@ -283,10 +283,6 @@ class IDSToplevel(IDSStructure):
         - LINEAR_INTERP interpolate the slice between the values of the previous and next slice
         - UNDEFINED_INTERP if not relevant (for write operations)
         """
-        # TODO: is this one allowed to use on non-toplevels?
-        # TODO: there is a mismatch between get() and toplevel get() which
-        # proves problematic here.
-        # TODO: this is something that only StructArrays should support, right?
         if occurrence == 0:
             path = self.path
         else:
@@ -334,13 +330,25 @@ class IDSToplevel(IDSStructure):
             )
             return
         if homogeneousTime == IDS_TIME_MODE_INDEPENDENT:
-            raise ALException(
-                "ERROR: homogeneous_time=independent is invalid for putSlice."
+            raise NotImplementedError(
+                "homogeneous_time=independent not implemented for putSlice."
             )
 
-        path = "/" + self._name
+        stored_time_mode = self.readHomogeneous(occurrence=occurrence, always_read=True)
+        if stored_time_mode == IDS_TIME_MODE_UNKNOWN:
+            logger.info(
+                "Slice is added to an empty IDS %s, calling PUT instead",
+                self._name,
+            )
+            logger.warning(
+                "This has been known to eat some of the time values. "
+                "You might want to manually call put first."
+            )
+            # The first put() will also put dynamic quantities.
+            # start the slicing later
+            self.put(occurrence=occurrence, types=["static", "constant"])
 
-        # TODO: check if stored time mode is same (or empty)
+        path = "/" + self._name
 
         self._is_slice = True
 
@@ -389,26 +397,8 @@ class IDSToplevel(IDSStructure):
                 status,
             )
 
-        for child_name in self._children:
-            child = getattr(self, child_name)
-            if isinstance(child, (IDSStructArray, IDSPrimitive)):
-                status = self._ull.ual_delete_data(ctx, child_name)
-                if status != 0:
-                    raise ALException(
-                        'ERROR: ual_delete_data failed for "{!s}". Status code {!s}'.format(
-                            rel_path + "/" + child_name
-                        ),
-                        status,
-                    )
-            else:
-                status = child.delete(ctx)
-                if status != 0:
-                    raise ALException(
-                        'ERROR: delete failed for "{!s}". Status code {!s}'.format(
-                            rel_path + "/" + child_name
-                        ),
-                        status,
-                    )
+        super().delete(ctx)
+
         status = self._ull.ual_end_action(ctx)
         context_store.pop(ctx)
         if status < 0:
@@ -417,7 +407,7 @@ class IDSToplevel(IDSStructure):
             )
         return 0
 
-    def to_ualstore(self, ual_data_store, path=None, occurrence=0):
+    def to_ualstore(self, ual_data_store, path=None, occurrence=0, **kwargs):
         """Put data into UAL backend storage format
 
         As all children _should_ support being put, just call `put` blindly.
@@ -458,18 +448,14 @@ class IDSToplevel(IDSStructure):
         status, ctx = self._ull.ual_begin_global_action(self._idx, path, WRITE_OP)
         if status != 0:
             raise ALException(
-                "Error calling ual_begin_global_action() for {!s}".format(
-                    self._name, status
+                "Error {!s} calling ual_begin_global_action() for {!s}".format(
+                    status,
+                    self._name,
                 )
             )
-
         context_store[ctx] = path
-        for child_name in self._children:
-            child = getattr(self, child_name)
-            dbg_str = " " * self.depth + "- " + child_name
-            if not isinstance(child, IDSPrimitive):
-                logger.debug("{:53.53s} put".format(dbg_str))
-            child.put(ctx, homogeneousTime)
+
+        super().put(ctx, homogeneousTime, **kwargs)
 
         context_store.pop(ctx)
         status = self._ull.ual_end_action(ctx)
@@ -484,7 +470,7 @@ class IDSToplevel(IDSStructure):
         )
         self.setPulseCtx(idx)
 
-    def put(self, occurrence=0, data_store=None):
+    def put(self, occurrence=0, data_store=None, **kwargs):
         if data_store is None:
             data_store = self._data_store
         if hasattr(self.ids_properties, "version_put"):
@@ -493,7 +479,7 @@ class IDSToplevel(IDSStructure):
             )
             # TODO: self.ids_properties.version_put.access_layer =  # get the access layer version number here
             self.ids_properties.version_put.access_layer_language = "Python"
-        self.to_ualstore(data_store, path=None, occurrence=occurrence)
+        self.to_ualstore(data_store, path=None, occurrence=occurrence, **kwargs)
 
     @property
     def _data_store(self):

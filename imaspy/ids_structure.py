@@ -86,8 +86,8 @@ class IDSStructure(IDSMixin):
 
         for child in structure_xml:
             my_name = child.get("name")
-            if logger.level <= logging.DEBUG:
-                logger.debug(log_string, my_name)
+            if logger.level <= logging.TRACE:
+                logger.trace(log_string, my_name)
             self._children.append(my_name)
             # Decide what to do based on the data_type attribute
             my_data_type = child.get("data_type")

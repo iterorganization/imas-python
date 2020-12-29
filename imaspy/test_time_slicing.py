@@ -12,7 +12,24 @@ from imaspy.test_helpers import open_ids
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
+
+
+def test_write_read_time(backend, worker_id, tmp_path):
+    """Write some data to an IDS and then check that all slices match."""
+    if backend == MEMORY_BACKEND:
+        pytest.xfail("MEMORY backend has issues reading back values")
+    ids = open_ids(backend, "w", worker_id, tmp_path)
+    eq = ids["equilibrium"]
+    eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+
+    eq.time = np.array([0.0, 0.1, 0.2])
+    eq.put()
+
+    eq.time = None
+
+    eq.get()
+    assert eq.time == np.array([0.0, 0.1, 0.2])
 
 
 def test_time_slicing_get(backend, worker_id, tmp_path):
@@ -32,25 +49,53 @@ def test_time_slicing_get(backend, worker_id, tmp_path):
         assert eq.vacuum_toroidal_field.b0.value == time + 3.0
 
 
-def test_time_slicing_put(backend, worker_id, tmp_path):
+def test_time_slicing_put(backend, worker_id, tmp_path, pre_put_bool):
     """Write some slices to an IDS and then check that they are all there"""
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
+    if backend == MEMORY_BACKEND:
+        pytest.xfail("MEMORY backend has issues reading back values")
     ids = open_ids(backend, "w", worker_id, tmp_path)
     eq = ids["equilibrium"]
     eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    # make sure IDS_TIME_MODE_HOMOGENEOUS is also present in the file
-    eq.put()
+    if pre_put_bool:
+        eq.put()
 
     for time in range(3):
         eq.vacuum_toroidal_field.b0 = [time + 3.0]
         eq.time = [time * 0.1]
-        eq.putSlice(time * 0.1)
+        eq.putSlice()
 
     eq.get()
 
-    assert np.array_equal(eq.vacuum_toroidal_field.b0.value, [3.0, 4.0, 5.0])
-    assert np.array_equal(eq.time.value, [0.0, 0.1, 0.2])
+    assert np.allclose(eq.vacuum_toroidal_field.b0.value, [3.0, 4.0, 5.0])
+    assert np.allclose(eq.time.value, [0.0, 0.1, 0.2])
+
+
+def test_time_slicing_put_two(backend, worker_id, tmp_path, pre_put_bool):
+    """Write some slices to an IDS and then check that they are all there"""
+    if backend == ASCII_BACKEND:
+        pytest.skip("ASCII backend does not support slice mode")
+    if backend == MEMORY_BACKEND:
+        pytest.xfail("MEMORY backend has issues reading back values")
+    ids = open_ids(backend, "w", worker_id, tmp_path)
+    eq = ids["equilibrium"]
+    eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    if pre_put_bool:
+        eq.put()
+
+    for time in range(3):
+        eq.vacuum_toroidal_field.b0 = [time + 3.0, time + 3.5]
+        eq.time = [time * 0.1, (time + 0.5) * 0.1]
+        eq.putSlice()
+
+    eq.get()
+
+    assert np.array_equal(
+        eq.vacuum_toroidal_field.b0.value, [3.0, 3.5, 4.0, 4.5, 5.0, 5.5]
+    )
+    # Use allclose instead of array_equal since 0.15000000000000002 != 0.15
+    assert np.allclose(eq.time.value, [0.0, 0.05, 0.1, 0.15, 0.2, 0.25])
 
 
 def test_get_default(backend, worker_id, tmp_path):
@@ -61,8 +106,8 @@ def test_get_default(backend, worker_id, tmp_path):
     assert eq.ids_properties.homogeneous_time == IDS_TIME_MODE_HOMOGENEOUS
     eq.put()
 
-    # if backend == MEMORY_BACKEND:
-    # pytest.skip("homogeneous_time cannot be read back properly in memory backend")
+    if backend == MEMORY_BACKEND:
+        pytest.xfail("MEMORY backend has issues reading back values")
 
     eq.vacuum_toroidal_field.b0 = [1.0]
     eq.get()

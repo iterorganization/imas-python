@@ -51,3 +51,8 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize("ids_name", ["pulse_schedule"])
         else:
             metafunc.parametrize("ids_name", IDSRoot()._children)
+
+    # Any variables ending with _bool will be set to both true and false
+    for name in metafunc.fixturenames:
+        if name.endswith("_bool"):
+            metafunc.parametrize(name, [True, False])

@@ -27,6 +27,7 @@ from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 
 try:
     from imaspy.ids_defs import (
+        ASCII_BACKEND,
         CLOSE_PULSE,
         DOUBLE_DATA,
         IDS_TIME_MODE_HETEROGENEOUS,
@@ -34,6 +35,7 @@ try:
         IDS_TIME_MODE_UNKNOWN,
         INTEGER_DATA,
         MDSPLUS_BACKEND,
+        MEMORY_BACKEND,
         OPEN_PULSE,
         READ_OP,
         UDA_BACKEND,
@@ -298,6 +300,24 @@ class IDSRoot:
 
             # ensure presence of model dir
             ensure_data_dir(str(user), tokamak, version)
+
+        # TODO: add more
+        backend_names = {
+            MDSPLUS_BACKEND: "MDSPLUS",
+            ASCII_BACKEND: "ASCII",
+            MEMORY_BACKEND: "MEMORY",
+            UDA_BACKEND: "UDA",
+        }
+        logger.info(
+            "Opening AL backend %s for %s (shot %s, run %s, user %s, ver %s, mode %s)",
+            backend_names[backend_type],
+            tokamak,
+            self.shot,
+            self.run,
+            str(user),
+            version,
+            mode,
+        )
 
         store = UALDataStore.open(
             backend_type,
