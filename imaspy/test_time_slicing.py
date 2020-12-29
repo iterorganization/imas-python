@@ -3,11 +3,14 @@ data dictionary version.
 """
 
 import logging
+import os
 
+import imas  # import old HLI
 import numpy as np
 import pytest
 
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
+from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.test_helpers import open_ids
 
 root_logger = logging.getLogger("imaspy")
@@ -62,14 +65,55 @@ def test_time_slicing_put(backend, worker_id, tmp_path, pre_put_bool):
         eq.put()
 
     for time in range(3):
-        eq.vacuum_toroidal_field.b0 = [time + 3.0]
         eq.time = [time * 0.1]
+        eq.vacuum_toroidal_field.b0 = [time + 3.0]
         eq.putSlice()
 
     eq.get()
 
     assert np.allclose(eq.vacuum_toroidal_field.b0.value, [3.0, 4.0, 5.0])
     assert np.allclose(eq.time.value, [0.0, 0.1, 0.2])
+
+
+def test_hli_time_slicing_put(backend, worker_id, tmp_path):
+    """Write some slices to an IDS and then check that they are all there"""
+    if backend == ASCII_BACKEND:
+        pytest.skip("ASCII backend does not support slice mode")
+    # if backend == MEMORY_BACKEND:
+    # pytest.xfail("MEMORY backend has issues reading back values")
+
+    ids = imas.equilibrium()
+
+    if worker_id == "master":
+        shot = 1
+    else:
+        shot = int(worker_id[2:]) + 1
+
+    # ensure presence of mdsplus model dir
+    os.environ["ids_path"] = mdsplus_model_dir(version=os.environ["IMAS_VERSION"])
+    ensure_data_dir(str(tmp_path), "test", "3")
+    db_entry = imas.DBEntry(backend, "test", shot, 9999, user_name=str(tmp_path))
+    status, ctx = db_entry.create()
+    if status != 0:
+        logger.error("Error opening db entry %s", status)
+
+    ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    # it is mandatory to put() before, since otherwise homogeneous_time is not defined.
+    # additionally /time needs to have a value otherwise put fails
+    # ids.time = np.asarray([0.0])
+    # ids.put(0, db_entry)
+
+    for time in range(3):
+        ids.vacuum_toroidal_field.b0 = np.asarray([time + 3.0])
+        ids.time = np.asarray([time * 0.1])
+        ids.putSlice(0, db_entry)
+
+    ids.get(0, db_entry)
+
+    db_entry.close()
+
+    assert np.allclose(ids.vacuum_toroidal_field.b0, [3.0, 4.0, 5.0])
+    assert np.allclose(ids.time, [0.0, 0.1, 0.2])
 
 
 def test_time_slicing_put_two(backend, worker_id, tmp_path, pre_put_bool):

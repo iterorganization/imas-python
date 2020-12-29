@@ -14,20 +14,13 @@ import logging
 from distutils.version import StrictVersion as V
 
 from imaspy.al_exception import ALException
-from imaspy.context_store import context_store
-from imaspy.ids_defs import (
-    CLOSEST_INTERP,
-    IDS_TIME_MODE_HOMOGENEOUS,
-    IDS_TIME_MODE_INDEPENDENT,
-    IDS_TIME_MODE_UNKNOWN,
-)
 from imaspy.ids_mixin import IDSMixin, get_coordinates
-from imaspy.ids_primitive import DD_TYPES, IDSPrimitive, create_leaf_container
+from imaspy.ids_primitive import IDSPrimitive, create_leaf_container
 from imaspy.logger import logger
 
 try:
     from imaspy.ids_defs import DOUBLE_DATA, NODE_TYPE_STRUCTURE, READ_OP
-except:
+except ImportError:
     logger.critical("IMAS could not be imported. UAL not available!")
 
 
