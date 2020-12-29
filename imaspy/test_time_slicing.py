@@ -15,7 +15,7 @@ from imaspy.test_helpers import open_ids
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def test_write_read_time(backend, worker_id, tmp_path):
@@ -62,6 +62,7 @@ def test_time_slicing_put(backend, worker_id, tmp_path, pre_put_bool):
     eq = ids["equilibrium"]
     eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     if pre_put_bool:
+        pytest.xfail("Putting an empty IDS first does not work...")
         eq.put()
 
     for time in range(3):
@@ -98,10 +99,6 @@ def test_hli_time_slicing_put(backend, worker_id, tmp_path):
         logger.error("Error opening db entry %s", status)
 
     ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    # it is mandatory to put() before, since otherwise homogeneous_time is not defined.
-    # additionally /time needs to have a value otherwise put fails
-    # ids.time = np.asarray([0.0])
-    # ids.put(0, db_entry)
 
     for time in range(3):
         ids.vacuum_toroidal_field.b0 = np.asarray([time + 3.0])

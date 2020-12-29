@@ -340,13 +340,18 @@ class IDSToplevel(IDSStructure):
                 "Slice is added to an empty IDS %s, calling PUT instead",
                 self._name,
             )
-            logger.warning(
-                "This has been known to eat some of the time values. "
-                "You might want to manually call put first."
-            )
-            # The first put() will also put dynamic quantities.
-            # start the slicing later
-            self.put(occurrence=occurrence, types=["static", "constant"])
+
+            # put only static and constant quantities, and use putSlice below
+            # for the rest
+            # self.put(occurrence=occurrence, types=["static", "constant"])
+
+            # as a workaround, instead of the above, we do a 'full' put()
+            # now, and do not write this slice completely.
+            # there is an issue with the MDSPlus backend which forces us to do
+            # that, since adding a slice to an empty list is not appreciated.
+            self.put(occurrence=occurrence)
+            # we then have to stop, before we write the slice twice
+            return
 
         path = "/" + self._name
 
@@ -418,8 +423,8 @@ class IDSToplevel(IDSStructure):
         """
         if path is not None:
             raise NotImplementedError("Explicit paths, implicitly handled by structure")
+        path = "/" + self._name
 
-        path = self.path
         if occurrence != 0:
             path += "/" + str(occurrence)
 

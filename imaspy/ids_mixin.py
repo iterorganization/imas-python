@@ -98,6 +98,8 @@ class IDSMixin:
                 # Stub for explicit handling of other cases
                 pass
 
+        if self._name == "time":
+            return "time"
         return strTimeBasePath
 
     def getAOSPath(self, ignore_nbc_change=1):
