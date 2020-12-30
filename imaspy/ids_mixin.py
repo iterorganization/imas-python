@@ -101,8 +101,9 @@ class IDSMixin:
                     "Timebasepath for coordinates {!s}".format(self._coordinates)
                 )
 
-        if self._name == "time":
-            return "time"
+        # any time fields march by their own drum
+        if self._name == "time" and self.depth == 1:
+            return "/time"
         return strTimeBasePath
 
     def getAOSPath(self, ignore_nbc_change=1):
