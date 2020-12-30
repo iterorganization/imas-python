@@ -429,8 +429,12 @@ class IDSToplevel(IDSStructure):
             path += "/" + str(occurrence)
 
         # Determine the time_mode.
-        homogeneousTime = self.ids_properties.homogeneous_time.value
-        if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
+        homogeneousTime = self.readHomogeneous(occurrence=occurrence)
+        if (
+            homogeneousTime == IDS_TIME_MODE_UNKNOWN
+            or homogeneousTime == EMPTY_INT
+            or homogeneousTime is None
+        ):
             logger.error(
                 "IDS {!s} is found to be empty (homogeneous_time undefined). "
                 "PUT quits with no action.".format(self.path)
@@ -438,7 +442,14 @@ class IDSToplevel(IDSStructure):
             return
         if homogeneousTime not in IDS_TIME_MODES:
             raise ALException(
-                "ERROR: ids_properties.homogeneous_time should be set to IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_HOMOGENEOUS or IDS_TIME_MODE_INDEPENDENT."
+                "ERROR: ids_properties.homogeneous_time {!s} should be set to "
+                "IDS_TIME_MODE_HETEROGENEOUS {!s}, IDS_TIME_MODE_HOMOGENEOUS {!s} "
+                "or IDS_TIME_MODE_INDEPENDENT {!s}.".format(
+                    homogeneousTime,
+                    IDS_TIME_MODE_HETEROGENEOUS,
+                    IDS_TIME_MODE_HOMOGENEOUS,
+                    IDS_TIME_MODE_INDEPENDENT,
+                )
             )
         if homogeneousTime == IDS_TIME_MODE_HOMOGENEOUS and len(self.time.value) == 0:
             raise ALException(

@@ -2,7 +2,6 @@
 """
 
 import logging
-import os
 from pathlib import Path
 
 import numpy as np
@@ -55,8 +54,7 @@ def test_minimal_types_io_automatic(backend, xml, worker_id, tmp_path):
     ids2 = open_ids(backend, "a", worker_id, tmp_path, xml_path=xml)
     ids2.minimal.get()
     if backend == MEMORY_BACKEND:
-        # this one does not store anything between instantiations
-        pass
+        pytest.skip("Memory backend cannot be opened from different root")
     else:
         for k, v in TEST_DATA.items():
             if isinstance(v, np.ndarray):
@@ -67,7 +65,7 @@ def test_minimal_types_io_automatic(backend, xml, worker_id, tmp_path):
                     and k in ["str_1d", "str_1d_type"]
                     and ids.minimal[k].value == []
                 ):
-                    pytest.skip(
+                    pytest.xfail(
                         "Known issue with ASCII backend and 1d strings, see https://jira.iter.org/browse/IMAS-3463"
                     )
                 else:

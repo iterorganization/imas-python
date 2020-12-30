@@ -1,18 +1,11 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
 
 import logging
-import os
 
 import pytest
 
 import imaspy
-from imaspy.ids_defs import (
-    ASCII_BACKEND,
-    HDF5_BACKEND,
-    IDS_TIME_MODE_INDEPENDENT,
-    MDSPLUS_BACKEND,
-    MEMORY_BACKEND,
-)
+from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.test_helpers import open_ids
 
 root_logger = logging.getLogger("imaspy")
@@ -64,8 +57,7 @@ def test_minimal_struct_array_io(backend, xml, worker_id, tmp_path):
     ids2 = open_ids(backend, "a", worker_id, tmp_path, xml_path=xml)
     ids2.minimal_struct_array.get()
     if backend == MEMORY_BACKEND:
-        # this one does not store anything between instantiations
-        pass
+        pytest.skip("Memory backend cannot be opened from different root")
     else:
         assert ids2.minimal_struct_array.struct_array[0].a.flt_0d.value == 2.0
         assert ids2.minimal_struct_array.struct_array[1].a.flt_0d.value == 4.0

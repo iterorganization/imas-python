@@ -38,7 +38,6 @@ def test_minimal_io(backend, xml, worker_id, tmp_path):
     ids2 = open_ids(backend, "a", worker_id, tmp_path, xml_path=xml)
     ids2.minimal.get()
     if backend == MEMORY_BACKEND:
-        # this one does not store anything between instantiations
-        pass
+        pytest.skip("Memory backend cannot be opened from different root")
     else:
         assert ids2.minimal.a.value == 2.0

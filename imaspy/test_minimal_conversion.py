@@ -40,8 +40,7 @@ def test_minimal_io_read_flt_int(backend, xml1, xml2, worker_id, tmp_path):
     ids2.open_ual_store(tmp_path, "test", worker_id, backend, mode="a")
     ids2.minimal.get()
     if backend == MEMORY_BACKEND:
-        # this one did not store anything between instantiations
-        pass
+        pytest.skip("Memory backend cannot be opened from different root")
     else:
         assert ids2.minimal.a.value == 2
 
@@ -61,8 +60,7 @@ def test_minimal_io_read_int_flt(backend, xml1, xml2, worker_id, tmp_path):
     ids2.open_ual_store(tmp_path, "test", worker_id, backend, mode="a")
     ids2.minimal.get()
     if backend == MEMORY_BACKEND:
-        # this one did not store anything between instantiations
-        pass
+        pytest.skip("Memory backend cannot be opened from different root")
     else:
         assert ids2.minimal.a.value == 2.0
 
@@ -82,8 +80,7 @@ def test_minimal_io_write_int_flt(backend, xml1, xml2, worker_id, tmp_path):
     ids2.open_ual_store(tmp_path, "test", worker_id, backend, mode="a")
     ids2.minimal.get()
     if backend == MEMORY_BACKEND:
-        # this one did not store anything between instantiations
-        pass
+        pytest.skip("Memory backend cannot be opened from different root")
     else:
         assert ids2.minimal.a.value == 2.0
 
@@ -103,7 +100,6 @@ def test_minimal_io_write_flt_int(backend, xml1, xml2, worker_id, tmp_path):
     ids2.open_ual_store(tmp_path, "test", worker_id, backend, mode="a")
     ids2.minimal.get()
     if backend == MEMORY_BACKEND:
-        # this one did not store anything between instantiations
-        pass
+        pytest.skip("Memory backend cannot be opened from different root")
     else:
         assert ids2.minimal.a.value == 3

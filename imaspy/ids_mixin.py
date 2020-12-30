@@ -95,8 +95,11 @@ class IDSMixin:
                 # If variable only depends on 1...N, no timebasepath
                 pass
             else:
-                # Stub for explicit handling of other cases
-                pass
+                # for now try to get away with just 'time' as path
+                return "time"
+                raise NotImplementedError(
+                    "Timebasepath for coordinates {!s}".format(self._coordinates)
+                )
 
         if self._name == "time":
             return "time"

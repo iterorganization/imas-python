@@ -75,10 +75,7 @@ class IDSPrimitive(IDSMixin):
                 )
             )
 
-        if value is not None:
-            self.__value = value
-        else:
-            self.__value = None
+        self.__value = value
         self._ids_type = ids_type
         self._var_type = var_type
         self._ndims = ndims
@@ -105,6 +102,7 @@ class IDSPrimitive(IDSMixin):
         otherwise return the default"""
         if self.__value is None:
             return self._default
+        return self.__value
 
     @value.setter
     def value(self, setter_value):

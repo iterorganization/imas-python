@@ -3,9 +3,9 @@ data dictionary version.
 """
 
 import logging
-import os
 
-import imaspy
+import pytest
+
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
 from imaspy.test_helpers import open_ids
 
@@ -14,7 +14,6 @@ logger = root_logger
 logger.setLevel(logging.INFO)
 
 
-# TODO: use a separate folder for the MDSPLUS DB and clear it after the testcase
 def test_latest_dd_manual(backend, worker_id, tmp_path):
     """Write and then read again a full IDSRoot and a single IDSToplevel."""
     ids = open_ids(backend, "w", worker_id, tmp_path)
@@ -28,7 +27,7 @@ def test_latest_dd_manual(backend, worker_id, tmp_path):
 
     if backend == MEMORY_BACKEND:
         # this one does not store anything between instantiations
-        pass
+        pytest.skip("Cannot open memory backend from different root")
     else:
         ids2 = open_ids(backend, "a", worker_id, tmp_path)
         ids2[ids_name].get()

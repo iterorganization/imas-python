@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 import imaspy
-from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
+from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
 from imaspy.test_helpers import compare_children, fill_with_random_data, open_ids
 
 root_logger = logging.getLogger("imaspy")
@@ -40,8 +40,7 @@ def test_latest_dd_autofill_separate(ids_name, backend, worker_id, tmp_path):
     ids[ids_name].put()
 
     if backend == MEMORY_BACKEND:
-        # this one does not store anything between instantiations
-        pass
+        pytest.skip("memory backend does not support opening from separate file")
     else:
         ids2 = open_ids(backend, "a", worker_id, tmp_path)
         ids2[ids_name].get()
@@ -70,7 +69,7 @@ def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
     ids[ids_name].get()
 
     if backend == MEMORY_BACKEND:
-        pytest.skip("memory backend does not support get() properly.")
+        pytest.xfail("memory backend does not support get() properly.")
 
     # basic comparison first
     assert (
