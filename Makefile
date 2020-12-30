@@ -107,7 +107,7 @@ tests:
 	$(PYTEST) $(PYTEST_FLAGS) $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
 
 minitests:
-	$(PYTEST) --mini $(PYTEST_FLAGS) $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
+	$(PYTEST) --ids pulse_schedule,ece $(PYTEST_FLAGS) $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
 
 realclean: clean
 	@echo 'Real cleaning $(PROJECT)...'
