@@ -20,8 +20,6 @@ logger.setLevel(logging.INFO)
 
 def test_write_read_time(backend, worker_id, tmp_path):
     """Write some data to an IDS and then check that all slices match."""
-    if backend == MEMORY_BACKEND:
-        pytest.xfail("MEMORY backend has issues reading back values")
     ids = open_ids(backend, "w", worker_id, tmp_path)
     eq = ids["equilibrium"]
     eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
@@ -56,12 +54,11 @@ def test_time_slicing_put(backend, worker_id, tmp_path, pre_put_bool):
     """Write some slices to an IDS and then check that they are all there"""
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
-    if backend == MEMORY_BACKEND:
-        pytest.xfail("MEMORY backend has issues reading back values")
     ids = open_ids(backend, "w", worker_id, tmp_path)
     eq = ids["equilibrium"]
     eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     if pre_put_bool:
+        # this gives a TREE-E-NOSEGMENTS error
         pytest.xfail("Putting an empty IDS first does not work...")
         eq.put()
 
@@ -80,8 +77,6 @@ def test_hli_time_slicing_put(backend, worker_id, tmp_path):
     """Write some slices to an IDS and then check that they are all there"""
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
-    # if backend == MEMORY_BACKEND:
-    # pytest.xfail("MEMORY backend has issues reading back values")
 
     ids = imas.equilibrium()
 
@@ -117,8 +112,6 @@ def test_time_slicing_put_two(backend, worker_id, tmp_path, pre_put_bool):
     """Write some slices to an IDS and then check that they are all there"""
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
-    if backend == MEMORY_BACKEND:
-        pytest.xfail("MEMORY backend has issues reading back values")
     ids = open_ids(backend, "w", worker_id, tmp_path)
     eq = ids["equilibrium"]
     eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
@@ -146,9 +139,6 @@ def test_get_default(backend, worker_id, tmp_path):
     eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     assert eq.ids_properties.homogeneous_time == IDS_TIME_MODE_HOMOGENEOUS
     eq.put()
-
-    if backend == MEMORY_BACKEND:
-        pytest.xfail("MEMORY backend has issues reading back values")
 
     eq.vacuum_toroidal_field.b0 = [1.0]
     eq.get()

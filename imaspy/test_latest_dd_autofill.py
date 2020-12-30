@@ -68,9 +68,6 @@ def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
 
     ids[ids_name].get()
 
-    if backend == MEMORY_BACKEND:
-        pytest.xfail("memory backend does not support get() properly.")
-
     # basic comparison first
     assert (
         ids[ids_name].ids_properties.comment == ids_ref[ids_name].ids_properties.comment

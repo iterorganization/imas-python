@@ -250,7 +250,9 @@ class IDSToplevel(IDSStructure):
             )
 
         if ctx is None:
-            status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
+            status, ctx = self._ull.ual_begin_global_action(
+                self._idx, path.lstrip("/"), READ_OP
+            )
             if status != 0:
                 raise ALException(
                     "Error calling ual_begin_global_action() for {!s}".format(
@@ -301,7 +303,7 @@ class IDSToplevel(IDSStructure):
 
         self._is_slice = True
         status, ctx = self._ull.ual_begin_slice_action(
-            self._idx, path, READ_OP, time_requested, interpolation_method
+            self._idx, path.lstrip("/"), READ_OP, time_requested, interpolation_method
         )
         if status != 0:
             raise ALException(
@@ -358,7 +360,7 @@ class IDSToplevel(IDSStructure):
         self._is_slice = True
 
         status, ctx = self._ull.ual_begin_slice_action(
-            self._idx, path, WRITE_OP, UNDEFINED_TIME, UNDEFINED_INTERP
+            self._idx, path.lstrip("/"), WRITE_OP, UNDEFINED_TIME, UNDEFINED_INTERP
         )
         if status != 0:
             raise ALException(
@@ -461,7 +463,9 @@ class IDSToplevel(IDSStructure):
         self.deleteData(occurrence)
 
         # Begin a write action
-        status, ctx = self._ull.ual_begin_global_action(self._idx, path, WRITE_OP)
+        status, ctx = self._ull.ual_begin_global_action(
+            self._idx, path.lstrip("/"), WRITE_OP
+        )
         if status != 0:
             raise ALException(
                 "Error {!s} calling ual_begin_global_action() for {!s}".format(
