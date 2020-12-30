@@ -102,7 +102,7 @@ PYTEST?=pytest
 COV_FLAGS?=--cov=$(PACKAGE) --cov-report=term --cov-report=xml:./coverage.xml
 JUNIT_FLAGS?=--junit-xml=./junit.xml
 PYTEST_MARK?=
-PYTEST_FLAGS?=
+PYTEST_FLAGS?=-n auto
 tests:
 	$(PYTEST) $(PYTEST_FLAGS) $(COV_FLAGS) $(JUNIT_FLAGS) -m "$(PYTEST_MARK)" $(PROJECT)
 

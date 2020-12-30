@@ -102,6 +102,11 @@ class IDSMixin:
                 )
 
         # any time fields march by their own drum
+        # problems occur when a timebasepath is set for subfields (even if it is just 'time')
+        # also, problems occur (with time slicing) when there is no timebasepath
+        # of /time for the field /time
+        # (n.b. the path contains /equilibrium/ for instance, but we need /time since
+        # it is in this context)
         if self._name == "time" and self.depth == 1:
             return "/time"
         return strTimeBasePath
