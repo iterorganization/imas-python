@@ -76,9 +76,8 @@ class IDSStructArray(IDSStructure, IDSMixin):
 
     @property
     def _element_structure(self):
+        """Prepare an element structure JIT"""
         struct = IDSStructure(self, self._name + "_el", self._structure_xml)
-        if self._backend_child_xml:
-            struct.set_backend_properties(self._backend_child_xml)
         return struct
 
     def __setattr__(self, key, value):
@@ -134,6 +133,9 @@ class IDSStructArray(IDSStructure, IDSMixin):
             e._convert_ids_types = True
             e._parent = self
             self.value.append(e)
+            # only now can we process the backend properties
+            if self._backend_child_xml:
+                e.set_backend_properties(self._backend_child_xml)
 
     def resize(self, nbelt, keep=False):
         """Resize an array of structures.
@@ -283,3 +285,10 @@ class IDSStructArray(IDSStructure, IDSMixin):
         # Set _backend_xml_structure which can be used to set_backend_properties
         # on future self._element_structure s
         self._backend_child_xml = structure_xml
+
+        # we do not want to keep the 'other' reference around though
+        for child in self:
+            try:
+                del child._backend_structure_xml
+            except AttributeError:
+                pass

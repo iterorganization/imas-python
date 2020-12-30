@@ -197,7 +197,11 @@ def test_pulse_schedule_aos_renamed_autofill_up(backend, worker_id, tmp_path):
 
 def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
     """Create an ids, autofill it, save it as a newer version, read it back
-    and check that it's the same."""
+    and check that it's the same.
+
+    TODO: we should also check newer IDSes, since this only checks variables that
+    existed in 3.25.0. Doing all versions for all IDSes is too slow however.
+    """
 
     ids = open_ids(
         backend, "w", worker_id, tmp_path, version="3.25.0", backend_version="3.30.0"

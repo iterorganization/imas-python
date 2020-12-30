@@ -5,6 +5,7 @@
 # gets run with all four backends.
 # Same for ids_type, with all types
 
+from imaspy.dd_zip import dd_xml_versions, latest_dd_version
 from imaspy.ids_defs import ASCII_BACKEND, HDF5_BACKEND, MDSPLUS_BACKEND, MEMORY_BACKEND
 from imaspy.ids_root import IDSRoot
 from imaspy.test_minimal_types_io import TEST_DATA
@@ -17,6 +18,9 @@ def pytest_addoption(parser):
     parser.addoption("--ascii", action="store_true", help="test with ascii backend")
     parser.addoption("--hdf5", action="store_true", help="test with HDF5 backend")
     parser.addoption("--mini", action="store_true", help="small test with few types")
+    parser.addoption(
+        "--ids", action="append", help="small test with few types", nargs="+"
+    )
 
 
 def pytest_generate_tests(metafunc):
@@ -47,7 +51,16 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize("ids_type", [None] + list(TEST_DATA.keys()))
 
     if "ids_name" in metafunc.fixturenames:
-        if metafunc.config.getoption("mini"):
+        if metafunc.config.getoption("ids"):
+            metafunc.parametrize(
+                "ids_name",
+                [
+                    item
+                    for arg in metafunc.config.getoption("ids")
+                    for item in arg[0].split(",")
+                ],
+            )
+        elif metafunc.config.getoption("mini"):
             metafunc.parametrize("ids_name", ["pulse_schedule"])
         else:
             metafunc.parametrize("ids_name", IDSRoot()._children)

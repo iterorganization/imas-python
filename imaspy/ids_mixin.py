@@ -129,9 +129,11 @@ class IDSMixin:
                             self._parent.path, self._parent.value.index(self) + 1
                         )
                     except ValueError as e:
-                        from IPython import embed
-
-                        embed()
+                        # this happens when we ask the path of a struct_array child
+                        # which is 'in waiting'. It is not in its parents value
+                        # list yet, so we are here. There is no proper path to mention.
+                        # instead we use the special index :
+                        my_path = "{!s}/:".format(self._parent.path)
                 else:
                     my_path = self._parent.path + "/" + my_path
             except AttributeError:
@@ -207,6 +209,9 @@ class IDSMixin:
             self.visit_children(IDSMixin.reset_path)
             return None, False
         self._last_backend_xml_hash = hash(structure_xml)
+
+        # temporarily save the xml tree here (it is deleted later)
+        self._backend_structure_xml = structure_xml
 
         self.reset_path()
         if "backend_version" in self.__dict__:

@@ -356,7 +356,7 @@ class IDSPrimitive(IDSMixin):
             logger.info(
                 "Setting up mapping from %s (mem) to %s (file)",
                 self._name,
-                self.backend_path,
+                self.path,
             )
 
         if self._backend_type != self._ids_type:

@@ -149,6 +149,7 @@ class IDSStructure(IDSMixin):
             # or the same one. when migrating up the current in_memory xml
             # contains information about migrations.
             xml_child = None
+            no_backend_structure_xml_found = False
             if up:
                 cur_mem_child_xml = self._structure_xml.find(
                     "field[@name='{name}']".format(name=child_name)
@@ -161,6 +162,9 @@ class IDSStructure(IDSMixin):
                         < V(cur_mem_child_xml.attrib["change_nbc_version"])
                         <= V(self._version)
                     ):
+                        # change_nbc_previous_name can contain paths.
+                        # the access layer takes care of proper reading for us
+                        # (since we just concatenate names to form paths)
                         child_name = cur_mem_child_xml.attrib[
                             "change_nbc_previous_name"
                         ]
@@ -183,6 +187,38 @@ class IDSStructure(IDSMixin):
                 xml_child = structure_xml.find(
                     "field[@change_nbc_previous_name='{name}']".format(name=child._name)
                 )
+                # the renamed field can actually be a path instead of a name
+                # in which case we have the following situation
+                # old:
+                #   |-a
+                #     |- b
+                # new
+                #  |- c
+                #
+                # and c has change_nbc_previous_name='a/b'.
+                # in this branch (down, i.e. memory is old and file is new)
+                # we are now at b, and therefore
+                # need to look in the structure_xml of parent for change_nbc_previous_name
+                # of 'a/b' to match the elements
+                # (actually we should probably do it recursively, but let's
+                # support only one level for now)
+                if xml_child is None and isinstance(self._parent, IDSStructure):
+                    # we are really looking for a sibling of ourselves, so
+                    # we look in the parents children
+                    try:
+                        xml_child = self._parent._backend_structure_xml.find(
+                            "field[@change_nbc_previous_name='{pname}/{name}']".format(
+                                pname=self._name, name=child._name
+                            )
+                        )
+                    except AttributeError:
+                        # probably does not exist since we are calling this
+                        # at creation time of a child of a structarray.
+                        # this is really only a problem if the 'normal' child
+                        # is not found.
+                        # setup a flag preparing a warning then.
+                        no_backend_structure_xml_found = True
+
                 # qualify the found xml_child to see if it was renamed within
                 # our version range
                 if xml_child:
@@ -216,6 +252,12 @@ class IDSStructure(IDSMixin):
                         child._name,
                     )
                 else:
+                    if no_backend_structure_xml_found:
+                        logger.warning(
+                            "Rename not supported for delayed construction of %s.%s",
+                            self._name,
+                            child._name,
+                        )
                     logger.warning(
                         "Tried to find renamed field %s for %s.%s but failed, skipping.",
                         child_name,
@@ -225,6 +267,14 @@ class IDSStructure(IDSMixin):
 
             else:
                 child.set_backend_properties(xml_child)
+
+        # all of my children are initialized, and we can delete
+        # the temporarily stored _backend_structure_xml for them
+        for child in self:
+            try:
+                del child._backend_structure_xml
+            except AttributeError:
+                pass
 
     def __iter__(self):
         """Iterate over this structure's children"""
