@@ -134,6 +134,9 @@ class IDSMixin:
                         # list yet, so we are here. There is no proper path to mention.
                         # instead we use the special index :
                         my_path = "{!s}/:".format(self._parent.path)
+                        raise NotImplementedError(
+                            "Paths of unlinked struct array children are not implemented"
+                        ) from e
                 else:
                     my_path = self._parent.path + "/" + my_path
             except AttributeError:
