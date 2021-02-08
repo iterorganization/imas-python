@@ -8,7 +8,7 @@ import pytest
 import imaspy
 
 # TODO: import these from imaspy (i.e. expose them publicly?)
-from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
+from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_root import IDSRoot
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
@@ -122,6 +122,16 @@ def open_ids(backend, mode, worker_id, tmp_path, **kwargs):
         logger.warning("no version specified in test, hardcoding 3")
         ver = 3
 
-    ids.open_ual_store(tmp_path, "test", str(ver), backend, mode=mode)
+    if backend == ASCII_BACKEND:
+        ids.open_ual_store(
+            tmp_path,
+            "test",
+            str(ver),
+            backend,
+            mode=mode,
+            options="-prefix %s" % (tmp_path,),
+        )
+    else:
+        ids.open_ual_store(tmp_path, "test", str(ver), backend, mode=mode)
 
     return ids
