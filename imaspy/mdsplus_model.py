@@ -56,7 +56,6 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
     try:
         os.makedirs(cache_dir_path, exist_ok=rebuild)
     except FileExistsError:
-
         if not model_exists(cache_dir_path):
             logger.warning(
                 "Model dir %s exists but is empty. Waiting 60s for contents.",

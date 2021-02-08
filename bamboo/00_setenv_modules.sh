@@ -9,5 +9,5 @@ module use /work/imas/etc/modules/all
 module purge
 
 # Clean MDSplus model cache
-chmod u+w -R ~/.cache/imaspy
+chmod u+w -R ~/.cache/imaspy || true
 rm -Rf ~/.cache/imaspy
