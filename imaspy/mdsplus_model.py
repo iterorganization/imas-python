@@ -52,25 +52,31 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
     cache_dir_name = "%s-%08x" % (xml_name, crc)
     cache_dir_path = Path(_get_xdg_cache_dir()) / "imaspy" / "mdsplus" / cache_dir_name
 
-    if not model_exists(cache_dir_path) or rebuild:
-        if not os.path.isdir(cache_dir_path):
-            os.makedirs(cache_dir_path)
+    try:
+        os.makedirs(cache_dir_path, exist_ok=rebuild)
+    except FileExistsError:
 
-        logger.info(
-            "Creating and caching MDSPlus model at %s, this may take a while",
-            cache_dir_path,
-        )
+        if not model_exists(cache_dir_path):
+            logger.warning("Model dir %s exists but is empty.", cache_dir_path)
+        else:
+            logger.info("Using cached MDSPlus model at %s", cache_dir_path)
 
-        create_model_ids_xml(cache_dir_path, fname, version)
+        return
 
-        create_mdsplus_model(cache_dir_path)
-    else:
-        logger.info("Using cached MDSPlus model at %s", cache_dir_path)
+    logger.info(
+        "Creating and caching MDSPlus model at %s, this may take a while",
+        cache_dir_path,
+    )
+
+    create_model_ids_xml(cache_dir_path, fname, version)
+
+    create_mdsplus_model(cache_dir_path)
 
     return str(cache_dir_path)
 
 
 def model_exists(path):
+    """Given a path to an IDS model definition check if all components are there"""
     return all(
         map(
             lambda f: os.path.isfile(path / f),
