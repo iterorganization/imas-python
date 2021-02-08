@@ -4,6 +4,7 @@
 import logging
 import os
 import re
+import time
 from pathlib import Path
 from subprocess import CalledProcessError, check_output
 from zlib import crc32
@@ -57,7 +58,14 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
     except FileExistsError:
 
         if not model_exists(cache_dir_path):
-            logger.warning("Model dir %s exists but is empty.", cache_dir_path)
+            logger.warning(
+                "Model dir %s exists but is empty. Waiting 60s for contents.",
+                cache_dir_path,
+            )
+            for _ in range(60):
+                if model_exists(cache_dir_path):
+                    break
+                time.sleep(1)
         else:
             logger.info("Using cached MDSPlus model at %s", cache_dir_path)
 
