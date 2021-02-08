@@ -67,8 +67,6 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
     else:
         logger.info("Using cached MDSPlus model at %s", cache_dir_path)
 
-    # chmod the model-dir to read-only
-    os.chmod(cache_dir_path, 0o555)
     return str(cache_dir_path)
 
 

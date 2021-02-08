@@ -56,3 +56,21 @@ def test_minimal_types_io(backend, xml, worker_id, tmp_path):
                 assert np.array_equal(ids2.minimal[k].value, v)
             else:
                 assert ids2.minimal[k].value == v
+
+
+def test_large_numbers(backend, xml, worker_id, tmp_path):
+    """Write and then read again a large number
+    This gets run with all 4 backend options and with all ids_types (+ None->all)
+    """
+    ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=xml)
+    ids.minimal["int_0d"] = 955683416
+
+    ids.minimal.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
+    ids.minimal.put()
+
+    ids2 = open_ids(backend, "a", worker_id, tmp_path, xml_path=xml)
+    ids2.minimal.get()
+    if backend == MEMORY_BACKEND:
+        pytest.skip("memory backend cannot be opened from different root")
+    else:
+        assert ids2.minimal["int_0d"] == 955683416
