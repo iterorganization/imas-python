@@ -36,9 +36,7 @@ def xml():
 
 
 def test_minimal_types_io(backend, xml, worker_id, tmp_path):
-    """Write and then read again a number on our minimal IDS.
-    This gets run with all 4 backend options and with all ids_types (+ None->all)
-    """
+    """Write and then read again a number on our minimal IDS."""
     ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=xml)
     for k, v in TEST_DATA.items():
         ids.minimal[k] = v
@@ -59,9 +57,7 @@ def test_minimal_types_io(backend, xml, worker_id, tmp_path):
 
 
 def test_large_numbers(backend, xml, worker_id, tmp_path):
-    """Write and then read again a large number
-    This gets run with all 4 backend options and with all ids_types (+ None->all)
-    """
+    """Write and then read again a large number"""
     ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=xml)
     ids.minimal["int_0d"] = 955683416
 
