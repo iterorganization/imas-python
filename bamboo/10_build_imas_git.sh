@@ -13,6 +13,7 @@ module load Saxon-HE
 module load MDSplus/7.96.12-GCCcore-9.3.0
 module load MDSplus-Java
 module load HDF5/1.12.0-gompi-2020a
+module load Boost
 module list
 
 # install a DD locally
