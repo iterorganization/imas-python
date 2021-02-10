@@ -61,10 +61,12 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
                 "Model dir %s exists but is empty. Waiting 60s for contents.",
                 cache_dir_path,
             )
-            for _ in range(60):
+            for _ in range(120):
                 if model_exists(cache_dir_path):
                     break
                 time.sleep(1)
+            else:
+                raise TimeoutError("Timeout exceeded while waiting for MDSplus model")
         else:
             logger.info("Using cached MDSPlus model at %s", cache_dir_path)
 
@@ -92,6 +94,7 @@ def model_exists(path):
                 "ids_model.characteristics",
                 "ids_model.datafile",
                 "ids_model.tree",
+                "done.txt"
             ],
         )
     )
@@ -146,6 +149,8 @@ def create_mdsplus_model(cache_dir_path):
                 "ids_path": str(cache_dir_path),
             },
         )
+        # Touch a file to show that we have finished the model
+        (cache_dir_path / 'done.txt').touch()
     except CalledProcessError as e:
         logger.error("Error making MDSPlus model in {path}", cache_dir_path)
         raise e
