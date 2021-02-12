@@ -52,13 +52,13 @@ export C_INCLUDE_PATH=`pwd`/lowlevel:${C_INCLUDE_PATH:=}
 export LD_LIBRARY_PATH=`pwd`/lowlevel:${LD_LIBRARY_PATH:=}
 
 cd lowlevel
-make -j
+make -j`nproc`
 cd ..
 
 pip install --user numpy cython
 
 cd pythoninterface
-make -j
+make -j`nproc`
 sed -e 's/imas_[^/."]*/imas/g' -i package/setup.py
 
 # install locally
