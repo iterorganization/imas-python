@@ -10,7 +10,7 @@ IMASPy also needs the :al_lib:`IMAS Python helper functions <browse>`. Currently
 dependencies are pulled it using :std:doc:`GitPython <gitpython:index>`, until the
 :issue:`separate Python HLI parts are available as packages <IMAS-584>`.
 
-.. :std:doc:`Cython <cython:index>` of the 
+.. :std:doc:`Cython <cython:index>` of the
 
 
 Python is very flexible, and so is it's install procedure. This is a double-edged sword:
@@ -20,13 +20,12 @@ community. For an introduction to the topic, read the
 
 Installing on the ITER cluster
 ------------------------------
-We assume a clean system. To interact with the AL, we need the IMAS environment
+To interact with the AL, we need the IMAS environment
 activated. I'm assuming a bash shell for all these commands:
 
 .. code-block:: bash
 
-    module load AL-Python-lib
-    module load AL-Cython
+    module load IMAS-2020a/3.30.0-4.8.5-2020a
 
 This should give us all we need, namely at time of testing:
 
@@ -38,14 +37,18 @@ We are all developers, let's install in [pip editable](https://pip.pypa.io/en/st
 
 .. code-block:: bash
 
-    git clone git@gitlab.com:klimex/imaspy.git
-    pip install --user -e imaspy[backends_al,backends_xarray,test]
+    git clone git@git.iter.org/IMAS/imaspy.git
+    pip install --user -e imaspy
 
 
-We should now be able to run the examples
+We should now be able to run the tests
 
 .. code-block:: bash
-    python imaspy/examples/read_write_nbi.py
+    pip install --user -r requirements_test.txt
+    pytest imaspy/ --mini
+
+Note that at the time of writing access layer version 4.8.5 has an issue which causes
+several tests to fail.
 
 Develop install
 ^^^^^^^^^^^^^^^

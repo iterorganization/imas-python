@@ -7,7 +7,7 @@ Integrated Modelling & Analysis Suite (IMAS) Data Model.
 
 It provides:
 * An easy-to-install and easy-to-get started package by
-   * Not requiring an IMAS installation
+  * Not requiring an IMAS installation
   * Not strictly requiring matching a Data Dictionary (DD) version
 * An pythonic alternative to the IMAS Python High Level Interface (HLI)
 * Checking of correctness on assign time, instead of database write time
@@ -26,7 +26,7 @@ and can be found at the [ITER sharepoint](https://sharepoint.iter.org/department
 
 IMASPy is a standalone python package with optional dependencies. All needed
 python packages can be found in `requirements.txt`, and should all be publicly
-available. A simple `pip install` should take care of everything.
+available. A simple `pip install -r requirements.txt` should take care of everything.
 
 #### Being IMAS DD compatible
 
