@@ -84,14 +84,14 @@ class IDSPrimitive(IDSMixin):
 
     @property
     def has_value(self):
+        """True if a value is defined here"""
         return self.__value is not None
 
     @property
     def _default(self):
         if self._ndims == 0:
             return ids_type_to_default[self._ids_type]
-        else:
-            return np.full((1,) * self._ndims, ids_type_to_default[self._ids_type])
+        return np.full((0,) * self._ndims, ids_type_to_default[self._ids_type])
 
     def __iter__(self):
         return iter([])

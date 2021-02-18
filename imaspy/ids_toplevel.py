@@ -453,10 +453,6 @@ class IDSToplevel(IDSStructure):
                     IDS_TIME_MODE_INDEPENDENT,
                 )
             )
-        if homogeneousTime == IDS_TIME_MODE_HOMOGENEOUS and len(self.time.value) == 0:
-            raise ALException(
-                "ERROR: the IDS%time vector of an homogeneous_time IDS must have a non-zero length."
-            )
 
         # Delete the data in the store
         # TODO: handle mode correctly!
