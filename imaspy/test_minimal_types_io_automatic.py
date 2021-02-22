@@ -70,8 +70,11 @@ def test_minimal_types_io_automatic(backend, xml, worker_id, tmp_path):
                     )
                 else:
                     if isinstance(ids2.minimal[k].value, np.ndarray):
-                        assert ids2.minimal[k].value == np.asarray(
-                            ids.minimal[k].value, dtype=ids2.minimal[k].value.dtype
+                        assert np.array_equal(
+                            ids2.minimal[k].value,
+                            np.asarray(
+                                ids.minimal[k].value, dtype=ids2.minimal[k].value.dtype
+                            ),
                         )
                     else:
                         assert ids2.minimal[k].value == ids.minimal[k].value
