@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
+from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.test_helpers import open_ids, randdims
 
 root_logger = logging.getLogger("imaspy")
@@ -70,3 +70,25 @@ def test_large_numbers(backend, xml, worker_id, tmp_path):
         pytest.skip("memory backend cannot be opened from different root")
     else:
         assert ids2.minimal["int_0d"] == 955683416
+
+
+def test_str1d_empty_default_no_write(backend, xml, worker_id, tmp_path):
+    """Write and then read again a large number"""
+    ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=xml)
+    ids.minimal["str_1d"] = np.empty((0,), dtype="str")
+
+    ids.minimal.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
+    ids.minimal.put()
+
+    ids2 = open_ids(backend, "a", worker_id, tmp_path, xml_path=xml)
+    ids2.minimal.get()
+    if backend == MEMORY_BACKEND:
+        pytest.skip("memory backend cannot be opened from different root")
+    else:
+        assert ids2.minimal["str_1d"].value.size == 0
+
+    if backend == ASCII_BACKEND:
+        # test that it did not show up in the file
+        with open(str(tmp_path) + "test_1_0_minimal.ids", "r") as file:
+            for line in file.readlines():
+                assert not line.startswith("minimal/str_1d")

@@ -228,7 +228,13 @@ class IDSPrimitive(IDSMixin):
 
         # Do not write if data is the same as the default of the leaf node
         # TODO: set default of backend xml instead
-        if np.array_equal(data, self._default):
+        if isinstance(data, (list, np.ndarray)):
+            if len(data) == 0 or np.array_equal(
+                np.asarray(data), np.asarray(self._default)
+            ):
+                return
+            # we need the extra asarray to convert the list back to an np ndarray
+        elif data == self._default:
             return
 
         # Call signature
