@@ -69,4 +69,9 @@ def test_minimal_types_io_automatic(backend, xml, worker_id, tmp_path):
                         "Known issue with ASCII backend and 1d strings, see https://jira.iter.org/browse/IMAS-3463"
                     )
                 else:
-                    assert ids2.minimal[k].value == ids.minimal[k].value
+                    if isinstance(ids2.minimal[k].value, np.ndarray):
+                        assert ids2.minimal[k].value == np.asarray(
+                            ids.minimal[k].value, dtype=ids2.minimal[k].value.dtype
+                        )
+                    else:
+                        assert ids2.minimal[k].value == ids.minimal[k].value

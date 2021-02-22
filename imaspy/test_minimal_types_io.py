@@ -89,6 +89,9 @@ def test_str1d_empty_default_no_write(backend, xml, worker_id, tmp_path):
 
     if backend == ASCII_BACKEND:
         # test that it did not show up in the file
-        with open(str(tmp_path) + "test_1_0_minimal.ids", "r") as file:
+        filename = str(tmp_path) + "test_%s_0_minimal.ids" % (
+            1 if worker_id == "master" else int(worker_id[2:]) + 1
+        )
+        with open(filename, "r") as file:
             for line in file.readlines():
                 assert not line.startswith("minimal/str_1d")
