@@ -69,10 +69,11 @@ VERSION_STRING=$(shell $(PYTHON) setup.py --version)
 WHEEL_NAME:=$(PACKAGE)-$(VERSION_STRING)-py3-none-any.whl
 SDIST_NAME:=$(PACKAGE)-$(VERSION_STRING).tar.gz
 
-PYTHON_INSTALL_DIR?=install
+IMASPY_TMP_DIR?=/tmp/$(PROJECT)-$(shell whoami)
+PYTHON_INSTALL_DIR?=$(IMASPY_TMP_DIR)
 # TODO: imas dependency not found by setuptoools
 PYTHONTOOLS_EXTRAS?='backends_xarray,test,docs'
-install_package:
+install_package: wheel
 	@echo [INFO] Installing version '$(VERSION_STRING)'
 	@echo [INFO] With extras $(PYTHONTOOLS_EXTRAS)
 	@echo [INFO] to $(PYTHON_INSTALL_DIR)
@@ -80,7 +81,7 @@ install_package:
 	@echo [DEBUG] setuptools version=$(shell $(PYTHON) -c "import setuptools; print(setuptools.__version__)")
 	@echo [DEBUG] setuptools SCM detected version=$(shell $(PYTHON) -c "from setuptools_scm import get_version; print(get_version(root='.'));")
 	@echo [DEBUG] wheel version=$(shell $(PYTHON) -c "import wheel; print(wheel.__version__)")
-	PYTHONUSERBASE=$(PYTHON_INSTALL_DIR) pip install dist/$(WHEEL_NAME)[$(PYTHONTOOLS_EXTRAS)] --cache-dir=$(PYTHON_INSTALL_DIR)/pip_cache --user --upgrade
+	pip install dist/$(WHEEL_NAME)[$(PYTHONTOOLS_EXTRAS)] --target=$(PYTHON_INSTALL_DIR) --cache-dir=$(PYTHON_INSTALL_DIR)/pip_cache --upgrade
 
 
 # You need write permission the the package repository to do this. We use deploy tokens for this
@@ -113,3 +114,7 @@ realclean: clean
 	@echo 'Real cleaning $(PROJECT)...'
 	rm -f dist/*
 	$(MAKE) -C docs $@
+
+echo_env:
+	@echo IMASPY_TMP_DIR=$(IMASPY_TMP_DIR)
+	@echo PYTHON_INSTALL_DIR=$(PYTHON_INSTALL_DIR)
