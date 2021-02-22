@@ -2,10 +2,6 @@
 # Set up user-like IMAS env
 set -euf -o pipefail
 
-# Install python packages to imaspy/install
-export PYTHON_INSTALL_DIR=${PYTHON_INSTALL_DIR:-`pwd`/install}
-export PYTHONUSERBASE=$PYTHON_INSTALL_DIR
-
 # Use the parts of IMAS
 module load GCC/9.3.0
 module load Python/3.8.2-GCCcore-9.3.0
