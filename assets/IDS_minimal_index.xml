@@ -26,6 +26,9 @@
                 data_type="INT_0D"
                 type="constant"/>
       </field>
+      <field name="str_1d"
+             path="str_1d"
+             data_type="STR_1D"/>
       <field name="index"
              path="index"
              path_doc="index"

@@ -316,7 +316,7 @@ class IDSPrimitive(IDSMixin):
         return my_depth
 
     def __repr__(self):
-        return '%s("%s", %r)' % (type(self).__name__, self._name, self.value)
+        return '%s("%s", %r)' % (type(self).__name__, self.path, self.value)
 
     @property
     def data_type(self):
