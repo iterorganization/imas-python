@@ -26,15 +26,32 @@
                 data_type="INT_0D"
                 type="constant"/>
       </field>
-      <field name="str_1d"
-             path="str_1d"
-             data_type="STR_1D"/>
-      <field name="index"
-             path="index"
-             path_doc="index"
-             documentation="An index int"
-             data_type="INT_0D"
-             units="unitless"
-             type="static"/>
+      <field name="struct_array"
+         path="struct_array"
+         data_type="struct_array"
+         maxoccur="200"
+         coordinate1="1...N">
+         <field name="a"
+            data_type="structure"
+            path="struct_array/a">
+            <field name="b"
+               data_type="structure"
+               path="struct_array/b">
+               <field name="str_1d"
+                      path="str_1d"
+                      data_type="STR_1D"/>
+               <field name="index"
+                      path="index"
+                      path_doc="index"
+                      documentation="An index int"
+                      data_type="INT_0D"
+                      units="unitless"
+                      type="static"/>
+            </field>
+            <field name="str_1d_2"
+                   path="str_1d_2"
+                   data_type="STR_1D"/>
+         </field>
+      </field>
    </IDS>
 </IDSs>

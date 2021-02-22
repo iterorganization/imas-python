@@ -92,17 +92,17 @@ def compare_children(st1, st2, _ascii_empty_array_skip=False):
                 )
         else:  # leaf node
             if isinstance(child1.value, (list, np.ndarray)):
-                if (
-                    len(child1.value) == 0 or len(child2.value) == 0
-                ) and _ascii_empty_array_skip:
+                one = np.asarray(child1.value)
+                two = np.asarray(child2.value)
+                if (one.size == 0 or two.size == 0) and _ascii_empty_array_skip:
                     # check that they are both empty, or one is [] and one is ['']
                     assert (
-                        (len(child1.value) == 0 and child2.value == [""])
-                        or (len(child2.value) == 0 and child1.value == [""])
-                        or (len(child1.value) == 0 and len(child2.value) == 0)
+                        (one.size == 0 and two.size == 1 and two[0] == "")
+                        or (two.size == 0 and one.size == 1 and one[0] == "")
+                        or (one.size == 0 and two.size == 0)
                     )
                 else:
-                    assert np.array_equal(child1.value, child2.value)
+                    assert np.array_equal(one, two)
             else:
                 assert child1.value == child2.value
 
