@@ -149,7 +149,6 @@ class IDSPrimitive(IDSMixin):
                 value = np.array(value, dtype=np.int64)
             elif self._ids_type == "STR":
                 # make sure that all the strings are decoded
-                # numpy str_ objects are not handled nicely, convert to python list
                 if isinstance(value, np.ndarray):
                     value = list(
                         [
@@ -161,16 +160,14 @@ class IDSPrimitive(IDSMixin):
                     )
             else:
                 logger.critical(
-                    "Unknown numpy type {!s}, cannot convert from python to IDS type".format(
-                        value.dtype
-                    )
+                    "Unknown numpy type %s, cannot convert from python to IDS type",
+                    value.dtype,
                 )
                 raise Exception
         else:
             logger.critical(
-                "Unknown python type {!s}, cannot convert from python to IDS type".format(
-                    type(value)
-                )
+                "Unknown python type %s, cannot convert from python to IDS type",
+                type(value),
             )
             raise Exception
         return value

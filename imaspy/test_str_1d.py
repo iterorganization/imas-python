@@ -43,7 +43,7 @@ def test_str_1d_empty(backend, xml, worker_id, tmp_path):
             "Known issue with ASCII backend and 1d strings, see https://jira.iter.org/browse/IMAS-3463"
         )
     else:
-        assert ids2.minimal.str_1d.value == []
+        assert list(ids2.minimal.str_1d.value) == []
 
 
 def test_str_1d_long_single(backend, xml, worker_id, tmp_path):

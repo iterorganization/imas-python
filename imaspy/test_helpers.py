@@ -102,7 +102,9 @@ def compare_children(st1, st2, _ascii_empty_array_skip=False):
                         or (one.size == 0 and two.size == 0)
                     )
                 else:
-                    assert np.array_equal(one, two)
+                    assert one.size == two.size
+                    if one.size > 0 and two.size > 0:
+                        assert np.array_equal(one, two)
             else:
                 assert child1.value == child2.value
 
