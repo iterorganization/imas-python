@@ -69,7 +69,7 @@ VERSION_STRING=$(shell $(PYTHON) setup.py --version)
 WHEEL_NAME:=$(PACKAGE)-$(VERSION_STRING)-py3-none-any.whl
 SDIST_NAME:=$(PACKAGE)-$(VERSION_STRING).tar.gz
 
-IMASPY_TMP_DIR?=/tmp/$(PROJECT)-$(shell whoami)
+IMASPY_TMP_DIR?=$(HOME)/.local/share/$(PROJECT)
 PYTHON_INSTALL_DIR?=$(IMASPY_TMP_DIR)
 # TODO: imas dependency not found by setuptoools
 PYTHONTOOLS_EXTRAS?='backends_xarray,test,docs'
