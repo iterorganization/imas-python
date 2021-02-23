@@ -25,11 +25,12 @@ from jinja2.defaults import DEFAULT_FILTERS
 
 from pkg_resources import parse_version as V
 
-import imaspy
-
+sys.path.insert(0, "../../install")
 
 print("python exec:", sys.executable)
 print("sys.path:", sys.path)
+
+import imaspy
 
 # -- Project information -----------------------------------------------------
 # The documented project’s name
