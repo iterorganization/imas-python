@@ -1,8 +1,11 @@
 # This file is part of IMASPy.
 # You should have received IMASPy LICENSE file with this project.
 
+import copy
 import logging
 from distutils.version import StrictVersion as V
+
+import scipy.interpolate
 
 try:
     from functools import cached_property
@@ -189,6 +192,75 @@ class IDSMixin:
         """Return the data dictionary version of the backend structure."""
         if hasattr(self, "_parent"):
             return self._parent.backend_version
+
+    def resample(
+        self, old_time, new_time, homogeneousTime=None, inplace=False, **kwargs
+    ):
+        """Resample all primitives in their time dimension to a new time array"""
+        if "ids_properties" in self and homogeneousTime is None:
+            homogeneousTime = self.ids_properties.homogeneous_time
+
+        if homogeneousTime is None:
+            raise ValueError(
+                "Homogeneous_Time not specified or not called from toplevel"
+            )
+
+        if homogeneousTime != IDS_TIME_MODE_HOMOGENEOUS:
+            # TODO: implement also for IDS_TIME_MODE_INDEPENDENT
+            # (and what about converting between time modes? this gets tricky fast)
+            raise NotImplementedError(
+                "resample is only implemented for IDS_TIME_MODE_HOMOGENEOUS"
+            )
+
+        # we need to import here to avoid circular dependencies
+        from imaspy.ids_primitive import IDSPrimitive
+        from imaspy.ids_toplevel import IDSToplevel
+
+        def visitor(el):
+            if not el.has_value:
+                return
+            if getattr(el, "_var_type", None) == "dynamic" and el._name != "time":
+                # effectively a guard to get only idsPrimitive
+                # TODO: also support time axes as dimension of IDSStructArray
+                if el.time_axis is None:
+                    logger.warning(
+                        "No time axis found for dynamic structure %s", self.path
+                    )
+                interpolator = scipy.interpolate.interp1d(
+                    old_time.value, el.value, axis=el.time_axis, **kwargs
+                )
+                el.value = interpolator(new_time)
+
+        if not inplace:
+            el = copy.deepcopy(self)
+        else:
+            el = self
+
+        el.visit_children(visitor)
+
+        if isinstance(el, IDSToplevel):
+            el.time = new_time
+        else:
+            logger.warning(
+                "Performing resampling on non-toplevel. "
+                "Be careful to adjust your time base manually"
+            )
+
+        return el
+
+    @cached_property
+    def time_axis(self):
+        """Return the time axis for this node (None if no time dependence)"""
+        if self._coordinates != {}:
+            for ii in range(7):
+                # TODO: this could be nicer
+                try:
+                    if self._coordinates["coordinate%s" % (ii + 1,)].endswith("time"):
+                        return ii
+                except KeyError:
+                    return None
+        else:
+            return None
 
     def set_backend_properties(self, structure_xml):
         """Walk existing children to match those in structure_xml, then
