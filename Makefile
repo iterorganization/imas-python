@@ -74,6 +74,7 @@ PYTHON_INSTALL_DIR?=$(IMASPY_TMP_DIR)
 # TODO: imas dependency not found by setuptoools
 PYTHONTOOLS_EXTRAS?='backends_xarray,test,docs'
 install_package: wheel
+	export PYTHONUSERBASE=$(PYTHON_INSTALL_DIR)
 	@echo [INFO] Installing version '$(VERSION_STRING)'
 	@echo [INFO] With extras $(PYTHONTOOLS_EXTRAS)
 	@echo [INFO] to $(PYTHON_INSTALL_DIR)
@@ -81,7 +82,8 @@ install_package: wheel
 	@echo [DEBUG] setuptools version=$(shell $(PYTHON) -c "import setuptools; print(setuptools.__version__)")
 	@echo [DEBUG] setuptools SCM detected version=$(shell $(PYTHON) -c "from setuptools_scm import get_version; print(get_version(root='.'));")
 	@echo [DEBUG] wheel version=$(shell $(PYTHON) -c "import wheel; print(wheel.__version__)")
-	pip install dist/$(WHEEL_NAME)[$(PYTHONTOOLS_EXTRAS)] --target=$(PYTHON_INSTALL_DIR) --cache-dir=$(PYTHON_INSTALL_DIR)/pip_cache --upgrade
+	@echo [DEBUG] pip version="$(shell $(PIP) --version)"
+	$(PIP) install dist/$(WHEEL_NAME)[$(PYTHONTOOLS_EXTRAS)] --cache-dir=$(PYTHON_INSTALL_DIR)/pip_cache --user --upgrade
 
 
 # You need write permission the the package repository to do this. We use deploy tokens for this
