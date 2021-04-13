@@ -20,7 +20,7 @@ It provides:
 
 For users
 =========
-* Documentation is WIP! :merge:`4`
+* Documentation is WIP!
 * :doc:`iter_cluster`
 
 .. toctree::

@@ -33,7 +33,7 @@ This should give us all we need, namely at time of testing:
 * The Python package installer ``pip``:
   ``pip --version #pip 20.0.2 from /work/imas/opt/EasyBuild/software/Python/3.8.2-GCCcore-9.3.0/lib/python3.8/site-packages/pip-20.0.2-py3.8.egg/pip (python 3.8)``
 
-We are all developers, let's install in [pip editable](https://pip.pypa.io/en/stable/reference/pip_install/#options)/[setuptools develop](https://setuptools.readthedocs.io/en/latest/setuptools.html#development-mode) mode. **We are not using PEP517 build isolation to link to the systems numpy.**, **We are not using PyPA's recommended environment management, but instead install into the USER_SITE, this is ~/.local by default.**
+We are all developers, lets install in `pip editable <https://pip.pypa.io/en/stable/reference/pip_install/#options>`_ /`setuptools develop <https://setuptools.readthedocs.io/en/latest/setuptools.html#development-mode>`_ mode. **We are not using PEP517 build isolation to link to the systems numpy.**, **We are not using PyPA's recommended environment management, but instead install into the USER_SITE, this is ~/.local by default.**
 
 .. code-block:: bash
 
@@ -65,9 +65,10 @@ Check if you have access to the AL repository. This is currently needed to pull 
 * A ``UAL_VERSION``, which will be used to pull the low-level AL files from the ITER
   repository. ``echo $UAL_VERSION #4.8.3``
 
-``` bash
-(git ls-remote ssh://git@git.iter.org/imas/access-layer.git > /dev/null) && echo 'Connection successful!' || echo 'Connection failed!'
-# Connection successful!
+.. code-block:: bash
+
+    (git ls-remote ssh://git@git.iter.org/imas/access-layer.git > /dev/null) && echo 'Connection successful!' || echo 'Connection failed!'
+    # Connection successful!
 
 
 Quick primer on Python packages
