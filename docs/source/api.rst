@@ -18,3 +18,5 @@ IMASPy IDS manipulation
    ids_root.IDSRoot
    ids_toplevel.IDSToplevel
    ids_primitive.IDSPrimitive
+   ids_structure.IDSStructure
+   ids_struct_array.IDSStructArray
