@@ -48,14 +48,26 @@ except:
 class IDSToplevel(IDSStructure):
     """This is any IDS Structure which has ids_properties as child node
 
-    At minium, one should fill ids_properties/homogeneous_time
+    At minimum, one should fill ids_properties/homogeneous_time
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
 
     def __init__(
         self, parent, name, structure_xml, backend_version=None, backend_xml_path=None
     ):
-        """Save backend_version and backend_xml and build translation layer."""
+        """Save backend_version and backend_xml and build translation layer.
+
+        Args:
+            parent: Parent of ``self``. Usually an instance of :py:class:`IDSRoot`.
+            name: Name of this structure. Usually from the ``name`` attribute of
+                the IDS toplevel definition.
+            structure_xml: XML structure that defines this IDS toplevel.
+            backend_version: Version of the Data Dictionary used in the
+                backend to read/write. See :py:class:`IDSRoot`.
+            backend_xml_path: Explicit path the the DD of the backend
+                ``IDSRoot.xml``. Overwrites ``version`` similar to ``xml_path``.
+                See :py:class:`IDSRoot`.
+        """
         super().__init__(parent, name, structure_xml)
 
         # Set an explicit backend_version or xml path
