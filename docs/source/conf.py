@@ -55,6 +55,8 @@ netcdf4_docs = "https://unidata.github.io/netcdf4-python/netCDF4/index.html"
 iter_projects = "https://git.iter.org/projects/"
 imas_repos = urljoin(iter_projects, "IMAS/")
 imex_repos = urljoin(iter_projects, "IMEX/")
+dd_url = urljoin(imas_repos, "repos/data-dictionary/")
+al_url = urljoin(imas_repos, "repos/access-layer/")
 al_cython_url = urljoin(imas_repos, "repos/al-cython/")
 al_python_hli_url = urljoin(imas_repos, "repos/al-python/")
 al_python_lib_url = urljoin(imas_repos, "repos/al-python-lib/")
@@ -74,9 +76,11 @@ extlinks = {
     "issue": (issue_url + "%s", "#"),
     "merge": (mr_url + "%s", "!"),
     "netcdf4": (netcdf4_docs + "%s", "netcdf4 "),
-    "al_cython": (al_cython_url + "%s", "al_cython "),
-    "al_hli": (al_python_hli_url + "%s", "al_hli"),
-    "al_lib": (al_python_lib_url + "%s", "al_lib"),
+    "dd": (dd_url, ""),
+    "al": (al_url, ""),
+    "al_cython": (al_cython_url + "%s", ""),
+    "al_hli": (al_python_hli_url + "%s", ""),
+    "al_lib": (al_python_lib_url + "%s", ""),
     "pypa": ("https://packaging.python.org/%s", None),
 }
 
