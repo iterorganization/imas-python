@@ -49,21 +49,19 @@ class IDSPrimitive(IDSMixin):
     ):
         """Initialize IDSPrimitive
 
-        args:
-          - name: Name of the leaf node. Will be used in path generation when
-                  stored in DB
-          - ids_type: String representing the IDS type. Will be used to convert
-                      to Python equivalent
-          - ndims: Dimensionality of data
-
-        kwargs:
-          - parent: Parent node of this leaf. Can be anything with a _path attribute.
-                    Will be used in path generation when stored in DB
-          - value: Value to fill the leaf with. Can be anything castable by
-                   IDSPrimitive.cast_value. If not given, will be filled by
-                   default data matching given ids_type and ndims
-          - coordinates: Data coordinates of the node
-          - var_type: 'static', 'dynamic', or 'const'
+        Args:
+            name: Name of the leaf node. Will be used in path generation when
+                stored in DB
+            ids_type: String representing the IDS type. Will be used to convert
+                to Python equivalent
+            ndims: Dimensionality of data
+            parent: Parent node of this leaf. Can be anything with a _path attribute.
+                Will be used in path generation when stored in DB
+            value: Value to fill the leaf with. Can be anything castable by
+                IDSPrimitive.cast_value. If not given, will be filled by
+                default data matching given ids_type and ndims
+            coordinates: Data coordinates of the node
+            var_type: 'static', 'dynamic', or 'const'
         """
         super().__init__(parent, name, coordinates=coordinates)
 

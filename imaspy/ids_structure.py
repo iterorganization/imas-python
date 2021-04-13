@@ -54,12 +54,12 @@ class IDSStructure(IDSMixin):
         might be irreversible.
 
         Args:
-          - parent: Parent structure. Can be anything, but at database write
-                    time should be something with a path attribute
-          - name: Name of the node itself. Will be used in path generation when
-                  stored in DB
-          - structure_xml: Object describing the structure of the IDS. Usually
-                           an instance of `xml.etree.ElementTree.Element`
+            parent: Parent structure. Can be anything, but at database write
+                time should be something with a path attribute
+            name: Name of the node itself. Will be used in path generation when
+                stored in DB
+            structure_xml: Object describing the structure of the IDS. Usually
+                an instance of `xml.etree.ElementTree.Element`
         """
         # To ease setting values at this stage, do not try to cast values
         # to canonical forms

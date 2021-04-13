@@ -41,12 +41,13 @@ class IDSStructArray(IDSStructure, IDSMixin):
         """Initialize IDSStructArray from XML specification
 
         Args:
-          - parent: Parent structure. Can be anything, but at database write
-                    time should be something with a path attribute
-          - name: Name of the node itself. Will be used in path generation when
-                  stored in DB
-          - structure_xml: Object describing the structure of the IDS. Usually
-                           an instance of `xml.etree.ElementTree.Element`
+            parent: Parent structure. Can be anything, but at database write
+                time should be something with a path attribute
+            name: Name of the node itself. Will be used in path generation when
+                stored in DB
+            structure_xml: Object describing the structure of the IDS. Usually
+                an instance of `xml.etree.ElementTree.Element`
+            base_path_in: Not implemented yet
         """
         super().__init__(parent, name, structure_xml)
 
@@ -140,8 +141,6 @@ class IDSStructArray(IDSStructure, IDSMixin):
     def resize(self, nbelt, keep=False):
         """Resize an array of structures.
 
-        Parameters
-        ----------
         nbelt : int
             The number of elements for the targeted array of structure,
             which can be smaller or bigger than the size of the current
