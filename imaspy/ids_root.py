@@ -68,17 +68,41 @@ class IDSRoot:
         This does not need necessarily need any associated backend,
         but the structure matches MDSPlus pulsefile. E.g. each Root
         is identified by its shot and run, combining into a UID that
-        should be unique per database.
+        should be unique per database. IDS tree specifications come from the
+        IMAS Data Dictionairy (DD) :dd:`repository`.
 
-        if version is specified search the local set of IMAS DD definitions
-        for that version. if xml_path is explicitly specified, ignore version.
-        version/xml_path is used to build the in_memory store.
+        ``version`` or ``xml_path`` is used to build the in_memory structure of
+        the underlying Integrated Data Structures (IDSs).
 
-        if backend_version is specified use that version to read/write.
-        if backend_xml is specified use that DD xml to read/write (overrides backend_version)
-        if neither is specified, use the backend_version as found in
-          $ids/ids_properties/version_put/data_dictionary
-          (this is a toplevel property, so they could have different versions per toplevel)
+        ``backend_version`` or ``backend_xml_path`` is used in the read/write
+        action when reading/writing data nodes, similar to ``version`` and
+        ``xml_path``. If neither is specified, use the backend_version as found
+        in ``$ids/ids_properties/version_put/data_dictionary`` in the on-disk
+        data store. This is a toplevel property, so it is possible to have
+        different versions per :py:class:`IDSToplevel`.
+
+        Args:
+            s: Shot number
+            r: Run number
+            rs: Reference shot number
+            rr: Reference run number
+            version: DD version of the contained data. If given, search the
+                local store of DDs for the specified version. If not, default
+                to the latest version in the local DD store.
+            xml_path: Explicit path to the DD ``IDSRoot.xml``. Overwrites the
+                DD version given by ``version`` with the given ``IDSRoot``.
+            backend_version: Version of the Data Dictionary used in the
+                backend to read/write. Similar to ``version``, but for the
+                on-disk data instead of the in-memory structure.
+            backend_xml_path: Explicit path the the DD of the backend
+                ``IDSRoot.xml``. Overwrites ``version`` similar to ``xml_path``.
+            _lazy: If ``True``, only load the template of an :py:class:`IDSToplevel`
+                in memory if it is needed, e.g. if a node of the IDS is addressed.
+                If ``False``, load all IDSs on initialization time.
+
+        Returns:
+            An empty datastructure containing all :py:class:`IDSToplevel` s
+            as defined by the given ``version``/``xml_path``.
         """
 
         self.shot = s
