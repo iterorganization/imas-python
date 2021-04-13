@@ -25,12 +25,11 @@ from jinja2.defaults import DEFAULT_FILTERS
 
 from pkg_resources import parse_version as V
 
-sys.path.insert(0, "../../install")
+import imaspy
+
 
 print("python exec:", sys.executable)
 print("sys.path:", sys.path)
-
-import imaspy
 
 # -- Project information -----------------------------------------------------
 # The documented project’s name
@@ -39,44 +38,41 @@ project = src_project = PROJECT = "IMASPy"
 # PROJECT_ID=10189354
 PACKAGE = "imaspy"
 PACKAGE_HOST = "gitlab"
-src_group = GROUP = "KLIMEX"
+src_group = GROUP = "IMAS"
 
 # A copyright statement in the style '2008, Author Name'.
-copyright = f"2016-{datetime.datetime.now().year}, Karel van de Plassche (DIFFER)"
+copyright = f"2020-{datetime.datetime.now().year}, ITER Organization"
 # The author name(s) of the document
-author = "Karel van de Plassche (DIFFER)"
-src_host = "gitlab.com"
+author = "ITER Organization"
+src_host = "git.iter.org"
 
 # Parse urls here for convenience, to be re-used
-# gitlab imaspy folder
-repository_url = f"https://{src_host}/{src_group}/{src_project}/"
-blob_url = urljoin(repository_url, "-/blob/master/")
-issue_url = urljoin(repository_url, "-/issues/")
-mr_url = urljoin(repository_url, "-/merge_requests/")
-
-# JINTRAC docs
-jintrac_sphinx = "https://users.euro-fusion.org/pages/data-cmg/wiki/"
 
 # netCDF4 docs
 netcdf4_docs = "https://unidata.github.io/netcdf4-python/netCDF4/index.html"
 
 # ITER docs
 iter_projects = "https://git.iter.org/projects/"
-imas_site = urljoin(iter_projects, "IMAS/")
-imex_site = urljoin(iter_projects, "IMEX/")
-al_cython_url = urljoin(imas_site, "repos/al-cython/")
-al_python_hli_url = urljoin(imas_site, "repos/al-python/")
-al_python_lib_url = urljoin(imas_site, "repos/al-python-lib/")
+imas_repos = urljoin(iter_projects, "IMAS/")
+imex_repos = urljoin(iter_projects, "IMEX/")
+al_cython_url = urljoin(imas_repos, "repos/al-cython/")
+al_python_hli_url = urljoin(imas_repos, "repos/al-python/")
+al_python_lib_url = urljoin(imas_repos, "repos/al-python-lib/")
 issue_url = jira_url = "https://jira.iter.org/browse/"
+
+# IMASPy
+repository_url = f"{iter_projects}/{src_group}/repos/{src_project}/"
+blob_url = urljoin(repository_url, "browse/")
+mr_url = urljoin(repository_url, "/pull-requests")
+
 
 # Configuration of sphinx.ext.extlinks
 # See https://www.sphinx-doc.org/en/master/usage/extensions/extlinks.html
 # unique name: (base URL, label prefix)
 extlinks = {
     "src": (blob_url + "%s", f"{src_group}/{src_project}/"),
-    "issue": (issue_url + "%s", None),
+    "issue": (issue_url + "%s", "#"),
     "merge": (mr_url + "%s", "!"),
-    "jintrac": (jintrac_sphinx + "%s", "jintrac pages "),
     "netcdf4": (netcdf4_docs + "%s", "netcdf4 "),
     "al_cython": (al_cython_url + "%s", "al_cython "),
     "al_hli": (al_python_hli_url + "%s", "al_hli"),
@@ -115,9 +111,10 @@ extensions = [
     # 'matplotlib.sphinxext.plot_directive',  # numpy
     # 'IPython.sphinxext.ipythoGn_console_highlighting',  # numpy
     # 'IPython.sphinxext.ipython_directive',  # numpy
-    "sphinx.ext.mathjax",  # Render math with mathjax
+    "sphinx.ext.mathjax",  # Render math as images
     "sphinx_rtd_theme",  # Theme
     "recommonmark",  # For markdown support, does not support 'full' CommonMark syntax (yet)!
+    "sphinx_autodoc_typehints",  # Auto-parse type hints. Napoleon BEFORE typehints
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -246,6 +243,11 @@ htmlhelp_basename = "imaspy_doc"
 
 
 # -- Extension configuration -------------------------------------------------
+# Configuration of sphinx.ext.autodoc
+# https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
+autodoc_typehints = "none"  # Use sphinx_autodoc_typehints instead
+
+
 # from recommonmark.transform import AutoStructify
 
 # app setup hook
@@ -265,10 +267,6 @@ htmlhelp_basename = "imaspy_doc"
 #    app.add_transform(AutoStructify)
 
 
-# Configuration of sphinx.ext.autodoc
-# https://www.sphinx-doc.org/en/master/usage/quickstart.html#autodoc
-# autodoc_typehints = "none" #xarray
-
 # Configuration of sphinx.ext.autosummary
 # https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html
 autosummary_generate = True
@@ -279,8 +277,8 @@ autosummary_generate = True
 # Configuration of sphinx.ext.napoleon
 # Support for NumPy and Google style docstrings
 # See https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
-# napoleon_google_docstring = True
-# napoleon_numpy_docstring = True
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False
 napoleon_include_init_with_doc = True
 napoleon_include_private_with_doc = True
 # napoleon_include_special_with_doc = True
@@ -289,8 +287,9 @@ napoleon_include_private_with_doc = True
 # napoleon_use_admonition_for_references = False
 # napoleon_use_ivar = False
 # napoleon_use_param = True
-napoleon_use_keyword = True  # Use the "Keyword Args" syntax
+# napoleon_use_keyword = False
 # napoleon_use_rtype = True
+napoleon_preprocess_types = True
 napoleon_type_aliases = {
     # general terms
     "sequence": ":term:`sequence`",
@@ -339,7 +338,10 @@ napoleon_type_aliases = {
     # objects with abbreviated namespace (from pandas)
     "pd.Index": "~pandas.Index",
     "pd.NaT": "~pandas.NaT",
-}  # TODO: From xarray, improve!
+    "pd.DataFrame": "~pandas.NaT",
+}  # TODO: From xarray, improve! New in 3.2
+
+napoleon_attr_annotations = True  # Allow PEP 526 attributes annotations in classes. New in 3.4
 
 # From xarray, huh?
 # napoleon_preprocess_types = True #From xarray, not in docs
@@ -368,6 +370,19 @@ intersphinx_mapping = {
 
 # Configuration of sphinx.ext.mathjax
 # See https://www.sphinx-doc.org/en/master/usage/extensions/math.html#module-sphinx.ext.mathjax
+
+# Configuration of sphinx_autodoc_typehints
+# See https://pypi.org/project/sphinx-autodoc-typehints/
+set_type_checking_flag = (
+    True  # Set typing.TYPE_CHECKING to True to enable "expensive" typing imports
+)
+# typehints_fully_qualified = False # If True, class names are always fully qualified (e.g. module.for.Class). If False, just the class name displays (e.g. Class)
+always_document_param_types = (
+    True  # add stub documentation for undocumented parameters to be able to add type info.
+)
+# typehints_document_rtype = True # If False, never add an :rtype: directive. If True, add the :rtype: directive if no existing :rtype: is found.
+# simplify_optional_unions = True # If True, optional parameters of type "Union[...]" are simplified as being of type Union[..., None] in the resulting documention (e.g. Optional[Union[A, B]] -> Union[A, B, None]). # If False, the "Optional"-type is kept. Note: If False, any Union containing None will be displayed as Optional! Note: If an optional parameter has only a single type (e.g Optional[A] or Union[A, None]), it will always be displayed as Optional!
+
 
 def escape_underscores(string):
     return string.replace("_", r"\_")
