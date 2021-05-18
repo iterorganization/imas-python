@@ -17,20 +17,61 @@ except Exception:
         # Disable minimum version checks on downstream libraries.
         __version__ = "0.0.0"
 
-from imaspy import (
-    ids_primitive,
-    ids_root,
-    ids_struct_array,
-    ids_structure,
-    imas_ual_env_parsing,
-    setup_logging,
-)
-from imaspy.backends import (
-    common,
-    file_manager,
-    ual,
-    xarray_core_indexing,
-    xarray_core_utils,
-)
+# Import logging _first_
+import logging
+from .setup_logging import root_logger as logger
+
+try:
+    # Hardcode this for stricter imports and debugging
+    from . import (
+        ids_defs,
+        ids_mixin,
+        ids_primitive,
+        ids_root,
+        ids_struct_array,
+        ids_structure,
+        ids_toplevel,
+    )
+except Exception:
+    logger.critical("Global IMASPy __init__ could not import core IDS Python submodules. Trying continuing without IDSs...")
+    raise
+
+# Load the IMASPy IMAS AL/DD core
+try:
+    # Hardcode this for stricter imports and debugging
+    from . import (
+        al_exception,
+        context_store, # todo: Import with side-effects?
+        dd_helpers,
+        dd_zip,
+        imas_ual_env_parsing,
+        mdsplus_model,
+        tools, # todo: Import with side-effects?
+    )
+except Exception:
+    logger.critical("Global IMASPy __init__ could not import core IMAS AL/DD Python submodules. Trying continuing without AL/DD...")
+    raise
+else:
+    # Load the IMASPy IMAS AL backend
+    try:
+        from .backends import (
+            ual
+        )
+    except Exception:
+        logger.critical("Global IMASPy __init__ could not import core IMAS AL backend. Trying continuing without IMAS AL...")
+        raise
+
+# Load the rest of the IMASPy backends
+try:
+    # Hardcode this for stricter imports and debugging
+    from .backends import (
+        common,
+        file_manager,
+        xarray_core_indexing,
+        xarray_core_utils,
+    )
+except Exception:
+    logger.critical("IMASPy __init__ could not import core IMASPy backends. Trying continuing without backends")
+    raise
 
 OLDEST_SUPPORTED_VERSION = V("3.21.1")

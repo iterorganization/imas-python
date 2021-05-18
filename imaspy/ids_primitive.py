@@ -12,11 +12,11 @@ import numbers
 
 import numpy as np
 
+from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_defs import DD_TYPES
 from imaspy.ids_mixin import IDSMixin
-from imaspy.logger import logger
 
 try:
     from imaspy.ids_defs import (

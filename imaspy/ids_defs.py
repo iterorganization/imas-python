@@ -5,7 +5,7 @@
 
 import logging
 
-from imaspy.logger import logger
+from imaspy.setup_logging import root_logger as logger
 
 logger.setLevel(logging.INFO)
 

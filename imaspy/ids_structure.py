@@ -13,10 +13,10 @@ except ImportError:
 import logging
 from distutils.version import StrictVersion as V
 
+from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.ids_mixin import IDSMixin, get_coordinates
 from imaspy.ids_primitive import IDSPrimitive, create_leaf_container
-from imaspy.logger import logger
 
 try:
     from imaspy.ids_defs import DOUBLE_DATA, NODE_TYPE_STRUCTURE, READ_OP

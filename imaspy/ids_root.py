@@ -18,11 +18,11 @@ except ImportError:
 # Set up logging immediately
 import numpy as np
 
+from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.dd_zip import dd_etree, latest_dd_version
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.logger import logger
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 
 try:

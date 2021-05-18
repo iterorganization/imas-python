@@ -15,7 +15,7 @@ except ImportError:
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_defs import DD_TYPES
-from imaspy.logger import logger
+from imaspy.setup_logging import root_logger as logger
 
 try:
     from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_HOMOGENEOUS

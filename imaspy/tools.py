@@ -9,9 +9,9 @@ import numpy as np
 from tree_format import format_tree
 
 import imaspy
+from imaspy.setup_logging import root_logger as logger
 from imaspy.dd_zip import latest_dd_version
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MDSPLUS_BACKEND
-from imaspy.logger import logger
 
 logger.setLevel(logging.WARNING)
 

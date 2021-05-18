@@ -15,13 +15,13 @@ try:
 except ImportError:
     from cached_property import cached_property
 
+from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.dd_zip import dd_etree
 from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
-from imaspy.logger import logger
 
 try:
     from imaspy.ids_defs import (

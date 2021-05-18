@@ -9,12 +9,11 @@ This contains references to :py:class:`IDSStructure`s
 
 from distutils.version import StrictVersion as V
 
+from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure, get_coordinates
-from imaspy.logger import logger
-
 
 class IDSStructArray(IDSStructure, IDSMixin):
     """IDS array of structures (AoS) node
