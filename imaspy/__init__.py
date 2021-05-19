@@ -17,6 +17,7 @@ except Exception:
         # Disable minimum version checks on downstream libraries.
         __version__ = "0.0.0"
 
+_RAISE_ON_FAILED_INIT = False
 # Import logging _first_
 import logging
 from .setup_logging import root_logger as logger
@@ -34,7 +35,8 @@ try:
     )
 except Exception:
     logger.critical("Global IMASPy __init__ could not import core IDS Python submodules. Trying continuing without IDSs...")
-    raise
+    if _RAISE_ON_FAILED_INIT:
+        raise
 
 # Load the IMASPy IMAS AL/DD core
 try:
@@ -50,7 +52,8 @@ try:
     )
 except Exception:
     logger.critical("Global IMASPy __init__ could not import core IMAS AL/DD Python submodules. Trying continuing without AL/DD...")
-    raise
+    if _RAISE_ON_FAILED_INIT:
+        raise
 else:
     # Load the IMASPy IMAS AL backend
     try:
@@ -59,6 +62,7 @@ else:
         )
     except Exception:
         logger.critical("Global IMASPy __init__ could not import core IMAS AL backend. Trying continuing without IMAS AL...")
+    if _RAISE_ON_FAILED_INIT:
         raise
 
 # Load the rest of the IMASPy backends
@@ -72,6 +76,7 @@ try:
     )
 except Exception:
     logger.critical("IMASPy __init__ could not import core IMASPy backends. Trying continuing without backends")
-    raise
+    if _RAISE_ON_FAILED_INIT:
+        raise
 
 OLDEST_SUPPORTED_VERSION = V("3.21.1")
