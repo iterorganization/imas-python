@@ -191,8 +191,11 @@ def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
                 shell=True,
                 env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
             )
-        except subprocess.CalledProcessError:
-            logger.warning("Error making DD version {version}", version=tag)
+        except subprocess.CalledProcessError as ee:
+            logger.warning("Error making DD version %s, make reported:", tag)
+            print(f"CLASSPATH ='{saxon_jar_path}'")
+            print(f"PATH = '{os.environ['PATH']}'")
+            print(ee.output.decode("UTF-8"))
     # copy and delete original instead of move (to follow symlink)
     try:
         shutil.copy(
