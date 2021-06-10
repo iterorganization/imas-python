@@ -45,11 +45,15 @@ def prepare_data_dictionaries():
                 dd_zip.write(filename)
 
 
+# pre 3.30.0 versions of the DD have the `saxon9he.jar` file path hardcoded
+# in their makefiles. To be sure we can build everything, we link whatever
+# saxon we can find to a local file called saxon9he.jar
 def get_saxon():
     """Search for saxon*.jar and return the path or download it.
-    The DD build only works by having saxon9he.jar in the CLASSPATH (until 3.30.0).
-    We will 'cheat' a little bit later by symlinking saxon9he.jar to any version
-    of saxon we found.
+    The DD build works by having Saxon in the CLASSPATH, called saxon9he.jar
+    until DD version 3.30.0. After 3.30.0 Saxon is found by the SAXONJARFILE env
+    variable. We will 'cheat' a little bit later by symlinking saxon9he.jar to
+    any version of saxon we found.
 
     Check:
     1. CLASSPATH
@@ -58,9 +62,9 @@ def get_saxon():
     4. or download it
     """
 
-    local_saxon_path = os.getcwd() + "/saxon9he.jar"
-    if os.path.exists(local_saxon_path):
-        logger.debug("Something already at ./saxon9he.jar, not creating anew")
+    local_saxon_path = Path.cwd() / "saxon9he.jar"
+    if local_saxon_path.exists():
+        logger.debug("Something already at './saxon9he.jar' not creating anew")
         return local_saxon_path
 
     saxon_jar_origin = Path(
@@ -90,13 +94,15 @@ def find_saxon_jar():
 
 
 def find_saxon_classpath():
+    """ Search JAVAs CLASSPATH for a Saxon .jar """
     if "CLASSPATH" in os.environ:
-        saxon_jar_path = re.search("[^:]*saxon[^:]*jar", os.environ["CLASSPATH"])
+        saxon_jar_path = re.search("[^:]*saxon-?he?-(?!test)[^:]*jar", os.environ["CLASSPATH"])
         if saxon_jar_path:
             return saxon_jar_path.group(0)
 
 
 def find_saxon_bin():
+    """ Search for a saxon executable """
     saxon_bin = shutil.which("saxon")
     if saxon_bin:
         with open(saxon_bin, "r") as file:
