@@ -4,3 +4,6 @@ requires = ["setuptools>=43", "wheel", "setuptools_scm[toml]>=3.4", "Cython>=0.2
 # needs saxon9he.jar in CLASSPATH
 
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
