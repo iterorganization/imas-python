@@ -1,6 +1,6 @@
 #!/bin/sh
 # Clean IMASPy environment
-set -e
+set -xe
 
 # Clean MDSplus model cache
 chmod u+w -R ~/.cache/imaspy || true

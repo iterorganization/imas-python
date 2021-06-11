@@ -7,4 +7,3 @@ set -e
 module use /work/imas/etc/modulefiles
 module use /work/imas/etc/modules/all
 module purge
-

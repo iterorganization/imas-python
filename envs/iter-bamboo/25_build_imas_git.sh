@@ -2,6 +2,8 @@
 # Set up user-like IMAS env
 set -euf -o pipefail
 
+#source venv_imaspy/bin/activate
+
 # install a DD locally
 if [ ! -d data-dictionary ]; then
     git clone ssh://git@git.iter.org/imas/data-dictionary.git
@@ -41,16 +43,16 @@ cd lowlevel
 make -j`nproc`
 cd ..
 
-pip install --user numpy cython
+$PIP install numpy cython
 
 cd pythoninterface
 make -j`nproc`
 sed -e 's/imas_[^/."]*/imas/g' -i package/setup.py
 
 # install locally
-pip install --user -e package
+$PIP install -e package
 
 # test if we can import the imas module
-python -c 'import imas'
+$PYTHON -c 'import imas'
 
 cd ../../
