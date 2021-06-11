@@ -3,4 +3,4 @@
 set -e
 my_dir=$(dirname $0)
 
-make docs
+make -C docs html
