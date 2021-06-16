@@ -24,6 +24,8 @@ from .setup_logging import root_logger as logger
 
 try:
     # Hardcode this for stricter imports and debugging
+    # These imports define the "data containers" for IMASPy.
+    # We need these to work with data
     from . import (
         ids_defs,
         ids_mixin,
@@ -41,6 +43,8 @@ except Exception:
 # Load the IMASPy IMAS AL/DD core
 try:
     # Hardcode this for stricter imports and debugging
+    # These imports define the "IMAS compatibility" for IMASPy.
+    # We need these to work with data in the right format
     from . import (
         al_exception,
         context_store, # todo: Import with side-effects?
@@ -56,6 +60,7 @@ except Exception:
         raise
 else:
     # Load the IMASPy IMAS AL backend
+    # We can do all not-IMAS-AL-backend operations, so we only optionally need this
     try:
         from .backends import (
             ual
@@ -68,6 +73,8 @@ else:
 # Load the rest of the IMASPy backends
 try:
     # Hardcode this for stricter imports and debugging
+    # These backends are partially needed or alpha/beta.
+    # We can operate without many of these loaded
     from .backends import (
         common,
         file_manager,
