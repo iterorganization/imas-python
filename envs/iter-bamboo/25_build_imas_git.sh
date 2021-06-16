@@ -2,8 +2,6 @@
 # Set up user-like IMAS env
 set -euf -o pipefail
 
-#source venv_imaspy/bin/activate
-
 # install a DD locally
 if [ ! -d data-dictionary ]; then
     git clone ssh://git@git.iter.org/imas/data-dictionary.git
