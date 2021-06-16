@@ -13,6 +13,10 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import sys
+
+print("python exec:", sys.executable)
+print("sys.path:", sys.path)
+
 import datetime
 from urllib.parse import (
     urljoin,
@@ -25,11 +29,9 @@ from jinja2.defaults import DEFAULT_FILTERS
 
 from pkg_resources import parse_version as V
 
+
 import imaspy
 
-
-print("python exec:", sys.executable)
-print("sys.path:", sys.path)
 
 # -- Project information -----------------------------------------------------
 # The documented project’s name
