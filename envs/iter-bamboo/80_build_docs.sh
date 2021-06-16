@@ -3,4 +3,5 @@
 set -e
 my_dir=$(dirname $0)
 
-make -C docs html
+# Use the sphinx matching the venv we are in using SPHINXBUILD
+make -C docs html SPHINXBUILD="$PYTHON -m sphinx"
