@@ -73,6 +73,7 @@ def get_saxon():
         or find_saxon_jar()
         or download_saxon()
     )
+    logger.info("Found Saxon JAR '%s'", saxon_jar_origin)
     if not saxon_jar_origin.name == "saxon9he.jar":
         os.symlink(saxon_jar_origin, local_saxon_path)
         return local_saxon_path
