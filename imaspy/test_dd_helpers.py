@@ -45,6 +45,32 @@ def test_classpath_do_not_match(monkeypatch, path):
     saxon_jar_path = find_saxon_classpath()
     assert saxon_jar_path is None
 
+# ITER SDCC login01 20210617
+#module load GCCcore/10.2.0
+#module load Python/3.8.6-GCCcore-10.2.0
+#module load MDSplus/7.96.17-GCCcore-10.2.0
+#module load HDF5/1.10.7-iimpi-2020b  # todo: Intel MPI version?
+#module load Boost/1.74.0-GCCcore-10.2.0
+#module load MDSplus-Java/7.96.17-GCCcore-10.2.0-Java-11
+#module load Saxon-HE/10.3-Java-11
+def test_classpath_sdcc(monkeypatch):
+    monkeypatch.setenv("CLASSPATH", "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-xqj-10.3.jar:/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-test-10.3.jar:/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/jline-2.9.jar:/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-10.3.jar:/work/imas/opt/EasyBuild/software/MDSplus-Java/7.96.17-GCCcore-10.2.0-Java-11/java/classes/*")
+    saxon_jar_path = find_saxon_classpath()
+    assert saxon_jar_path == "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-10.3.jar"
+
+# ITER HPC login01 20210617
+# module load GCCcore/10.2.0
+# module load Python/3.8.6-GCCcore-10.2.0
+# module load MDSplus/7.96.17-GCCcore-10.2.0
+# module load HDF5/1.10.7-iimpi-2020b  # todo: Intel MPI version?
+# module load Boost/1.74.0-GCCcore-10.2.0
+# module load MDSplus-Java/7.96.17-GCCcore-10.2.0-Java-11
+# module load Saxon-HE/10.3-Java-11
+def test_classpath_hpc(monkeypatch):
+    monkeypatch.setenv("CLASSPATH", "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-xqj-10.3.jar:/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-test-10.3.jar:/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/jline-2.9.jar:/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-10.3.jar:/work/imas/opt/EasyBuild/software/MDSplus-Java/7.96.17-GCCcore-10.2.0-Java-11/java/classes/*")
+    saxon_jar_path = find_saxon_classpath()
+    assert saxon_jar_path == "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-10.3.jar"
+
 
 # TODO: Write tests!
 #def find_saxon_bin():
