@@ -96,10 +96,14 @@ def find_saxon_jar():
 
 def find_saxon_classpath():
     """ Search JAVAs CLASSPATH for a Saxon .jar """
-    if "CLASSPATH" in os.environ:
-        saxon_jar_path = re.search("[^:]*saxon-?he?-(?!test)[^:]*jar", os.environ["CLASSPATH"])
-        if saxon_jar_path:
-            return saxon_jar_path.group(0)
+    classpath = os.environ.get("CLASSPATH", "")
+    is_test = lambda x: "test" in x
+    is_saxon = lambda x: x.split("/")[-1].startswith("saxon")
+    is_jar = lambda x: x.endswith(".jar")
+
+    for part in re.split(";|:", classpath):
+        if is_jar(part) and is_saxon(part) and not is_test(part):
+            return part
 
 
 def find_saxon_bin():
