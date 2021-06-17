@@ -100,9 +100,10 @@ def find_saxon_classpath():
     is_test = lambda x: "test" in x
     is_saxon = lambda x: x.split("/")[-1].startswith("saxon")
     is_jar = lambda x: x.endswith(".jar")
+    is_xqj = lambda x: "xqj" in x
 
     for part in re.split(";|:", classpath):
-        if is_jar(part) and is_saxon(part) and not is_test(part):
+        if is_jar(part) and is_saxon(part) and not is_test(part) and not is_xqj(part):
             return part
 
 
