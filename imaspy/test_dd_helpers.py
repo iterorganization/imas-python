@@ -19,6 +19,10 @@ saxon_binary_quadruplets = (
     ("HPC",  "Saxon-HE/10.3-Java-11", "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-10.3.jar", "saxon-he-10.3.jar"),
 )
 
+saxon_nonmatches = (
+    "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-test-10.3.jar",
+)
+
 
 # find_saxon_bin tries to find saxon in the CLASSPATH env variable
 # It is thus per definition environment dependent
@@ -33,6 +37,13 @@ def test_classpath(monkeypatch, cluster, module, path, name):
     monkeypatch.setenv("CLASSPATH", path)
     saxon_jar_path = find_saxon_classpath()
     assert saxon_jar_path == path
+
+
+@pytest.mark.parametrize("path", saxon_nonmatches)
+def test_classpath_do_not_match(monkeypatch, path):
+    monkeypatch.setenv("CLASSPATH", path)
+    saxon_jar_path = find_saxon_classpath()
+    assert saxon_jar_path is None
 
 
 # TODO: Write tests!
