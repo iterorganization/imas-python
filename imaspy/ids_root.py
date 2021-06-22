@@ -39,6 +39,7 @@ try:
         OPEN_PULSE,
         READ_OP,
         UDA_BACKEND,
+        HDF5_BACKEND,
     )
 except:
     logger.critical("IMAS could not be imported. UAL not available!")
@@ -331,10 +332,11 @@ class IDSRoot:
             ASCII_BACKEND: "ASCII",
             MEMORY_BACKEND: "MEMORY",
             UDA_BACKEND: "UDA",
+            HDF5_BACKEND: "HDF5",
         }
         logger.info(
             "Opening AL backend %s for %s (shot %s, run %s, user %s, ver %s, mode %s)",
-            backend_names[backend_type],
+            backend_names.get(backend_type, "unknown backend"),
             tokamak,
             self.shot,
             self.run,
