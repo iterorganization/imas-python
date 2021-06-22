@@ -206,12 +206,12 @@ class IDSPrimitive(IDSMixin):
                 value = round(self.value)
             elif write_type == "FLT":
                 value = float(self.value)
-            data = hli_utils.HLIUtils.isScalarFinite(value, scalar_type)
+            data = value
         elif write_type in ["INT", "FLT", "CPX"]:
             # Arrays will be converted by isTypeValid
             if not hli_utils.HLIUtils.isTypeValid(self.value, self._name, "NP_ARRAY"):
                 raise Exception
-            data = hli_utils.HLIUtils.isFinite(self.value, scalar_type)
+            data = self.value
         else:
             # TODO: convert data on write time here
             if write_type == "INT":
