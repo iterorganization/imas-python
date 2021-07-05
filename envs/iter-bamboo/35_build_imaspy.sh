@@ -11,4 +11,5 @@ IMASPY_BUILD_DEPS=${pyproject_deps:2:-1}
 $PIP install --upgrade pip setuptools
 $PIP install --upgrade $IMASPY_BUILD_DEPS
 
+$PYTHON setup.py build
 $PYTHON setup.py sdist bdist_wheel
