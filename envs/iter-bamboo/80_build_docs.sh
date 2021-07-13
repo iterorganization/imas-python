@@ -1,6 +1,6 @@
 #!/bin/sh
 # Build HTML pages from source
-set -e
+set -xe
 my_dir=$(dirname $0)
 
 # Use the sphinx matching the venv we are in using SPHINXBUILD
