@@ -48,7 +48,7 @@ def prepare_data_dictionaries():
 # pre 3.30.0 versions of the DD have the `saxon9he.jar` file path hardcoded
 # in their makefiles. To be sure we can build everything, we link whatever
 # saxon we can find to a local file called saxon9he.jar
-def get_saxon():
+def get_saxon() -> Path:
     """Search for saxon*.jar and return the path or download it.
     The DD build works by having Saxon in the CLASSPATH, called saxon9he.jar
     until DD version 3.30.0. After 3.30.0 Saxon is found by the SAXONJARFILE env
@@ -79,7 +79,7 @@ def get_saxon():
         if not local_saxon_path.exists():
             os.symlink(saxon_jar_origin, local_saxon_path)
         return local_saxon_path
-    return str(saxon_jar_origin)
+    return saxon_jar_origin
 
 
 def find_saxon_jar():
