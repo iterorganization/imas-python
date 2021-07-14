@@ -49,10 +49,10 @@ from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py as _build_py
 
-if sys.version_info < (3, 6):
+if sys.version_info < (3, 8):
     sys.exit(
-        "Sorry, Python < 3.6 is not supported. Use a different"
-        " python e.g. 'module swap python Python/3.6.4-foss-2018a'"
+        "Sorry, Python < 3.8 is not supported. Use a different"
+        " python e.g. 'module swap python Python/3.8.6-GCCcore-10.2.0"
     )
 
 
