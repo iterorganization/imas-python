@@ -12,6 +12,10 @@ module load Boost/1.74.0-GCCcore-10.2.0
 # Extra modules that we need to build
 module load MDSplus-Java/7.96.17-GCCcore-10.2.0-Java-11
 module load Saxon-HE/10.3-Java-11
+
+# Documentation for data-dictionairy
+module load Doxygen/1.8.20-GCCcore-10.2.0
+
 # Very ugly way to just get saxon-he-10.3.jar, which we need for the DD
 export SAXONJARFILE=`echo $CLASSPATH | cut -d: -f4 | rev | cut -d/ -f1 | rev`
 echo [INFO] Set SAXONJARFILE to $SAXONJARFILE
