@@ -1,6 +1,6 @@
 #!/bin/sh
 # Set up user-like IMAS env
-set -euf -o pipefail
+set -xeuf -o pipefail
 
 # install a DD locally
 if [ ! -d data-dictionary ]; then

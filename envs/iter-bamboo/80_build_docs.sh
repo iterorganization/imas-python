@@ -1,6 +1,7 @@
 #!/bin/sh
 # Build HTML pages from source
-set -xe
+set -xeuf -o pipefail
+
 my_dir=$(dirname $0)
 
 # Use the sphinx matching the venv we are in using SPHINXBUILD

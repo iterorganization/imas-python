@@ -1,6 +1,7 @@
 #!/bin/sh
 # Set up ITER modules environment
-set -e
+set -xeuf -o pipefail
+
 my_dir=$(dirname $0)
 
 . $my_dir/00_setenv_modules.sh

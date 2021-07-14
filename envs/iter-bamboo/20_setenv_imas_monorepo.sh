@@ -1,6 +1,6 @@
 #!/bin/sh
 # Set up user-like IMAS env
-set -e
+set -xeuf -o pipefail
 
 # Use the parts of IMAS
 module load Python/3.6.4-intel-2018a

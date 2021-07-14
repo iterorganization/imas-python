@@ -1,4 +1,5 @@
 # Use the parts of IMAS
+set -xeuf -o pipefail
 module load GCC/9.3.0
 module load Python/3.8.2-GCCcore-9.3.0
 module load Saxon-HE/9.9.1.7-Java-13

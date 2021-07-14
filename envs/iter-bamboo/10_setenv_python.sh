@@ -1,6 +1,6 @@
 #!/bin/sh
 # Set up Python environment
-set -xe
+set -xeuf -o pipefail
 
 export PYTHON=${PYTHON:-python}
 export PIP=${PIP:-$PYTHON -m pip}

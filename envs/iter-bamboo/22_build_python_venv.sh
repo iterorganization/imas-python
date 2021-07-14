@@ -1,6 +1,6 @@
 #!/bin/sh
 # Set up Python environment
-set -xe
+set -xeuf -o pipefail
 
 # We assume we can use the build-in Python venv
 # As the module environment handles many of the packages

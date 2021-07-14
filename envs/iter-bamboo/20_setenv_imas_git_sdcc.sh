@@ -1,7 +1,8 @@
 # Use the parts of IMAS
 # This is stricly versioned to catch errors early
 # Based on IMAS/3.32.1-4.9.1-2020b
-set -xe
+set -xeuf -o pipefail
+
 module load GCCcore/10.2.0
 module load Python/3.8.6-GCCcore-10.2.0
 module load MDSplus/7.96.17-GCCcore-10.2.0

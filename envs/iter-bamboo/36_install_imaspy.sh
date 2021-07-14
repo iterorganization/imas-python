@@ -1,6 +1,6 @@
 #!/bin/sh
 # Pip install IMASPy package
-set -xe
+set -xeuf -o pipefail
 
 # This will install the latest IMASPy
 # As we clear the dist folder with 01_cleanenv_imaspy.sh

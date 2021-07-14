@@ -1,4 +1,6 @@
 #!/bin/sh
+set -xeuf -o pipefail
+
 # Test installed package
 PYTEST_FLAGS=${PYTEST_FLAG:--n=auto}
 COV_FLAGS=${COV_FLAGS:---cov=imaspy --cov-report=term --cov-report=xml:./coverage.xml}
