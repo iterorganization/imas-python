@@ -29,6 +29,8 @@ import distutils.sysconfig
 import distutils.text_file
 import distutils.util
 import importlib
+import importlib.util
+from importlib import metadata
 import logging
 import os
 import site
@@ -81,45 +83,54 @@ plat_indep_include = Path(distutils.sysconfig.get_python_inc())
 
 # We need to know where we are for many things
 this_file = Path(__file__)
-this_dir = this_file.parent.resolve() 
+this_dir = this_file.parent.resolve()
 
 package_name = "imaspy"
 
-# Set up 'fancy logging' to display messages to the user
+# Start: Set up 'fancy logging' to display messages to the user
 # Import with side-effects, it sets the root logger
-loader = importlib.machinery.SourceFileLoader(
-    str(this_dir), package_name + "/setup_logging.py"
-)
-spec = importlib.util.spec_from_loader(loader.name, loader)
-setup_logging = importlib.util.module_from_spec(spec)
-loader.exec_module(setup_logging)
+# From https://docs.python.org/3.7/library/importlib.html
+setup_logging_file = this_dir / "imaspy/setup_logging.py"
+assert setup_logging_file.is_file()
+spec = importlib.util.spec_from_file_location("setup_logging", setup_logging_file)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+sys.modules["imaspy.setup_logging"] = module
 
 logger = logging.getLogger("imaspy")
+# End: Setup logging
 
-# setup.cfg as read by setuptools
-conf_dict = read_configuration("setup.cfg")
+# Start: Load IMAS user environment
+imas_ual_env_parsing_file = this_dir / "imaspy/imas_ual_env_parsing.py"
+assert imas_ual_env_parsing_file.is_file()
+spec = importlib.util.spec_from_file_location("imas_ual_env_parsing", imas_ual_env_parsing_file)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+sys.modules["imaspy.imas_ual_env_parsing"] = module
+from imaspy.imas_ual_env_parsing import sanitise_UAL_symver, build_UAL_package_name, parse_UAL_version_string
+# End: Load IMAS user environment
 
-# Also read the toml for later use
-pyproject_path = Path("pyproject.toml")
-pyproject_text = pyproject_path.read_text()
-pyproject_data = toml.loads(pyproject_text)
-
-###
-# HANDLE USER ENVIRONMENT
-###
-loader = importlib.machinery.SourceFileLoader(
-    str(this_dir), package_name + "/imas_ual_env_parsing.py"
-)
-spec = importlib.util.spec_from_loader(loader.name, loader)
-imas_ual_env_parsing = importlib.util.module_from_spec(spec)
-loader.exec_module(imas_ual_env_parsing)
-
-loader = importlib.machinery.SourceFileLoader(str(this_dir), "setup_helpers.py")
-spec = importlib.util.spec_from_loader(loader.name, loader)
-setup_helpers = importlib.util.module_from_spec(spec)
-loader.exec_module(setup_helpers)
+# Start: Load setup_helpers
+setup_helpers_file = this_dir / "setup_helpers.py"
+assert setup_helpers_file.is_file()
+spec = importlib.util.spec_from_file_location("setup_helpers", setup_helpers_file)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+sys.modules["imaspy.setup_helpers"] = module
+# End: Load setup_helpers
 
 # Now that the environment is defined, import the rest of the needed packages
+# setup.cfg as read by setuptools
+setup_cfg = this_dir / "setup.cfg"
+assert setup_cfg.is_file()
+conf_dict = read_configuration(setup_cfg)
+
+# Also read the toml for later use
+pyproject_toml = this_dir / "pyproject.toml"
+assert pyproject_toml.is_file()
+pyproject_text = pyproject_toml.read_text()
+pyproject_data = toml.loads(pyproject_text)
+
 
 # Try to grab all necessary environment variables.
 # IMAS_PREFIX points to the directory all IMAS components live in
@@ -142,26 +153,22 @@ if not IMAS_PREFIX or not os.path.isdir(IMAS_PREFIX):
 # MAJOR = IMAS_VERSION.split(".")[0]
 # MINOR = IMAS_VERSION.split(".")[1]
 
-# Grab the UAL_VERSION to build against
-UAL_VERSION = os.getenv("UAL_VERSION")
+# Grab the Access Layer version to build against
+# Canonically this is stored in UAL_VERSION env variable
+# We have fallbacks in case it is not defined
+UAL_VERSION = os.getenv("UAL_VERSION", None)
 if not UAL_VERSION:
-    logger.warning("UAL_VERSION is unset. Will not build IMAS Access Layer!")
+    logger.warning("UAL_VERSION is unset. Falling back to IMASPy versioning")
     UAL_VERSION = "0.0.0"
 
-(
-    ual_symver,
-    steps_from_version,
-    ual_commit,
-) = imas_ual_env_parsing.parse_UAL_version_string(UAL_VERSION)
-
-safe_ual_symver = imas_ual_env_parsing.sanitise_UAL_symver(ual_symver)
-ext_module_name = imas_ual_env_parsing.build_UAL_package_name(
-    safe_ual_symver, ual_commit
-)
+ual_symver, steps_from_version, ual_commit = \
+    parse_UAL_version_string(UAL_VERSION)
+safe_ual_symver = sanitise_UAL_symver(ual_symver)
+ext_module_name = build_UAL_package_name(safe_ual_symver, ual_commit)
 
 # We need source files of the Python HLI UAL library
 # to link our build against, the version is grabbed from
-# the environment, and they are saved as syubdirectory of
+# the environment, and they are saved as subdirectory of
 # imaspy
 pxd_path = os.path.join(this_dir, "imas")
 
@@ -246,11 +253,9 @@ if __name__ == "__main__":
     # [setuptools docs](https://setuptools.readthedocs.io/en/latest/userguide/quickstart.html#basic-use)
     # Rough logic setuptools_scm
     # See https://pypi.org/project/setuptools-scm/
-
     # For allowed version strings, see https://packaging.python.org/specifications/core-metadata/ for allow version strings
-    # Example PEP 440 string:
-    # Version: 1.0a2
-    from importlib import metadata
+
+    # Always build the DD
     eps = metadata.entry_points()['console_scripts']
     for ep in eps:
         if ep.name == "build_DD":
