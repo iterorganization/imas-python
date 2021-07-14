@@ -11,6 +11,9 @@ from io import BytesIO
 from pathlib import Path
 from urllib.request import urlopen
 from zipfile import ZIP_DEFLATED, ZipFile
+from typing import Tuple
+
+from imaspy.imaspy_exceptions import IMASPyError
 
 logger = logging.getLogger("imaspy")
 logger.setLevel(logging.INFO)
@@ -23,8 +26,11 @@ def prepare_data_dictionaries():
     3. Generate IDSDef.xml and rename to IDSDef_${version}.xml
     4. Zip all these IDSDefs together and include in wheel
     """
+    import git
+    from git import Repo
+
     saxon_jar_path = get_saxon()
-    repo = get_data_dictionary_repo()
+    repo: Repo = get_data_dictionary_repo()
     if repo:
         for tag in repo.tags:
             if V(str(tag)) > V("3.21.1"):
@@ -135,15 +141,14 @@ def download_saxon():
     return path
 
 
-def get_data_dictionary_repo():
+def get_data_dictionary_repo() -> Tuple[bool, bool]:
     try:
         import git  # Import git here, the user might not have it!
     except ModuleNotFoundError:
-        logger.warning(
+        raise IMASPyError(
             "Could not find 'git' module, try 'pip install gitpython'. \
             Will not build Data Dictionaries!"
         )
-        return False, False
 
         # We need the actual source code (for now) so grab it from ITER
     dd_repo_path = "data-dictionary"
