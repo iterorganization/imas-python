@@ -250,13 +250,18 @@ if __name__ == "__main__":
     # For allowed version strings, see https://packaging.python.org/specifications/core-metadata/ for allow version strings
     # Example PEP 440 string:
     # Version: 1.0a2
-    from imaspy.dd_helpers import prepare_data_dictionaries
-    prepare_data_dictionaries()
+    from importlib import metadata
+    eps = metadata.entry_points()['console_scripts']
+    for ep in eps:
+        if ep.name == "build_DD":
+            build_DD = ep.load()
+            build_DD()
+            break
     setup(
         use_scm_version={
             "fallback_version": os.getenv("IMASPY_VERSION", "0.0.0"),
         },
         setup_requires=pyproject_data["build-system"]["requires"],
         install_requires=install_requires,
-        extra_requires=optional_reqs,
+        extras_require=optional_reqs,
     )
