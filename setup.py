@@ -57,10 +57,10 @@ if sys.version_info < (3, 6):
 
 
 # Check setuptools version before continuing for legacy builds
-if V(setuptools_version) < V("42"):
+if V(setuptools_version) < V("43"):
     raise RuntimeError(
         "Setuptools version outdated. Found"
-        f" {V(setuptools_version)} need at least {V('42')}"
+        f" {V(setuptools_version)} need at least {V('43')}"
     )
 
 # Workaround for https://github.com/pypa/pip/issues/7953
