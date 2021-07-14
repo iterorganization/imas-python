@@ -277,44 +277,7 @@ if __name__ == "__main__":
     # Version: 1.0a2
 
     setup(
-        name=package_name,
-        description="Pythonic wrappers for the IMAS Access Layer",
-        long_description=long_description,
-        long_description_content_type="text/markdown",
-        url="https://gitlab.com/klimex/imaspy",
-        author="Karel van de Plassche",
-        author_email="k.l.vandeplassche@differ.nl",
-        classifiers=[
-            "Intended Audience :: Science/Research",
-            "Natural Language :: English",
-            "Programming Language :: Python :: 3",
-            "Topic :: Utilities",
-        ],
-        packages=find_packages(),
-        # Include files specified by MANIFEST.in
-        include_package_data=True,
-        # No pyproject.toml for --no-build-installation. Use setup.py instead
         use_scm_version={
-            "write_to": package_name + "/version.py",
-            "write_to_template": '"{version}"',
-            "relative_to": this_file,
-            # For tarball installs without metadata (e.g. .git repository)
-            "version_scheme": "guess-next-dev",
-            "local_scheme": "no-local-version",
             "fallback_version": os.getenv("IMASPY_VERSION", "0.0.0"),
-        },
-        python_requires=">3.6",
-        # Duplicate from pyproject.toml for older setuptools
-        setup_requires=setup_requires,
-        install_requires=install_requires,
-        extras_require=optional_reqs,
-        ext_modules=extensions,
-        cmdclass={"build_py": BuildPyCommand, "build_DD": BuildDDCommand},
-        entry_points={
-            "console_scripts": [
-                "ids_convert = imaspy.tools:convert",
-                "ids_info = imaspy.tools:info",
-                "ids_print = imaspy.tools:tree",
-            ]
         },
     )
