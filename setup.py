@@ -160,40 +160,14 @@ LIBRARIES = "imas"  # We just need the IMAS library
 # EXTRACOMPILEARGS = '' # This is machine-specific ignore for now
 
 
-class BuildDDCommand(distutils.cmd.Command):
-    """A custom command to build the data dictionaries."""
-
-    description = "build IDSDef.zip"
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        """Prepare DDs if they can be git pulled"""
-        from imaspy.dd_helpers import prepare_data_dictionaries
-
-        prepare_data_dictionaries()
-
-
-class BuildPyCommand(_build_py):
-    """Subclass the build_py command to also build the DD"""
-
-    def run(self):
-        self.run_command("build_DD")
-        super().run()
-
-
 ###
 # Set up Cython build integration
 ###
 ### CYTHON COMPILATION ENVIRONMENT
 
 # From https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#multiple-cython-files-in-a-package
-REBUILD_LL = False
+REBUILD_LL = False # Do not rebuild the LL for now
+# TODO: See how much SDCC env we can (re)use
 if REBUILD_LL:
     USE_CYTHON = True
     cython_like_ext = ".pyx" if USE_CYTHON else ".c"
@@ -246,12 +220,6 @@ if REBUILD_LL:
 else:
     extensions = []
 
-
-# long_description
-# By default, an upload's description will render with reStructuredText. If the description is in an alternate format like Markdown, a package may set the long_description_content_type in setup.py to the alternate format.
-with open(os.path.join(this_dir, "README.md"), encoding="utf-8") as file:
-    long_description = file.read()
-
 optional_reqs = {}
 for req in ["backends_al", "backends_xarray", "core", "examples", "test", "docs"]:
     optional_reqs[req] = distutils.text_file.TextFile(
@@ -275,9 +243,10 @@ if __name__ == "__main__":
     # For allowed version strings, see https://packaging.python.org/specifications/core-metadata/ for allow version strings
     # Example PEP 440 string:
     # Version: 1.0a2
-
     setup(
         use_scm_version={
             "fallback_version": os.getenv("IMASPY_VERSION", "0.0.0"),
         },
+        install_requires=install_requires,
+        extra_requires=optional_reqs,
     )
