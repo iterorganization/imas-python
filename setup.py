@@ -32,6 +32,7 @@ import importlib
 import logging
 import os
 import site
+import toml
 
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import sys
@@ -48,11 +49,14 @@ from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py as _build_py
+from setuptools.config import read_configuration
+
+cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
 if sys.version_info < (3, 8):
     sys.exit(
         "Sorry, Python < 3.8 is not supported. Use a different"
-        " python e.g. 'module swap python Python/3.8.6-GCCcore-10.2.0"
+        f" python e.g. '{cannonical_python_command}'"
     )
 
 
@@ -75,8 +79,9 @@ distutils.util.check_environ()
 plat_indep_libraries = Path(distutils.sysconfig.get_python_lib())
 plat_indep_include = Path(distutils.sysconfig.get_python_inc())
 
+# We need to know where we are for many things
 this_file = Path(__file__)
-this_dir = this_file.parent.resolve()  # We need to know where we are for many things
+this_dir = this_file.parent.resolve() 
 
 package_name = "imaspy"
 
@@ -91,7 +96,13 @@ loader.exec_module(setup_logging)
 
 logger = logging.getLogger("imaspy")
 
-logger.info("pyproject.toml support got added in pip 10. Assuming it is available")
+# setup.cfg as read by setuptools
+conf_dict = read_configuration("setup.cfg")
+
+# Also read the toml for later use
+pyproject_path = Path("pyproject.toml")
+pyproject_text = pyproject_path.read_text()
+pyproject_data = toml.loads(pyproject_text)
 
 ###
 # HANDLE USER ENVIRONMENT
@@ -115,7 +126,7 @@ loader.exec_module(setup_helpers)
 IMAS_PREFIX = os.getenv("IMAS_PREFIX")
 if not IMAS_PREFIX or not os.path.isdir(IMAS_PREFIX):
     logger.warning(
-        "IMAS_PREFIX is unset or is not a directory. Points to %s. Will not build UAL!",
+        "IMAS_PREFIX is unset or is not a directory. Points to %s. Will not build IMAS Access Layer!",
         IMAS_PREFIX,
     )
     IMAS_PREFIX = "0.0.0"
@@ -134,7 +145,7 @@ if not IMAS_PREFIX or not os.path.isdir(IMAS_PREFIX):
 # Grab the UAL_VERSION to build against
 UAL_VERSION = os.getenv("UAL_VERSION")
 if not UAL_VERSION:
-    logger.warning("UAL_VERSION is unset. Will not build UAL!")
+    logger.warning("UAL_VERSION is unset. Will not build IMAS Access Layer!")
     UAL_VERSION = "0.0.0"
 
 (
@@ -233,10 +244,6 @@ if __name__ == "__main__":
     # Legacy setuptools support, e.g. `python setup.py something`
     # See [PEP-0517](https://www.python.org/dev/peps/pep-0517/) and
     # [setuptools docs](https://setuptools.readthedocs.io/en/latest/userguide/quickstart.html#basic-use)
-    pyproject: list = distutils.text_file.TextFile("pyproject.toml").readlines()
-    requires_line: str = [line for line in pyproject if "requires =" in line][0]
-    requires: str = requires_line.split("=", 1)[1]
-    setup_requires: list = ast.literal_eval(requires.strip())
     # Rough logic setuptools_scm
     # See https://pypi.org/project/setuptools-scm/
 
@@ -247,6 +254,7 @@ if __name__ == "__main__":
         use_scm_version={
             "fallback_version": os.getenv("IMASPY_VERSION", "0.0.0"),
         },
+        setup_requires=pyproject_data["build-system"]["requires"],
         install_requires=install_requires,
         extra_requires=optional_reqs,
     )
