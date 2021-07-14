@@ -16,6 +16,7 @@ except Exception:
         # Local copy or not installed with setuptools.
         # Disable minimum version checks on downstream libraries.
         __version__ = "0.0.0"
+version = __version__
 
 _RAISE_ON_FAILED_INIT = False
 # Import logging _first_
