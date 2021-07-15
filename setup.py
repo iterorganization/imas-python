@@ -119,6 +119,40 @@ spec.loader.exec_module(module)
 sys.modules["imaspy.setup_helpers"] = module
 # End: Load setup_helpers
 
+# Start: Load dd_helpers
+setup_helpers_file = this_dir / "dd_helpers.py"
+assert setup_helpers_file.is_file()
+spec = importlib.util.spec_from_file_location("dd_helpers", setup_helpers_file)
+module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(module)
+sys.modules["imaspy.dd_helpers"] = module
+from imaspy.dd_helpers import prepare_data_dictionaries
+# End: Load dd_helpers
+
+# Define building of the Data Dictionary as custom build step
+class BuildDDCommand(distutils.cmd.Command):
+    """A custom command to build the data dictionaries."""
+
+    description = "build IDSDef.zip"
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        """Prepare DDs if they can be git pulled"""
+        prepare_data_dictionaries()
+
+class BuildPyCommand(_build_py):
+    """Subclass the build_py command to also build the DD"""
+
+    def run(self):
+        self.run_command("build_DD")
+        super().run()
+
 # Now that the environment is defined, import the rest of the needed packages
 # setup.cfg as read by setuptools
 setup_cfg = this_dir / "setup.cfg"
@@ -255,13 +289,6 @@ if __name__ == "__main__":
     # See https://pypi.org/project/setuptools-scm/
     # For allowed version strings, see https://packaging.python.org/specifications/core-metadata/ for allow version strings
 
-    # Always build the DD
-    eps = metadata.entry_points()['console_scripts']
-    for ep in eps:
-        if ep.name == "build_DD":
-            build_DD = ep.load()
-            build_DD()
-            break
     setup(
         use_scm_version={
             "fallback_version": os.getenv("IMASPY_VERSION", "0.0.0"),
@@ -269,4 +296,5 @@ if __name__ == "__main__":
         setup_requires=pyproject_data["build-system"]["requires"],
         install_requires=install_requires,
         extras_require=optional_reqs,
+        cmdclass={"build_py": BuildPyCommand, "build_DD": BuildDDCommand},
     )
