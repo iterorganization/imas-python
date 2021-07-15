@@ -9,14 +9,17 @@ The zip file contains files as
 multiple paths are checked. See `ZIPFILE_LOCATIONS`.
 First the environment variable IMASPY_DDZIP is checked.
 If that exists and points to a file we will attempt to open it.
-Then, IDSDef.zip is searched in the current folder,
+Then, IDSDef.zip is searched in site-packages, the current folder,
 in .config/imaspy/ (`$$XDG_CONFIG_HOME`) and in
 the data-dictionary/ folder within the IMASPy package.
 
 1. `$$IMASPY_DDZIP`
-2. `./IDSDef.zip`
-3. `~/.config/imaspy/IDSDef.zip`
-4. `__file__/../../data-dictionary/IDSDef.zip`
+2. The virtual environment
+3. USER_BASE`imaspy/IDSDef.zip`
+4-?. all `site-packages/imaspy/IDSDef.zip`
+5. `./IDSDef.zip`
+6. `~/.config/imaspy/IDSDef.zip`
+7. `__file__/../../data-dictionary/IDSDef.zip`
 
 All files are checked, i.e. if your .config/imaspy/IDSDef.zip is outdated
 the IMASPy-packaged version will be used.
@@ -33,6 +36,8 @@ from distutils.version import StrictVersion as V
 from functools import lru_cache
 from pathlib import Path
 from zipfile import ZipFile
+import site
+from typing import List
 
 import imaspy
 
@@ -50,15 +55,39 @@ def _get_xdg_config_dir():
     return os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
 
 
-# Look in the current directory, $IMASPY_DDZIP, .config/imaspy/
-# and data-dictionary/ folders
-ZIPFILE_LOCATIONS = [
-    os.environ.get("IMASPY_DDZIP"),
-    Path(".") / "IDSDef.zip",
-    Path(_get_xdg_config_dir()) / "imaspy" / "IDSDef.zip",
-    Path(__file__).parent.parent / "data-dictionary" / "IDSDef.zip",
-]
+def _build_zipfile_locations() -> List[Path]:
+    """Build a list of potential data dictionary locations"""
+    zip_name = "IDSDef.zip"
+    package_name = "imaspy"
 
+    # Look at IMASPY_DDZIP env variable
+    zipfile_locations = [os.environ.get("IMASPY_DDZIP")]
+
+    # Look in venv
+    venv_path = os.environ.get("VIRTUAL_ENV")
+    if venv_path:
+        zipfile_locations.append(Path(venv_path) / package_name / zip_name)
+
+    # Look user base (pip install sdist). Only exists when site.ENABLE_USER_SITE = True
+    zipfile_locations.append(Path(site.getuserbase()) / package_name / zip_name)
+
+    # Look in all site_packages folders
+    zipfile_locations.extend(
+        [Path(sp) / package_name / zip_name for sp in site.getsitepackages()]
+    )
+
+    # Look at the current folder and subfolders
+    zipfile_locations.extend(
+        [
+            Path(".") / zip_name,
+            Path(_get_xdg_config_dir()) / package_name / zip_name,
+            Path(__file__).parent.parent / "data-dictionary" / zip_name,
+        ]
+    )
+    return zipfile_locations
+
+
+ZIPFILE_LOCATIONS = _build_zipfile_locations()
 
 # for version conversion we would expect 2 to be sufficient. Give it some extra space.
 @lru_cache(maxsize=4)
