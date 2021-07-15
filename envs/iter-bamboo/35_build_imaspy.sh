@@ -3,8 +3,10 @@
 # IMAS dependencies are build in another file
 set -xeuf -o pipefail
 
-# Pip install build dependencies
-$PIP install --upgrade pip setuptools
+# Build based on Python Packaging Authority recommendations
+# https://packaging.python.org/guides/tool-recommendations/
+# Use setuptools to define projects.
+# Use build to create Source Distributions and wheels
+$PIP install --upgrade pip setuptools build
 
-$PYTHON $SETUP_PY build build_ext
-$PYTHON $SETUP_PY sdist bdist_wheel
+$PYTHON -m build
