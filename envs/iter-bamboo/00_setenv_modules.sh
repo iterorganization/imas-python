@@ -16,3 +16,6 @@ set -xeuf -o pipefail
 module use /work/imas/etc/modulefiles
 module use /work/imas/etc/modules/all
 module purge
+
+# Load base "should be always there" modules
+module load git
