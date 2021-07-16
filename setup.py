@@ -51,6 +51,7 @@ from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py as _build_py
+from setuptools.command.sdist import sdist as _sdist
 from setuptools.config import read_configuration
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
@@ -155,10 +156,16 @@ class BuildDDCommand(distutils.cmd.Command):
         """Prepare DDs if they can be git pulled"""
         prepare_data_dictionaries()
 
-class BuildPyCommand(_build_py):
-    """Subclass the build_py command to also build the DD"""
+#class BuildPyCommand(_build_py):
+#    """Subclass the build_py command to also build the DD"""
+#
+#    def run(self):
+#        self.run_command("build_DD")
+#        super().run()
 
+class MySdist(_sdist):
     def run(self):
+        # Execute the classic clean command
         self.run_command("build_DD")
         super().run()
 
@@ -305,5 +312,6 @@ if __name__ == "__main__":
         setup_requires=pyproject_data["build-system"]["requires"],
         install_requires=install_requires,
         extras_require=optional_reqs,
-        cmdclass={"build_py": BuildPyCommand, "build_DD": BuildDDCommand},
+        #cmdclass={"build_py": BuildPyCommand, "build_DD": BuildDDCommand, "sdist": MySdist},
+        cmdclass={"build_DD": BuildDDCommand, "sdist": MySdist},
     )
