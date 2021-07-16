@@ -6,7 +6,7 @@ PYTEST_FLAGS=${PYTEST_FLAG:-'-n=auto'}
 COV_FLAGS=${COV_FLAGS:-'--cov=imaspy --cov-report=term --cov-report=xml:./coverage.xml'}
 JUNIT_FLAGS=${JUNIT_FLAGS:-'--junit-xml=./junit.xml'}
 PYTEST_MARK=${PYTEST_MARK:-''}
-IDSS=${IDSS:-'pulse_schedule,ece'}
+IDSS=${IDSS:-pulse_schedule,ece}
 
 source $IMASPY_VENV/bin/activate
 # Run tests in different directory
