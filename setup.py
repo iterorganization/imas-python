@@ -25,9 +25,6 @@ So instead, we install packages to the `USER_SITE` there, and do not use
 """
 import argparse
 import ast
-import distutils.sysconfig
-import distutils.text_file
-import distutils.util
 import importlib
 import importlib.util
 from importlib import metadata
@@ -40,19 +37,25 @@ import toml
 import sys
 
 # Import other stdlib packages
-from distutils.version import LooseVersion as V
 from itertools import chain
 from pathlib import Path
 
 import pkg_resources
 
-# Use setuptools to build packages
+# Use setuptools to build packages. Advised to import setuptools before distutils
+import setuptools
 from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py as _build_py
 from setuptools.command.sdist import sdist as _sdist
 from setuptools.config import read_configuration
+
+
+from distutils.version import LooseVersion as V
+from distutils.sysconfig import get_python_lib as dist_get_python_lib, get_python_inc as dist_get_python_inc
+from distutils.util import get_platform as dist_get_platform, check_environ as dist_check_environ
+from distutils.text_file import TextFile as DistTextFile
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
@@ -76,11 +79,11 @@ site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 
 # Collect env-specific settings
-platform = distutils.util.get_platform()  # linux-x86_64
-distutils.util.check_environ()
+platform = dist_get_platform()  # linux-x86_64
+dist_check_environ()
 
-plat_indep_libraries = Path(distutils.sysconfig.get_python_lib())
-plat_indep_include = Path(distutils.sysconfig.get_python_inc())
+plat_indep_libraries = Path(dist_get_python_lib())
+plat_indep_include = Path(dist_get_python_inc())
 
 # We need to know where we are for many things
 this_file = Path(__file__)
@@ -140,7 +143,7 @@ from imaspy.dd_helpers import prepare_data_dictionaries
 # End: Load dd_helpers
 
 # Define building of the Data Dictionary as custom build step
-class BuildDDCommand(distutils.cmd.Command):
+class BuildDDCommand(setuptools.Command):
     """A custom command to build the data dictionaries."""
 
     description = "build IDSDef.zip"
@@ -290,7 +293,7 @@ else:
 
 optional_reqs = {}
 for req in ["backends_al", "backends_xarray", "core", "examples", "test", "docs"]:
-    optional_reqs[req] = distutils.text_file.TextFile(
+    optional_reqs[req] = DistTextFile(
         this_dir / f"requirements_{req}.txt"
     ).readlines()
 install_requires = optional_reqs.pop("core")
