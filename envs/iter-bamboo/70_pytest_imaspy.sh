@@ -17,7 +17,7 @@ pushd empty
 $PYTEST -VV
 
 if [ "$1" == "mini" ]; then
-    $PYTEST --ids="'"$IDSS"'" $PYTEST_FLAGS $COV_FLAGS $JUNIT_FLAGS -m "$PYTEST_MARK" ../imaspy
+    $PYTEST --ids=$IDSS $PYTEST_FLAGS $COV_FLAGS $JUNIT_FLAGS -m "$PYTEST_MARK" ../imaspy
 else
     echo Untested!
     exit 1
