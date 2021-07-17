@@ -16,7 +16,7 @@ the data-dictionary/ folder within the IMASPy package.
 1. `$$IMASPY_DDZIP`
 2. The virtual environment
 3. USER_BASE`imaspy/IDSDef.zip`
-4-?. all `site-packages/imaspy/IDSDef.zip`
+4. All `site-packages/imaspy/IDSDef.zip`
 5. `./IDSDef.zip`
 6. `~/.config/imaspy/IDSDef.zip`
 7. `__file__/../../data-dictionary/IDSDef.zip`
