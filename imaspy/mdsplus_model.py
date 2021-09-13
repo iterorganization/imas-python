@@ -94,7 +94,7 @@ def model_exists(path):
                 "ids_model.characteristics",
                 "ids_model.datafile",
                 "ids_model.tree",
-                "done.txt"
+                "done.txt",
             ],
         )
     )
@@ -115,7 +115,9 @@ def create_model_ids_xml(cache_dir_path, fname, version):
                 # if we just pass a filename
                 "UAL_GIT_DESCRIBE=" + os.environ.get("UAL_VERSION", "0.0.0"),
                 "-xsl:"
-                + str(Path(__file__).parent / "../assets/IDSDef2MDSpreTree.xsl"),
+                + str(
+                    Path(__file__).parent / "../assets/IDSDef2MDSpreTree.xsl"
+                ),  # we have to be careful to have the same version of this file as in the access layer
             ],
             input=get_dd_xml(version) if version else None,
             env={"CLASSPATH": get_saxon(), "PATH": os.environ["PATH"]},
@@ -150,7 +152,7 @@ def create_mdsplus_model(cache_dir_path):
             },
         )
         # Touch a file to show that we have finished the model
-        (cache_dir_path / 'done.txt').touch()
+        (cache_dir_path / "done.txt").touch()
     except CalledProcessError as e:
         logger.error("Error making MDSPlus model in {path}", cache_dir_path)
         raise e

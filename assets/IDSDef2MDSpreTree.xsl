@@ -26,6 +26,8 @@
       <node NAME="VERSION">
         <member NAME="DATA_DICT" USAGE="TEXT"><data>"<xsl:value-of select="$DD_GIT_DESCRIBE"/>"</data></member>
         <member NAME="ACC_LAYER" USAGE="TEXT"><data>"<xsl:value-of select="$UAL_GIT_DESCRIBE"/>"</data></member>
+        <member NAME="BACK_MAJOR" USAGE="NUMERIC"></member>
+        <member NAME="BACK_MINOR" USAGE="NUMERIC"></member>
       </node>
 
       <xsl:apply-templates select = "IDS"/>
