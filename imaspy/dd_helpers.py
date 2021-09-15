@@ -81,9 +81,11 @@ def get_saxon() -> Path:
     )
     logger.info("Found Saxon JAR '%s'", saxon_jar_origin)
     if saxon_jar_origin.name != "saxon9he.jar":
-        # Another process could have created the symlink while we were searching
-        if not local_saxon_path.exists():
+        try:
             os.symlink(saxon_jar_origin, local_saxon_path)
+        except FileExistsError:
+            # Another process could have created the symlink while we were searching
+            pass
         return local_saxon_path
     return saxon_jar_origin
 
