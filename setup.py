@@ -42,7 +42,7 @@ import pkg_resources
 
 # Use setuptools to build packages. Advised to import setuptools before distutils
 import setuptools
-import toml
+import tomli
 from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
@@ -195,7 +195,7 @@ conf_dict = read_configuration(setup_cfg)
 pyproject_toml = this_dir / "pyproject.toml"
 assert pyproject_toml.is_file()
 pyproject_text = pyproject_toml.read_text()
-pyproject_data = toml.loads(pyproject_text)
+pyproject_data = tomli.loads(pyproject_text)
 
 
 # Try to grab all necessary environment variables.
