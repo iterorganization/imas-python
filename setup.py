@@ -28,6 +28,7 @@ import ast
 import importlib
 import importlib.util
 import logging
+import warnings
 import os
 import site
 
@@ -59,11 +60,13 @@ from distutils.version import LooseVersion as V
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
-if sys.version_info < (3, 8):
+if sys.version_info < (3, 7):
     sys.exit(
-        "Sorry, Python < 3.8 is not supported. Use a different"
+        "Sorry, Python < 3.7 is not supported. Use a different"
         f" python e.g. '{cannonical_python_command}'"
     )
+if sys.version_info < (3, 8):
+    warnings.warn("Python < 3.8 support on best-effort basis", FutureWarning)
 
 
 # Check setuptools version before continuing for legacy builds
