@@ -27,11 +27,9 @@ import argparse
 import ast
 import importlib
 import importlib.util
-from importlib import metadata
 import logging
 import os
 import site
-import toml
 
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import sys
@@ -44,6 +42,7 @@ import pkg_resources
 
 # Use setuptools to build packages. Advised to import setuptools before distutils
 import setuptools
+import toml
 from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
@@ -51,11 +50,12 @@ from setuptools.command.build_py import build_py as _build_py
 from setuptools.command.sdist import sdist as _sdist
 from setuptools.config import read_configuration
 
-
-from distutils.version import LooseVersion as V
-from distutils.sysconfig import get_python_lib as dist_get_python_lib, get_python_inc as dist_get_python_inc
-from distutils.util import get_platform as dist_get_platform, check_environ as dist_check_environ
+from distutils.sysconfig import get_python_inc as dist_get_python_inc
+from distutils.sysconfig import get_python_lib as dist_get_python_lib
 from distutils.text_file import TextFile as DistTextFile
+from distutils.util import check_environ as dist_check_environ
+from distutils.util import get_platform as dist_get_platform
+from distutils.version import LooseVersion as V
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
@@ -107,11 +107,18 @@ logger = logging.getLogger("imaspy")
 # Start: Load IMAS user environment
 imas_ual_env_parsing_file = this_dir / "imaspy/imas_ual_env_parsing.py"
 assert imas_ual_env_parsing_file.is_file()
-spec = importlib.util.spec_from_file_location("imas_ual_env_parsing", imas_ual_env_parsing_file)
+spec = importlib.util.spec_from_file_location(
+    "imas_ual_env_parsing", imas_ual_env_parsing_file
+)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 sys.modules["imaspy.imas_ual_env_parsing"] = module
-from imaspy.imas_ual_env_parsing import sanitise_UAL_symver, build_UAL_package_name, parse_UAL_version_string
+from imaspy.imas_ual_env_parsing import (
+    build_UAL_package_name,
+    parse_UAL_version_string,
+    sanitise_UAL_symver,
+)
+
 # End: Load IMAS user environment
 
 # Start: Load setup_helpers
@@ -127,7 +134,9 @@ sys.modules["imaspy.setup_helpers"] = module
 # We need exceptions as well
 imaspy_exceptions_file = this_dir / "imaspy/imaspy_exceptions.py"
 assert imaspy_exceptions_file.is_file()
-spec = importlib.util.spec_from_file_location("imaspy_exceptions", imaspy_exceptions_file)
+spec = importlib.util.spec_from_file_location(
+    "imaspy_exceptions", imaspy_exceptions_file
+)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 sys.modules["imaspy.imaspy_exceptions"] = module
@@ -140,6 +149,7 @@ module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 sys.modules["imaspy.dd_helpers"] = module
 from imaspy.dd_helpers import prepare_data_dictionaries
+
 # End: Load dd_helpers
 
 # Define building of the Data Dictionary as custom build step
@@ -159,18 +169,21 @@ class BuildDDCommand(setuptools.Command):
         """Prepare DDs if they can be git pulled"""
         prepare_data_dictionaries()
 
-#class BuildPyCommand(_build_py):
+
+# class BuildPyCommand(_build_py):
 #    """Subclass the build_py command to also build the DD"""
 #
 #    def run(self):
 #        self.run_command("build_DD")
 #        super().run()
 
+
 class MySdist(_sdist):
     def run(self):
         # Execute the classic clean command
         self.run_command("build_DD")
         super().run()
+
 
 # Now that the environment is defined, import the rest of the needed packages
 # setup.cfg as read by setuptools
@@ -214,8 +227,7 @@ if not UAL_VERSION:
     logger.warning("UAL_VERSION is unset. Falling back to IMASPy versioning")
     UAL_VERSION = "0.0.0"
 
-ual_symver, steps_from_version, ual_commit = \
-    parse_UAL_version_string(UAL_VERSION)
+ual_symver, steps_from_version, ual_commit = parse_UAL_version_string(UAL_VERSION)
 safe_ual_symver = sanitise_UAL_symver(ual_symver)
 ext_module_name = build_UAL_package_name(safe_ual_symver, ual_commit)
 
@@ -237,7 +249,7 @@ LIBRARIES = "imas"  # We just need the IMAS library
 ### CYTHON COMPILATION ENVIRONMENT
 
 # From https://cython.readthedocs.io/en/latest/src/userguide/source_files_and_compilation.html#multiple-cython-files-in-a-package
-REBUILD_LL = False # Do not rebuild the LL for now
+REBUILD_LL = False  # Do not rebuild the LL for now
 # TODO: See how much SDCC env we can (re)use
 if REBUILD_LL:
     USE_CYTHON = True
@@ -293,9 +305,7 @@ else:
 
 optional_reqs = {}
 for req in ["backends_al", "backends_xarray", "core", "examples", "test", "docs"]:
-    optional_reqs[req] = DistTextFile(
-        this_dir / f"requirements_{req}.txt"
-    ).readlines()
+    optional_reqs[req] = DistTextFile(this_dir / f"requirements_{req}.txt").readlines()
 install_requires = optional_reqs.pop("core")
 # collect all optional dependencies in a "all" target
 optional_reqs["all"] = list(chain(*optional_reqs.values()))
@@ -315,6 +325,6 @@ if __name__ == "__main__":
         setup_requires=pyproject_data["build-system"]["requires"],
         install_requires=install_requires,
         extras_require=optional_reqs,
-        #cmdclass={"build_py": BuildPyCommand, "build_DD": BuildDDCommand, "sdist": MySdist},
+        # cmdclass={"build_py": BuildPyCommand, "build_DD": BuildDDCommand, "sdist": MySdist},
         cmdclass={"build_DD": BuildDDCommand, "sdist": MySdist},
     )
