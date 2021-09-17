@@ -85,7 +85,10 @@ def get_saxon() -> Path:
             os.symlink(saxon_jar_origin, local_saxon_path)
         except FileExistsError:
             # Another process could have created the symlink while we were searching
-            pass
+            logger.debug(
+                "Link '%s' exists, parallel process might've created it",
+                local_saxon_path,
+            )
         return local_saxon_path
     return saxon_jar_origin
 
