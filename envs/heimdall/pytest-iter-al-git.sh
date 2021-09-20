@@ -11,6 +11,6 @@ common_dir=$(dirname $my_dir)/common
 . $my_dir/20_setenv_imas_git.sh
 . $common_dir/22_build_python_venv.sh
 . $common_dir/25_build_imas_git.sh ${1:-develop}
-. $my_dir/../iter-bamboo/35_build_imaspy.sh
+. $common_dir/35_build_imaspy.sh
 . $common_dir/36_install_imaspy.sh
 . $common_dir/70_pytest_imaspy.sh mini

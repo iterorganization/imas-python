@@ -1,5 +1,5 @@
 #!/bin/sh
-# Set up ITER modules environment
+# Set up Heimdall (heimdall###.jet.uk) modules environment
 set -xeuf -o pipefail
 
 # For the bash starters, we use the following flags:
@@ -12,10 +12,6 @@ set -xeuf -o pipefail
 # -o pipefail pipe failure  Causes a pipeline to return the exit status of the last command in the pipe that returned a non-zero return value.
 
 # Set up environment
-#. /usr/share/Modules/init/sh
-#module use /work/imas/etc/modulefiles
-#module use /work/imas/etc/modules/all
-#module purge
 module purge
 source /etc/profile.d/modules.sh
 module use /usr/local/modules/default
