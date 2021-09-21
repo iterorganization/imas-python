@@ -1,9 +1,19 @@
-#!/bin/sh
-# Set up ITER modules environment
-set -xeuf -o pipefail
+#!/bin/bash
+# Build the IMASPy package and run tests on an ITER SDCC-like environment with a monorepo build
 
-my_dir=$(dirname $0)
-common_dir=$(dirname $my_dir)/common
+# Script boilerplate
+export old_bash_state="$(shopt -po; shopt -p)"; [[ -o errexit ]] && old_bash_state="$old_bash_state; set -e"  # Save bash state
+set -xeuf -o pipefail # Set default script debugging flags
+[[ "${BASH_SOURCE[0]}" != "${0}" ]] && my_dir=$(dirname ${BASH_SOURCE[0]}) || my_dir=$(dirname $0)  # Determine script dir even when sourcing
+
+common_dir=${my_dir}/../common
+. $common_dir/00_common_bash.sh
+
+###############
+# Script body #
+###############
+
+echo '[WARN] Not tested in CI! Warning!'
 
 . $my_dir/00_setenv_modules.sh
 . $common_dir/01_cleanenv_imaspy.sh

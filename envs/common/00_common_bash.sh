@@ -1,4 +1,5 @@
 #!/bin/bash
+# Boilerplate scripts and functions needed for other scripts
 set -xeuf -o pipefail
 function finish {
   [[ "${BASH_SOURCE[0]}" != "${0}" ]] && my_name=${BASH_SOURCE[0]} || my_name=$0

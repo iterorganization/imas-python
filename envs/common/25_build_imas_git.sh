@@ -1,6 +1,19 @@
-#!/bin/sh
-# Set up user-like IMAS env
-set -xeuf -o pipefail
+#!/bin/bash
+# Build a copy of IMAS components need by IMASPy from the access-layer monorepo and
+# data-dictionary repo. You can specify the AL version with $1 (usually "develop" or "master")
+# The DDs will be scanned by IMASPy anyway, but we'll build the default branch as well
+
+# Script boilerplate
+export old_bash_state="$(shopt -po; shopt -p)"; [[ -o errexit ]] && old_bash_state="$old_bash_state; set -e"  # Save bash state
+set -xeuf -o pipefail # Set default script debugging flags
+[[ "${BASH_SOURCE[0]}" != "${0}" ]] && my_dir=$(dirname ${BASH_SOURCE[0]}) || my_dir=$(dirname $0)  # Determine script dir even when sourcing
+
+common_dir=$my_dir
+. $common_dir/00_common_bash.sh
+
+###############
+# Script body #
+###############
 
 # install a DD locally
 if [ ! -d data-dictionary ]; then
