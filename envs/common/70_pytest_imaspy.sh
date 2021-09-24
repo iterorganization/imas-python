@@ -30,7 +30,10 @@ pushd empty
 $PYTEST -VV
 
 if [ "$1" == "mini" ]; then
+    # Do not exit when tests fail
+    set +e
     $PYTEST --ids=$IDSS $PYTEST_FLAGS $COV_FLAGS $JUNIT_FLAGS -m "$PYTEST_MARK" ../imaspy
+    set -e
 else
     echo Untested!
     exit 1
