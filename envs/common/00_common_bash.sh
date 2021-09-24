@@ -19,9 +19,9 @@ function finish {
   if [[ "$my_name" == *.sh && "${old_bash_state//$}" != "" ]]; then
     echo '[DEBUG] Clearing set and shopt flags using eval "\$one_cmd"'
     # Wrap all set/shopt commands into a single big command
-    one_cmd=${old_bash_state//$'\n'/'; '}$'\n'
-    # Do not show the huge xtrace of this evail
-    eval "$one_cmd"
+    one_cmd=${old_bash_state// set/; set}
+    one_cmd2=${one_cmd// shopt/; shopt}
+    eval "$one_cmd2"
   fi
 }
 
