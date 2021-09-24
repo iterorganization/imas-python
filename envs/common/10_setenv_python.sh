@@ -7,7 +7,7 @@
 common_dir=$my_dir
 . $common_dir/00_common_bash.sh
 
-old_bash_state=$(get_bash_state)
+old_bash_state="$(get_bash_state "$old_bash_state")"
 set -xeuf -o pipefail # Set default script debugging flags
 
 ###############
