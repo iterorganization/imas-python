@@ -15,6 +15,8 @@ set -xeuf -o pipefail # Set default script debugging flags
 ###############
 
 # Set up environment such that module files can be loaded
+. /usr/share/Modules/init/sh
+
 module purge
 
 # Load base "should be always there" modules
