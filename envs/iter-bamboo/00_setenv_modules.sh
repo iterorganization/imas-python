@@ -15,10 +15,6 @@ set -xeuf -o pipefail # Set default script debugging flags
 ###############
 
 # Set up environment such that module files can be loaded
-. /usr/share/Modules/init/sh
-module use /work/imas/etc/modulefiles
-module use /work/imas/etc/modules/all
 module purge
 
 # Load base "should be always there" modules
-module load git
