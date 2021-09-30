@@ -17,6 +17,9 @@ logger = root_logger
 logger.setLevel(logging.INFO)
 
 
+MDSPLUS_MODEL_TIMEOUT = int(os.getenv("MDSPLUS_MODEL_TIMEOUT", "120"))
+
+
 def mdsplus_model_dir(version, xml_file=None, rebuild=False):
     """
     when given a version number this looks for the DD definition
@@ -58,10 +61,11 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
     except FileExistsError:
         if not model_exists(cache_dir_path):
             logger.warning(
-                "Model dir %s exists but is empty. Waiting 60s for contents.",
+                "Model dir %s exists but is empty. Waiting %ss for contents.",
                 cache_dir_path,
+                MDSPLUS_MODEL_TIMEOUT,
             )
-            for _ in range(120):
+            for _ in range(MDSPLUS_MODEL_TIMEOUT):
                 if model_exists(cache_dir_path):
                     break
                 time.sleep(1)
