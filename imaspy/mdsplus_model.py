@@ -8,6 +8,10 @@ import time
 from pathlib import Path
 from subprocess import CalledProcessError, check_output
 from zlib import crc32
+import tempfile
+import uuid
+import shutil
+import getpass
 
 from imaspy.dd_helpers import get_saxon
 from imaspy.dd_zip import get_dd_xml, get_dd_xml_crc
@@ -55,7 +59,17 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
 
     cache_dir_name = "%s-%08x" % (xml_name, crc)
     cache_dir_path = Path(_get_xdg_cache_dir()) / "imaspy" / "mdsplus" / cache_dir_name
+    fuuid = uuid.uuid4().hex
+    tmp_cache_dir_path = (
+        Path(tempfile.gettempdir())
+        / getpass.getuser()
+        / "imaspy"
+        / "mdsplus"
+        / (cache_dir_name + f"_{fuuid}")
+    )
 
+    timed_out = False
+    # The folder cache_dir_path is used as a lockfile
     try:
         os.makedirs(cache_dir_path, exist_ok=rebuild)
     except FileExistsError:
@@ -70,20 +84,33 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
                     break
                 time.sleep(1)
             else:
-                raise TimeoutError("Timeout exceeded while waiting for MDSplus model")
+                timed_out = True
+                logger.warning(
+                    "Timeout exceeded while waiting for MDSplus model, try overwriting"
+                )
         else:
-            logger.info("Using cached MDSPlus model at %s", cache_dir_path)
+            logger.info("Using cached MDSplus model at %s", cache_dir_path)
 
-        return str(cache_dir_path)
+        if not timed_out:
+            return str(cache_dir_path)
 
     logger.info(
-        "Creating and caching MDSPlus model at %s, this may take a while",
-        cache_dir_path,
+        "Creating and caching MDSplus model at %s, this may take a while",
+        tmp_cache_dir_path,
     )
 
-    create_model_ids_xml(cache_dir_path, fname, version)
+    create_model_ids_xml(tmp_cache_dir_path, fname, version)
 
-    create_mdsplus_model(cache_dir_path)
+    create_mdsplus_model(tmp_cache_dir_path)
+
+    # Check if some other process has generated the MDSplus model files in the meantime
+    if not model_exists(cache_dir_path):
+        logger.info(
+            "MDSplus model at %s created, moving to %s ",
+            tmp_cache_dir_path,
+            cache_dir_path,
+        )
+        shutil.move(tmp_cache_dir_path, cache_dir_path)
 
     return str(cache_dir_path)
 
