@@ -144,12 +144,12 @@ class IDSRoot:
             if my_name == "version":
                 if ids.text != self._imas_version and self._imas_version is not None:
                     logger.error(
-                        "Version on file label %s does not match expected version %s",
+                        "Version in XML %s does not match expected version %s",
                         ids.text,
                         self._imas_version,
                     )
                 else:
-                    logger.info("found version %s", ids.text)
+                    logger.info("Found XML version %s", ids.text)
                 self._imas_version = ids.text
             else:
                 if not _lazy:
