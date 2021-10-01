@@ -290,7 +290,8 @@ class UALFile:
         )
 
     def __repr__(self):
-        return "%s(context=%r)" % (type(self).__name__, self._context_idx)
+        context = getattr(self, "_context_idx", "problem initializing context")
+        return "%s(context=%r)" % (type(self).__name__, context)
 
     def __str__(self):
         return "%s(shot=%r, run=%r)" % (type(self).__name__, self.shot, self.run)
