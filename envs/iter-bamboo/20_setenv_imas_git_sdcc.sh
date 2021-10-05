@@ -19,7 +19,7 @@ set -xeuf -o pipefail # Set default script debugging flags
 module load GCCcore/10.2.0
 module load Python/3.8.6-GCCcore-10.2.0
 module load MDSplus/7.96.17-GCCcore-10.2.0
-module load HDF5/1.10.7-iimpi-2020b  # TODO: Intel MPI version?
+module load HDF5/1.10.7-gompi-2020b
 module load Boost/1.74.0-GCCcore-10.2.0
 
 # Extra modules that we need to build
