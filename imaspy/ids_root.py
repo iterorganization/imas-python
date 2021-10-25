@@ -18,18 +18,19 @@ except ImportError:
 # Set up logging immediately
 import numpy as np
 
-from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.dd_zip import dd_etree, latest_dd_version
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
+from imaspy.setup_logging import root_logger as logger
 
 try:
     from imaspy.ids_defs import (
         ASCII_BACKEND,
         CLOSE_PULSE,
         DOUBLE_DATA,
+        HDF5_BACKEND,
         IDS_TIME_MODE_HETEROGENEOUS,
         IDS_TIME_MODE_INDEPENDENT,
         IDS_TIME_MODE_UNKNOWN,
@@ -39,17 +40,16 @@ try:
         OPEN_PULSE,
         READ_OP,
         UDA_BACKEND,
-        HDF5_BACKEND,
     )
 except:
     logger.critical("IMAS could not be imported. UAL not available!")
 
 
 class IDSRoot:
-    """ Root of IDS tree. Contains all top-level IDSs """
+    """Root of IDS tree. Contains all top-level IDSs"""
 
     depth = 0
-    path = ""
+    _path = ""
 
     def __init__(
         self,
@@ -520,7 +520,7 @@ class IDSRoot:
         return (0, store._idx)
 
     def open_public(self, expName, silent=False):
-        """Opens a public pulse with the UAL UAD backend. """
+        """Opens a public pulse with the UAL UAD backend."""
         status, idx = self._ull.ual_begin_pulse_action(
             UDA_BACKEND, self.shot, self.run, "", expName, os.environ["IMAS_VERSION"]
         )

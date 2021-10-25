@@ -9,11 +9,12 @@ This contains references to :py:class:`IDSStructure`s
 
 from distutils.version import StrictVersion as V
 
-from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure, get_coordinates
+from imaspy.setup_logging import root_logger as logger
+
 
 class IDSStructArray(IDSStructure, IDSMixin):
     """IDS array of structures (AoS) node
@@ -216,9 +217,9 @@ class IDSStructArray(IDSStructure, IDSMixin):
             self._ull.ual_end_action(aosCtx)
 
     def getRelCTXPath(self, ctx):
-        """ Get the path relative to given context from an absolute path"""
-        if self.path.startswith(context_store[ctx]):
-            rel_path = self.path[len(context_store[ctx]) + 1 :]
+        """Get the path relative to given context from an absolute path"""
+        if self._path.startswith(context_store[ctx]):
+            rel_path = self._path[len(context_store[ctx]) + 1 :]
         else:
             raise Exception("Could not strip context from absolute path")
         return rel_path

@@ -49,16 +49,16 @@ class IDSMixin:
         self._backend_name = None
 
     def getRelCTXPath(self, ctx):
-        """ Get the path relative to given context from an absolute path"""
+        """Get the path relative to given context from an absolute path"""
         # This could be replaced with the fullPath() method provided by the LL-UAL
-        if self.path.startswith(context_store[ctx]):
+        if self._path.startswith(context_store[ctx]):
             # strip the context path as well as any numeric indices
             # (those are handled by the context store)
-            return self.path[len(context_store[ctx]) :].lstrip("/0123456789")
+            return self._path[len(context_store[ctx]) :].lstrip("/0123456789")
         else:
             raise Exception(
                 "Could not strip context from absolute path {!s}, "
-                "ctx: {!s}, store: {!s}".format(self.path, ctx, context_store)
+                "ctx: {!s}, store: {!s}".format(self._path, ctx, context_store)
             )
 
     def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):
@@ -120,7 +120,7 @@ class IDSMixin:
         return self._backend_name or self._name
 
     @cached_property
-    def path(self):
+    def _path(self):
         """Build absolute path from node to root _in backend coordinates_"""
         my_path = self._backend_name or self._name
         if hasattr(self, "_parent"):
@@ -129,26 +129,26 @@ class IDSMixin:
                 if self._parent._array_type:
                     try:
                         my_path = "{!s}/{!s}".format(
-                            self._parent.path, self._parent.value.index(self) + 1
+                            self._parent._path, self._parent.value.index(self) + 1
                         )
                     except ValueError as e:
                         # this happens when we ask the path of a struct_array child
                         # which is 'in waiting'. It is not in its parents value
                         # list yet, so we are here. There is no proper path to mention.
                         # instead we use the special index :
-                        my_path = "{!s}/:".format(self._parent.path)
+                        my_path = "{!s}/:".format(self._parent._path)
                         raise NotImplementedError(
                             "Paths of unlinked struct array children are not implemented"
                         ) from e
                 else:
-                    my_path = self._parent.path + "/" + my_path
+                    my_path = self._parent._path + "/" + my_path
             except AttributeError:
-                my_path = self._parent.path + "/" + my_path
+                my_path = self._parent._path + "/" + my_path
         return my_path
 
     def reset_path(self):
-        if "path" in self.__dict__:
-            del self.__dict__["path"]  # Delete the cached_property cache
+        if "_path" in self.__dict__:
+            del self.__dict__["_path"]  # Delete the cached_property cache
             # this is how it works for functools cached_property.
             # how is it for cached_property package?
 
@@ -224,7 +224,7 @@ class IDSMixin:
                 # TODO: also support time axes as dimension of IDSStructArray
                 if el.time_axis is None:
                     logger.warning(
-                        "No time axis found for dynamic structure %s", self.path
+                        "No time axis found for dynamic structure %s", self._path
                     )
                 interpolator = scipy.interpolate.interp1d(
                     old_time.value, el.value, axis=el.time_axis, **kwargs
