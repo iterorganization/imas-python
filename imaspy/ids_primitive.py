@@ -317,7 +317,7 @@ class IDSPrimitive(IDSMixin):
         return my_depth
 
     def __repr__(self):
-        return '%s("%s", %r)' % (type(self).__name__, self.path, self.value)
+        return '%s("%s", %r)' % (type(self).__name__, self._path, self.value)
 
     @property
     def data_type(self):
@@ -331,7 +331,7 @@ class IDSPrimitive(IDSMixin):
             logger.warning(
                 "Field %s in memory rep not found in backend xml, "
                 "will not be written",
-                self.path,
+                self._path,
             )
             data_type = None
             return
@@ -357,20 +357,20 @@ class IDSPrimitive(IDSMixin):
             logger.info(
                 "Setting up mapping from %s (mem) to %s (file)",
                 self._name,
-                self.path,
+                self._path,
             )
 
         if self._backend_type != self._ids_type:
             logger.info(
                 "Setting up conversion at %s, memory=%s, backend=%s",
-                self.path,
+                self._path,
                 self._ids_type,
                 self._backend_type,
             )
         if self._backend_ndims != self._ndims:
             logger.error(
                 "Dimensions mismatch at %s, memory=%s, backend=%s",
-                self.path,
+                self._path,
                 self._ndims,
                 self._backend_ndims,
             )
