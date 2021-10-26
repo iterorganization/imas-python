@@ -298,9 +298,9 @@ class IDSToplevel(IDSStructure):
         - UNDEFINED_INTERP if not relevant (for write operations)
         """
         if occurrence == 0:
-            path = self.path
+            path = self._path
         else:
-            path = self.path + "/" + str(occurrence)
+            path = self._path + "/" + str(occurrence)
 
         if interpolation_method not in [
             CLOSEST_INTERP,
@@ -330,7 +330,7 @@ class IDSToplevel(IDSStructure):
         """Put a single slice into the backend. only append is supported"""
         homogeneousTime = self.readHomogeneous(occurrence=occurrence)
         if homogeneousTime == IDS_TIME_MODE_UNKNOWN:
-            logger.error("%s has unknown homogeneous_time, putSlice aborts", self.path)
+            logger.error("%s has unknown homogeneous_time, putSlice aborts", self._path)
             return
         if homogeneousTime not in IDS_TIME_MODES:
             raise ALException(
@@ -451,7 +451,7 @@ class IDSToplevel(IDSStructure):
         ):
             logger.error(
                 "IDS {!s} is found to be empty (homogeneous_time undefined). "
-                "PUT quits with no action.".format(self.path)
+                "PUT quits with no action.".format(self._path)
             )
             return
         if homogeneousTime not in IDS_TIME_MODES:
