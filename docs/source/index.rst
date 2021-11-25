@@ -30,6 +30,7 @@ For users
 
    self
    installing
+   api_overview
 
 README
 -----------
@@ -60,4 +61,3 @@ Sitemap
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
