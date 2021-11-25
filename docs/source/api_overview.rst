@@ -172,3 +172,89 @@ Test cases have been built to verify the required behaviour, in imaspy/test_time
 Writing slice data (single slice and multiple slices at the same time) and verifying as a global array
 Reading slice by slice (single slice only)
 The tests pass on the memory and MDSPlus backend (the ASCII backend does not support slicing).
+
+Resampling
+============
+For resampling of data we stick close to the numpy and scipy APIs. The relevant method signatures are reproduced here:
+.. code-block:: python
+    Class scipy.interpolate.interp1d(x, y, kind='linear', axis=- 1, copy=True, bounds_error=None, fill_value=nan, assume_sorted=False)
+
+Which produces a resampling function, whose call method uses interpolation to find the value of new points.
+
+This can be used like so:
+
+.. code-block:: python
+    ids = IDSRoot()
+    f = scipy.interpolate.interp1d(ids.pulse_schedule.time, ids.pulse_schedule_some_1d_var)
+    ids.pulse_schedule.some_1d_var = f(ids.pulse_schedule.some_1d_var)
+
+
+A more general approach would work on the basis of scanning the tree for shared coordinates, and resampling those in the same manner (by creating a local interpolator and applying it). The
+
+.. code-block:: python
+    visit_children(self, fun, leaf_only):
+
+method defined on ids_structure and ids_toplevel can be used for this. For a proof-of-concept it is recommended to only resample in the time direction.
+
+For example, a proposal implementation included in 0.4.0 can be used as such (inplace interpolation on an IDS leaf node)
+
+.. code-block:: python
+    ids = imaspy.ids_root.IDSRoot(1, 0)
+    ids.nbi.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    ids.nbi.time = [1, 2, 3]
+    ids.nbi.unit.resize(1)
+    ids.nbi.unit[0].energy.data = 2 * ids.nbi.time
+    old_id = id(ids.nbi.unit[0].energy.data)
+
+    assert ids.nbi.unit[0].energy.data.time_axis == 0
+
+    ids.nbi.unit[0].energy.data.resample(
+        ids.nbi.time,
+        [0.5, 1.5],
+        ids.nbi.ids_properties.homogeneous_time,
+        inplace=True,
+        fill_value="extrapolate",
+    )
+
+    assert old_id == id(ids.nbi.unit[0].energy.data)
+    assert ids.nbi.unit[0].energy.data == [1, 3]
+
+
+Or as such (explicit in-memory copy + interpolation, producing a new data leaf/container):
+
+.. code-block:: python
+    ids = imaspy.ids_root.IDSRoot(1, 0)
+    ids.nbi.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    ids.nbi.time = [1, 2, 3]
+    ids.nbi.unit.resize(1)
+    ids.nbi.unit[0].energy.data = 2 * ids.nbi.time
+    old_id = id(ids.nbi.unit[0].energy.data)
+
+    assert ids.nbi.unit[0].energy.data.time_axis == 0
+
+    new_data = ids.nbi.unit[0].energy.data.resample(
+        ids.nbi.time,
+        [0.5, 1.5],
+        ids.nbi.ids_properties.homogeneous_time,
+        inplace=False,
+        fill_value="extrapolate",
+    )
+
+    assert old_id != id(new_data)
+    assert new_data == [1, 3]
+
+
+Implementation unit tests can be found in test_latest_dd_resample.py.
+
+Alternative resampling methods
+-------
+.. code-block:: python
+    scipy.signal.resample(x, num, t=None, axis=0, window=None, domain='time')
+
+Scipy.signal.resample uses a fourier method to resample, which assumes the signal is periodic. It could be very slow if the number of input or output samples is large and prime. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.resample.html for more information.
+
+.. code-block:: python
+    scipy.signal.resample_poly(x, up, down, axis=0, window='kaiser', 5.0, padtype='constant', cval=None)
+
+Could be considered, which uses a low-pass FIR filter. This assumes zero values outside the boundary. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.resample_poly.html#scipy.signal.resample_poly for more information.
+We do not recommend to use simpler sampling methods such as nearest-neighbour if possible, as this reduces the data quality and does not result in a much simpler or faster implementation if care is taken.
