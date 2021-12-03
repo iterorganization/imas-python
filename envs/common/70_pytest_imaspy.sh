@@ -15,29 +15,40 @@ set -xeuf -o pipefail # Set default script debugging flags
 # Script body #
 ###############
 
-PYTEST_FLAGS=${PYTEST_FLAG:-'-n=auto'}
-COV_FLAGS=${COV_FLAGS:-'--cov=imaspy --cov-report=term --cov-report=xml:./coverage.xml'}
-JUNIT_FLAGS=${JUNIT_FLAGS:-'--junit-xml=./junit.xml'}
-PYTEST_MARK=${PYTEST_MARK:-''}
-IDSS=${IDSS:-pulse_schedule,ece}
+# Read CLI arguments
+TESTSET="${1:-mini}"
+#normal: Set up env and run pytest
+#env: Only set up env, don't run pytest
+#only: Only run pytest, do not set up env
+RUNMODE="${2:-normal}"
 
-source $IMASPY_VENV/bin/activate
-# Run tests in different directory
-mkdir -p empty
-pushd empty
+if [ "$RUNMODE" == "normal" ] || [ "$RUNMODE" == "env" ]; then
+    export PYTEST_FLAGS=${PYTEST_FLAG:-'-n=auto'}
+    export COV_FLAGS=${COV_FLAGS:-'--cov=imaspy --cov-report=term --cov-report=xml:./coverage.xml'}
+    export JUNIT_FLAGS=${JUNIT_FLAGS:-'--junit-xml=./junit.xml'}
+    export PYTEST_MARK=${PYTEST_MARK:-''}
+    export IDSS=${IDSS:-pulse_schedule,ece}
 
-# Check if we can call pytest and show modules
-$PYTEST -VV
+    source $IMASPY_VENV/bin/activate
 
-if [ "$1" == "mini" ]; then
-    # Do not exit when tests fail
-    set +e
-    $PYTEST --ids=$IDSS $PYTEST_FLAGS $COV_FLAGS $JUNIT_FLAGS -m "$PYTEST_MARK" ../imaspy
-    set -e
-else
-    echo Untested!
-    exit 1
-    #$PYTEST $PYTEST_FLAGS $COV_FLAGS $JUNIT_FLAGS -m "$PYTEST_MARK" ../imaspy
+    # Check if we can call pytest and show modules
+    $PYTEST -VV
+fi
+
+if [ "$RUNMODE" == "normal" ] || [ "$RUNMODE" == "only" ]; then
+    # Run tests in different empty directory
+    rm -rf empty
+    mkdir -p empty
+    pushd empty
+    if [ $TESTSET == "mini" ]; then
+        # Do not exit when tests fail
+        set +e
+        $PYTEST --ids=$IDSS $PYTEST_FLAGS $COV_FLAGS $JUNIT_FLAGS -m "$PYTEST_MARK" ../imaspy
+        set -e
+    else
+        echo Untested! Dropping shell!
+        exit 1
+    fi
 fi
 
 popd

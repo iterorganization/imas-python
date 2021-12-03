@@ -37,4 +37,10 @@ source $IMASPY_VENV/bin/activate
 
 $PYTHON -c 'import imas'
 
-. $common_dir/70_pytest_imaspy.sh mini
+AL_GIT_IDENTIFIER="${1:-develop}"
+TESTSET="${2:-mini}"
+RUNMODE="${3:-normal}"
+echo $AL_GIT_IDENTIFIER
+echo $TESTSET
+echo $RUNMODE
+. $common_dir/70_pytest_imaspy.sh $TESTSET $RUNMODE
