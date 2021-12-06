@@ -1,29 +1,30 @@
 IMASPy in the IMAS ecosystem
 =================
 
-<insert imaspy_ecosystem.png>
+.. image:: imaspy_ecosystem.png
 
 IMASPy builds on the IMAS-LowLevel python native interface. At IMASPy build time a collection of data dictionaries is bundled into a file IDSDef.zip. At IMASPy read time all files in the proper paths named IDSDef.zip are searched for data dictionary versions to support. Alternatively explicit paths to xml files can be used.
 
 IMASPy nested structure design
 =================
 
-<insert imaspy_tree.png>
+.. image:: imaspy_structure.png
+
 IMASPy uses a tree-style layout, with four container types:
 
-- IDSStructure (extended IDSToplevel)
-- IDSStructArray
-- IDSNumericArray
-- IDSPrimitive
+- :py:class:`IDSStructure` (extended :py:class:`IDSToplevel`)
+- :py:class:`IDSStructArray`
+- :py:class:`IDSNumericArray`
+- :py:class:`IDSPrimitive`
 
-And a root container, IDSRoot, which contains several IDSToplevels.
-Only IDSPrimitive and IDSNumericArray contain actual values. They are leaf nodes and can be iterated over separately. IDSNumericArray is a special case of IDSPrimitive, containing a collection of values instead of a single 0D value. The class subclasses both IDSPrimitive and NDArrayOperatorsMixin, allowing to create numpy array-like classes. See https://numpy.org/doc/stable/reference/generated/numpy.lib.mixins.NDArrayOperatorsMixin.html
+And a root container, `IDSRoot`, which contains several `IDSToplevels`.
+Only `IDSPrimitive` and `IDSNumericArray` contain actual values. They are leaf nodes and can be iterated over separately. `IDSNumericArray` is a special case of `IDSPrimitive,` containing a collection of values instead of a single 0D value. The class subclasses both `IDSPrimitive` and NDArrayOperatorsMixin, allowing to create numpy array-like classes. See https://numpy.org/doc/stable/reference/generated/numpy.lib.mixins.NDArrayOperatorsMixin.html
 
 
 IMASPy usage
 =================
 
-The IMASPy project defines a class IDSRoot which can be instantiated with a DD version number or xml_path. It reads the XML file and recreates the IDSes in memory, as IDSToplevel classes containing IDSStructures, IDSStructArrays, IDSPrimitives and IDSNumericArrays.
+The IMASPy project defines a class `IDSRoot` which can be instantiated with a DD version number or xml_path. It reads the XML file and recreates the `IDSes` in memory, as `IDSToplevel` classes containing `IDSStructures,` `IDSStructArrays,` `IDSPrimitives` and `IDSNumericArrays.`
 
 .. code-block:: python
 
@@ -33,6 +34,7 @@ The IMASPy project defines a class IDSRoot which can be instantiated with a DD v
         backend_xml_path=None, _lazy=True):
 
 The arguments to this function are:
+
 1. Shot number s
 2. Run number r
 3. Reference Shot / Run not implemented (rs, rr)
@@ -40,7 +42,7 @@ The arguments to this function are:
 5. xml_path = explicit path to XML file (useful for development and testing)
 6. backend_version = Version to assume for data store (autoloaded if None)
 7. backend_xml_path = XML file to load for data store
-8. _lazy = If True, only load the template of an IDSToplevel  in memory if it is needed, e.g. if a node of the IDS is addressed. If False, load all IDSs on initialization time.
+8. _lazy = If True, only load the template of an `IDSToplevel`  in memory if it is needed, e.g. if a node of the IDS is addressed. If False, load all IDSs on initialization time.
 
 An example of instantiating this structure and opening an AL backend is:
 
@@ -50,14 +52,14 @@ An example of instantiating this structure and opening an AL backend is:
     ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", MDSPLUS_BACKEND, mode=mode)
 
 
-MDSPLUS_BACKEND is the identifier from the Access Layer to select the MDSplus backend.
+`MDSPLUS_BACKEND` is the identifier from the Access Layer to select the MDSplus backend.
 
 
 Loading multiple DD versions in the same environment
 =============
-The main change necessary to enable loading multiple DD versions into different IDSRoots is to enable the finding of the relevant IDSDef.xml files. In the ‘classical’ IMAS approach a single IDSDef.xml file is located in a directory specified by an environment variable.
+The main change necessary to enable loading multiple DD versions into different `IDSRoots` is to enable the finding of the relevant `IDSDef.xml` files. In the ‘classical’ IMAS approach a single `IDSDef.xml` file is located in a directory specified by an environment variable.
 
-Since IMASPy needs to have access to multiple DD versions it was chosen to bundle these with the code at build-time, in setup.py. If a git clone of the data-dictionary/ succeeds the setup tools automatically download saxon and generate IDSDef.xml for each of the tagged versions in the DD git repository. These are then gathered into IDSDef.zip, which is distributed inside the IMASPy package.
+Since IMASPy needs to have access to multiple DD versions it was chosen to bundle these with the code at build-time, in setup.py. If a git clone of the data-dictionary/ succeeds the setup tools automatically download saxon and generate `IDSDef.xml` for each of the tagged versions in the DD git repository. These are then gathered into `IDSDef.zip,` which is distributed inside the IMASPy package.
 
 To update the set of data dictionaries new versions can be added to the zipfile. A reinstall of the package will ensure that all available versions are included in IMASPy. Additionally an explicit path to an XML file can be specified, which is useful for development.
 
@@ -68,17 +70,18 @@ Extending the DD set
 A new command has been defined python setup.py build_DD which fetches new tags from git and builds IDSDef.zip
 
 The IDSDef.zip search paths have been expanded:
-- $IMASPY_DDZIP (path to a zip file)
-- ./IDSDef.zip
-- ~/.config/imaspy/IDSDef.zip ($XDG_CONFIG_DIR)
-- __file__/../../data-dictionary/IDSDef.zip (provided with IMASPy)
+
+- `$IMASPY_DDZIP` (path to a zip file)
+- `./IDSDef.zip`
+- `~/.config/imaspy/IDSDef.zip` ($XDG_CONFIG_DIR)
+- `__file__/../../data-dictionary/IDSDef.zip` (provided with IMASPy)
 
 All paths are searched in order.
 
 
 Conversion of IDSes between DD versions
 ===============
-The conversion between DD versions hinges on the ability to read and write to a backing store in a different version than the current DD. To enable this IMASPy needs to read both the ‘main’ in-memory DD, as well as the ‘backend’ DD. This is implemented by creating a new routine read_backend_xml on IDSToplevel and set_backend_properties on IDSStructure.
+The conversion between DD versions hinges on the ability to read and write to a backing store in a different version than the current DD. To enable this IMASPy needs to read both the ‘main’ in-memory DD, as well as the ‘backend’ DD. This is implemented by creating a new routine read_backend_xml on `IDSToplevel` and set_backend_properties on `IDSStructure.`
 
 .. code-block:: python
     class IDSToplevel(IDSStructure):
@@ -105,7 +108,7 @@ The conversion between DD versions hinges on the ability to read and write to a 
             """
 
 
-_read_backend_xml finds the right DD xml to use, reads it, and calls set_backend_properties with the subset corresponding to the current IDS.
+`_read_backend_xml` finds the right DD xml to use, reads it, and calls `set_backend_properties` with the subset corresponding to the current IDS.
 
 .. code-block:: python
    def set_backend_properties(self, structure_xml):
@@ -113,9 +116,9 @@ _read_backend_xml finds the right DD xml to use, reads it, and calls set_backend
         and set backend_type annotations for this element and its children."""
 
 
-This sets _backend_type, _backend_name and _backend_ndims on each of the IDSPrimitives encountered in a Depth-First Search. The backend reading routines get() and put() then use these types and dimensions when reading, if they are set.
+This sets `_backend_type`, `_backend_name` and `_backend_ndims` on each of the `IDSPrimitives` encountered in a Depth-First Search. The backend reading routines `get()` and `put()` then use these types and dimensions when reading, if they are set.
 Reading of data at an unknown DD version
-Before the IDSRoot is created and the backend is opened the DD version of the IDS is unknown. At the time of get() the DD version is found by read_data_dictionary_version, which reads ids_properties/version_put/data_dictionary
+Before the `IDSRoot` is created and the backend is opened the DD version of the IDS is unknown. At the time of `get()` the DD version is found by `read_data_dictionary_version`, which reads `ids_properties/version_put/data_dictionary`
 
 Implicit conversions:
 -----------
@@ -142,7 +145,7 @@ IMASPy will not load intermediate versions. Double renames are therefore not sup
 
 Time slicing
 ============
-The lowlevel API provides ual_write_slice_data to write only a slice (in the last dimension, time) to the backend, as well as ual_begin_slice_action. After that normal get() can be used. We have implemented time slicing support, with two main entry points on IDSToplevel:
+The lowlevel API provides `ual_write_slice_data` to write only a slice (in the last dimension, time) to the backend, as well as `ual_begin_slice_action`. After that normal `get()` can be used. We have implemented time slicing support, with two main entry points on `IDSToplevel`:
 
 
 .. code-block:: python
@@ -165,9 +168,9 @@ The lowlevel API provides ual_write_slice_data to write only a slice (in the las
         """Put a single slice into the backend. only append is supported"""
 
 
-These setup the backend in the right state and recursively call get() and put() to perform their duties.
+These setup the backend in the right state and recursively call `get()` and `put()` to perform their duties.
 
-Test cases have been built to verify the required behaviour, in imaspy/test_time_slicing.py, on the equilibrium IDS. There is no reason to expect different behaviour for other IDSes.
+Test cases have been built to verify the required behaviour, in `imaspy/test_time_slicing.py`, on the equilibrium IDS. There is no reason to expect different behaviour for other IDSes.
 
 Writing slice data (single slice and multiple slices at the same time) and verifying as a global array
 Reading slice by slice (single slice only)
@@ -194,7 +197,7 @@ A more general approach would work on the basis of scanning the tree for shared 
 .. code-block:: python
     visit_children(self, fun, leaf_only):
 
-method defined on ids_structure and ids_toplevel can be used for this. For a proof-of-concept it is recommended to only resample in the time direction.
+method defined on `ids_structure` and `ids_toplevel` can be used for this. For a proof-of-concept it is recommended to only resample in the time direction.
 
 For example, a proposal implementation included in 0.4.0 can be used as such (inplace interpolation on an IDS leaf node)
 
@@ -244,14 +247,14 @@ Or as such (explicit in-memory copy + interpolation, producing a new data leaf/c
     assert new_data == [1, 3]
 
 
-Implementation unit tests can be found in test_latest_dd_resample.py.
+Implementation unit tests can be found in `test_latest_dd_resample.py`.
 
 Alternative resampling methods
 -------
 .. code-block:: python
     scipy.signal.resample(x, num, t=None, axis=0, window=None, domain='time')
 
-Scipy.signal.resample uses a fourier method to resample, which assumes the signal is periodic. It could be very slow if the number of input or output samples is large and prime. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.resample.html for more information.
+`Scipy.signal.resample` uses a fourier method to resample, which assumes the signal is periodic. It could be very slow if the number of input or output samples is large and prime. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.resample.html for more information.
 
 .. code-block:: python
     scipy.signal.resample_poly(x, up, down, axis=0, window='kaiser', 5.0, padtype='constant', cval=None)
