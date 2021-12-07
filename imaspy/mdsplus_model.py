@@ -116,7 +116,7 @@ def create_model_ids_xml(cache_dir_path, fname, version):
                 "UAL_GIT_DESCRIBE=" + os.environ.get("UAL_VERSION", "0.0.0"),
                 "-xsl:"
                 + str(
-                    Path(__file__).parent / "../assets/IDSDef2MDSpreTree.xsl"
+                    Path(__file__).parent / "assets/IDSDef2MDSpreTree.xsl"
                 ),  # we have to be careful to have the same version of this file as in the access layer
             ],
             input=get_dd_xml(version) if version else None,

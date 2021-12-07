@@ -20,7 +20,7 @@ logger.setLevel(logging.INFO)
 def xml():
     from pathlib import Path
 
-    return Path(__file__).parent / "../assets/IDS_minimal_types.xml"
+    return Path(__file__).parent / "assets/IDS_minimal_types.xml"
 
 
 def test_str_1d_empty(backend, xml, worker_id, tmp_path):

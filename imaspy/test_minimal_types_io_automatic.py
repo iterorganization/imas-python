@@ -19,7 +19,7 @@ logger.setLevel(logging.INFO)
 
 @pytest.fixture
 def xml():
-    return Path(__file__).parent / "../assets/IDS_minimal_types.xml"
+    return Path(__file__).parent / "assets/IDS_minimal_types.xml"
 
 
 def test_minimal_types_str_1d_decode(xml):

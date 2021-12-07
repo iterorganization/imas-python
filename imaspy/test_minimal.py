@@ -15,14 +15,14 @@ logger.setLevel(logging.INFO)
 def ids_minimal():
     from pathlib import Path
 
-    return Path(__file__).parent / "../assets/IDS_minimal.xml"
+    return Path(__file__).parent / "assets/IDS_minimal.xml"
 
 
 @pytest.fixture
 def ids_minimal_types():
     from pathlib import Path
 
-    return Path(__file__).parent / "../assets/IDS_minimal_types.xml"
+    return Path(__file__).parent / "assets/IDS_minimal_types.xml"
 
 
 def test_load_minimal(ids_minimal):

@@ -17,7 +17,7 @@ logger.setLevel(logging.INFO)
 def xml():
     from pathlib import Path
 
-    return Path(__file__).parent / "../assets/IDS_minimal_struct_array.xml"
+    return Path(__file__).parent / "assets/IDS_minimal_struct_array.xml"
 
 
 def test_minimal_struct_array_maxoccur(backend, xml):

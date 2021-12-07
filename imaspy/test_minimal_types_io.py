@@ -32,7 +32,7 @@ for i in range(0, 7):
 
 @pytest.fixture
 def xml():
-    return Path(__file__).parent / "../assets/IDS_minimal_types.xml"
+    return Path(__file__).parent / "assets/IDS_minimal_types.xml"
 
 
 def test_minimal_types_io(backend, xml, worker_id, tmp_path):
