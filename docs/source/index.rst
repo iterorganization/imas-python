@@ -18,10 +18,6 @@ It provides:
 - Checking of correctness on assign time, instead of database write time
 - Dynamically created in-memory pre-filled data trees from DD XML specifications
 
-For users
-=========
-* Documentation is WIP!
-* :doc:`iter_cluster`
 
 .. toctree::
    :hidden:
