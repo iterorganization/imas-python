@@ -14,8 +14,8 @@ It provides:
 
   * Not requiring an IMAS installation
   * Not strictly requiring matching a Data Dictionary (DD) version
-- An pythonic alternative to the IMAS Python High Level Interface (HLI)
-- Checking of correctness on assign time, instead of database write time
+- A pythonic alternative to the IMAS Python High Level Interface (HLI)
+- Checking of correctness at assign time, instead of at database write time
 - Dynamically created in-memory pre-filled data trees from DD XML specifications
 
 

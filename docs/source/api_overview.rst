@@ -3,9 +3,9 @@ IMASPy in the IMAS ecosystem
 
 .. image:: imaspy_ecosystem.png
 
-IMASPy builds on the IMAS-LowLevel python native interface. At IMASPy build time
+IMASPy builds on the IMAS-LowLevel Python native interface. At IMASPy build time,
 a collection of data dictionaries is bundled into a file IDSDef.zip. At IMASPy
-read time all files in the proper paths named IDSDef.zip are searched for data
+read time, all files in the proper paths named IDSDef.zip are searched for data
 dictionary versions to support. Alternatively explicit paths to xml files can be
 used.
 
@@ -114,7 +114,7 @@ All paths are searched in order.
 Conversion of IDSes between DD versions
 ===============
 The conversion between DD versions hinges on the ability to read and write to a
-backing store in a different version than the current DD. To enable this IMASPy
+backend data store in a different version than the current DD. To enable this, IMASPy
 needs to read both the ‘main’ in-memory DD, as well as the ‘backend’ DD. This is
 implemented by creating a new routine read_backend_xml on
 :py:class:`IDSToplevel` and set_backend_properties on :py:class:`IDSStructure.`
@@ -160,23 +160,23 @@ This sets `_backend_type`, `_backend_name` and `_backend_ndims` on each
 of the :py:class:`IDSPrimitives` encountered in a Depth-First Search.
 The backend reading routines `get()` and `put()` then use these types
 and dimensions when reading, if they are set.  Reading of data at an
-unknown DD version Before the :py:class:`IDSRoot` is created and the
-backend is opened the DD version of the IDS is unknown. At the time of
+unknown DD version before the :py:class:`IDSRoot` is created and the
+backend is opened, the DD version of the IDS is unknown. At the time of
 `get()` the DD version is found by `read_data_dictionary_version`, which
 reads :py:class:`IDS_properties/version_put/data_dictionary`
 
 Implicit conversions:
 -----------
 - Add field
-  - no data can be converted
+  - No data can be converted
 - Delete field
-  - no data can be converted
+  - No data can be converted
 - Change data_type
   - Convert data on read/write
 - Move field
   - Handled by searching for change_nbc_previous_name on backend and current XML
   - This is complex, since we may have to search many elements to find the one
-        which was renamed. Changing depths makes this harder.
+     which was renamed. Changing depths makes this harder.
   - Currently implemented up to a single depth change, though multiple are
     possible within this design
 
@@ -184,7 +184,7 @@ There are some limitations of the change_nbc paradigm:
 ------------
 - Forward only
 - May require reading an arbitrary number of intermediate versions
-- Do not cover more complex migrations
+- Does not cover more complex migrations
 
 IMASPy will not load intermediate versions. Double renames are therefore not
 supported yet. This does not appear to be a problem so far. If any problem
@@ -325,8 +325,8 @@ Alternative resampling methods
 
     scipy.signal.resample(x, num, t=None, axis=0, window=None, domain='time')
 
-`Scipy.signal.resample` uses a fourier method to resample, which assumes the
-signal is periodic. It could be very slow if the number of input or output
+`Scipy.signal.resample` uses a Fourier method to resample, which assumes the
+signal is periodic. It can be very slow if the number of input or output
 samples is large and prime. See
 https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.resample.html
 for more information.
