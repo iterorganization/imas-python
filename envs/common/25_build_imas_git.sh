@@ -61,7 +61,10 @@ cd pythoninterface
 make -j`nproc`
 sed -e 's/imas_[^/."]*/imas/g' -i package/setup.py
 
-# install locally
+# We do not always start from a cleaned virtual environment. Uninstall possible leftover packages
+$PIP uninstall --yes imas || true
+
+# Install locally
 $PIP install -e package
 
 # test if we can import the imas module
