@@ -14,14 +14,16 @@ set -xeuf -o pipefail # Set default script debugging flags
 # Script body #
 ###############
 
-AL_GIT_IDENTIFIER=${1:-develop}
+AL_GIT_IDENTIFIER="${1:-develop}"
+# use the latest tagged version if not given
+DD_GIT_IDENTIFIER="${2:-}"
 
 . $iter_dir/00_setenv_modules.sh
 . $common_dir/01_cleanenv_imaspy.sh
 . $common_dir/10_setenv_python.sh
 . $iter_dir/20_setenv_imas_git_sdcc.sh
 . $common_dir/22_build_python_venv.sh
-. $common_dir/25_build_imas_git.sh $AL_GIT_IDENTIFIER
+. $common_dir/25_build_imas_git.sh $AL_GIT_IDENTIFIER $DD_GIT_IDENTIFIER
 . $common_dir/35_build_imaspy.sh
 . $common_dir/36_install_imaspy.sh
 . $common_dir/80_build_docs.sh

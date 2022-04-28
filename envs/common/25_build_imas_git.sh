@@ -21,8 +21,8 @@ if [ ! -d data-dictionary ]; then
     git clone ssh://git@git.iter.org/imas/data-dictionary.git
 fi
 cd data-dictionary
-# use the latest tagged version
-export IMAS_VERSION=`git tag | sort -V | tail -n 1`
+
+export IMAS_VERSION="${2:-`git tag | sort -V | tail -n 1`}"
 git checkout "$IMAS_VERSION"
 #git clean -xf
 make
