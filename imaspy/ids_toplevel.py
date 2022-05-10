@@ -7,6 +7,8 @@
 # Set up logging immediately
 
 from distutils.version import StrictVersion as V
+import tempfile
+import os
 
 import numpy as np
 
@@ -25,14 +27,18 @@ from imaspy.ids_structure import IDSStructure
 
 try:
     from imaspy.ids_defs import (
+        ASCII_BACKEND,
+        ASCII_SERIALIZER_PROTOCOL,
         CHAR_DATA,
         CLOSEST_INTERP,
+        DEFAULT_SERIALIZER_PROTOCOL,
         EMPTY_INT,
         IDS_TIME_MODE_HETEROGENEOUS,
         IDS_TIME_MODE_HOMOGENEOUS,
         IDS_TIME_MODE_INDEPENDENT,
         IDS_TIME_MODE_UNKNOWN,
         IDS_TIME_MODES,
+        IMAS_HAS_SERIALIZATION,
         INTEGER_DATA,
         LINEAR_INTERP,
         PREVIOUS_INTERP,
@@ -139,6 +145,97 @@ class IDSToplevel(IDSStructure):
             )
 
         super().set_backend_properties(structure_xml)
+
+    @staticmethod
+    def default_serializer_protocol():
+        if not IMAS_HAS_SERIALIZATION:
+            raise NotImplementedError("Serialization requires a newer IMAS version")
+        return DEFAULT_SERIALIZER_PROTOCOL
+
+    def serialize(self, protocol=DEFAULT_SERIALIZER_PROTOCOL):
+        if not IMAS_HAS_SERIALIZATION:
+            raise NotImplementedError("Serialization requires a newer IMAS version")
+        if protocol == ASCII_SERIALIZER_PROTOCOL:
+            if self.ids_properties.homogeneous_time == IDS_TIME_MODE_UNKNOWN:
+                raise ALException("IDS is found to be EMPTY (homogeneous_time undefined)")
+            tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
+            tmpfile = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
+            # store state (it is overwritten in create_env_backend)
+            state = (
+                self._parent.connected,
+                self._parent.expIdx,
+                getattr(self._parent, "_data_store", None), # _data_store may not exist
+            )
+            # Create a new pulse context, so we can use self.put, use -fullpath option'
+            _, ctx = self._parent.create_env_backend(
+                "serialize",
+                "serialize",
+                "3",
+                ASCII_BACKEND,
+                options=f"-fullpath {tmpfile}",
+            )
+            try:
+                self.put()
+            finally:
+                # cleanup
+                self._parent._data_store.close()
+                # restore state
+                (
+                    self._parent.connected,
+                    self._parent.expIdx,
+                    self._parent._data_store,
+                ) = state
+            try:
+                # read contents of tmpfile
+                with open(tmpfile, "rb") as f:
+                    data = f.read()
+            finally:
+                os.unlink(tmpfile)  # remove tmpfile from disk
+            return data
+        raise ValueError(f"Unrecognized serialization protocol: {protocol}")
+
+    def deserialize(self, data, protocol):
+        if not IMAS_HAS_SERIALIZATION:
+            raise NotImplementedError("Serialization requires a newer IMAS version")
+        if protocol == ASCII_SERIALIZER_PROTOCOL:
+            tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
+            tmpfile = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
+            # write data into tmpfile
+            try:
+                with open(tmpfile, "wb") as f:
+                    f.write(data)
+            except:
+                if os.path.exists(tmpfile):
+                    os.unlink(tmpfile)
+                raise
+            # store state (it is overwritten in create_env_backend)
+            state = (
+                self._parent.connected,
+                self._parent.expIdx,
+                getattr(self._parent, "_data_store", None), # _data_store may not exist
+            )
+            # Create a new pulse context, so we can use self.get, use -fullpath option
+            _, ctx = self._parent.create_env_backend(
+                "serialize",
+                "serialize",
+                "3",
+                ASCII_BACKEND,
+                options=f"-fullpath {tmpfile}",
+            )
+            try:
+                self.get()
+            finally:
+                # cleanup
+                self._parent._data_store.close()
+                # restore state
+                (
+                    self._parent.connected,
+                    self._parent.expIdx,
+                    self._parent._data_store,
+                ) = state
+                os.unlink(tmpfile)
+        else:
+            raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 
     def readHomogeneous(self, occurrence, always_read=False):
         """Read the value of homogeneousTime

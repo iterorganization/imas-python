@@ -11,7 +11,12 @@ import numpy as np
 import pytest
 
 import imaspy
-from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
+from imaspy.ids_defs import (
+    ASCII_BACKEND,
+    IDS_TIME_MODE_HOMOGENEOUS,
+    MEMORY_BACKEND,
+    IMAS_HAS_SERIALIZATION,
+)
 from imaspy.test_helpers import compare_children, fill_with_random_data, open_ids
 
 root_logger = logging.getLogger("imaspy")
@@ -78,3 +83,19 @@ def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
         compare_children(ids[ids_name], ids_ref[ids_name], _ascii_empty_array_skip=True)
     else:
         compare_children(ids[ids_name], ids_ref[ids_name])
+
+
+@pytest.mark.skipif(not IMAS_HAS_SERIALIZATION, reason="IMAS has no serialization")
+def test_latest_dd_autofill_serialize(ids_name):
+    """Serialize and then deserialize again a full IDSRoot and all IDSToplevels"""
+    # TODO: test with multiple serialization protocols
+    ids = imaspy.ids_root.IDSRoot(0, 0)
+    fill_with_random_data(ids[ids_name])
+
+    data = ids[ids_name].serialize()
+
+    ids2 = imaspy.ids_root.IDSRoot(0, 0)
+    ids2[ids_name].deserialize(data, ids2[ids_name].default_serializer_protocol())
+
+    logger.warning("Skipping ASCII backend tests for empty arrays")
+    compare_children(ids[ids_name], ids2[ids_name], _ascii_empty_array_skip=True)
