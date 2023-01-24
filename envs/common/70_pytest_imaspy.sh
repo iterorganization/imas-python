@@ -35,6 +35,9 @@ if [ "$RUNMODE" == "normal" ] || [ "$RUNMODE" == "env" ]; then
     $PYTEST -VV
 fi
 
+echo "70_pytest_imaspy packages"
+$PIP freeze
+
 if [ "$RUNMODE" == "normal" ] || [ "$RUNMODE" == "only" ]; then
     # Run tests in different empty directory
     rm -rf empty

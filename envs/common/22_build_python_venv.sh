@@ -22,3 +22,6 @@ $PYTHON -m venv --system-site-packages --clear venv_imaspy
 # Note that source venv_imaspy/bin/activate needs to be placed
 # on top of every script that installs locally!
 source $IMASPY_VENV/bin/activate
+
+echo "22_build_python_venv packages"
+$PIP freeze

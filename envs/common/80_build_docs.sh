@@ -13,6 +13,8 @@ set -xeuf -o pipefail # Set default script debugging flags
 ###############
 # Script body #
 ###############
+echo "80_build_docs packages"
+$PIP freeze
 
 # Use the sphinx matching the venv we are in using SPHINXBUILD
 VENV_SPHINX_BUILD='../venv_imaspy/bin/sphinx-build'
