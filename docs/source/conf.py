@@ -74,15 +74,15 @@ mr_url = urljoin(repository_url, "/pull-requests")
 # See https://www.sphinx-doc.org/en/master/usage/extensions/extlinks.html
 # unique name: (base URL, label prefix)
 extlinks = {
-    "src": (blob_url + "%s", f"{src_group}/{src_project}/"),
-    "issue": (issue_url + "%s", "#"),
-    "merge": (mr_url + "%s", "!"),
-    "netcdf4": (netcdf4_docs + "%s", "netcdf4 "),
-    "dd": (dd_url, ""),
-    "al": (al_url, ""),
-    "al_cython": (al_cython_url + "%s", ""),
-    "al_hli": (al_python_hli_url + "%s", ""),
-    "al_lib": (al_python_lib_url + "%s", ""),
+    "src": (blob_url + "%s", f"{src_group}/{src_project}/%s"),
+    "issue": (issue_url + "%s", "#%s"),
+    "merge": (mr_url + "%s", "!%s"),
+    "netcdf4": (netcdf4_docs + "%s", "netcdf4 %s"),
+    "dd": (dd_url + "%s", "%s"),
+    "al": (al_url + "%s", "%s"),
+    "al_cython": (al_cython_url + "%s", "%s"),
+    "al_hli": (al_python_hli_url + "%s", "%s"),
+    "al_lib": (al_python_lib_url + "%s", "%s"),
     "pypa": ("https://packaging.python.org/%s", None),
 }
 
