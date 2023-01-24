@@ -44,6 +44,7 @@ We are all developers, install imaspy in `pip editable <https://pip.pypa.io/en/s
 We should now be able to run the tests
 
 .. code-block:: bash
+
     pip install --user -r requirements_test.txt
     pytest imaspy/ --mini
 

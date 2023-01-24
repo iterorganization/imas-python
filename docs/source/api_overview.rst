@@ -1,5 +1,5 @@
 IMASPy in the IMAS ecosystem
-=================
+============================
 
 .. image:: imaspy_ecosystem.png
 
@@ -9,8 +9,9 @@ read time, all files in the proper paths named IDSDef.zip are searched for data
 dictionary versions to support. Alternatively explicit paths to xml files can be
 used.
 
+
 IMASPy nested structure design
-=================
+==============================
 
 .. image:: imaspy_structure.png
 
@@ -33,7 +34,7 @@ https://numpy.org/doc/stable/reference/generated/numpy.lib.mixins.NDArrayOperato
 
 
 IMASPy usage
-=================
+============
 
 The IMASPy project defines a class :py:class:`IDSRoot` which can be instantiated
 with a DD version number or xml_path. It reads the XML file and recreates the
@@ -74,7 +75,8 @@ An example of instantiating this structure and opening an AL backend is:
 
 
 Loading multiple DD versions in the same environment
-=============
+====================================================
+
 The main change necessary to enable loading multiple DD versions into different
 :py:class:`IDSRoots` is to enable the finding of the relevant
 :py:class:`IDSDef.xml` files. In the ‘classical’ IMAS approach a single
@@ -96,8 +98,10 @@ is useful for development.
 Automated tests have been provided that check the loading of all of the DD
 versions tagged in the data-dictionary git repository.
 
+
 Extending the DD set
----------
+--------------------
+
 A new command has been defined python setup.py build_DD which fetches new tags
 from git and builds IDSDef.zip
 
@@ -112,7 +116,8 @@ All paths are searched in order.
 
 
 Conversion of IDSes between DD versions
-===============
+=======================================
+
 The conversion between DD versions hinges on the ability to read and write to a
 backend data store in a different version than the current DD. To enable this, IMASPy
 needs to read both the ‘main’ in-memory DD, as well as the ‘backend’ DD. This is
@@ -165,8 +170,10 @@ backend is opened, the DD version of the IDS is unknown. At the time of
 `get()` the DD version is found by `read_data_dictionary_version`, which
 reads :py:class:`IDS_properties/version_put/data_dictionary`
 
+
 Implicit conversions:
------------
+---------------------
+
 - Add field
   - No data can be converted
 - Delete field
@@ -176,12 +183,14 @@ Implicit conversions:
 - Move field
   - Handled by searching for change_nbc_previous_name on backend and current XML
   - This is complex, since we may have to search many elements to find the one
-     which was renamed. Changing depths makes this harder.
+    which was renamed. Changing depths makes this harder.
   - Currently implemented up to a single depth change, though multiple are
     possible within this design
 
+
 There are some limitations of the change_nbc paradigm:
-------------
+------------------------------------------------------
+
 - Forward only
 - May require reading an arbitrary number of intermediate versions
 - Does not cover more complex migrations
@@ -194,6 +203,7 @@ occurs the conversion can easily be done in multiple steps.
 
 Time slicing
 ============
+
 The lowlevel API provides `ual_write_slice_data` to write only a slice (in the
 last dimension, time) to the backend, as well as `ual_begin_slice_action`. After
 that normal `get()` can be used. We have implemented time slicing support, with
@@ -233,8 +243,10 @@ verifying as a global array Reading slice by slice (single slice only) The tests
 pass on the memory and MDSPlus backend (the ASCII backend does not support
 slicing).
 
+
 Resampling
-============
+==========
+
 For resampling of data we stick close to the numpy and scipy APIs. The relevant
 method signatures are reproduced here:
 
@@ -318,8 +330,9 @@ Or as such (explicit in-memory copy + interpolation, producing a new data leaf/c
 
 Implementation unit tests can be found in `test_latest_dd_resample.py`.
 
+
 Alternative resampling methods
--------
+------------------------------
 
 .. code-block:: python
 

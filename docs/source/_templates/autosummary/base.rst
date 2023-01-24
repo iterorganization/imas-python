@@ -1,2 +1,4 @@
-.. Taken from xarray
+..
+    Taken from xarray
+
 {% extends "!autosummary/base.rst" %}
