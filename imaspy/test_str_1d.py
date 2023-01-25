@@ -38,10 +38,6 @@ def test_str_1d_empty(backend, xml, worker_id, tmp_path):
     if backend == MEMORY_BACKEND:
         # this one does not store anything between instantiations
         pass
-    elif backend == ASCII_BACKEND:
-        pytest.xfail(
-            "Known issue with ASCII backend and 1d strings, see https://jira.iter.org/browse/IMAS-3463"
-        )
     else:
         assert list(ids2.minimal.str_1d.value) == []
 

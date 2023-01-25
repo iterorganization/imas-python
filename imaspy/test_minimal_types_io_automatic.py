@@ -60,21 +60,12 @@ def test_minimal_types_io_automatic(backend, xml, worker_id, tmp_path):
             if isinstance(v, np.ndarray):
                 assert np.array_equal(ids2.minimal[k].value, ids.minimal[k].value)
             else:
-                if (
-                    backend == ASCII_BACKEND
-                    and k in ["str_1d", "str_1d_type"]
-                    and ids.minimal[k].value == []
-                ):
-                    pytest.xfail(
-                        "Known issue with ASCII backend and 1d strings, see https://jira.iter.org/browse/IMAS-3463"
+                if isinstance(ids2.minimal[k].value, np.ndarray):
+                    assert np.array_equal(
+                        ids2.minimal[k].value,
+                        np.asarray(
+                            ids.minimal[k].value, dtype=ids2.minimal[k].value.dtype
+                        ),
                     )
                 else:
-                    if isinstance(ids2.minimal[k].value, np.ndarray):
-                        assert np.array_equal(
-                            ids2.minimal[k].value,
-                            np.asarray(
-                                ids.minimal[k].value, dtype=ids2.minimal[k].value.dtype
-                            ),
-                        )
-                    else:
-                        assert ids2.minimal[k].value == ids.minimal[k].value
+                    assert ids2.minimal[k].value == ids.minimal[k].value
