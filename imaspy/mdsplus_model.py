@@ -81,7 +81,7 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
     """
 
     if version and xml_file:
-        return ValueError("Version OR filename need to be provided, both given")
+        raise ValueError("Version OR filename need to be provided, both given")
 
     # calculate a ch
     if version:
