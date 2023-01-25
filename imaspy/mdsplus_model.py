@@ -58,7 +58,7 @@ def safe_move(src, dst):
             # Then do an atomic rename onto the new name, and clean up the
             # source image.
             os.rename(tmp_dst, dst)
-            os.rmtree(src)
+            shutil.rmtree(src)
         else:
             raise
 
@@ -78,12 +78,24 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
 
     with ENV:
     env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]}
+
+    Args:
+        version: DD version string where the cache should be based on
+
+    Kwargs:
+        xml_file: Path to the XML to build the cache on
+        rebuild: Rebuild the DD cache, overwriting existing cache files
+
+    Returns:
+        The path to the requested DD cache
     """
 
     if version and xml_file:
         raise ValueError("Version OR filename need to be provided, both given")
 
-    # calculate a ch
+    # Calculate a checksum on the contents of a DD XML file to uniquely
+    # identify our cache files, and re-create them as-needed if the contents
+    # of the file change
     if version:
         crc = get_dd_xml_crc(version)
         xml_name = version + ".xml"
@@ -98,6 +110,18 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
 
     cache_dir_name = "%s-%08x" % (xml_name, crc)
     cache_dir_path = Path(_get_xdg_cache_dir()) / "imaspy" / "mdsplus" / cache_dir_name
+
+    # There are multiple possible cases for the IMASPy cache
+    # 1. The cache exist and can be used
+    # 2. The cache exist and needs to be overwritten
+    # 3. The cache partially exists, and it is still written by another process, especially during testing
+    # 4. The cache partially exists, and is horribly broken
+    # 5. The cache does not exist and this process should make it
+    #
+    # As (cross)-filesystem operations can in principle collide, we use
+    # a statistically unique temp dir which we move with a special safe and
+    # atomic function if the generation successfully finished
+
     fuuid = uuid.uuid4().hex
     tmp_cache_dir_path = (
         Path(tempfile.gettempdir())
@@ -106,53 +130,73 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
         / "mdsplus"
         / (cache_dir_name + f"_{fuuid}")
     )
+    if rebuild:
+        # The user has requested a rebuild
+        generate_tmp_cache = True
+        remove_existing_cache = True
+    elif (cache_dir_path.is_dir() and model_exists(cache_dir_path)):
+        # The model already exists on the right location, done!
+        generate_tmp_cache = False
+        remove_existing_cache = False
+    elif (cache_dir_path.is_dir() and not model_exists(cache_dir_path)):
+        # The cache dir has been created, but not filled.
+        # We wait until it fills on its own
+        logger.warning(
+            "Model dir %s exists but is empty. Waiting %ss for contents.",
+            cache_dir_path,
+            MDSPLUS_MODEL_TIMEOUT,
+        )
+        final_cache_dir_path = wait_for_model(cache_dir_path)
+        # If it timed out, we will create a new cache in this process
+        generate_tmp_cache = remove_existing_cache = final_cache_dir_path == ""
+    elif (not cache_dir_path.is_dir() and not model_exists(cache_dir_path)):
+        # The cache did not exist, we will create a new cache in this process
+        generate_tmp_cache = True
+        remove_existing_cache = False
+    else:
+        assert False, "Programmer error, this case should never be true"
 
-    timed_out = False
-    # The folder cache_dir_path is used as a lockfile
-    try:
-        os.makedirs(cache_dir_path, exist_ok=rebuild)
-    except FileExistsError:
-        if not model_exists(cache_dir_path):
-            logger.warning(
-                "Model dir %s exists but is empty. Waiting %ss for contents.",
-                cache_dir_path,
-                MDSPLUS_MODEL_TIMEOUT,
-            )
-            for _ in range(MDSPLUS_MODEL_TIMEOUT):
-                if model_exists(cache_dir_path):
-                    break
-                time.sleep(1)
-            else:
-                timed_out = True
-                logger.warning(
-                    "Timeout exceeded while waiting for MDSplus model, try overwriting"
-                )
-        else:
-            logger.info("Using cached MDSplus model at %s", cache_dir_path)
+    if remove_existing_cache:
+        logger.warning(
+            "Removing IMASPy cache dir %s.",
+            cache_dir_path,
+        )
+        shutil.rmtree(cache_dir_path)
 
-        if not timed_out:
-            return str(cache_dir_path)
+    if generate_tmp_cache:
+        logger.info(
+            "Creating and caching MDSplus model at %s, this may take a while",
+            tmp_cache_dir_path,
+        )
+        create_model_ids_xml(tmp_cache_dir_path, fname, version)
+        create_mdsplus_model(tmp_cache_dir_path)
 
-    logger.info(
-        "Creating and caching MDSplus model at %s, this may take a while",
-        tmp_cache_dir_path,
-    )
-
-    create_model_ids_xml(tmp_cache_dir_path, fname, version)
-
-    create_mdsplus_model(tmp_cache_dir_path)
-
-    # Check if some other process has generated the MDSplus model files in the meantime
-    if not model_exists(cache_dir_path):
         logger.info(
             "MDSplus model at %s created, moving to %s ",
             tmp_cache_dir_path,
             cache_dir_path,
         )
+        cache_dir_path.parent.mkdir(parents=True, exist_ok=True)
         safe_move(tmp_cache_dir_path, cache_dir_path)
 
     return str(cache_dir_path)
 
+def wait_for_model(cache_dir_path):
+    """ Wait MDSPLUS_MODEL_TIMEOUT seconds until model appears in directory
+
+    Returns:
+        The path to the filled model directory. Will be empty if the wait loop
+        timed out.
+    """
+    for _ in range(MDSPLUS_MODEL_TIMEOUT):
+        if model_exists(cache_dir_path):
+            return cache_dir_path
+        time.sleep(1)
+    else:
+        logger.warning(
+            "Timeout exceeded while waiting for MDSplus model, try overwriting"
+        )
+        return ""
 
 def model_exists(path):
     """Given a path to an IDS model definition check if all components are there"""
