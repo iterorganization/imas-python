@@ -60,7 +60,7 @@ def test_time_slicing_put(backend, worker_id, tmp_path, pre_put_bool, request):
     if pre_put_bool:
         # this gives a TREE-E-NOSEGMENTS error
         request.node.add_marker(
-            pytest.mark.xfail("Putting an empty IDS first does not work...")
+            pytest.mark.xfail(reason="Putting an empty IDS first does not work...")
         )
         eq.put()
 
