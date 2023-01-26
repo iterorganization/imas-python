@@ -25,6 +25,13 @@ logger.setLevel(logging.INFO)
 MDSPLUS_MODEL_TIMEOUT = int(os.getenv("MDSPLUS_MODEL_TIMEOUT", "120"))
 
 
+def safe_remove(fldr):
+    """ Quickly remove a folder on the same filesystem"""
+    copy_id = uuid.uuid4()
+    tmp_dst = "%s.%s.tmp" % (fldr, copy_id)
+    os.rename(fldr, tmp_dst)
+    shutil.rmtree(tmp_dst)
+
 def safe_move(src, dst):
     """Rename a folder from ``src`` to ``dst``.
 
@@ -133,11 +140,9 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
     if rebuild:
         # The user has requested a rebuild
         generate_tmp_cache = True
-        remove_existing_cache = True
     elif (cache_dir_path.is_dir() and model_exists(cache_dir_path)):
         # The model already exists on the right location, done!
         generate_tmp_cache = False
-        remove_existing_cache = False
     elif (cache_dir_path.is_dir() and not model_exists(cache_dir_path)):
         # The cache dir has been created, but not filled.
         # We wait until it fills on its own
@@ -148,20 +153,12 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
         )
         final_cache_dir_path = wait_for_model(cache_dir_path)
         # If it timed out, we will create a new cache in this process
-        generate_tmp_cache = remove_existing_cache = final_cache_dir_path == ""
+        generate_tmp_cache = final_cache_dir_path == ""
     elif (not cache_dir_path.is_dir() and not model_exists(cache_dir_path)):
         # The cache did not exist, we will create a new cache in this process
         generate_tmp_cache = True
-        remove_existing_cache = False
     else:
         assert False, "Programmer error, this case should never be true"
-
-    if remove_existing_cache:
-        logger.warning(
-            "Removing IMASPy cache dir %s.",
-            cache_dir_path,
-        )
-        shutil.rmtree(cache_dir_path)
 
     if generate_tmp_cache:
         logger.info(
@@ -176,6 +173,8 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
             tmp_cache_dir_path,
             cache_dir_path,
         )
+        if cache_dir_path.exists():
+            safe_remove(cache_dir_path)
         cache_dir_path.parent.mkdir(parents=True, exist_ok=True)
         safe_move(tmp_cache_dir_path, cache_dir_path)
 
