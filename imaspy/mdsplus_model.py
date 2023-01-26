@@ -165,6 +165,7 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
             "Creating and caching MDSplus model at %s, this may take a while",
             tmp_cache_dir_path,
         )
+        cache_dir_path.parent.mkdir(parents=True, exist_ok=True)
         create_model_ids_xml(tmp_cache_dir_path, fname, version)
         create_mdsplus_model(tmp_cache_dir_path)
 
@@ -175,7 +176,6 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
         )
         if cache_dir_path.exists():
             safe_remove(cache_dir_path)
-        cache_dir_path.parent.mkdir(parents=True, exist_ok=True)
         safe_move(tmp_cache_dir_path, cache_dir_path)
 
     return str(cache_dir_path)
