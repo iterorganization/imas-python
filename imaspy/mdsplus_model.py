@@ -163,7 +163,7 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
         # The cache did not exist, we will create a new cache in this process
         generate_tmp_cache = True
     else:
-        assert False, "Programmer error, this case should never be true"
+        raise RuntimeError("Programmer error, this case should never be true")
 
     if generate_tmp_cache:
         logger.info(
