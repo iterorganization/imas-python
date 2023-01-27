@@ -27,6 +27,7 @@ It provides:
    self
    installing
    api_overview
+   mdsplus
 
 README
 -----------
