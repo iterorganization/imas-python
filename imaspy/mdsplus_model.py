@@ -162,7 +162,7 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
             MDSPLUS_MODEL_TIMEOUT,
         )
         # If it timed out, we will create a new cache in this process
-        generate_tmp_cache = final_cache_dir_path = wait_for_model(cache_dir_path)
+        generate_tmp_cache = not wait_for_model(cache_dir_path)
     elif (not cache_dir_path.is_dir() and not model_exists(cache_dir_path)):
         # The cache did not exist, we will create a new cache in this process
         generate_tmp_cache = True
