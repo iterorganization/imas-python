@@ -161,9 +161,8 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
             cache_dir_path,
             MDSPLUS_MODEL_TIMEOUT,
         )
-        final_cache_dir_path = wait_for_model(cache_dir_path)
         # If it timed out, we will create a new cache in this process
-        generate_tmp_cache = final_cache_dir_path == ""
+        generate_tmp_cache = final_cache_dir_path = wait_for_model(cache_dir_path)
     elif (not cache_dir_path.is_dir() and not model_exists(cache_dir_path)):
         # The cache did not exist, we will create a new cache in this process
         generate_tmp_cache = True
@@ -194,18 +193,18 @@ def wait_for_model(cache_dir_path):
     """ Wait MDSPLUS_MODEL_TIMEOUT seconds until model appears in directory
 
     Returns:
-        The path to the filled model directory. Will be empty if the wait loop
-        timed out.
+        True if the cache folder is found, and false if the
+        wait loop timed out.
     """
     for _ in range(MDSPLUS_MODEL_TIMEOUT):
         if model_exists(cache_dir_path):
-            return cache_dir_path
+            return True
         time.sleep(1)
     else:
         logger.warning(
             "Timeout exceeded while waiting for MDSplus model, try overwriting"
         )
-        return ""
+        return False
 
 def model_exists(path):
     """Given a path to an IDS model definition check if all components are there"""
