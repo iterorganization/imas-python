@@ -64,12 +64,17 @@ def safe_move(src, dst):
 
             # Then do an atomic rename onto the new name, and clean up the
             # source image.
-            os.rename(tmp_dst, dst)
+            try:
+                os.rename(tmp_dst, dst)
+            except OSError as err:
+                if err.errno == errno.EEXIST:
+                    # As we use the hash of the files in our foldernames, if the
+                    # folder already exists, we can safely assume another
+                    # process has put it there before we could, and we should
+                    # just remove our tmpdir
+                    shutil.rmtree(tmp_dst)
             shutil.rmtree(src)
         elif err.errno == errno.EEXIST:
-            # As we use the hash of the files in our foldernames, if the folder
-            # already exists, we can safely assume another process has put it
-            # there before we could, and we should just remove our tmpdir
             shutil.rmtree(src)
         else:
             raise
