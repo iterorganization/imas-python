@@ -140,7 +140,7 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
         / getpass.getuser()
         / "imaspy"
         / "mdsplus"
-        / (cache_dir_name + f"_{fuuid}")
+        / f"{cache_dir_name}_{fuuid}")
     )
     if rebuild:
         # The user has requested a rebuild
