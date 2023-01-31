@@ -11,7 +11,7 @@ First the environment variable IMASPY_DDZIP is checked.
 If that exists and points to a file we will attempt to open it.
 Then, IDSDef.zip is searched in site-packages, the current folder,
 in .config/imaspy/ (`$$XDG_CONFIG_HOME`) and in
-the data-dictionary/ folder within the IMASPy package.
+the assets/ folder within the IMASPy package.
 
 1. `$$IMASPY_DDZIP`
 2. The virtual environment
@@ -19,12 +19,12 @@ the data-dictionary/ folder within the IMASPy package.
 4. All `site-packages/imaspy/IDSDef.zip`
 5. `./IDSDef.zip`
 6. `~/.config/imaspy/IDSDef.zip`
-7. `__file__/../../data-dictionary/IDSDef.zip`
+7. `__file__/../../imaspy/assets/IDSDef.zip`
 
 All files are checked, i.e. if your .config/imaspy/IDSDef.zip is outdated
 the IMASPy-packaged version will be used.
 
-The `data-dictionary/IDSDef.zip` provided with the package can be updated
+The `assets/IDSDef.zip` provided with the package can be updated
 with the `python setup.py build_DD` command, which is also performed on install
 if you have access to the ITER data-dictionary git repo.
 Reinstalling imaspy thus also will give you access to the latest DD versions.
@@ -81,7 +81,7 @@ def _build_zipfile_locations() -> List[Path]:
         [
             Path(".") / zip_name,
             Path(_get_xdg_config_dir()) / package_name / zip_name,
-            Path(__file__).parent.parent / "data-dictionary" / zip_name,
+            Path(__file__).parent / "assets" / zip_name,
         ]
     )
     return zipfile_locations

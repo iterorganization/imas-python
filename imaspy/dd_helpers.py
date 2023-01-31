@@ -18,7 +18,7 @@ from imaspy.imaspy_exceptions import IMASPyError
 logger = logging.getLogger("imaspy")
 logger.setLevel(logging.INFO)
 
-idsdef_zip_relpath = Path("data-dictionary/IDSDef.zip")
+idsdef_zip_relpath = Path("imaspy/assets/IDSDef.zip")
 
 def prepare_data_dictionaries():
     """Build IMAS IDSDef.xml files for each tagged version in the DD repository

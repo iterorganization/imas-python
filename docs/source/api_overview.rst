@@ -110,7 +110,7 @@ The IDSDef.zip search paths have been expanded:
 - `$IMASPY_DDZIP` (path to a zip file)
 - `./IDSDef.zip`
 - `~/.config/imaspy/IDSDef.zip` ($XDG_CONFIG_DIR)
-- `__file__/../../data-dictionary/IDSDef.zip` (provided with IMASPy)
+- `__file__/../assets/IDSDef.zip` (provided with IMASPy)
 
 All paths are searched in order.
 
