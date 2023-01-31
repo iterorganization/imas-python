@@ -18,6 +18,7 @@ from imaspy.imaspy_exceptions import IMASPyError
 logger = logging.getLogger("imaspy")
 logger.setLevel(logging.INFO)
 
+idsdef_zip_relpath = Path("data-dictionary/IDSDef.zip")
 
 def prepare_data_dictionaries():
     """Build IMAS IDSDef.xml files for each tagged version in the DD repository
@@ -39,11 +40,11 @@ def prepare_data_dictionaries():
 
         logger.info("Creating zip file of DD versions")
 
-        if os.path.isfile("data-dictionary/IDSDef.zip"):
-            logger.warning("Overwriting data-dictionary/IDSDef.zip")
+        if idsdef_zip_relpath.is_file():
+            logger.warning("Overwriting '%s'", idsdef_zip)
 
         with ZipFile(
-            "data-dictionary/IDSDef.zip",
+            idsdef_zip_relpath,
             mode="w",  # this needs w, since zip can have multiple same entries
             compression=ZIP_DEFLATED,
         ) as dd_zip:
@@ -207,7 +208,7 @@ def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
     # this could cause issues if someone else has added or left IDSDef.xml
     # in this directory. However, we go through the tags in order
     # so 1.0.0 comes first, where git checks out IDSDef.xml
-    if not os.path.exists("data-dictionary/IDSDef.xml"):
+    if not idsdef_zip_relpath.exists():
         try:
             subprocess.check_output(
                 "make IDSDef.xml 2>/dev/null",
