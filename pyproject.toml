@@ -12,9 +12,9 @@ authors = [
   {name = "Olivier Hoenen", email = "olivier.hoenen@iter.org"},
 ]
 description = "Pythonic wrappers for the IMAS Access Layer"
-license = {file = "LICENSE"}
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.7"
+license = {file = "LICENSE"}
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -49,6 +49,7 @@ classifiers = [
     "Topic :: System :: Software Distribution",
     "Topic :: Utilities",
 ]
+dynamic = ["version"]
 
 [project.scripts]
 ids_convert = "imaspy.tools:convert"
@@ -58,6 +59,10 @@ build_DD = "imaspy.dd_helpers:prepare_data_dictionaries"
 
 [project.urls]
 homepage = "https://git.iter.org/projects/IMAS/repos/imaspy"
+
+# See https://pypi.org/project/setuptools-scm/
+[tool.setuptools_scm]
+fallback_version="0.0.0"  # TODO: Check if we can use IMASPY_VERSION here to match with EasyBuild
 
 [tool.pytest.ini_options]
 minversion = "6.0"

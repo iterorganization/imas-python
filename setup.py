@@ -322,9 +322,6 @@ if __name__ == "__main__":
     # For allowed version strings, see https://packaging.python.org/specifications/core-metadata/ for allow version strings
 
     setup(
-        use_scm_version={
-            "fallback_version": os.getenv("IMASPY_VERSION", "0.0.0"),
-        },
         setup_requires=pyproject_data["build-system"]["requires"],
         install_requires=install_requires,
         extras_require=optional_reqs,
