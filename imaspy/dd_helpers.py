@@ -41,7 +41,7 @@ def prepare_data_dictionaries():
         logger.info("Creating zip file of DD versions")
 
         if idsdef_zip_relpath.is_file():
-            logger.warning("Overwriting '%s'", idsdef_zip)
+            logger.warning("Overwriting '%s'", idsdef_zip_relpath)
 
         with ZipFile(
             idsdef_zip_relpath,
