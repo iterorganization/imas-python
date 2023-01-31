@@ -5,5 +5,57 @@ requires = ["setuptools>=43", "wheel", "setuptools_scm[toml]>=3.4", "Cython>=0.2
 
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "imaspy"
+author = "IMASPy Developers"
+author_email = "olivier.hoenen@iter.org"
+description = "Pythonic wrappers for the IMAS Access Layer"
+license = {file = "LICENSE"}
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python = ">=3.7
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Environment :: Plugins",
+    "Environment :: X11 Applications",
+    "Framework :: Flake8",
+    "Framework :: IPython",
+    "Framework :: Matplotlib",
+    "Framework :: Pytest",
+    "Framework :: Sphinx",
+    "Framework :: IMAS",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: System Administrators",
+    "License :: ITER License",
+    "Natural Language :: English",
+    "Operating System :: POSIX",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Unix Shell",
+    "Topic :: Database",
+    "Topic :: Database :: Front-Ends",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System",
+    "Topic :: System :: Software Distribution",
+    "Topic :: Utilities",
+]
+
+[project.scripts]
+ids_convert = imaspy.tools:convert
+ids_info = imaspy.tools:info
+ids_print = imaspy.tools:tree
+build_DD = imaspy.dd_helpers:prepare_data_dictionaries
+
+[project.urls]
+homepage = https://git.iter.org/projects/IMAS/repos/imaspy
+
 [tool.pytest.ini_options]
 minversion = "6.0"
