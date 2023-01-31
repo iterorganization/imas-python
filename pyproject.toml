@@ -7,12 +7,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "imaspy"
-author = "IMASPy Developers"
-author_email = "olivier.hoenen@iter.org"
+authors = [
+  {name = "IMASPy Developers"},
+  {name = "Olivier Hoenen", email = "olivier.hoenen@iter.org"},
+]
 description = "Pythonic wrappers for the IMAS Access Layer"
 license = {file = "LICENSE"}
 readme = {file = "README.md", content-type = "text/markdown"}
-requires-python = ">=3.7
+requires-python = ">=3.7"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -49,13 +51,13 @@ classifiers = [
 ]
 
 [project.scripts]
-ids_convert = imaspy.tools:convert
-ids_info = imaspy.tools:info
-ids_print = imaspy.tools:tree
-build_DD = imaspy.dd_helpers:prepare_data_dictionaries
+ids_convert = "imaspy.tools:convert"
+ids_info = "imaspy.tools:info"
+ids_print = "imaspy.tools:tree"
+build_DD = "imaspy.dd_helpers:prepare_data_dictionaries"
 
 [project.urls]
-homepage = https://git.iter.org/projects/IMAS/repos/imaspy
+homepage = "https://git.iter.org/projects/IMAS/repos/imaspy"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
