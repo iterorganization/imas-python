@@ -23,8 +23,8 @@ $PIP install --upgrade pip
 $PIP install --upgrade setuptools build
 
 # Install build dependencies manually, PyPA build does not automatically install them
-pyproject_deps=`cat pyproject.toml | grep "requires =" | cut -d= -f2- | sed "s/,//g" | sed 's/"//g'`
-IMASPY_BUILD_DEPS=${pyproject_deps:2:-1}
+pyproject_build_requires=`cat pyproject.toml | grep "requires =" | cut -d= -f2- | sed "s/,//g" | sed 's/"//g'`
+IMASPY_BUILD_DEPS=${pyproject_build_requires:2:-1}
 $PIP install --upgrade $IMASPY_BUILD_DEPS
 
 # Do not use build isolation; we need IMAS components and Linux modules to be available
