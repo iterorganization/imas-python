@@ -87,6 +87,10 @@ build_DD = "imaspy.dd_helpers:prepare_data_dictionaries"
 [project.urls]
 homepage = "https://git.iter.org/projects/IMAS/repos/imaspy"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["imaspy*"]
+
 # See https://pypi.org/project/setuptools-scm/
 [tool.setuptools_scm]
 fallback_version="0.0.0"  # TODO: Check if we can use IMASPY_VERSION here to match with EasyBuild
