@@ -307,15 +307,7 @@ else:
     extensions = []
 
 if __name__ == "__main__":
-    # Legacy setuptools support, e.g. `python setup.py something`
-    # See [PEP-0517](https://www.python.org/dev/peps/pep-0517/) and
-    # [setuptools docs](https://setuptools.readthedocs.io/en/latest/userguide/quickstart.html#basic-use)
-    # Rough logic setuptools_scm
-    # See https://pypi.org/project/setuptools-scm/
-    # For allowed version strings, see https://packaging.python.org/specifications/core-metadata/ for allow version strings
-
     setup(
         setup_requires=pyproject_data["build-system"]["requires"],
-        # cmdclass={"build_py": BuildPyCommand, "build_DD": BuildDDCommand, "sdist": MySdist},
         cmdclass={"build_DD": BuildDDCommand, "sdist": MySdist},
     )
