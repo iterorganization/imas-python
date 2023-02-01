@@ -306,13 +306,6 @@ if REBUILD_LL:
 else:
     extensions = []
 
-optional_reqs = {}
-for req in ["backends_al", "backends_xarray", "core", "examples", "test", "docs"]:
-    optional_reqs[req] = DistTextFile(this_dir / f"requirements_{req}.txt").readlines()
-install_requires = optional_reqs.pop("core")
-# collect all optional dependencies in a "all" target
-optional_reqs["all"] = list(chain(*optional_reqs.values()))
-
 if __name__ == "__main__":
     # Legacy setuptools support, e.g. `python setup.py something`
     # See [PEP-0517](https://www.python.org/dev/peps/pep-0517/) and
@@ -323,8 +316,6 @@ if __name__ == "__main__":
 
     setup(
         setup_requires=pyproject_data["build-system"]["requires"],
-        install_requires=install_requires,
-        extras_require=optional_reqs,
         # cmdclass={"build_py": BuildPyCommand, "build_DD": BuildDDCommand, "sdist": MySdist},
         cmdclass={"build_DD": BuildDDCommand, "sdist": MySdist},
     )

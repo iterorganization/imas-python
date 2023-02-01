@@ -50,6 +50,33 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dynamic = ["version"]
+dependencies = [
+    "numpy>=1.15.4",
+    "cached-property",
+    "tree-format",
+    "scipy",
+]
+
+[project.optional-dependencies]
+backends_al = [
+"imas",
+]
+docs = [
+    "sphinx>=3.2.1,!=4.1.0",
+    "sphinx_rtd_theme>=0.5",
+    "recommonmark>=0.6",
+    "sphinx-autosummary-accessors>=0.1.2",
+    "sphinx-autodoc-typehints>=1.1.1",
+]
+examples = [
+    "imas",
+]
+test = [
+    "pytest>=5.4.1",
+    "pytest-cov>=0.6",
+    "pytest-xdist",
+    "pytest-randomly",
+]
 
 [project.scripts]
 ids_convert = "imaspy.tools:convert"
