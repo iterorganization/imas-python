@@ -7,6 +7,7 @@
 # Set up logging immediately
 
 from distutils.version import StrictVersion as V
+import contextlib
 import tempfile
 import os
 
@@ -49,6 +50,9 @@ try:
     )
 except:
     logger.critical("IMAS could not be imported. UAL not available!")
+
+
+_NO_SERIALIZATION_ERROR = "Serialization requires Access Layer version 4.11 or newer."
 
 
 class IDSToplevel(IDSStructure):
@@ -148,92 +152,128 @@ class IDSToplevel(IDSStructure):
 
     @staticmethod
     def default_serializer_protocol():
+        """Return the default serializer protocol."""
         if not IMAS_HAS_SERIALIZATION:
-            raise NotImplementedError("Serialization requires a newer IMAS version")
+            raise NotImplementedError(_NO_SERIALIZATION_ERROR)
         return DEFAULT_SERIALIZER_PROTOCOL
 
-    def serialize(self, protocol=DEFAULT_SERIALIZER_PROTOCOL):
-        if not IMAS_HAS_SERIALIZATION:
-            raise NotImplementedError("Serialization requires a newer IMAS version")
-        if protocol == ASCII_SERIALIZER_PROTOCOL:
-            if self.ids_properties.homogeneous_time == IDS_TIME_MODE_UNKNOWN:
-                raise ALException("IDS is found to be EMPTY (homogeneous_time undefined)")
-            tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
-            tmpfile = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
-            # store state (it is overwritten in create_env_backend)
-            state = (
+    @contextlib.contextmanager
+    def _serialize_open_temporary_backend(self, *args, **kwargs):
+        """Helper context manager to open a temporary backend.
+
+        All arguments are forwarded to :meth:`IDSRoot.create_env_backend`.
+        """
+        # these state variables are overwritten in create_env_backend
+        current_backend_state = (
+            self._parent.connected,
+            self._parent.expIdx,
+            getattr(self._parent, "_data_store", None),  # _data_store may not exist
+        )
+        self._parent.create_env_backend(*args, **kwargs)
+        try:
+            yield
+        finally:
+            # close the temporary backend
+            self._parent._data_store.close()
+            # restore state
+            (
                 self._parent.connected,
                 self._parent.expIdx,
-                getattr(self._parent, "_data_store", None), # _data_store may not exist
-            )
-            # Create a new pulse context, so we can use self.put, use -fullpath option'
-            _, ctx = self._parent.create_env_backend(
+                self._parent._data_store,
+            ) = current_backend_state
+
+    def serialize(self, protocol=DEFAULT_SERIALIZER_PROTOCOL):
+        """Serialize this IDS to a data buffer.
+
+        The data buffer can be deserialized from any Access Layer High-Level Interface
+        that supports this. Currently known to be: IMASPy, Python, C++ and Fortran.
+
+        Example:
+
+        .. code-block: python
+
+            data_entry = imaspy.ids_root.IDSRoot(1, 0)
+            core_profiles = data_entry.core_profiles
+            # fill core_profiles with data
+            ...
+
+            data = core_profiles.serialize()
+
+            # For example, send `data` to another program with libmuscle.
+            # Then deserialize on the receiving side:
+
+            data_entry = imaspy.ids_root.IDSRoot(1, 0)
+            core_profiles = data_entry.core_profiles
+            core_profiles.deserialize(data)
+            # Use core_profiles:
+            ...
+
+        Args:
+            protocol: Which serialization protocol to use. Currently only
+                ASCII_SERIALIZER_PROTOCOL is supported.
+                Defaults to DEFAULT_SERIALIZER_PROTOCOL.
+
+        Returns:
+            Data buffer that can be deserialized using :meth:`deserialize`.
+        """
+        if not IMAS_HAS_SERIALIZATION:
+            raise NotImplementedError(_NO_SERIALIZATION_ERROR)
+        if self.ids_properties.homogeneous_time == IDS_TIME_MODE_UNKNOWN:
+            raise ALException("IDS is found to be EMPTY (homogeneous_time undefined)")
+        if protocol == ASCII_SERIALIZER_PROTOCOL:
+            tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
+            tmpfile = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
+            # Temporarily open an ASCII backend for serialization to tmpfile
+            with self._serialize_open_temporary_backend(
                 "serialize",
                 "serialize",
                 "3",
                 ASCII_BACKEND,
                 options=f"-fullpath {tmpfile}",
-            )
-            try:
+            ):
                 self.put()
-            finally:
-                # cleanup
-                self._parent._data_store.close()
-                # restore state
-                (
-                    self._parent.connected,
-                    self._parent.expIdx,
-                    self._parent._data_store,
-                ) = state
             try:
                 # read contents of tmpfile
                 with open(tmpfile, "rb") as f:
                     data = f.read()
             finally:
                 os.unlink(tmpfile)  # remove tmpfile from disk
-            return data
+            return bytes([ASCII_SERIALIZER_PROTOCOL]) + data
         raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 
-    def deserialize(self, data, protocol):
+    def deserialize(self, data):
+        """Deserialize the data buffer into this IDS.
+
+        See :meth:`serialize` for an example.
+
+        Args:
+            data: binary data created by serializing an IDS.
+        """
         if not IMAS_HAS_SERIALIZATION:
-            raise NotImplementedError("Serialization requires a newer IMAS version")
+            raise NotImplementedError(_NO_SERIALIZATION_ERROR)
+        if len(data) <= 1:
+            raise ValueError("No data provided")
+        protocol = int(data[0])  # first byte of data contains serialization protocol
         if protocol == ASCII_SERIALIZER_PROTOCOL:
             tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
             tmpfile = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
             # write data into tmpfile
             try:
                 with open(tmpfile, "wb") as f:
-                    f.write(data)
-            except:
+                    f.write(data[1:])
+                # Temporarily open an ASCII backend for deserialization from tmpfile
+                with self._serialize_open_temporary_backend(
+                    "serialize",
+                    "serialize",
+                    "3",
+                    ASCII_BACKEND,
+                    options=f"-fullpath {tmpfile}",
+                ):
+                    self.get()
+            finally:
+                # tmpfile may not exist depending if an error occurs in above code
                 if os.path.exists(tmpfile):
                     os.unlink(tmpfile)
-                raise
-            # store state (it is overwritten in create_env_backend)
-            state = (
-                self._parent.connected,
-                self._parent.expIdx,
-                getattr(self._parent, "_data_store", None), # _data_store may not exist
-            )
-            # Create a new pulse context, so we can use self.get, use -fullpath option
-            _, ctx = self._parent.create_env_backend(
-                "serialize",
-                "serialize",
-                "3",
-                ASCII_BACKEND,
-                options=f"-fullpath {tmpfile}",
-            )
-            try:
-                self.get()
-            finally:
-                # cleanup
-                self._parent._data_store.close()
-                # restore state
-                (
-                    self._parent.connected,
-                    self._parent.expIdx,
-                    self._parent._data_store,
-                ) = state
-                os.unlink(tmpfile)
         else:
             raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 

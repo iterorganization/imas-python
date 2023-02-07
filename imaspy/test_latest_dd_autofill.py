@@ -95,7 +95,7 @@ def test_latest_dd_autofill_serialize(ids_name):
     data = ids[ids_name].serialize()
 
     ids2 = imaspy.ids_root.IDSRoot(0, 0)
-    ids2[ids_name].deserialize(data, ids2[ids_name].default_serializer_protocol())
+    ids2[ids_name].deserialize(data)
 
     logger.warning("Skipping ASCII backend tests for empty arrays")
     compare_children(ids[ids_name], ids2[ids_name], _ascii_empty_array_skip=True)
