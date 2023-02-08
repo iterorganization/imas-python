@@ -85,7 +85,7 @@ ids_convert = "imaspy.tools:convert"
 ids_info = "imaspy.tools:info"
 ids_print = "imaspy.tools:tree"
 build_DD = "imaspy.dd_helpers:prepare_data_dictionaries"
-imaspy = "imaspy.command.imaspy:print_version"
+imaspy = "imaspy.command.cli:cli"
 
 [project.urls]
 homepage = "https://git.iter.org/projects/IMAS/repos/imaspy"

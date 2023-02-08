@@ -6,6 +6,11 @@ from importlib.metadata import version, PackageNotFoundError
 import click
 
 
+@click.group()
+def cli():
+    pass
+
+
 @click.command()
 def print_version():
     """Print the version number of IMASPy"""
@@ -16,5 +21,13 @@ def print_version():
     click.echo(__version__)
 
 
+@click.command()
+def print_hello_world():
+    click.echo("Hey world!")
+
+
+cli.add_command(print_hello_world)
+cli.add_command(print_version)
+
 if __name__ == "__main__":
-    print_version()
+    cli()
