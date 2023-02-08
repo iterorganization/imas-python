@@ -12,8 +12,8 @@ def print_version():
     try:
         __version__ = version("imaspy")
     except PackageNotFoundError:
-        print("Package is not installed")
-    print(__version__)
+        click.echo("Package is not installed")
+    click.echo(__version__)
 
 
 if __name__ == "__main__":
