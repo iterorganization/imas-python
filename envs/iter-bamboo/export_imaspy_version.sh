@@ -23,4 +23,4 @@ DD_GIT_IDENTIFIER="${2:-}"
 . $common_dir/10_setenv_python.sh
 . $iter_dir/20_setenv_imas_git_sdcc.sh
 source $IMASPY_VENV/bin/activate
-export IMASPY_VERSION=`$PYTHON setup.py --version`
+export IMASPY_VERSION=`imaspy`
