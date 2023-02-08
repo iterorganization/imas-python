@@ -1,5 +1,6 @@
+# This file is part of IMASPy.
+# You should have received IMASPy LICENSE file with this project.
 """Command-line tools provided with IMASPy."""
-
 import argparse
 import logging
 import os.path
