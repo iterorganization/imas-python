@@ -53,10 +53,16 @@ def random_data(ids_type, ndims):
         logger.warn("Unknown data type %s requested to fill, ignoring", ids_type)
 
 
-def fill_with_random_data(structure):
+def fill_with_random_data(structure, max_children=3):
     """Fill a structure with random data.
-    Sets homogeneous_time to independent _always_.
-    TODO: also test other time types"""
+
+    Sets homogeneous_time to homogeneous _always_.
+    TODO: also test other time types
+    
+    Args:
+        structure: IDS object to fill
+        max_children: The maximum amount of children to create for IDSStructArrays.
+    """
     for child_name in structure._children:
         child = structure[child_name]
 
@@ -64,10 +70,14 @@ def fill_with_random_data(structure):
             fill_with_random_data(child)
         elif isinstance(child, IDSStructArray):
             if len(child.value) == 0:
-                for _ in range(child._maxoccur or 3):
+                n_children = min(child._maxoccur or max_children, max_children)
+                for _ in range(n_children):
                     child.append(child._element_structure)
-                for ch in child.value:
-                    fill_with_random_data(ch)
+                # choose which child will get the max number of grand-children
+                max_child = random.randrange(n_children)
+                for i, ch in enumerate(child.value):
+                    max_grand_children = max_children if i == max_child else 1
+                    fill_with_random_data(ch, max_grand_children)
         else:  # leaf node
             if child_name == "homogeneous_time":
                 child.value = IDS_TIME_MODE_HOMOGENEOUS
