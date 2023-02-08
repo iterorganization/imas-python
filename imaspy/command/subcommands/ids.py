@@ -8,6 +8,7 @@ import pathlib
 
 import numpy as np
 from tree_format import format_tree
+import click
 
 import imaspy
 from imaspy.setup_logging import root_logger as logger
@@ -17,6 +18,7 @@ from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MDSPLUS_BA
 logger.setLevel(logging.WARNING)
 
 
+@click.command("ids_info")
 def info():
     """Print info about IDSes provided by path."""
     args = _default_parser().parse_args()
@@ -41,6 +43,7 @@ def info():
             )
 
 
+@click.command("ids_convert")
 def convert():
     """Convert an IMAS data structure (all idses or specific ones) to
     a specific or the latest version. Can also provide info about
@@ -116,6 +119,7 @@ def nonempty_children(el):
     return filter(has_value, el)
 
 
+@click.command("ids_print")
 def tree():
     """Pretty-print a tree of non-default variables."""
     parser = _default_parser()

@@ -5,6 +5,7 @@ from importlib.metadata import version, PackageNotFoundError
 
 import click
 
+import imaspy.command.subcommands.ids
 
 @click.group()
 def cli():
@@ -28,6 +29,9 @@ def print_hello_world():
 
 cli.add_command(print_hello_world)
 cli.add_command(print_version)
+cli.add_command(imaspy.command.subcommands.ids.info)
+cli.add_command(imaspy.command.subcommands.ids.convert)
+cli.add_command(imaspy.command.subcommands.ids.tree)
 
 if __name__ == "__main__":
     cli()
