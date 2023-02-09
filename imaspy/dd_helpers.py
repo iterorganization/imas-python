@@ -184,7 +184,7 @@ def get_data_dictionary_repo() -> Tuple[bool, bool]:
     logger.info("Set up remote '{!s}' linking to '{!s}'".format(origin, origin.url))
 
     try:
-        origin.fetch("--tags")
+        origin.fetch(tags=True)
     except git.exc.GitCommandError as ee:
         logger.warning("Could not fetch tags from %s. Git reports:\n %s."
                        "\nTrying to continue", list(origin.urls), ee)
