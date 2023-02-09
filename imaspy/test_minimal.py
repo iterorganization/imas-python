@@ -11,20 +11,6 @@ logger = root_logger
 logger.setLevel(logging.INFO)
 
 
-@pytest.fixture
-def ids_minimal():
-    from pathlib import Path
-
-    return Path(__file__).parent / "assets/IDS_minimal.xml"
-
-
-@pytest.fixture
-def ids_minimal_types():
-    from pathlib import Path
-
-    return Path(__file__).parent / "assets/IDS_minimal_types.xml"
-
-
 def test_load_minimal(ids_minimal):
     ids = imaspy.ids_root.IDSRoot(0, 0, xml_path=ids_minimal)  # Create a empty IDSs
 

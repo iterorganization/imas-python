@@ -4,6 +4,7 @@
 # Set up pytest so that any mention of 'backend' as a test argument
 # gets run with all four backends.
 # Same for ids_type, with all types
+import pytest
 
 from imaspy.dd_zip import dd_xml_versions, latest_dd_version
 from imaspy.ids_defs import ASCII_BACKEND, HDF5_BACKEND, MDSPLUS_BACKEND, MEMORY_BACKEND
@@ -69,3 +70,17 @@ def pytest_generate_tests(metafunc):
     for name in metafunc.fixturenames:
         if name.endswith("_bool"):
             metafunc.parametrize(name, [True, False])
+
+
+@pytest.fixture
+def ids_minimal():
+    from pathlib import Path
+
+    return Path(__file__).parent / "imaspy/assets/IDS_minimal.xml"
+
+
+@pytest.fixture
+def ids_minimal_types():
+    from pathlib import Path
+
+    return Path(__file__).parent / "imaspy/assets/IDS_minimal_types.xml"
