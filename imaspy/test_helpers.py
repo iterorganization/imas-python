@@ -131,7 +131,7 @@ def open_ids(backend, mode, worker_id, tmp_path, **kwargs):
             str(ver),
             backend,
             mode=mode,
-            options="-prefix %s" % (tmp_path,),
+            options="-prefix %s/" % (tmp_path,),
         )
     else:
         ids.open_ual_store(tmp_path, "test", str(ver), backend, mode=mode)
