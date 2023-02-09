@@ -23,7 +23,7 @@ TESTSET="${1:-mini}"
 RUNMODE="${2:-normal}"
 
 if [ "$RUNMODE" == "normal" ] || [ "$RUNMODE" == "env" ]; then
-    export PYTEST_FLAGS=${PYTEST_FLAG:-'-n=auto'}
+    export PYTEST_FLAGS=${PYTEST_FLAGS:-'-n=auto'}
     export COV_FLAGS=${COV_FLAGS:-'--cov=imaspy --cov-report=term --cov-report=xml:./coverage.xml'}
     export JUNIT_FLAGS=${JUNIT_FLAGS:-'--junit-xml=./junit.xml'}
     export PYTEST_MARK=${PYTEST_MARK:-''}
