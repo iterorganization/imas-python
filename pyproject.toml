@@ -97,3 +97,8 @@ fallback_version="0.0.0"  # TODO: Check if we can use IMASPY_VERSION here to mat
 
 [tool.pytest.ini_options]
 minversion = "6.0"
+addopts = "--strict-markers"
+markers = [
+    "cli: Tests for the command line interface."
+]
+

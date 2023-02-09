@@ -24,7 +24,7 @@ def print_version():
 
 @click.command()
 def print_hello_world():
-    click.echo("Hey world!")
+    click.echo("Hello world!")
 
 
 cli.add_command(print_hello_world)
