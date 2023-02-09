@@ -185,9 +185,11 @@ def get_data_dictionary_repo() -> Tuple[bool, bool]:
 
     try:
         origin.fetch("--tags")
-    except git.exc.GitCommandError:
-        logger.warning("Could not fetch tags from %s", list(origin.urls))
-    logger.info("Remote tags fetched")
+    except git.exc.GitCommandError as ee:
+        logger.warning("Could not fetch tags from %s. Git reports:\n %s."
+                       "\nTrying to continue", list(origin.urls), ee)
+    else:
+        logger.info("Remote tags fetched")
     return repo
 
 
