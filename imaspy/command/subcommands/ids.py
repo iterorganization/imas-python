@@ -4,7 +4,7 @@
 import argparse
 import logging
 import os.path
-import pathlib
+from pathlib import Path
 
 import numpy as np
 from tree_format import format_tree
@@ -19,18 +19,20 @@ logger.setLevel(logging.WARNING)
 
 
 @click.command("ids_info")
-def info():
+@click.option("-n", "--name")
+@click.option("--version")
+@click.option("--xml_path")
+@click.argument("paths", nargs=-1, type=click.Path(dir_okay=False, path_type=Path))
+def info(name, version, xml_path, paths):
     """Print info about IDSes provided by path."""
-    args = _default_parser().parse_args()
-
-    for file in args.file:
-        if not os.path.isfile(file):
+    for file in paths:
+        if not Path(file).exists():
             logger.error("File %s not found", file)
         else:
-            ids = open_from_file(file)
+            ids = open_from_file(file, version=version, xml_path=xml_path)
 
-            if args.name and ids._name != args.name:
-                ids = ids[args.name]
+            if name and ids._name != name:
+                ids = ids[name]
 
             print(ids._name)
 
@@ -52,7 +54,7 @@ def convert():
     parser.add_argument(
         "file",
         help="file to open",
-        type=pathlib.Path,
+        type=Path,
     )
     parser.add_argument(
         "version",
@@ -170,7 +172,7 @@ ENDINGS = {
 }
 
 
-def open_from_file(file, version=None):
+def open_from_file(file, version=None, xml_path=None):
     """Given a filename as an argument, try to open that with the latest version."""
 
     backend = ENDINGS[file.suffix]
@@ -185,7 +187,7 @@ def open_from_file(file, version=None):
         raise ValueError("Could not identify backend from filename %s" % file)
 
     ids = imaspy.ids_root.IDSRoot(
-        int(shot), int(run), version=version
+        int(shot), int(run), version=version, xml_path=xml_path,
     )  # use the latest version by default
     ids.open_ual_store(file.parent, tree_name, "3", backend, mode="r")
 
@@ -201,7 +203,7 @@ def _default_parser():
     parser.add_argument(
         "file",
         help="file to open",
-        type=pathlib.Path,
+        type=Path,
         nargs="+",
     )
     parser.add_argument(
