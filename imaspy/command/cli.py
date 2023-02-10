@@ -7,6 +7,7 @@ import click
 
 import imaspy.command.subcommands.ids
 
+
 @click.group()
 def cli():
     pass
@@ -22,12 +23,6 @@ def print_version():
     click.echo(__version__)
 
 
-@click.command()
-def print_hello_world():
-    click.echo("Hello world!")
-
-
-cli.add_command(print_hello_world)
 cli.add_command(print_version)
 cli.add_command(imaspy.command.subcommands.ids.info)
 cli.add_command(imaspy.command.subcommands.ids.convert)
