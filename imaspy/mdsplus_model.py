@@ -189,8 +189,9 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
 
     return str(cache_dir_path)
 
-def wait_for_model(cache_dir_path):
-    """ Wait MDSPLUS_MODEL_TIMEOUT seconds until model appears in directory
+
+def wait_for_model(cache_dir_path: Path) -> bool:
+    """Wait MDSPLUS_MODEL_TIMEOUT seconds until model appears in directory
 
     Returns:
         True if the cache folder is found, and false if the
@@ -206,7 +207,8 @@ def wait_for_model(cache_dir_path):
         )
         return False
 
-def model_exists(path):
+
+def model_exists(path: Path) -> bool:
     """Given a path to an IDS model definition check if all components are there"""
     return all(
         map(
@@ -252,7 +254,7 @@ def create_model_ids_xml(cache_dir_path, fname, version):
         raise e
 
 
-def create_mdsplus_model(cache_dir_path):
+def create_mdsplus_model(cache_dir_path: Path) -> None:
     """Use jtraverser to compile a valid MDS model file."""
     try:
         check_output(
@@ -280,7 +282,7 @@ def create_mdsplus_model(cache_dir_path):
         raise e
 
 
-def _get_xdg_cache_dir():
+def _get_xdg_cache_dir() -> str:
     """
     Return the XDG cache directory, according to the XDG base directory spec:
 
@@ -289,7 +291,7 @@ def _get_xdg_cache_dir():
     return os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
 
 
-def jTraverser_jar():
+def jTraverser_jar() -> Path:
     """Search a few common locations and CLASSPATH for jTraverser.jar
     which is provided by MDSPlus."""
     search_dirs = ["/usr/share/java"]
@@ -314,7 +316,7 @@ def jTraverser_jar():
         logger.error("jTraverser.jar not found, cannot build MDSPlus models.")
 
 
-def ensure_data_dir(user, tokamak, version):
+def ensure_data_dir(user: str, tokamak: str, version: str) -> None:
     """Ensure that a data dir exists with a similar algorithm that
     the MDSplus backend uses to set the data path.
     See also mdsplus_backend.cpp:751 (setDataEnv)"""
