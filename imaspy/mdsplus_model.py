@@ -313,7 +313,7 @@ def jTraverser_jar() -> Path:
         jar_path = min(jars, key=lambda x: len(x.parts))
         return jar_path
     else:
-        logger.error("jTraverser.jar not found, cannot build MDSPlus models.")
+        raise RuntimeError("jTraverser.jar not found, cannot build MDSPlus models.")
 
 
 def ensure_data_dir(user: str, tokamak: str, version: str) -> None:
