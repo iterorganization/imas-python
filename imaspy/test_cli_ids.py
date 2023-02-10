@@ -25,7 +25,7 @@ def filled_ascii_datastore(tmp_path, ids_minimal_types, worker_id):
 
 
 @pytest.mark.cli
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="IMAS-4533")
 def test_ids_info_function(filled_ascii_datastore):
     tmp_path, filename, ids_minimal_types, _ = filled_ascii_datastore
 
@@ -33,7 +33,7 @@ def test_ids_info_function(filled_ascii_datastore):
 
 
 @pytest.mark.cli
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="IMAS-4533")
 def test_ids_info(filled_ascii_datastore):
     tmp_path, filename, ids_minimal_types, _ = filled_ascii_datastore
 
@@ -51,7 +51,7 @@ def test_ids_info(filled_ascii_datastore):
 
 
 @pytest.mark.cli
-@pytest.mark.xfail
+@pytest.mark.xfail(reason="IMAS-4533")
 def test_open_from_file(filled_ascii_datastore):
     tmp_path, filename, ids_minimal_types, _ = filled_ascii_datastore
 
