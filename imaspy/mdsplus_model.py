@@ -25,15 +25,8 @@ logger.setLevel(logging.INFO)
 MDSPLUS_MODEL_TIMEOUT = int(os.getenv("MDSPLUS_MODEL_TIMEOUT", "120"))
 
 
-def safe_remove(fldr):
-    """ Quickly remove a folder on the same filesystem"""
-    copy_id = uuid.uuid4()
-    tmp_dst = "%s.%s.tmp" % (fldr, copy_id)
-    os.rename(fldr, tmp_dst)
-    shutil.rmtree(tmp_dst)
-
-def safe_move(src, dst):
-    """Rename a folder from ``src`` to ``dst``.
+def safe_replace(src: Path, dst: Path) -> None:
+    """Replace a folder from ``src`` to ``dst``, overwriting `dst` if it is empty.
 
     *   Moves must be atomic.  ``shutil.move()`` is not atomic.
         Note that multiple threads may try to write to the cache at once,
@@ -41,17 +34,16 @@ def safe_move(src, dst):
         pick up a partially saved image from another thread.
 
     *   Moves must work across filesystems.  Often temp directories and the
-        cache directories live on different filesystems.  ``os.rename()`` can
+        cache directories live on different filesystems.  ``os.replace()`` can
         throw errors if run across filesystems.
 
-    So we try ``os.rename()``, but if we detect a cross-filesystem copy, we
+    So we try ``os.replace()``, but if we detect a cross-filesystem copy, we
     switch to ``shutil.move()`` with some wrappers to make it atomic.
     """
     # From https://alexwlchan.net/2019/03/atomic-cross-filesystem-moves-in-python/
     try:
-        os.rename(src, dst)
+        src.replace(dst)
     except OSError as err:
-
         if err.errno == errno.EXDEV:
             # Generate a unique ID, and copy `<src>` to the target directory
             # with a temporary name `<dst>.<ID>.tmp`.  Because we're copying
@@ -59,28 +51,25 @@ def safe_move(src, dst):
             # atomic.  We intersperse a random UUID so if different processes
             # are copying into `<dst>`, they don't overlap in their tmp copies.
             copy_id = uuid.uuid4()
-            tmp_dst = "%s.%s.tmp" % (dst, copy_id)
+            tmp_dst = dst.with_name(f"{dst.name}.{copy_id}.tmp")
             shutil.copytree(src, tmp_dst)
 
-            # Then do an atomic rename onto the new name, and clean up the
-            # source image.
+            # Then do an atomic replace onto the new name, and clean up the source path
             try:
-                os.rename(tmp_dst, dst)
+                tmp_dst.replace(dst)
             except OSError as err:
-                if err.errno == errno.EEXIST:
-                    # As we use the hash of the files in our foldernames, if the
-                    # folder already exists, we can safely assume another
-                    # process has put it there before we could, and we should
-                    # just remove our tmpdir
-                    shutil.rmtree(tmp_dst)
+                # if the folder is not empty, another process beat us, ignore error
+                if err.errno not in (errno.EEXIST, errno.ENOTEMPTY):
+                    raise  # otherwise raise the error
             shutil.rmtree(src)
-        elif err.errno == errno.EEXIST:
-            shutil.rmtree(src)
+        elif err.errno in (errno.EEXIST, errno.ENOTEMPTY):
+            # if the folder is not empty, another process beat us, ignore error
+            pass
         else:
             raise
 
 
-def mdsplus_model_dir(version, xml_file=None, rebuild=False):
+def mdsplus_model_dir(version, *, xml_file=None):
     """
     when given a version number this looks for the DD definition
     of that version in the internal cache. Alternatively a filename
@@ -101,7 +90,6 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
 
     Kwargs:
         xml_file: Path to the XML to build the cache on
-        rebuild: Rebuild the DD cache, overwriting existing cache files
 
     Returns:
         The path to the requested DD cache
@@ -130,10 +118,9 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
 
     # There are multiple possible cases for the IMASPy cache
     # 1. The cache exist and can be used
-    # 2. The cache exist and needs to be overwritten
-    # 3. The cache partially exists, and it is still written by another process, especially during testing
-    # 4. The cache partially exists, and is horribly broken
-    # 5. The cache does not exist and this process should make it
+    # 2. The cache folder exists, and another process is creating it
+    # 3. The cache folder exists, but the process creating it has stopped
+    # 4. The cache folder does not exist and this process should make it
     #
     # As (cross)-filesystem operations can in principle collide, we use
     # a statistically unique temp dir which we move with a special safe and
@@ -147,34 +134,39 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
         / "mdsplus"
         / f"{cache_dir_name}_{fuuid}"
     )
-    if rebuild:
-        # The user has requested a rebuild
-        generate_tmp_cache = True
-    elif (cache_dir_path.is_dir() and model_exists(cache_dir_path)):
-        # The model already exists on the right location, done!
+    if cache_dir_path.is_dir() and model_exists(cache_dir_path):
+        # Case 1: The model already exists on the right location, done!
         generate_tmp_cache = False
-    elif (cache_dir_path.is_dir() and not model_exists(cache_dir_path)):
-        # The cache dir has been created, but not filled.
-        # We wait until it fills on its own
+    elif cache_dir_path.is_dir() and not model_exists(cache_dir_path):
+        # The cache dir has been created, but not filled: case 3 or 4.
+        # We wait until it fills on its own (case 3)
         logger.warning(
             "Model dir %s exists but is empty. Waiting %ss for contents.",
             cache_dir_path,
             MDSPLUS_MODEL_TIMEOUT,
         )
-        # If it timed out, we will create a new cache in this process
+        # If it timed out (case 4), we will create a new cache in this process
         generate_tmp_cache = not wait_for_model(cache_dir_path)
-    elif (not cache_dir_path.is_dir() and not model_exists(cache_dir_path)):
+        # We expect cache_dir_path is empty when we need to generate
+        if generate_tmp_cache and len(os.listdir(cache_dir_path)) > 1:
+            if not model_exists(cache_dir_name):
+                raise RuntimeError(
+                    "The IMASPy cache directory is corrupted. Please clean the"
+                    f" cache directory ({cache_dir_name}) and try again."
+                )
+    elif not cache_dir_path.is_dir() and not model_exists(cache_dir_path):
         # The cache did not exist, we will create a new cache in this process
         generate_tmp_cache = True
     else:
         raise RuntimeError("Programmer error, this case should never be true")
 
     if generate_tmp_cache:
+        # create the empty directory to indicate we are building a new model
+        cache_dir_path.mkdir(parents=True, exist_ok=True)
         logger.info(
             "Creating and caching MDSplus model at %s, this may take a while",
             tmp_cache_dir_path,
         )
-        cache_dir_path.parent.mkdir(parents=True, exist_ok=True)
         create_model_ids_xml(tmp_cache_dir_path, fname, version)
         create_mdsplus_model(tmp_cache_dir_path)
 
@@ -183,14 +175,19 @@ def mdsplus_model_dir(version, xml_file=None, rebuild=False):
             tmp_cache_dir_path,
             cache_dir_path,
         )
-        if cache_dir_path.exists():
-            safe_remove(cache_dir_path)
-        safe_move(tmp_cache_dir_path, cache_dir_path)
+        safe_replace(tmp_cache_dir_path, cache_dir_path)
+
+        if not model_exists(cache_dir_path):
+            raise RuntimeError(
+                "Unexpected error while generating MDSPlus model cache. Please"
+                " create a bug report."
+            )
 
     return str(cache_dir_path)
 
-def wait_for_model(cache_dir_path):
-    """ Wait MDSPLUS_MODEL_TIMEOUT seconds until model appears in directory
+
+def wait_for_model(cache_dir_path: Path) -> bool:
+    """Wait MDSPLUS_MODEL_TIMEOUT seconds until model appears in directory
 
     Returns:
         True if the cache folder is found, and false if the
@@ -206,7 +203,8 @@ def wait_for_model(cache_dir_path):
         )
         return False
 
-def model_exists(path):
+
+def model_exists(path: Path) -> bool:
     """Given a path to an IDS model definition check if all components are there"""
     return all(
         map(
@@ -252,7 +250,7 @@ def create_model_ids_xml(cache_dir_path, fname, version):
         raise e
 
 
-def create_mdsplus_model(cache_dir_path):
+def create_mdsplus_model(cache_dir_path: Path) -> None:
     """Use jtraverser to compile a valid MDS model file."""
     try:
         check_output(
@@ -280,7 +278,7 @@ def create_mdsplus_model(cache_dir_path):
         raise e
 
 
-def _get_xdg_cache_dir():
+def _get_xdg_cache_dir() -> str:
     """
     Return the XDG cache directory, according to the XDG base directory spec:
 
@@ -289,7 +287,7 @@ def _get_xdg_cache_dir():
     return os.environ.get("XDG_CACHE_HOME") or str(Path.home() / ".cache")
 
 
-def jTraverser_jar():
+def jTraverser_jar() -> Path:
     """Search a few common locations and CLASSPATH for jTraverser.jar
     which is provided by MDSPlus."""
     search_dirs = ["/usr/share/java"]
@@ -311,10 +309,10 @@ def jTraverser_jar():
         jar_path = min(jars, key=lambda x: len(x.parts))
         return jar_path
     else:
-        logger.error("jTraverser.jar not found, cannot build MDSPlus models.")
+        raise RuntimeError("jTraverser.jar not found, cannot build MDSPlus models.")
 
 
-def ensure_data_dir(user, tokamak, version):
+def ensure_data_dir(user: str, tokamak: str, version: str) -> None:
     """Ensure that a data dir exists with a similar algorithm that
     the MDSplus backend uses to set the data path.
     See also mdsplus_backend.cpp:751 (setDataEnv)"""

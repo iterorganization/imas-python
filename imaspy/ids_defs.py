@@ -39,6 +39,14 @@ try:
         UNDEFINED_TIME,
         WRITE_OP,
     )
+    try:
+        # serialization may not be present in the installed imas library
+        from imas.imasdef import ASCII_SERIALIZER_PROTOCOL, DEFAULT_SERIALIZER_PROTOCOL
+        IMAS_HAS_SERIALIZATION = True
+    except ImportError:
+        ASCII_SERIALIZER_PROTOCOL = -1
+        DEFAULT_SERIALIZER_PROTOCOL = -2
+        IMAS_HAS_SERIALIZATION = False
 except ImportError as ee:
     logger.critical("IMAS could not be imported. UAL not available! %s", ee)
 else:
