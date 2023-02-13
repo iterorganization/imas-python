@@ -297,11 +297,13 @@ class UALFile:
         return "%s(shot=%r, run=%r)" % (type(self).__name__, self.shot, self.run)
 
     def close(self, options=None):
-        if self.db_ctx != -1:
+        if self._context_idx != -1:
             old_attrs_locked = self._attrs_locked
             self._attrs_locked = False
-            ull.ual_close_pulse(self.db_ctx, CLOSE_PULSE, options)
-            self.db_ctx = -1
+            # Import imaspy UAL library
+            ull = importlib.import_module(self.ual_module_name)
+            ull.ual_close_pulse(self._context_idx, CLOSE_PULSE, options)
+            self._context_idx = -1
             self.closed = True
             self._attrs_locked = old_attrs_locked
 
