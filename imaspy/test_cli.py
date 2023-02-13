@@ -3,7 +3,7 @@ import pytest
 
 from importlib.metadata import version
 from imaspy import __version__
-from imaspy.command.cli import print_hello_world, print_version
+from imaspy.command.cli import print_version
 
 
 @pytest.mark.cli
