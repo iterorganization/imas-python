@@ -26,7 +26,7 @@ MDSPLUS_MODEL_TIMEOUT = int(os.getenv("MDSPLUS_MODEL_TIMEOUT", "120"))
 
 
 def safe_replace(src: Path, dst: Path) -> None:
-    """Replace a folder from ``src`` to ``dst``, deleting `dst` if it is empty.
+    """Replace a folder from ``src`` to ``dst``, overwriting `dst` if it is empty.
 
     *   Moves must be atomic.  ``shutil.move()`` is not atomic.
         Note that multiple threads may try to write to the cache at once,
