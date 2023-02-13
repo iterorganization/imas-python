@@ -26,7 +26,7 @@ logger.setLevel(logging.WARNING)
 def info(name, version, xml_path, paths):
     """Print info about IDSes provided by path."""
     for file in paths:
-        if not Path(file).exists():
+        if not file.exists():
             logger.error("File %s not found", file)
         else:
             ids = open_from_file(file, version=version, xml_path=xml_path)
