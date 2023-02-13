@@ -642,5 +642,5 @@ class IDSRoot:
     def _contained_children(self) -> set:
         return set(sorted(self._children))
 
-    def __dir__(self):
+    def __dir__(self) -> list:
         return sorted(set(object.__dir__(self)) | self._contained_children)
