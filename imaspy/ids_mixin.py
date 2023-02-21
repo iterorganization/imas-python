@@ -309,8 +309,13 @@ class IDSMixin:
 
     def _build_metadata_attributes(self):
         self.metadata = {}
-        for attr_name, val in self._structure_xml.attrib.items():
-            self.metadata[attr_name] = val
+        # The user is technically allowed to set attributes to _anything_
+        # not necessarily IMASPy-like attributes. These will not be
+        # build from a DD, and thus would not have a _structure_xml.
+        # Explicitly allow this.
+        if self._structure_xml is not None:
+            for attr_name, val in self._structure_xml.attrib.items():
+                self.metadata[attr_name] = val
 
 
 # TODO: cythonize this?
