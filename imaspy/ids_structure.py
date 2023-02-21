@@ -289,7 +289,7 @@ class IDSStructure(IDSMixin):
         return my_depth
 
     def copyValues(self, ids):
-        """ Not sure what this should do. Well, copy values of a structure!"""
+        """Not sure what this should do. Well, copy values of a structure!"""
         raise NotImplementedError("{!s}.copyValues(ids)".format(self))
 
     def __str__(self):
@@ -394,7 +394,7 @@ class IDSStructure(IDSMixin):
                 logger.debug("Unable to get simple field %s, seems empty", child_name)
 
     def _getData(self, ctx, homogeneousTime, nodePath, analyzeTime):
-        """ A deeped way of getting data?? using 'traverser' whatever that is """
+        """A deeped way of getting data?? using 'traverser' whatever that is"""
         raise NotImplementedError(
             "{!s}._getData(ctx, homogeneousTime, nodePath, analyzeTime)".format(self)
         )

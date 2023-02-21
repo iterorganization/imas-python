@@ -434,7 +434,7 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
             return type(self)(self._name, self._ids_type, self._ndims, value=result)
 
     def resize(self, new_shape):
-        """ Resize underlying data
+        """Resize underlying data
 
         Data is stored in memory in a numpy array, so use numpy's resize to
         resize the underlying data
