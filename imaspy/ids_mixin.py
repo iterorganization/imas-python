@@ -47,6 +47,7 @@ class IDSMixin:
 
         self._last_backend_xml_hash = None
         self._backend_name = None
+        self._build_metadata_attributes()
 
     def getRelCTXPath(self, ctx):
         """Get the path relative to given context from an absolute path"""
@@ -305,6 +306,11 @@ class IDSMixin:
         self._backend_name = structure_xml.attrib["name"]
 
         return up, False
+
+    def _build_metadata_attributes(self):
+        self.metadata = {}
+        for attr_name, val in self._structure_xml.attrib.items():
+            self.metadata[attr_name] = val
 
 
 # TODO: cythonize this?

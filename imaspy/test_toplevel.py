@@ -9,11 +9,18 @@ from imaspy.dd_zip import dd_etree
 from imaspy.ids_toplevel import IDSToplevel
 
 
+class FakeIDSRoot:
+    depth = 0
+    _path = ""
+
+
 @pytest.fixture
 def prepped_tree(toplevel_xml: Path):
     # Copy nessecary IDSRoot logic in here to create a toplevel
     # This is basically a simplified and specialized IDSRoot.__init__
-    # TODO: clean unnessecary variables
+    # This separates the logic between IDSRoot and IDSToplevel
+    # TODO: Clean unnessecary variables
+    # TODO: Make sure FakeIDSRoot behaves the same as IDSRoot
     shot = 7
     run = 3
     rs = None
@@ -59,7 +66,7 @@ def prepped_tree(toplevel_xml: Path):
         else:
             # print(f"{my_name} tree init, found toplevel")
             toplevel = IDSToplevel(
-                object(),
+                FakeIDSRoot(),
                 my_name,
                 ids,
                 backend_version=_backend_version,
@@ -77,3 +84,15 @@ def test_toplevel_init(prepped_tree):
     # Test fundamental assumptions and fixture for next tests
     assert isinstance(ids, IDSToplevel)
     assert isinstance(name, str)
+
+
+def test_metadata_lifecycle_status(prepped_tree):
+    name, ids = prepped_tree
+    assert ids.metadata["lifecycle_status"] == "alpha"
+    assert ids.wavevector.metadata["structure_reference"] == "gyrokinetics_wavevector"
+
+
+def test_metadata_non_exist(prepped_tree):
+    name, ids = prepped_tree
+    with pytest.raises(KeyError):
+        ids.wavevector.metadata["lifecycle_status"]
