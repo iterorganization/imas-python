@@ -86,6 +86,13 @@ def test_toplevel_init(prepped_tree):
     assert isinstance(name, str)
 
 
+def test_structure_xml_noncopy(prepped_tree):
+    name, ids = prepped_tree
+    assert id(ids._structure_xml.getchildren()[0].attrib) == id(
+        ids.ids_properties._structure_xml.attrib
+    )
+
+
 def test_metadata_lifecycle_status(prepped_tree):
     name, ids = prepped_tree
     assert ids.metadata["lifecycle_status"] == "alpha"
