@@ -45,6 +45,7 @@ class IDSPrimitive(IDSMixin):
         parent=None,
         value=None,
         coordinates=None,
+        structure_xml=None,
         var_type="dynamic",
     ):
         """Initialize IDSPrimitive
@@ -63,7 +64,16 @@ class IDSPrimitive(IDSMixin):
             coordinates: Data coordinates of the node
             var_type: 'static', 'dynamic', or 'const'
         """
-        super().__init__(parent, name, coordinates=coordinates)
+        # Devnote. As IDSNumericArray uses this __init__, and IDSNumericArray
+        # subclasses np.lib.mixins.NDArrayOperatorsMixin, copy the call
+        # signature of np.lib.mixins.NDArrayOperatorsMixins __init__ to
+        # let IDSNumericArray act as a numpy array
+        super().__init__(
+            parent,
+            name,
+            coordinates=coordinates,
+            structure_xml=structure_xml,
+        )
 
         if ids_type != "STR" and ndims != 0 and self.__class__ == IDSPrimitive:
             raise Exception(

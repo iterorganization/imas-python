@@ -110,6 +110,7 @@ class IDSStructure(IDSMixin):
                         my_data_type,
                         parent=self,
                         coordinates=coordinates,
+                        structure_xml=child,
                         var_type=child.get("type"),
                     ),
                 )
