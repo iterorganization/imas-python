@@ -11,9 +11,13 @@ class Metadata(dict):
         # not necessarily IMASPy-like attributes. These will not be
         # build from a DD, and thus would not have a _structure_xml.
         # Explicitly allow this.
+        self.maxoccur = None
         if structure_xml is not None:
             for attr_name, val in structure_xml.attrib.items():
-                self[attr_name] = val
+                if attr_name == "maxoccur":
+                    self.maxoccur = self.parse_maxoccur(val)
+                else:
+                    self[attr_name] = val
 
     def __setattr__(self, key, value):
         self[key] = value
@@ -26,3 +30,11 @@ class Metadata(dict):
         for key, val in self.items():
             my_copy[key] = deepcopy(val)
         return my_copy
+
+    def parse_maxoccur(self, value):
+        maxoccur = None
+        try:
+            maxoccur = int(value)
+        except (ValueError, KeyError):
+            pass
+        return maxoccur

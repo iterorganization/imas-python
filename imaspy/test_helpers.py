@@ -70,7 +70,7 @@ def fill_with_random_data(structure, max_children=3):
             fill_with_random_data(child)
         elif isinstance(child, IDSStructArray):
             if len(child.value) == 0:
-                n_children = min(child._maxoccur or max_children, max_children)
+                n_children = min(child.metadata.maxoccur or max_children, max_children)
                 for _ in range(n_children):
                     child.append(child._element_structure)
                 # choose which child will get the max number of grand-children
