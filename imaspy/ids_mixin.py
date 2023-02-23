@@ -15,6 +15,7 @@ except ImportError:
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_defs import DD_TYPES
+from imaspy.ids_metadata import Metadata
 from imaspy.setup_logging import root_logger as logger
 
 try:
@@ -308,14 +309,7 @@ class IDSMixin:
         return up, False
 
     def _build_metadata_attributes(self):
-        self.metadata = {}
-        # The user is technically allowed to set attributes to _anything_
-        # not necessarily IMASPy-like attributes. These will not be
-        # build from a DD, and thus would not have a _structure_xml.
-        # Explicitly allow this.
-        if self._structure_xml is not None:
-            for attr_name, val in self._structure_xml.attrib.items():
-                self.metadata[attr_name] = val
+        self.metadata = Metadata(structure_xml=self._structure_xml)
 
 
 # TODO: cythonize this?

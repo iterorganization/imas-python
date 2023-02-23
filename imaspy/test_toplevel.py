@@ -103,3 +103,8 @@ def test_metadata_non_exist(prepped_tree):
     name, ids = prepped_tree
     with pytest.raises(KeyError):
         ids.wavevector.metadata["lifecycle_status"]
+
+
+def test_dict_and_attribute_access(prepped_tree):
+    name, ids = prepped_tree
+    id(ids.metadata.maxoccur) == id(ids.metadata["maxoccur"])
