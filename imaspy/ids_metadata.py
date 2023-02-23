@@ -2,6 +2,7 @@
 # You should have received IMASPy LICENSE file with this project.
 """ Core of the IMASPy interpreted IDS metadata
 """
+from copy import deepcopy
 
 
 class Metadata(dict):
@@ -12,7 +13,6 @@ class Metadata(dict):
         # Explicitly allow this.
         if structure_xml is not None:
             for attr_name, val in structure_xml.attrib.items():
-                # setattr(self, attr_name, val)
                 self[attr_name] = val
 
     def __setattr__(self, key, value):
@@ -20,3 +20,9 @@ class Metadata(dict):
 
     def __getattr__(self, key):
         return self[key]
+
+    def __deepcopy__(self, memo):
+        my_copy = {}
+        for key, val in self.items():
+            my_copy[key] = deepcopy(val)
+        return my_copy
