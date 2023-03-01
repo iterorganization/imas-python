@@ -140,9 +140,13 @@ class IDSPrimitive(IDSMixin):
             value = int(value)
         elif self._ids_type == "FLT" and self._ndims == 0:
             value = float(value)
+        elif self._ids_type == "CPX" and self._ndims == 0:
+            value = complex(value)
         elif self._ndims >= 1:
             if self._ids_type == "FLT":
                 value = np.array(value, dtype=np.float64)
+            elif self._ids_type == "CPX":
+                value = np.array(value, dtype=np.complex128)
             elif self._ids_type == "INT":
                 value = np.array(value, dtype=np.int64)
             elif self._ids_type == "STR":
