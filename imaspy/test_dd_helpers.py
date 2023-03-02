@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from imaspy.dd_helpers import *
@@ -121,8 +123,13 @@ def test_classpath_hpc(monkeypatch):
     )
 
 
+def test_download_saxon(tmpdir):
+    with tmpdir.as_cwd():
+        saxon_path = download_saxon()
+    assert Path(saxon_path).exists()
+
+
 # TODO: Write tests!
 # def find_saxon_bin():
-# def download_saxon():
 # def get_data_dictionary_repo():
 # def build_data_dictionary():
