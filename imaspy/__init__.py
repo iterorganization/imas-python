@@ -53,7 +53,6 @@ try:
         dd_zip,
         imas_ual_env_parsing,
         mdsplus_model,
-        tools, # todo: Import with side-effects?
     )
 except Exception:
     logger.critical("Global IMASPy __init__ could not import core IMAS AL/DD Python submodules. Trying continuing without AL/DD...")
