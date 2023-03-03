@@ -137,7 +137,7 @@ def download_saxon():
     Return the full path to saxon9he.jar"""
 
     SAXON_PATH = (
-        "https://iweb.dl.sourceforge.net/project/saxon/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip"
+        "https://downloads.sourceforge.net/project/saxon/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip"
     )
 
     resp = urlopen(SAXON_PATH)
