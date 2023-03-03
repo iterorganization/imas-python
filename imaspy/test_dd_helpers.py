@@ -94,7 +94,11 @@ def test_classpath_do_not_match(monkeypatch, path):
 def test_classpath_sdcc(monkeypatch):
     monkeypatch.setenv(
         "CLASSPATH",
-        "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-xqj-10.3.jar:/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-test-10.3.jar:/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/jline-2.9.jar:/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-10.3.jar:/work/imas/opt/EasyBuild/software/MDSplus-Java/7.96.17-GCCcore-10.2.0-Java-11/java/classes/*",
+        "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-xqj-10.3.jar:"
+        "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-test-10.3.jar:"
+        "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/jline-2.9.jar:"
+        "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-10.3.jar:"
+        "/work/imas/opt/EasyBuild/software/MDSplus-Java/7.96.17-GCCcore-10.2.0-Java-11/java/classes/*",
     )
     saxon_jar_path = find_saxon_classpath()
     assert (
