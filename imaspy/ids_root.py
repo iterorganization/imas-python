@@ -637,3 +637,10 @@ class IDSRoot:
         except KeyError:
             pass
         return state
+
+    @property
+    def _contained_children(self) -> set:
+        return set(self._children)
+
+    def __dir__(self) -> list:
+        return sorted(set(object.__dir__(self)) | self._contained_children)
