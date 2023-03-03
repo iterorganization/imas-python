@@ -56,7 +56,7 @@ def random_data(ids_type, ndims):
         logger.warn("Unknown data type %s requested to fill, ignoring", ids_type)
 
 
-def fill_with_random_data(structure, max_children=3, generate_complex=True):
+def fill_with_random_data(structure, max_children=3):
     """Fill a structure with random data.
 
     Sets homogeneous_time to homogeneous _always_.
@@ -65,14 +65,12 @@ def fill_with_random_data(structure, max_children=3, generate_complex=True):
     Args:
         structure: IDS object to fill
         max_children: The maximum amount of children to create for IDSStructArrays.
-        generate_complex: Whether to generate complex numbers. If set to False, do not
-            generate any data for complex-valued fields.
     """
     for child_name in structure._children:
         child = structure[child_name]
 
         if type(child) in [IDSStructure, IDSToplevel, IDSRoot]:
-            fill_with_random_data(child, max_children, generate_complex)
+            fill_with_random_data(child, max_children)
         elif isinstance(child, IDSStructArray):
             if len(child.value) == 0:
                 n_children = min(child._maxoccur or max_children, max_children)
@@ -82,11 +80,11 @@ def fill_with_random_data(structure, max_children=3, generate_complex=True):
                 max_child = random.randrange(n_children)
                 for i, ch in enumerate(child.value):
                     max_grand_children = max_children if i == max_child else 1
-                    fill_with_random_data(ch, max_grand_children, generate_complex)
+                    fill_with_random_data(ch, max_grand_children)
         else:  # leaf node
             if child_name == "homogeneous_time":
                 child.value = IDS_TIME_MODE_HOMOGENEOUS
-            elif generate_complex or child._ids_type != "CPX":
+            else:
                 child.value = random_data(child._ids_type, child._ndims)
 
 

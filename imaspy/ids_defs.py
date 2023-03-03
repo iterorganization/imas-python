@@ -18,6 +18,7 @@ try:
         CLOSE_PULSE,
         CLOSEST_INTERP,
         DOUBLE_DATA,
+        COMPLEX_DATA,
         EMPTY_COMPLEX,
         EMPTY_FLOAT,
         EMPTY_INT,

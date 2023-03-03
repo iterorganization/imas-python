@@ -35,8 +35,7 @@ def has_parent(child):
 def test_latest_dd_autofill_separate(ids_name, backend, worker_id, tmp_path):
     """Write and then read again a full IDSRoot and all IDSToplevels."""
     ids = open_ids(backend, "w", worker_id, tmp_path)
-    generate_complex = backend not in (ASCII_BACKEND, MEMORY_BACKEND)
-    fill_with_random_data(ids[ids_name], generate_complex=generate_complex)
+    fill_with_random_data(ids[ids_name])
 
     ids[ids_name].put()
 
@@ -58,9 +57,7 @@ def test_latest_dd_autofill_separate(ids_name, backend, worker_id, tmp_path):
 def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
     """Write and then read again a full IDSRoot and all IDSToplevels."""
     ids = open_ids(backend, "w", worker_id, tmp_path)
-    # These backends do not support storing complex values
-    generate_complex = backend not in (ASCII_BACKEND, MEMORY_BACKEND)
-    fill_with_random_data(ids[ids_name], generate_complex=generate_complex)
+    fill_with_random_data(ids[ids_name])
 
     ids[ids_name].put()
     ids_ref = copy.deepcopy(ids)

@@ -23,6 +23,7 @@ try:
         CHAR_DATA,
         DOUBLE_DATA,
         INTEGER_DATA,
+        COMPLEX_DATA,
         hli_utils,
         ids_type_to_default,
     )
@@ -290,6 +291,10 @@ class IDSPrimitive(IDSMixin):
             status, data = self._ull.ual_read_data_scalar(
                 ctx, strNodePath, strTimeBasePath, DOUBLE_DATA
             )
+        elif read_type == "CPX" and ndims == 0:
+            status, data = self._ull.ual_read_data_scalar(
+                ctx, strNodePath, strTimeBasePath, COMPLEX_DATA
+            )
         elif read_type == "FLT" and ndims > 0:
             status, data = self._ull.ual_read_data_array(
                 ctx, strNodePath, strTimeBasePath, DOUBLE_DATA, self._ndims
@@ -297,6 +302,10 @@ class IDSPrimitive(IDSMixin):
         elif read_type == "INT" and ndims > 0:
             status, data = self._ull.ual_read_data_array(
                 ctx, strNodePath, strTimeBasePath, INTEGER_DATA, self._ndims
+            )
+        elif read_type == "CPX" and ndims > 0:
+            status, data = self._ull.ual_read_data_array(
+                ctx, strNodePath, strTimeBasePath, COMPLEX_DATA, self._ndims
             )
         else:
             logger.critical(
