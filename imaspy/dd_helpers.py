@@ -20,6 +20,7 @@ logger.setLevel(logging.INFO)
 
 idsdef_zip_relpath = Path("imaspy/assets/IDSDef.zip")
 
+
 def prepare_data_dictionaries():
     """Build IMAS IDSDef.xml files for each tagged version in the DD repository
     1. Search for saxon or download it
@@ -109,7 +110,7 @@ def find_saxon_jar():
 
 
 def find_saxon_classpath():
-    """ Search JAVAs CLASSPATH for a Saxon .jar """
+    """Search JAVAs CLASSPATH for a Saxon .jar"""
     classpath = os.environ.get("CLASSPATH", "")
     is_test = lambda x: "test" in x
     is_saxon = lambda x: x.split("/")[-1].startswith("saxon")
@@ -122,7 +123,7 @@ def find_saxon_classpath():
 
 
 def find_saxon_bin():
-    """ Search for a saxon executable """
+    """Search for a saxon executable"""
     saxon_bin = shutil.which("saxon")
     if saxon_bin:
         with open(saxon_bin, "r") as file:
@@ -136,9 +137,7 @@ def download_saxon():
     """Downloads a zipfile containing saxon9he.jar and extract it to the current dir.
     Return the full path to saxon9he.jar"""
 
-    SAXON_PATH = (
-        "https://downloads.sourceforge.net/project/saxon/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip"
-    )
+    SAXON_PATH = "https://downloads.sourceforge.net/project/saxon/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip"
 
     resp = urlopen(SAXON_PATH)
     zipfile = ZipFile(BytesIO(resp.read()))
@@ -186,8 +185,11 @@ def get_data_dictionary_repo() -> Tuple[bool, bool]:
     try:
         origin.fetch(tags=True)
     except git.exc.GitCommandError as ee:
-        logger.warning("Could not fetch tags from %s. Git reports:\n %s."
-                       "\nTrying to continue", list(origin.urls), ee)
+        logger.warning(
+            "Could not fetch tags from %s. Git reports:\n %s." "\nTrying to continue",
+            list(origin.urls),
+            ee,
+        )
     else:
         logger.info("Remote tags fetched")
     return repo
