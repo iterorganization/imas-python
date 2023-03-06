@@ -137,15 +137,27 @@ def find_saxon_bin():
 
 def download_saxon():
     """Downloads a zipfile containing Saxon and extract it to the current dir.
-    Return the full path to Saxon"""
+    Return the full path to Saxon. This can be any Saxon version. Scripts that
+    wrap this should probably manipulate either the name of this file, and/or
+    the CLASSPATH"""
 
     SAXON_PATH = "https://downloads.sourceforge.net/project/saxon/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip"
 
     resp = urlopen(SAXON_PATH)
     zipfile = ZipFile(BytesIO(resp.read()))
-    path = zipfile.extract(_saxon_local_default_name)
-    del zipfile
-    return path
+    # Zipfile has a list of the ZipInfos. Look inside for a Saxon jar
+    saxon_file = None
+    for file in zipfile.filelist:
+        if re.match(_saxon_regex, file.filename, flags=re.IGNORECASE):
+            saxon_file = file
+            break
+
+    if saxon_file is None:
+        raise IMASPyError(f"No Saxon jar found in given zipfile '{SAXON_PATH}'")
+    else:
+        path = zipfile.extract(saxon_file)
+        del zipfile
+        return path
 
 
 def get_data_dictionary_repo() -> Tuple[bool, bool]:
