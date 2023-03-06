@@ -19,6 +19,7 @@ logger = logging.getLogger("imaspy")
 logger.setLevel(logging.INFO)
 
 _idsdef_zip_relpath = Path("imaspy/assets/IDSDef.zip")
+_saxon_local_default_name = "saxon9he.jar"  # For pre-3.30.0 builds
 
 
 def prepare_data_dictionaries():
@@ -70,9 +71,9 @@ def get_saxon() -> Path:
     4. or download it
     """
 
-    local_saxon_path = Path.cwd() / "saxon9he.jar"
+    local_saxon_path = Path.cwd() / _saxon_local_default_name
     if local_saxon_path.exists():
-        logger.debug("Something already at './saxon9he.jar' not creating anew")
+        logger.debug("Something already at '%s' not creating anew", local_saxon_path)
         return local_saxon_path
 
     saxon_jar_origin = Path(
@@ -82,7 +83,7 @@ def get_saxon() -> Path:
         or download_saxon()
     )
     logger.info("Found Saxon JAR '%s'", saxon_jar_origin)
-    if saxon_jar_origin.name != "saxon9he.jar":
+    if saxon_jar_origin.name != _saxon_local_default_name:
         try:
             os.symlink(saxon_jar_origin, local_saxon_path)
         except FileExistsError:
@@ -134,14 +135,14 @@ def find_saxon_bin():
 
 
 def download_saxon():
-    """Downloads a zipfile containing saxon9he.jar and extract it to the current dir.
-    Return the full path to saxon9he.jar"""
+    """Downloads a zipfile containing Saxon and extract it to the current dir.
+    Return the full path to Saxon"""
 
     SAXON_PATH = "https://downloads.sourceforge.net/project/saxon/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip"
 
     resp = urlopen(SAXON_PATH)
     zipfile = ZipFile(BytesIO(resp.read()))
-    path = zipfile.extract("saxon9he.jar")
+    path = zipfile.extract(_saxon_local_default_name)
     del zipfile
     return path
 
