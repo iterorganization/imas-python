@@ -20,6 +20,7 @@ logger.setLevel(logging.INFO)
 
 _idsdef_zip_relpath = Path("imaspy/assets/IDSDef.zip")
 _saxon_local_default_name = "saxon9he.jar"  # For pre-3.30.0 builds
+_saxon_regex = "saxon(.*).jar"  # Can be used in re.match
 
 
 def prepare_data_dictionaries():
@@ -102,7 +103,7 @@ def find_saxon_jar():
     jars = [
         path
         for path in Path("/usr/share/java").rglob("*")
-        if re.match("saxon(.*).jar", path.name, flags=re.IGNORECASE)
+        if re.match(_saxon_regex, path.name, flags=re.IGNORECASE)
     ]
 
     if jars:
