@@ -141,7 +141,7 @@ def download_saxon():
     wrap this should probably manipulate either the name of this file, and/or
     the CLASSPATH"""
 
-    SAXON_PATH = "https://downloads.sourceforge.net/project/saxon/Saxon-HE/9.9/SaxonHE9-9-1-4J.zip"
+    SAXON_PATH = "https://downloads.sourceforge.net/project/saxon/Saxon-HE/10/Java/SaxonHE10-3J.zip"
 
     resp = urlopen(SAXON_PATH)
     zipfile = ZipFile(BytesIO(resp.read()))
