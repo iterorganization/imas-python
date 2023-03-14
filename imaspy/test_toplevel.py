@@ -108,3 +108,15 @@ def test_metadata_non_exist(prepped_tree):
 def test_dict_and_attribute_access(prepped_tree):
     name, ids = prepped_tree
     id(ids.metadata.maxoccur) == id(ids.metadata["maxoccur"])
+
+
+def test_metadata_attribute_not_exists(prepped_tree):
+    name, ids = prepped_tree
+    with pytest.raises(AttributeError):
+        ids.metadata.blergh
+
+
+def test_metadata_field_not_exists(prepped_tree):
+    name, ids = prepped_tree
+    with pytest.raises(KeyError):
+        ids.metadata["blergh"]

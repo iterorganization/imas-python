@@ -23,7 +23,10 @@ class Metadata(dict):
         self[key] = value
 
     def __getattr__(self, key):
-        return self[key]
+        try:
+            return self[key]
+        except:
+            return super().__getattribute__(key)
 
     def __deepcopy__(self, memo):
         my_copy = {}
