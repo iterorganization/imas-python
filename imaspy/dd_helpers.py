@@ -146,18 +146,12 @@ def download_saxon():
     resp = urlopen(SAXON_PATH)
     zipfile = ZipFile(BytesIO(resp.read()))
     # Zipfile has a list of the ZipInfos. Look inside for a Saxon jar
-    saxon_file = None
     for file in zipfile.filelist:
         if re.match(_saxon_regex, file.filename, flags=re.IGNORECASE):
-            saxon_file = file
-            break
-
-    if saxon_file is None:
-        raise IMASPyError(f"No Saxon jar found in given zipfile '{SAXON_PATH}'")
-    else:
-        path = zipfile.extract(saxon_file)
-        del zipfile
-        return path
+            path = zipfile.extract(file)
+            del zipfile
+            return path
+    raise IMASPyError(f"No Saxon jar found in given zipfile '{SAXON_PATH}'")
 
 
 def get_data_dictionary_repo() -> Tuple[bool, bool]:
