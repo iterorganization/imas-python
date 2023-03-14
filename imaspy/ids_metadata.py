@@ -5,7 +5,7 @@
 from copy import deepcopy
 
 
-class Metadata(dict):
+class IDSMetadata(dict):
     def __init__(self, structure_xml=None):
         # The user is technically allowed to set attributes to _anything_
         # not necessarily IMASPy-like attributes. These will not be
