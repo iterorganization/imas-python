@@ -50,19 +50,13 @@ def test_time_slicing_get(backend, worker_id, tmp_path):
         assert eq.vacuum_toroidal_field.b0.value == time + 3.0
 
 
-def test_time_slicing_put(backend, worker_id, tmp_path, pre_put_bool, request):
+def test_time_slicing_put(backend, worker_id, tmp_path, request):
     """Write some slices to an IDS and then check that they are all there"""
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
     ids = open_ids(backend, "w", worker_id, tmp_path)
     eq = ids["equilibrium"]
     eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    if pre_put_bool:
-        # this gives a TREE-E-NOSEGMENTS error
-        request.node.add_marker(
-            pytest.mark.xfail(reason="Putting an empty IDS first does not work...")
-        )
-        eq.put()
 
     for time in range(3):
         eq.time = [time * 0.1]
@@ -110,15 +104,13 @@ def test_hli_time_slicing_put(backend, worker_id, tmp_path):
     assert np.allclose(ids.time, [0.0, 0.1, 0.2])
 
 
-def test_time_slicing_put_two(backend, worker_id, tmp_path, pre_put_bool):
+def test_time_slicing_put_two(backend, worker_id, tmp_path):
     """Write some slices to an IDS and then check that they are all there"""
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
     ids = open_ids(backend, "w", worker_id, tmp_path)
     eq = ids["equilibrium"]
     eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    if pre_put_bool:
-        eq.put()
 
     for time in range(3):
         eq.vacuum_toroidal_field.b0 = [time + 3.0, time + 3.5]
