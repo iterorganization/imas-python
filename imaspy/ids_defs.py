@@ -39,16 +39,15 @@ try:
         UNDEFINED_TIME,
         WRITE_OP,
     )
-    try:
-        # serialization may not be present in the installed imas library
-        from imas.imasdef import ASCII_SERIALIZER_PROTOCOL, DEFAULT_SERIALIZER_PROTOCOL
-        IMAS_HAS_SERIALIZATION = True
-    except ImportError:
-        ASCII_SERIALIZER_PROTOCOL = -1
-        DEFAULT_SERIALIZER_PROTOCOL = -2
-        IMAS_HAS_SERIALIZATION = False
 except ImportError as ee:
     logger.critical("IMAS could not be imported. UAL not available! %s", ee)
+    
+    # Preset some constants which are used elsewhere
+    # this is a bit ugly, perhaps reuse the list of imports from above?
+    # it seems no problem to use None, since the use of the values should not
+    # be allowed, they are only used in operations which use the backend,
+    # which we (should) gate
+    ASCII_BACKEND = CHAR_DATA = CLOSE_PULSE = CLOSEST_INTERP = DOUBLE_DATA = EMPTY_FLOAT = EMPTY_INT = FORCE_CREATE_PULSE = HDF5_BACKEND = IDS_TIME_MODE_HETEROGENEOUS = IDS_TIME_MODE_HOMOGENEOUS = IDS_TIME_MODE_INDEPENDENT = IDS_TIME_MODE_UNKNOWN = IDS_TIME_MODES = INTEGER_DATA = LINEAR_INTERP = MDSPLUS_BACKEND = MEMORY_BACKEND = NODE_TYPE_STRUCTURE = OPEN_PULSE = PREVIOUS_INTERP = READ_OP = UDA_BACKEND = UNDEFINED_INTERP = UNDEFINED_TIME = WRITE_OP = None
 else:
     # Translation dictionary to go from an ids (primitive) type (without the dimensionality) to a default value
     ids_type_to_default = {
@@ -56,6 +55,15 @@ else:
         "INT": EMPTY_INT,
         "FLT": EMPTY_FLOAT,
     }
+
+try:
+    # serialization may not be present in the installed imas library
+    from imas.imasdef import ASCII_SERIALIZER_PROTOCOL, DEFAULT_SERIALIZER_PROTOCOL
+    IMAS_HAS_SERIALIZATION = True
+except ImportError:
+    ASCII_SERIALIZER_PROTOCOL = -1
+    DEFAULT_SERIALIZER_PROTOCOL = -2
+    IMAS_HAS_SERIALIZATION = False
 
 
 DD_TYPES = {

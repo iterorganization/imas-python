@@ -18,28 +18,22 @@ except Exception:
         __version__ = "0.0.0"
 version = __version__
 
-_RAISE_ON_FAILED_INIT = False
 # Import logging _first_
 import logging
 from .setup_logging import root_logger as logger
 
-try:
-    # Hardcode this for stricter imports and debugging
-    # These imports define the "data containers" for IMASPy.
-    # We need these to work with data
-    from . import (
-        ids_defs,
-        ids_mixin,
-        ids_primitive,
-        ids_root,
-        ids_struct_array,
-        ids_structure,
-        ids_toplevel,
-    )
-except Exception:
-    logger.critical("Global IMASPy __init__ could not import core IDS Python submodules. Trying continuing without IDSs...")
-    if _RAISE_ON_FAILED_INIT:
-        raise
+# Hardcode this for stricter imports and debugging
+# These imports define the "data containers" for IMASPy.
+# We need these to work with data
+from . import (
+    ids_defs,
+    ids_mixin,
+    ids_primitive,
+    ids_root,
+    ids_struct_array,
+    ids_structure,
+    ids_toplevel,
+)
 
 # Load the IMASPy IMAS AL/DD core
 try:
@@ -67,8 +61,6 @@ else:
         )
     except Exception:
         logger.critical("Global IMASPy __init__ could not import core IMAS AL backend. Trying continuing without IMAS AL...")
-    if _RAISE_ON_FAILED_INIT:
-        raise
 
 # Load the rest of the IMASPy backends
 try:

@@ -182,7 +182,7 @@ class IDSToplevel(IDSStructure):
                 self._parent._data_store,
             ) = current_backend_state
 
-    def serialize(self, protocol=DEFAULT_SERIALIZER_PROTOCOL):
+    def serialize(self, protocol=None):
         """Serialize this IDS to a data buffer.
 
         The data buffer can be deserialized from any Access Layer High-Level Interface
@@ -218,6 +218,8 @@ class IDSToplevel(IDSStructure):
         """
         if not IMAS_HAS_SERIALIZATION:
             raise NotImplementedError(_NO_SERIALIZATION_ERROR)
+        if protocol is None:
+            protocol = self.default_serializer_protocol()
         if self.ids_properties.homogeneous_time == IDS_TIME_MODE_UNKNOWN:
             raise ALException("IDS is found to be EMPTY (homogeneous_time undefined)")
         if protocol == ASCII_SERIALIZER_PROTOCOL:
