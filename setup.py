@@ -28,12 +28,17 @@ import ast
 import importlib
 import importlib.util
 import logging
-import warnings
 import os
 import site
 
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import sys
+import warnings
+from distutils.sysconfig import get_python_inc as dist_get_python_inc
+from distutils.sysconfig import get_python_lib as dist_get_python_lib
+from distutils.text_file import TextFile as DistTextFile
+from distutils.util import check_environ as dist_check_environ
+from distutils.util import get_platform as dist_get_platform
 
 # Import other stdlib packages
 from itertools import chain
@@ -44,19 +49,13 @@ import pkg_resources
 # Use setuptools to build packages. Advised to import setuptools before distutils
 import setuptools
 import tomli
+from packaging.version import Version as V
 from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py as _build_py
 from setuptools.command.sdist import sdist as _sdist
 from setuptools.config import read_configuration
-
-from distutils.sysconfig import get_python_inc as dist_get_python_inc
-from distutils.sysconfig import get_python_lib as dist_get_python_lib
-from distutils.text_file import TextFile as DistTextFile
-from distutils.util import check_environ as dist_check_environ
-from distutils.util import get_platform as dist_get_platform
-from distutils.version import LooseVersion as V
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
@@ -154,6 +153,7 @@ sys.modules["imaspy.dd_helpers"] = module
 from imaspy.dd_helpers import prepare_data_dictionaries
 
 # End: Load dd_helpers
+
 
 # Define building of the Data Dictionary as custom build step
 class BuildDDCommand(setuptools.Command):

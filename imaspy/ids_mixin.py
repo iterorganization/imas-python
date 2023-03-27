@@ -3,7 +3,7 @@
 
 import copy
 import logging
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 
 import scipy.interpolate
 
