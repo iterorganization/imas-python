@@ -98,11 +98,9 @@ class IDSMixin:
                 # If variable only depends on 1...N, no timebasepath
                 pass
             else:
-                # for now try to get away with just 'time' as path
-                return "time"
-                raise NotImplementedError(
-                    "Timebasepath for coordinates {!s}".format(self._coordinates)
-                )
+                # Seems like the python HLI gives an empty time base path in this case
+                # replicate this behaviour:
+                return ""  # TODO: further investigate this.
 
         # any time fields march by their own drum
         # problems occur when a timebasepath is set for subfields (even if it is just 'time')

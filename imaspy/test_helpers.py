@@ -49,6 +49,9 @@ def random_data(ids_type, ndims):
         return np.random.randint(0, 2 ** 31 - 1, size=randdims(ndims))
     elif ids_type == "FLT":
         return np.random.random_sample(size=randdims(ndims))
+    elif ids_type == "CPX":
+        size = randdims(ndims)
+        return np.random.random_sample(size) + 1j * np.random.random_sample(size)
     else:
         logger.warn("Unknown data type %s requested to fill, ignoring", ids_type)
 
@@ -67,7 +70,7 @@ def fill_with_random_data(structure, max_children=3):
         child = structure[child_name]
 
         if type(child) in [IDSStructure, IDSToplevel, IDSRoot]:
-            fill_with_random_data(child)
+            fill_with_random_data(child, max_children)
         elif isinstance(child, IDSStructArray):
             if len(child.value) == 0:
                 n_children = min(child._maxoccur or max_children, max_children)

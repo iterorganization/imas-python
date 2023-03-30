@@ -4,6 +4,7 @@
 """
 
 import logging
+from typing import Dict, Tuple
 
 from imaspy.setup_logging import root_logger as logger
 
@@ -17,6 +18,8 @@ try:
         CLOSE_PULSE,
         CLOSEST_INTERP,
         DOUBLE_DATA,
+        COMPLEX_DATA,
+        EMPTY_COMPLEX,
         EMPTY_FLOAT,
         EMPTY_INT,
         FORCE_CREATE_PULSE,
@@ -55,10 +58,11 @@ else:
         "STR": "",
         "INT": EMPTY_INT,
         "FLT": EMPTY_FLOAT,
+        "CPX": EMPTY_COMPLEX,
     }
 
 
-DD_TYPES = {
+DD_TYPES: Dict[str, Tuple[str, int]] = {
     "STR_0D": ("STR", 0),
     "STR_1D": ("STR", 1),
     "str_type": ("STR", 0),
@@ -70,6 +74,7 @@ DD_TYPES = {
 
 for i in range(0, 7):
     # dimensions are random
-    DD_TYPES["FLT_%dD" % i] = ("FLT", i)
+    DD_TYPES[f"CPX_{i}D"] = ("CPX", i)
+    DD_TYPES[f"FLT_{i}D"] = ("FLT", i)
     if i < 4:
-        DD_TYPES["INT_%dD" % i] = ("INT", i)
+        DD_TYPES[f"INT_{i}D"] = ("INT", i)
