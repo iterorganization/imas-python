@@ -34,11 +34,6 @@ import site
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import sys
 import warnings
-from distutils.sysconfig import get_python_inc as dist_get_python_inc
-from distutils.sysconfig import get_python_lib as dist_get_python_lib
-from distutils.text_file import TextFile as DistTextFile
-from distutils.util import check_environ as dist_check_environ
-from distutils.util import get_platform as dist_get_platform
 
 # Import other stdlib packages
 from itertools import chain
@@ -56,6 +51,12 @@ from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py as _build_py
 from setuptools.command.sdist import sdist as _sdist
 from setuptools.config import read_configuration
+
+from distutils.sysconfig import get_python_inc as dist_get_python_inc
+from distutils.sysconfig import get_python_lib as dist_get_python_lib
+from distutils.text_file import TextFile as DistTextFile
+from distutils.util import check_environ as dist_check_environ
+from distutils.util import get_platform as dist_get_platform
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
