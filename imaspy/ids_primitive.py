@@ -67,7 +67,7 @@ class IDSPrimitive(IDSMixin):
         super().__init__(parent, name, coordinates=coordinates)
 
         if ids_type != "STR" and ndims != 0 and self.__class__ == IDSPrimitive:
-            raise Exception(
+            raise ValueError(
                 "{!s} should be 0D! Got ndims={:d}. "
                 "Instantiate using IDSNumericArray instead".format(
                     self.__class__, ndims
@@ -162,17 +162,15 @@ class IDSPrimitive(IDSMixin):
                         ]
                     )
             else:
-                logger.critical(
-                    "Unknown numpy type %s, cannot convert from python to IDS type",
-                    value.dtype,
+                raise TypeError(
+                    "Unknown numpy type %s, cannot convert from python to IDS type"
+                    % (value.dtype,)
                 )
-                raise Exception
         else:
-            logger.critical(
-                "Unknown python type %s, cannot convert from python to IDS type",
-                type(value),
+            raise TypeError(
+                "Unknown python type %s, cannot convert from python to IDS type"
+                % (type(value),)
             )
-            raise Exception
         return value
 
     def put(self, ctx, homogeneousTime, **kwargs):
@@ -182,7 +180,7 @@ class IDSPrimitive(IDSMixin):
         Tries to dynamically build all needed information for the UAL.
         """
         if self._name is None:
-            raise Exception("Location in tree undefined, cannot put in database")
+            raise ValueError("Location in tree undefined, cannot put in database")
         if "types" in kwargs:
             if self._var_type not in kwargs["types"]:
                 logger.debug(
@@ -215,7 +213,7 @@ class IDSPrimitive(IDSMixin):
         elif write_type in ["INT", "FLT", "CPX"]:
             # Arrays will be converted by isTypeValid
             if not hli_utils.HLIUtils.isTypeValid(self.value, self._name, "NP_ARRAY"):
-                raise Exception
+                raise ValueError("array is invalid type")
             data = self.value
         else:
             # TODO: convert data on write time here
@@ -447,7 +445,7 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
             return type(self)(self._name, self._ids_type, self._ndims, value=result)
 
     def resize(self, new_shape):
-        """ Resize underlying data
+        """Resize underlying data
 
         Data is stored in memory in a numpy array, so use numpy's resize to
         resize the underlying data

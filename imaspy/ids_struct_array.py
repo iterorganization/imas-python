@@ -99,10 +99,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             # Convert IDS type on set time. Never try this for hidden attributes!
             if list_idx in self.value:
                 struct = self.value[list_idx]
-                try:
-                    struct.value = value
-                except Exception as ee:
-                    raise ee
+                struct.value = value
         self.value[list_idx] = value
 
     def __iter__(self):
@@ -221,7 +218,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         if self._path.startswith(context_store[ctx]):
             rel_path = self._path[len(context_store[ctx]) + 1 :]
         else:
-            raise Exception("Could not strip context from absolute path")
+            raise ValueError("Could not strip context from absolute path")
         return rel_path
 
     def put(self, parentCtx, homogeneousTime, **kwargs):

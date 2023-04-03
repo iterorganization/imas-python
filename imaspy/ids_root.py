@@ -621,7 +621,7 @@ class IDSRoot:
     def _ull(self):
         ctx_path = context_store[self.expIdx]
         if ctx_path != "/":
-            raise Exception("{!s} context does not seem to be toplevel".format(self))
+            raise ValueError("{!s} context does not seem to be toplevel".format(self))
         ual_file = self._data_store._manager.acquire()
         ull = importlib.import_module(ual_file.ual_module_name)
         return ull

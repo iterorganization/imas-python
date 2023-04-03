@@ -56,7 +56,7 @@ class IDSMixin:
             # (those are handled by the context store)
             return self._path[len(context_store[ctx]) :].lstrip("/0123456789")
         else:
-            raise Exception(
+            raise ValueError(
                 "Could not strip context from absolute path {!s}, "
                 "ctx: {!s}, store: {!s}".format(self._path, ctx, context_store)
             )
@@ -155,7 +155,7 @@ class IDSMixin:
         try:
             return self._parent._ull
         except AttributeError as ee:
-            raise Exception("ULL directly connected to %s", self) from ee
+            raise RuntimeError("ULL directly connected to %s", self) from ee
 
     def __getstate__(self):
         """Override getstate so _ull is not passed along. Otherwise we have

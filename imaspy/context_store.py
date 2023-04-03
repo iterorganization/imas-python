@@ -28,7 +28,7 @@ class ContextStore(dict):
         do not allow for duplicated contexts to be opened.
         """
         if key in self:
-            raise Exception(
+            raise RuntimeError(
                 "Trying to set context {!s} to {!s}, but was not released. \
                 Currently is {!s}".format(
                     key, value, self[key]
@@ -39,7 +39,7 @@ class ContextStore(dict):
 
     def update(self, ctx, newCtx):
         if ctx not in self:
-            raise Exception("Trying to update non-existing context {!s}".format(ctx))
+            raise KeyError("Trying to update non-existing context {!s}".format(ctx))
         super().__setitem__(ctx, newCtx)
 
     def decodeContextInfo(self, ctxLst=None):

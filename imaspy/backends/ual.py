@@ -60,7 +60,7 @@ def _find_user_name():
     if "USER" in os.environ:
         user_name = os.environ["USER"]
     else:
-        raise Exception("Could not determine user_name automatically.")
+        raise RuntimeError("Could not determine user_name automatically.")
     return user_name
 
 
@@ -69,7 +69,7 @@ def _find_data_version():
     if "IMAS_VERSION" in os.environ:
         data_version = os.environ["IMAS_VERSION"]
     else:
-        raise Exception("Could not determine version of data automatically.")
+        raise RuntimeError("Could not determine version of data automatically.")
     return data_version
 
 
@@ -78,7 +78,7 @@ def _find_ual_version():
     if "UAL_VERSION" in os.environ:
         ual_version = os.environ["UAL_VERSION"]
     else:
-        raise Exception("Could not determine UAL version automatically.")
+        raise RuntimeError("Could not determine UAL version automatically.")
     return ual_version
 
 
@@ -119,7 +119,7 @@ def get_user_db_directory(user=None):
     if user == "public":
         publichome = os.getenv("IMAS_HOME")
         if publichome is None:
-            raise Exception("Environment variable IMAS_HOME is not defined. Quitting.")
+            raise RuntimeError("Environment variable IMAS_HOME is not defined. Quitting.")
         return publichome + "/shared/imasdb"
     else:
         return os.path.expanduser("~" + user + "/public/imasdb")
@@ -160,9 +160,9 @@ class UALFile:
         # Check sanity of input arguments
         if backend_id == MDSPLUS_BACKEND:
             if shot < 1:
-                raise Exception("Shot should be 1 or higher")
+                raise ValueError("Shot should be 1 or higher")
             if run > 99999:
-                raise Exception("Shot should be 99999 or lower")
+                raise ValueError("Shot should be 99999 or lower")
 
         ual_patch_version, steps_from_version, ual_commit = parse_UAL_version_string(
             ual_version_string
@@ -172,7 +172,7 @@ class UALFile:
         ual_ext_module_name = build_UAL_package_name(safe_ual_patch_version, ual_commit)
 
         if backend_id not in AL_BACKENDS:
-            raise Exception(
+            raise ValueError(
                 "Given backend_id '{!s}' not in allowed backends".format(backend_id)
             )
 
@@ -285,7 +285,7 @@ class UALFile:
 
     @classmethod
     def create(cls, options=""):
-        raise Exception(
+        raise NotImplementedError(
             "Create a using {!s}.open(*args, mode='w', **kwargs)".format(cls)
         )
 
