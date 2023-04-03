@@ -57,6 +57,7 @@ dependencies = [
     "tree-format",
     "scipy",
     "click",
+    "importlib_resources",
 ]
 
 [project.optional-dependencies]
@@ -101,4 +102,3 @@ addopts = "--strict-markers"
 markers = [
     "cli: Tests for the command line interface."
 ]
-

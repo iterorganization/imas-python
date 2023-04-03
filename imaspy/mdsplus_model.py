@@ -1,19 +1,22 @@
 # Helper functions to create MDSPlus reference models
 # and store them in a cache directory (.cache/imaspy/MDSPlus/name-HASH/)
 
+import errno
+import getpass
 import logging
 import os
 import re
+import shutil
+import tempfile
 import time
+import uuid
 from pathlib import Path
 from subprocess import CalledProcessError, check_output
 from zlib import crc32
-import tempfile
-import uuid
-import shutil
-import getpass
-import errno
 
+from importlib_resources import files
+
+import imaspy
 from imaspy.dd_helpers import get_saxon
 from imaspy.dd_zip import get_dd_xml, get_dd_xml_crc
 
@@ -69,7 +72,7 @@ def safe_replace(src: Path, dst: Path) -> None:
             raise
 
 
-def mdsplus_model_dir(version, *, xml_file=None):
+def mdsplus_model_dir(version=None, xml_file=None):
     """
     when given a version number this looks for the DD definition
     of that version in the internal cache. Alternatively a filename
@@ -115,6 +118,11 @@ def mdsplus_model_dir(version, *, xml_file=None):
 
     cache_dir_name = "%s-%08x" % (xml_name, crc)
     cache_dir_path = Path(_get_xdg_cache_dir()) / "imaspy" / "mdsplus" / cache_dir_name
+    # TODO: include hash or version of "IDSDef2MDSpreTree.xsl", which we should fetch
+    # from the access layer instead of provide ourselves, if we wish to be resilient
+    # to upgrades there (has happened early 2021 already once).
+    # of course, upgrades to the on-disk formats should be versioned and documented properly,
+    # so this should never happen again.
 
     # There are multiple possible cases for the IMASPy cache
     # 1. The cache exist and can be used
@@ -162,26 +170,33 @@ def mdsplus_model_dir(version, *, xml_file=None):
 
     if generate_tmp_cache:
         # create the empty directory to indicate we are building a new model
-        cache_dir_path.mkdir(parents=True, exist_ok=True)
-        logger.info(
-            "Creating and caching MDSplus model at %s, this may take a while",
-            tmp_cache_dir_path,
-        )
-        create_model_ids_xml(tmp_cache_dir_path, fname, version)
-        create_mdsplus_model(tmp_cache_dir_path)
-
-        logger.info(
-            "MDSplus model at %s created, moving to %s ",
-            tmp_cache_dir_path,
-            cache_dir_path,
-        )
-        safe_replace(tmp_cache_dir_path, cache_dir_path)
-
-        if not model_exists(cache_dir_path):
-            raise RuntimeError(
-                "Unexpected error while generating MDSPlus model cache. Please"
-                " create a bug report."
+        try:
+            cache_dir_path.mkdir(parents=True, exist_ok=True)
+            # ideally next we drop a timestamp so any successors can see how long they should wait
+            logger.info(
+                "Creating and caching MDSplus model at %s, this may take a while",
+                tmp_cache_dir_path,
             )
+            create_model_ids_xml(tmp_cache_dir_path, fname, version)
+            create_mdsplus_model(tmp_cache_dir_path)
+
+            logger.info(
+                "MDSplus model at %s created, moving to %s",
+                tmp_cache_dir_path,
+                cache_dir_path,
+            )
+            safe_replace(tmp_cache_dir_path, cache_dir_path)
+
+            if not model_exists(cache_dir_path):
+                raise RuntimeError(
+                    "Unexpected error while generating MDSPlus model cache. \
+                    Please create a bug report."
+                )
+        except Exception as ee:
+            logger.error("Error creating MDSPlus file")
+            # remove cache directory so our successor does not spend time waiting
+            shutil.rmtree(cache_dir_path)
+            raise ee
 
     return str(cache_dir_path)
 
@@ -234,10 +249,8 @@ def create_model_ids_xml(cache_dir_path, fname, version):
                 # if this is expected as git describe it might break
                 # if we just pass a filename
                 "UAL_GIT_DESCRIBE=" + os.environ.get("UAL_VERSION", "0.0.0"),
-                "-xsl:"
-                + str(
-                    Path(__file__).parent / "assets/IDSDef2MDSpreTree.xsl"
-                ),  # we have to be careful to have the same version of this file as in the access layer
+                "-xsl:" + str(files(imaspy) / "assets" / "IDSDef2MDSpreTree.xsl"),
+                # we have to be careful to have the same version of this file as in the access layer
             ],
             input=get_dd_xml(version) if version else None,
             env={"CLASSPATH": get_saxon(), "PATH": os.environ["PATH"]},

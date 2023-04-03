@@ -38,6 +38,7 @@ from pathlib import Path
 from zipfile import ZipFile
 import site
 from typing import List
+from importlib_resources import files
 
 import imaspy
 
@@ -56,38 +57,28 @@ def _get_xdg_config_dir():
 
 
 def _build_zipfile_locations() -> List[Path]:
-    """Build a list of potential data dictionary locations"""
+    """Build a list of potential data dictionary locations.
+    We start with the path (if any) of the IMASPY_DDZIP env var.
+    Then we look for IDSDef.zip in the current folder, in the
+    default XDG config dir (~/.config/imaspy/IDSDef.zip) and
+    finally in the assets distributed with this package.
+    """
     zip_name = "IDSDef.zip"
-    package_name = "imaspy"
 
-    # Look at IMASPY_DDZIP env variable
-    zipfile_locations = [os.environ.get("IMASPY_DDZIP")]
-
-    # Look in venv
-    venv_path = os.environ.get("VIRTUAL_ENV")
-    if venv_path:
-        zipfile_locations.append(Path(venv_path) / package_name / zip_name)
-
-    # Look user base (pip install sdist). Only exists when site.ENABLE_USER_SITE = True
-    zipfile_locations.append(Path(site.getuserbase()) / package_name / zip_name)
-
-    # Look in all site_packages folders
-    zipfile_locations.extend(
-        [Path(sp) / package_name / zip_name for sp in site.getsitepackages()]
-    )
-
-    # Look at the current folder and subfolders
-    zipfile_locations.extend(
-        [
-            Path(".") / zip_name,
-            Path(_get_xdg_config_dir()) / package_name / zip_name,
-            Path(__file__).parent / "assets" / zip_name,
-        ]
-    )
+    zipfile_locations = [
+        os.environ.get("IMASPY_DDZIP"),
+        Path(".") / zip_name,
+        Path(_get_xdg_config_dir()) / "imaspy" / zip_name,
+        files(imaspy) / "assets" / zip_name,
+    ]
+    # Note that depending on the install method the last path may be inside a zip,
+    # as described here: https://importlib-resources.readthedocs.io/en/latest/using.html#file-system-or-zip-file
+    # in which case this approach will not work. Let's fix this problem when we run in to it
     return zipfile_locations
 
 
 ZIPFILE_LOCATIONS = _build_zipfile_locations()
+
 
 # for version conversion we would expect 2 to be sufficient. Give it some extra space.
 @lru_cache(maxsize=4)
