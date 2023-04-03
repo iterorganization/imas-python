@@ -15,7 +15,7 @@ authors = [
 description = "Pythonic wrappers for the IMAS Access Layer"
 readme = {file = "README.md", content-type = "text/markdown"}
 requires-python = ">=3.7"
-license = {file = "LICENSE"}
+license = {file = "LICENSE.md"}
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
@@ -60,6 +60,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# these self-dependencies are available since pip 21.2
+all = [
+    "imaspy[test,docs,backends_al,examples]"
+]
 backends_al = [
     "imas",
 ]
@@ -101,4 +105,3 @@ addopts = "--strict-markers"
 markers = [
     "cli: Tests for the command line interface."
 ]
-

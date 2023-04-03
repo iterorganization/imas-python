@@ -28,6 +28,7 @@ It provides:
    installing
    api_overview
    mdsplus
+   developing
 
 README
 -----------

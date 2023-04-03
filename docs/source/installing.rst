@@ -45,7 +45,6 @@ We should now be able to run the tests
 
 .. code-block:: bash
 
-    pip install --user -r requirements_test.txt
     pytest imaspy/ --mini
 
 Note that at the time of writing access layer version 4.8.5 has an issue which causes
@@ -56,7 +55,7 @@ Develop install
 
 .. note:: Check if this is still needed
 
-pip install --user -e .[backends_al,backends_xarray,test]
+pip install --user -e .[test,docs]
 
 Check if you have access to the AL repository. This is currently needed to pull 'secret' dependencies. This will be checked by `pip` too but better to know it now.
 
