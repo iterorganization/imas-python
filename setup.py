@@ -48,7 +48,7 @@ from packaging.version import Version as V
 from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import setup
-from setuptools.command.build_ext import build_ext
+from setuptools.command.build_ext import build_py
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
@@ -122,7 +122,7 @@ class BuildDDCommand(setuptools.Command):
         prepare_data_dictionaries()
 
 
-class build_DD_before_ext(build_ext):
+class build_DD_before_py(build_py):
     """
     Before running build_ext we try to build the DD
     """
@@ -132,12 +132,11 @@ class build_DD_before_ext(build_ext):
             prepare_data_dictionaries()
         except:
             logger.warning("Failed to build DD during setup, continuing without.")
-            raise
         super().run()
 
 
 if __name__ == "__main__":
     setup(
         zip_safe=False, # https://mypy.readthedocs.io/en/latest/installed_packages.html
-        cmdclass={"build_ext": build_DD_before_ext, "build_DD": BuildDDCommand},
+        cmdclass={"build_py": build_DD_before_py, "build_DD": BuildDDCommand},
     )
