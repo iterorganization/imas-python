@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build the IMASPy package and run tests on an ITER SDCC-like environment
+# Build the IMASPy package and run tests on an ITER HPC-like environment
 
 # Script boilerplate
 [[ "${BASH_SOURCE[0]}" != "${0}" ]] && iter_dir=$(dirname ${BASH_SOURCE[0]}) || iter_dir=$(dirname $0)  # Determine script dir even when sourcing
