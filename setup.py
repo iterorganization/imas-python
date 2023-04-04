@@ -134,17 +134,6 @@ sys.modules["imaspy.setup_helpers"] = module
 # End: Load setup_helpers
 
 # Start: Load dd_helpers
-# We need exceptions as well
-imaspy_exceptions_file = this_dir / "imaspy/imaspy_exceptions.py"
-assert imaspy_exceptions_file.is_file()
-spec = importlib.util.spec_from_file_location(
-    "imaspy_exceptions", imaspy_exceptions_file
-)
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
-sys.modules["imaspy.imaspy_exceptions"] = module
-imaspy_exceptions_file = this_dir / "imaspy_exceptions.py"
-
 dd_helpers_file = this_dir / "imaspy/dd_helpers.py"
 assert dd_helpers_file.is_file()
 spec = importlib.util.spec_from_file_location("dd_helpers", dd_helpers_file)
