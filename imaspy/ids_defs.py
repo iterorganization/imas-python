@@ -4,6 +4,7 @@
 """
 
 import logging
+from typing import Dict, Tuple
 
 from imaspy.setup_logging import root_logger as logger
 
@@ -17,6 +18,8 @@ try:
         CLOSE_PULSE,
         CLOSEST_INTERP,
         DOUBLE_DATA,
+        COMPLEX_DATA,
+        EMPTY_COMPLEX,
         EMPTY_FLOAT,
         EMPTY_INT,
         FORCE_CREATE_PULSE,
@@ -51,6 +54,7 @@ except ImportError as ee:
     ASCII_BACKEND = CHAR_DATA = CLOSE_PULSE = CLOSEST_INTERP = DOUBLE_DATA = None
     EMPTY_FLOAT = -9E40
     EMPTY_INT = -999999999
+    EMPTY_COMPLEX = complex(EMPTY_FLOAT, EMPTY_FLOAT)
     FORCE_CREATE_PULSE = HDF5_BACKEND = None
     IDS_TIME_MODE_HETEROGENEOUS = IDS_TIME_MODE_HOMOGENEOUS = None
     IDS_TIME_MODE_INDEPENDENT = IDS_TIME_MODE_UNKNOWN = IDS_TIME_MODES = None
@@ -63,6 +67,7 @@ ids_type_to_default = {
     "STR": "",
     "INT": EMPTY_INT,
     "FLT": EMPTY_FLOAT,
+    "CPX": EMPTY_COMPLEX,
 }
 
 try:
@@ -73,7 +78,7 @@ except ImportError:
     DEFAULT_SERIALIZER_PROTOCOL = 60
 
 
-DD_TYPES = {
+DD_TYPES: Dict[str, Tuple[str, int]] = {
     "STR_0D": ("STR", 0),
     "STR_1D": ("STR", 1),
     "str_type": ("STR", 0),
@@ -85,6 +90,7 @@ DD_TYPES = {
 
 for i in range(0, 7):
     # dimensions are random
-    DD_TYPES["FLT_%dD" % i] = ("FLT", i)
+    DD_TYPES[f"CPX_{i}D"] = ("CPX", i)
+    DD_TYPES[f"FLT_{i}D"] = ("FLT", i)
     if i < 4:
-        DD_TYPES["INT_%dD" % i] = ("INT", i)
+        DD_TYPES[f"INT_{i}D"] = ("INT", i)
