@@ -34,11 +34,6 @@ import site
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import sys
 import warnings
-from distutils.sysconfig import get_python_inc as dist_get_python_inc
-from distutils.sysconfig import get_python_lib as dist_get_python_lib
-from distutils.text_file import TextFile as DistTextFile
-from distutils.util import check_environ as dist_check_environ
-from distutils.util import get_platform as dist_get_platform
 
 # Import other stdlib packages
 from itertools import chain
@@ -78,12 +73,6 @@ if V(setuptools_version) < V("43"):
 site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 
 
-# Collect env-specific settings
-platform = dist_get_platform()  # linux-x86_64
-dist_check_environ()
-
-plat_indep_libraries = Path(dist_get_python_lib())
-plat_indep_include = Path(dist_get_python_inc())
 
 # We need to know where we are for many things
 this_file = Path(__file__)
@@ -149,5 +138,6 @@ class build_DD_before_ext(build_ext):
 
 if __name__ == "__main__":
     setup(
+        zip_safe=False, # https://mypy.readthedocs.io/en/latest/installed_packages.html
         cmdclass={"build_ext": build_DD_before_ext, "build_DD": BuildDDCommand},
     )
