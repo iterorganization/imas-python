@@ -32,7 +32,7 @@ Reinstalling imaspy thus also will give you access to the latest DD versions.
 import logging
 import os
 import xml.etree.ElementTree as ET
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 from functools import lru_cache
 from pathlib import Path
 from zipfile import ZipFile

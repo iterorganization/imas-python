@@ -7,7 +7,7 @@ This contains references to :py:class:`IDSStructure`s
 """
 
 
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store

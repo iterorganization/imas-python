@@ -11,7 +11,7 @@ except ImportError:
     from cached_property import cached_property
 
 import logging
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 
 from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
