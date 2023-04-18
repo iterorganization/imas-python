@@ -44,7 +44,7 @@ class IDSMetadata(dict):
             my_copy[key] = deepcopy(val)
         return my_copy
 
-    def parse_maxoccur(self, value: str) -> Union[int, None]:
+    def parse_maxoccur(self, value: str) -> Optional[int]:
         """Parse a maxoccur attribute string and return its pythonic value"""
         if value == "unbounded":
             return None
