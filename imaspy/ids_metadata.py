@@ -39,7 +39,7 @@ class IDSMetadata(dict):
             return super().__getattribute__(key)
 
     def __deepcopy__(self, memo: dict):
-        my_copy = {}
+        my_copy = IDSMetadata()
         for key, val in self.items():
             my_copy[key] = deepcopy(val)
         return my_copy

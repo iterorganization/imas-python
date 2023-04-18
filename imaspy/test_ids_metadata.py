@@ -27,6 +27,11 @@ def test_metadata_init_structure_xml(fake_structure_xml):
 def test_deepcopy(fake_structure_xml):
     meta = IDSMetadata(structure_xml=fake_structure_xml)
     meta2 = deepcopy(meta)
+
+    # Test that a new but equivalent IDSMetadata instance is created
     assert meta is not meta2
-    # assert meta.maxoccur is not meta2.maxoccur
     assert meta == meta2
+
+    # Test that its indeed separated
+    meta2.name = "blergh"
+    assert meta.name != meta2.name
