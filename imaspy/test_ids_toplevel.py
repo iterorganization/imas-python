@@ -11,8 +11,8 @@ from imaspy.ids_root import IDSRoot
 
 
 @pytest.fixture
-def prepped_tree(toplevel_xml: Path):
-    root = IDSRoot(xml_path=toplevel_xml)
+def prepped_tree(fake_toplevel_xml: Path):
+    root = IDSRoot(xml_path=fake_toplevel_xml)
     yield root._children[0], root.gyrokinetics
 
 

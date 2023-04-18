@@ -72,7 +72,7 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize(name, [True, False])
 
 @pytest.fixture
-def toplevel_xml():
+def fake_toplevel_xml():
     from pathlib import Path
 
     return Path(__file__).parent / "imaspy/assets/IDS_fake_toplevel.xml"
