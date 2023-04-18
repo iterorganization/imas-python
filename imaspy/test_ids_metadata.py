@@ -22,6 +22,8 @@ def test_metadata_init():
 def test_metadata_init_structure_xml(fake_structure_xml):
     meta = IDSMetadata(structure_xml=fake_structure_xml)
     assert fake_structure_xml.attrib["name"] == "gyrokinetics"
+    assert meta["name"] == "gyrokinetics"
+    assert meta.name == "gyrokinetics"
 
 
 def test_deepcopy(fake_structure_xml):
