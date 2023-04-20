@@ -70,10 +70,16 @@ class ContextStore(dict):
             # (those are handled by the context store)
             return path[len(self[ctx]) :].lstrip("/0123456789")
         else:
-            raise ValueError(
+            raise ContextError(
                 "Could not strip context from absolute path {!s}, "
                 "ctx: {!s}, store: {!s}".format(path, ctx, self)
             )
+
+
+class ContextError(Exception):
+    """Error raised on internal failure of the context store."""
+
+    pass
 
 
 # Keep a single 'global' variable context_store
