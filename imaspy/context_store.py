@@ -62,6 +62,19 @@ class ContextStore(dict):
                 key, val = line.split("=")
                 info[key.strip()] = val.strip()
 
+    def strip_context(self, path: str, ctx: int) -> str:
+        """Get the path relative to given context from an absolute path"""
+        # TODO: This could be replaced with the fullPath() method provided by the LL-UAL
+        if path.startswith(self[ctx]):
+            # strip the context path as well as any numeric indices
+            # (those are handled by the context store)
+            return path[len(self[ctx]) :].lstrip("/0123456789")
+        else:
+            raise ValueError(
+                "Could not strip context from absolute path {!s}, "
+                "ctx: {!s}, store: {!s}".format(path, ctx, self)
+            )
+
 
 # Keep a single 'global' variable context_store
 context_store = ContextStore()
