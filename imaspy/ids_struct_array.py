@@ -7,7 +7,7 @@ This contains references to :py:class:`IDSStructure`s
 """
 
 
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
@@ -61,15 +61,6 @@ class IDSStructArray(IDSStructure, IDSMixin):
         self._backend_child_xml = None
         self._backend_name = None
 
-        # set maxoccur
-        self._maxoccur = None
-        try:
-            self._maxoccur = int(structure_xml.attrib["maxoccur"])
-        except ValueError:
-            pass
-        except KeyError:
-            pass
-
         # Initialize with an 0-length list
         self.value = []
 
@@ -118,11 +109,11 @@ class IDSStructArray(IDSStructure, IDSMixin):
         for e in elements:
             # Just blindly append for now
             # TODO: Maybe check if user is not trying to append weird elements
-            if self._maxoccur and len(self.value) >= self._maxoccur:
+            if self.metadata.maxoccur and len(self.value) >= self.metadata.maxoccur:
                 raise ValueError(
                     "Maxoccur is set to %s for %s, not adding %s"
                     % (
-                        self._maxoccur,
+                        self.metadata.maxoccur,
                         self._base_path,
                         elt,
                     )

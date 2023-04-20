@@ -6,7 +6,7 @@ import os
 import re
 import shutil
 import subprocess
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 from io import BytesIO
 from pathlib import Path
 from urllib.request import urlopen
