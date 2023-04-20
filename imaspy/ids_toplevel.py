@@ -26,33 +26,26 @@ from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 
-try:
-    from imaspy.ids_defs import (
-        ASCII_BACKEND,
-        ASCII_SERIALIZER_PROTOCOL,
-        CHAR_DATA,
-        CLOSEST_INTERP,
-        DEFAULT_SERIALIZER_PROTOCOL,
-        EMPTY_INT,
-        IDS_TIME_MODE_HETEROGENEOUS,
-        IDS_TIME_MODE_HOMOGENEOUS,
-        IDS_TIME_MODE_INDEPENDENT,
-        IDS_TIME_MODE_UNKNOWN,
-        IDS_TIME_MODES,
-        IMAS_HAS_SERIALIZATION,
-        INTEGER_DATA,
-        LINEAR_INTERP,
-        PREVIOUS_INTERP,
-        READ_OP,
-        UNDEFINED_INTERP,
-        UNDEFINED_TIME,
-        WRITE_OP,
-    )
-except:
-    logger.critical("IMAS could not be imported. UAL not available!")
-
-
-_NO_SERIALIZATION_ERROR = "Serialization requires Access Layer version 4.11 or newer."
+from imaspy.ids_defs import (
+    ASCII_BACKEND,
+    ASCII_SERIALIZER_PROTOCOL,
+    CHAR_DATA,
+    CLOSEST_INTERP,
+    DEFAULT_SERIALIZER_PROTOCOL,
+    EMPTY_INT,
+    IDS_TIME_MODE_HETEROGENEOUS,
+    IDS_TIME_MODE_HOMOGENEOUS,
+    IDS_TIME_MODE_INDEPENDENT,
+    IDS_TIME_MODE_UNKNOWN,
+    IDS_TIME_MODES,
+    INTEGER_DATA,
+    LINEAR_INTERP,
+    PREVIOUS_INTERP,
+    READ_OP,
+    UNDEFINED_INTERP,
+    UNDEFINED_TIME,
+    WRITE_OP,
+)
 
 
 class IDSToplevel(IDSStructure):
@@ -153,8 +146,6 @@ class IDSToplevel(IDSStructure):
     @staticmethod
     def default_serializer_protocol():
         """Return the default serializer protocol."""
-        if not IMAS_HAS_SERIALIZATION:
-            raise NotImplementedError(_NO_SERIALIZATION_ERROR)
         return DEFAULT_SERIALIZER_PROTOCOL
 
     @contextlib.contextmanager
@@ -216,8 +207,6 @@ class IDSToplevel(IDSStructure):
         Returns:
             Data buffer that can be deserialized using :meth:`deserialize`.
         """
-        if not IMAS_HAS_SERIALIZATION:
-            raise NotImplementedError(_NO_SERIALIZATION_ERROR)
         if protocol is None:
             protocol = self.default_serializer_protocol()
         if self.ids_properties.homogeneous_time == IDS_TIME_MODE_UNKNOWN:
@@ -251,8 +240,6 @@ class IDSToplevel(IDSStructure):
         Args:
             data: binary data created by serializing an IDS.
         """
-        if not IMAS_HAS_SERIALIZATION:
-            raise NotImplementedError(_NO_SERIALIZATION_ERROR)
         if len(data) <= 1:
             raise ValueError("No data provided")
         protocol = int(data[0])  # first byte of data contains serialization protocol
