@@ -30,6 +30,7 @@ import importlib.util
 import logging
 import os
 import site
+import traceback
 
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import sys
@@ -49,6 +50,7 @@ from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import setup
 from setuptools.command.build_ext import build_ext
+from setuptools.command.sdist import sdist
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
@@ -139,12 +141,32 @@ class build_DD_before_ext(build_ext):
         try:
             prepare_data_dictionaries()
         except:
-            logger.warning("Failed to build DD during setup, continuing without.")
+            traceback.print_exc()
+            print("Failed to build DD during setup, continuing without.")
+        super().run()
+
+
+class build_DD_before_sdist(sdist):
+    """
+    Before running sdist we try to build the DD. Complements the build_ext extension
+    above.
+    """
+
+    def run(self):
+        try:
+            prepare_data_dictionaries()
+        except:
+            traceback.print_exc()
+            print("Failed to build DD during setup, continuing without.")
         super().run()
 
 
 if __name__ == "__main__":
     setup(
         zip_safe=False, # https://mypy.readthedocs.io/en/latest/installed_packages.html
-        cmdclass={"build_ext": build_DD_before_ext, "build_DD": BuildDDCommand},
+        cmdclass={
+            "build_ext": build_DD_before_ext,
+            "sdist": build_DD_before_sdist,
+            "build_DD": BuildDDCommand,
+        },
     )
