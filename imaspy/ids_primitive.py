@@ -15,20 +15,16 @@ import numpy as np
 from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.ids_defs import DD_TYPES
+from imaspy.ids_defs import (
+    DD_TYPES,
+    CHAR_DATA,
+    DOUBLE_DATA,
+    INTEGER_DATA,
+    COMPLEX_DATA,
+    ids_type_to_default,
+    hli_utils
+)
 from imaspy.ids_mixin import IDSMixin
-
-try:
-    from imaspy.ids_defs import (
-        CHAR_DATA,
-        DOUBLE_DATA,
-        INTEGER_DATA,
-        COMPLEX_DATA,
-        hli_utils,
-        ids_type_to_default,
-    )
-except ImportError:
-    logger.critical("IMAS could not be imported. UAL not available!")
 
 
 class IDSPrimitive(IDSMixin):
@@ -447,7 +443,7 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
             return type(self)(self._name, self._ids_type, self._ndims, value=result)
 
     def resize(self, new_shape):
-        """ Resize underlying data
+        """Resize underlying data
 
         Data is stored in memory in a numpy array, so use numpy's resize to
         resize the underlying data

@@ -52,15 +52,19 @@ except ImportError as ee:
     # which we (should) gate
     hli_utils = None
     ASCII_BACKEND = CHAR_DATA = CLOSE_PULSE = CLOSEST_INTERP = DOUBLE_DATA = None
-    EMPTY_FLOAT = -9E40
-    EMPTY_INT = -999999999
-    EMPTY_COMPLEX = complex(EMPTY_FLOAT, EMPTY_FLOAT)
-    FORCE_CREATE_PULSE = HDF5_BACKEND = None
-    IDS_TIME_MODE_HETEROGENEOUS = IDS_TIME_MODE_HOMOGENEOUS = None
-    IDS_TIME_MODE_INDEPENDENT = IDS_TIME_MODE_UNKNOWN = IDS_TIME_MODES = None
+    COMPLEX_DATA = FORCE_CREATE_PULSE = HDF5_BACKEND = None
     INTEGER_DATA = LINEAR_INTERP = MDSPLUS_BACKEND = MEMORY_BACKEND = None
     NODE_TYPE_STRUCTURE = OPEN_PULSE = PREVIOUS_INTERP = READ_OP = None
     UDA_BACKEND = UNDEFINED_INTERP = UNDEFINED_TIME = WRITE_OP = None
+    # These constants are also useful when not working with the UAL
+    EMPTY_FLOAT = -9E40
+    EMPTY_INT = -999_999_999
+    EMPTY_COMPLEX = complex(EMPTY_FLOAT, EMPTY_FLOAT)
+    IDS_TIME_MODE_UNKNOWN = EMPTY_INT
+    IDS_TIME_MODE_HETEROGENEOUS = 0
+    IDS_TIME_MODE_HOMOGENEOUS = 1
+    IDS_TIME_MODE_INDEPENDENT = 2
+    IDS_TIME_MODES = [0, 1, 2]
 
 # Translation dictionary to go from an ids (primitive) type (without the dimensionality) to a default value
 ids_type_to_default = {
