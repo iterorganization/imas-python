@@ -46,6 +46,7 @@ class IDSPrimitive(IDSMixin):
         parent=None,
         value=None,
         coordinates=None,
+        structure_xml=None,
         var_type="dynamic",
     ):
         """Initialize IDSPrimitive
@@ -64,7 +65,16 @@ class IDSPrimitive(IDSMixin):
             coordinates: Data coordinates of the node
             var_type: 'static', 'dynamic', or 'const'
         """
-        super().__init__(parent, name, coordinates=coordinates)
+        # Devnote. As IDSNumericArray uses this __init__, and IDSNumericArray
+        # subclasses np.lib.mixins.NDArrayOperatorsMixin, copy the call
+        # signature of np.lib.mixins.NDArrayOperatorsMixins __init__ to
+        # let IDSNumericArray act as a numpy array
+        super().__init__(
+            parent,
+            name,
+            coordinates=coordinates,
+            structure_xml=structure_xml,
+        )
 
         if ids_type != "STR" and ndims != 0 and self.__class__ == IDSPrimitive:
             raise Exception(
@@ -175,6 +185,54 @@ class IDSPrimitive(IDSMixin):
             raise Exception
         return value
 
+    @staticmethod
+    def parse_data(name, ndims, write_type, value):
+        # Convert imaspy ids_type to ual scalar_type
+        if write_type == "INT":
+            scalar_type = 1
+        elif write_type == "FLT":
+            scalar_type = 2
+        elif write_type == "CPX":  # TODO: Add CPX to ids_minimal_types.xml
+            scalar_type = 3
+
+        # Check sanity of given data
+        if write_type in ["INT", "FLT", "CPX"] and ndims == 0:
+            # Manually convert value to write_type
+            # TODO: bundle these as 'generic' migrations
+            if write_type == "INT":
+                value = round(value)
+            elif write_type == "FLT":
+                value = float(value)
+            data = value
+        elif write_type in ["INT", "FLT", "CPX"]:
+            # Arrays will be converted by isTypeValid
+            if not hli_utils.HLIUtils.isTypeValid(value, name, "NP_ARRAY"):
+                raise Exception
+            data = value
+        else:
+            # TODO: convert data on write time here
+            if write_type == "INT":
+                data = round(value)
+            elif write_type == "FLT":
+                data = float(value)
+            else:
+                data = value
+        return data
+
+    @staticmethod
+    def data_is_default(data, default):
+        # Do not write if data is the same as the default of the leaf node
+        # TODO: set default of backend xml instead
+        if isinstance(data, (list, np.ndarray)):
+            if len(data) == 0 or np.array_equal(
+                np.asarray(data), np.asarray(default)
+            ):
+                return True
+            # we need the extra asarray to convert the list back to an np ndarray
+        elif data == default:
+            return True
+        return False
+
     def put(self, ctx, homogeneousTime, **kwargs):
         """Put data into UAL backend storage format
 
@@ -194,47 +252,9 @@ class IDSPrimitive(IDSMixin):
                 return
         write_type = self._backend_type or self._ids_type
         ndims = self._backend_ndims or self._ndims
+        data = self.parse_data(self._name, ndims, write_type, self.value)
 
-        # Convert imaspy ids_type to ual scalar_type
-        if write_type == "INT":
-            scalar_type = 1
-        elif write_type == "FLT":
-            scalar_type = 2
-        elif write_type == "CPX":  # TODO: Add CPX to ids_minimal_types.xml
-            scalar_type = 3
-
-        # Check sanity of given data
-        if write_type in ["INT", "FLT", "CPX"] and ndims == 0:
-            # Manually convert value to write_type
-            # TODO: bundle these as 'generic' migrations
-            if write_type == "INT":
-                value = round(self.value)
-            elif write_type == "FLT":
-                value = float(self.value)
-            data = value
-        elif write_type in ["INT", "FLT", "CPX"]:
-            # Arrays will be converted by isTypeValid
-            if not hli_utils.HLIUtils.isTypeValid(self.value, self._name, "NP_ARRAY"):
-                raise Exception
-            data = self.value
-        else:
-            # TODO: convert data on write time here
-            if write_type == "INT":
-                data = round(self.value)
-            elif write_type == "FLT":
-                data = float(self.value)
-            else:
-                data = self.value
-
-        # Do not write if data is the same as the default of the leaf node
-        # TODO: set default of backend xml instead
-        if isinstance(data, (list, np.ndarray)):
-            if len(data) == 0 or np.array_equal(
-                np.asarray(data), np.asarray(self._default)
-            ):
-                return
-            # we need the extra asarray to convert the list back to an np ndarray
-        elif data == self._default:
+        if self.data_is_default(data, self._default):
             return
 
         # Call signature
@@ -447,7 +467,7 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
             return type(self)(self._name, self._ids_type, self._ndims, value=result)
 
     def resize(self, new_shape):
-        """ Resize underlying data
+        """Resize underlying data
 
         Data is stored in memory in a numpy array, so use numpy's resize to
         resize the underlying data

@@ -1,7 +1,7 @@
 [build-system]
 # Minimum requirements for the build system to execute.
 # Keep this on a single line for the grep magic of build scripts to work
-requires = ["setuptools>=43", "wheel", "setuptools_scm[toml]>=3.4", "Cython>=0.28", "numpy", "gitpython"]
+requires = ["setuptools>=43", "wheel", "setuptools_scm[toml]>=3.4", "Cython>=0.28", "numpy", "gitpython", "packaging"]
 # needs saxon9he.jar in CLASSPATH
 
 build-backend = "setuptools.build_meta"
@@ -57,6 +57,8 @@ dependencies = [
     "tree-format",
     "scipy",
     "click",
+    "importlib_resources",
+    "packaging",
 ]
 
 [project.optional-dependencies]
@@ -73,6 +75,7 @@ docs = [
     "recommonmark>=0.6",
     "sphinx-autosummary-accessors>=0.1.2",
     "sphinx-autodoc-typehints>=1.1.1",
+    "sphinxcontrib.mermaid>=0.8"
 ]
 examples = [
     "imas",

@@ -3,7 +3,7 @@
 
 import copy
 import logging
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 
 import scipy.interpolate
 
@@ -15,6 +15,7 @@ except ImportError:
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_defs import DD_TYPES
+from imaspy.ids_metadata import IDSMetadata
 from imaspy.setup_logging import root_logger as logger
 
 try:
@@ -47,6 +48,7 @@ class IDSMixin:
 
         self._last_backend_xml_hash = None
         self._backend_name = None
+        self.metadata = IDSMetadata(structure_xml=self._structure_xml)
 
     def getRelCTXPath(self, ctx):
         """Get the path relative to given context from an absolute path"""

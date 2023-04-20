@@ -48,7 +48,7 @@ from packaging.version import Version as V
 from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import setup
-from setuptools.command.build_ext import build_py
+from setuptools.command.build_py import build_py
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 

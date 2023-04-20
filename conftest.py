@@ -71,6 +71,11 @@ def pytest_generate_tests(metafunc):
         if name.endswith("_bool"):
             metafunc.parametrize(name, [True, False])
 
+@pytest.fixture
+def fake_toplevel_xml():
+    from pathlib import Path
+
+    return Path(__file__).parent / "imaspy/assets/IDS_fake_toplevel.xml"
 
 @pytest.fixture
 def ids_minimal():
