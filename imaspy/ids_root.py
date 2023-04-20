@@ -19,7 +19,7 @@ except ImportError:
 import numpy as np
 
 from imaspy.al_exception import ALException
-from imaspy.context_store import context_store
+from imaspy.context_store import context_store, ContextError
 from imaspy.dd_zip import dd_etree, latest_dd_version
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
@@ -621,7 +621,7 @@ class IDSRoot:
     def _ull(self):
         ctx_path = context_store[self.expIdx]
         if ctx_path != "/":
-            raise ValueError("{!s} context does not seem to be toplevel".format(self))
+            raise ContextError("{!s} context does not seem to be toplevel".format(self))
         ual_file = self._data_store._manager.acquire()
         ull = importlib.import_module(ual_file.ual_module_name)
         return ull

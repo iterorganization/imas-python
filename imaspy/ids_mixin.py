@@ -193,7 +193,8 @@ class IDSMixin:
 
         if homogeneousTime is None:
             raise ValueError(
-                "Homogeneous_Time not specified or not called from toplevel"
+                "homogeneous_time is not specified in ids_properties nor given"
+                " as keyword argument"
             )
 
         if homogeneousTime != IDS_TIME_MODE_HOMOGENEOUS:

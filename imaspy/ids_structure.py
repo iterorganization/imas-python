@@ -324,7 +324,7 @@ class IDSStructure(IDSMixin):
 
                 # attr = create_leaf_container(key, no_data_type_I_guess, parent=self)
             if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):
-                raise Exception(
+                raise TypeError(
                     "Trying to set structure field {!s} with non-structure.".format(key)
                 )
 

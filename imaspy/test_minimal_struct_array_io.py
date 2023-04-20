@@ -32,7 +32,7 @@ def test_minimal_struct_array_maxoccur(backend, xml):
     a = ids.minimal_struct_array.struct_array
     a.append(a._element_structure)
     a.append(a._element_structure)
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         a.append(a._element_structure)
 
 

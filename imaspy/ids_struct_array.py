@@ -110,7 +110,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             # Just blindly append for now
             # TODO: Maybe check if user is not trying to append weird elements
             if self.metadata.maxoccur and len(self.value) >= self.metadata.maxoccur:
-                raise ValueError(
+                raise RuntimeError(
                     "Maxoccur is set to %s for %s, not adding %s"
                     % (
                         self.metadata.maxoccur,
