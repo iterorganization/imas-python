@@ -204,14 +204,6 @@ class IDSStructArray(IDSStructure, IDSMixin):
             context_store.pop(aosCtx)
             self._ull.ual_end_action(aosCtx)
 
-    def getRelCTXPath(self, ctx):
-        """Get the path relative to given context from an absolute path"""
-        if self._path.startswith(context_store[ctx]):
-            rel_path = self._path[len(context_store[ctx]) + 1 :]
-        else:
-            raise ValueError("Could not strip context from absolute path")
-        return rel_path
-
     def put(self, parentCtx, homogeneousTime, **kwargs):
         """Put data into UAL backend storage format
 
