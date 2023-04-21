@@ -6,7 +6,7 @@
 
 # Set up logging immediately
 
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 import contextlib
 import tempfile
 import os

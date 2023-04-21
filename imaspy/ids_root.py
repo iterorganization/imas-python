@@ -19,7 +19,7 @@ except ImportError:
 import numpy as np
 
 from imaspy.al_exception import ALException
-from imaspy.context_store import context_store
+from imaspy.context_store import context_store, ContextError
 from imaspy.dd_zip import dd_etree, latest_dd_version
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
@@ -213,26 +213,13 @@ class IDSRoot:
         return self.__getattr__(keyname)
 
     def __str__(self, depth=0):
-        space = ""
-        for i in range(depth):
-            space = space + "\t"
-
-        ret = space + "class ids\n"
-        ret = (
-            ret
-            + space
-            + "Shot=%d, Run=%d, RefShot%d RefRun=%d\n"
-            % (self.shot, self.run, self.refShot, self.refRun)
-        )
-        ret = (
-            ret
-            + space
-            + "treeName=%s, connected=%d, expIdx=%d\n"
-            % (self.treeName, self.connected, self.expIdx)
-        )
-        ret = ret + space + "Attribute amns_data\n" + self.amns_data.__str__(depth + 1)
-        ret = ret + space + "Attribute barometry\n" + self.barometry.__str__(depth + 1)
-        # etc. etc over all lower level IDSs
+        # TODO: Change this to present the user with a better view of the
+        # contained IDSs
+        # TODO: Implement URI view in AL5
+        ret = f"{self.__class__.__name__}("
+        ret += f"shot={self.shot}, run={self.run}"
+        ret += f", treeName={self.treeName}, connected={self.connected}, expIdx={self.expIdx}"
+        ret += ")"
         return ret
 
     def __del__(self):
@@ -628,7 +615,7 @@ class IDSRoot:
     def _ull(self):
         ctx_path = context_store[self.expIdx]
         if ctx_path != "/":
-            raise Exception("{!s} context does not seem to be toplevel".format(self))
+            raise ContextError("{!s} context does not seem to be toplevel".format(self))
         ual_file = self._data_store._manager.acquire()
         ull = importlib.import_module(ual_file.ual_module_name)
         return ull

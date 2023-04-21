@@ -1,7 +1,7 @@
 # This file is part of IMASPy.
 # You should have received IMASPy LICENSE file with this project.
 
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 
 import pkg_resources
 

@@ -2,7 +2,7 @@
 # (all IMAS data-dictionary files in the zip with version >= min).
 
 import logging
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 
 import pytest
 

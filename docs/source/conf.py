@@ -121,6 +121,7 @@ extensions = [
     "sphinx_rtd_theme",  # Theme
     "recommonmark",  # For markdown support, does not support 'full' CommonMark syntax (yet)!
     "sphinx_autodoc_typehints",  # Auto-parse type hints. Napoleon BEFORE typehints
+    "sphinxcontrib.mermaid",  # Draw graphs using Mermaid.js
 ]
 
 # Add any paths that contain templates here, relative to this directory.

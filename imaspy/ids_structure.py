@@ -11,7 +11,7 @@ except ImportError:
     from cached_property import cached_property
 
 import logging
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 
 from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
@@ -111,6 +111,7 @@ class IDSStructure(IDSMixin):
                         my_data_type,
                         parent=self,
                         coordinates=coordinates,
+                        structure_xml=child,
                         var_type=child.get("type"),
                     ),
                 )
@@ -290,7 +291,7 @@ class IDSStructure(IDSMixin):
         return my_depth
 
     def copyValues(self, ids):
-        """ Not sure what this should do. Well, copy values of a structure!"""
+        """Not sure what this should do. Well, copy values of a structure!"""
         raise NotImplementedError("{!s}.copyValues(ids)".format(self))
 
     def __str__(self):
@@ -324,7 +325,7 @@ class IDSStructure(IDSMixin):
 
                 # attr = create_leaf_container(key, no_data_type_I_guess, parent=self)
             if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):
-                raise Exception(
+                raise TypeError(
                     "Trying to set structure field {!s} with non-structure.".format(key)
                 )
 
@@ -396,7 +397,7 @@ class IDSStructure(IDSMixin):
                 logger.debug("Unable to get simple field %s, seems empty", child_name)
 
     def _getData(self, ctx, homogeneousTime, nodePath, analyzeTime):
-        """ A deeped way of getting data?? using 'traverser' whatever that is """
+        """A deeped way of getting data?? using 'traverser' whatever that is"""
         raise NotImplementedError(
             "{!s}._getData(ctx, homogeneousTime, nodePath, analyzeTime)".format(self)
         )

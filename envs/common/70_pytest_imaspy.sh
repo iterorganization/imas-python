@@ -27,6 +27,7 @@ if [ "$RUNMODE" == "normal" ] || [ "$RUNMODE" == "env" ]; then
     export COV_FLAGS=${COV_FLAGS:-'--cov=imaspy --cov-report=term --cov-report=xml:./coverage.xml'}
     export JUNIT_FLAGS=${JUNIT_FLAGS:-'--junit-xml=./junit.xml'}
     export PYTEST_MARK=${PYTEST_MARK:-''}
+    export PYTEST_FILE_OR_DIR=${PYTEST_FILE_OR_DIR:-'../imaspy'}
     export IDSS=${IDSS:-pulse_schedule,ece}
 
     source $IMASPY_VENV/bin/activate
@@ -46,7 +47,7 @@ if [ "$RUNMODE" == "normal" ] || [ "$RUNMODE" == "only" ]; then
     if [ $TESTSET == "mini" ]; then
         # Do not exit when tests fail
         set +e
-        $PYTEST --ids=$IDSS $PYTEST_FLAGS $COV_FLAGS $JUNIT_FLAGS -m "$PYTEST_MARK" ../imaspy
+        $PYTEST --ids=$IDSS $PYTEST_FLAGS $COV_FLAGS $JUNIT_FLAGS -m "$PYTEST_MARK" "$PYTEST_FILE_OR_DIR"
         set -e
     else
         echo Untested! Dropping shell!

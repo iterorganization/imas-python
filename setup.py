@@ -28,12 +28,12 @@ import ast
 import importlib
 import importlib.util
 import logging
-import warnings
 import os
 import site
 
 # Allow importing local files, see https://snarky.ca/what-the-heck-is-pyproject-toml/
 import sys
+import warnings
 
 # Import other stdlib packages
 from itertools import chain
@@ -44,6 +44,7 @@ import pkg_resources
 # Use setuptools to build packages. Advised to import setuptools before distutils
 import setuptools
 import tomli
+from packaging.version import Version as V
 from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import find_packages, setup
@@ -56,7 +57,6 @@ from distutils.sysconfig import get_python_lib as dist_get_python_lib
 from distutils.text_file import TextFile as DistTextFile
 from distutils.util import check_environ as dist_check_environ
 from distutils.util import get_platform as dist_get_platform
-from distutils.version import LooseVersion as V
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
@@ -134,17 +134,6 @@ sys.modules["imaspy.setup_helpers"] = module
 # End: Load setup_helpers
 
 # Start: Load dd_helpers
-# We need exceptions as well
-imaspy_exceptions_file = this_dir / "imaspy/imaspy_exceptions.py"
-assert imaspy_exceptions_file.is_file()
-spec = importlib.util.spec_from_file_location(
-    "imaspy_exceptions", imaspy_exceptions_file
-)
-module = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(module)
-sys.modules["imaspy.imaspy_exceptions"] = module
-imaspy_exceptions_file = this_dir / "imaspy_exceptions.py"
-
 dd_helpers_file = this_dir / "imaspy/dd_helpers.py"
 assert dd_helpers_file.is_file()
 spec = importlib.util.spec_from_file_location("dd_helpers", dd_helpers_file)
@@ -154,6 +143,7 @@ sys.modules["imaspy.dd_helpers"] = module
 from imaspy.dd_helpers import prepare_data_dictionaries
 
 # End: Load dd_helpers
+
 
 # Define building of the Data Dictionary as custom build step
 class BuildDDCommand(setuptools.Command):

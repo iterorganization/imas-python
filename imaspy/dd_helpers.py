@@ -6,14 +6,13 @@ import os
 import re
 import shutil
 import subprocess
-from distutils.version import StrictVersion as V
+from packaging.version import Version as V
 from io import BytesIO
 from pathlib import Path
 from urllib.request import urlopen
 from zipfile import ZIP_DEFLATED, ZipFile
 from typing import Tuple
 
-from imaspy.imaspy_exceptions import IMASPyError
 
 logger = logging.getLogger("imaspy")
 logger.setLevel(logging.INFO)
@@ -151,14 +150,14 @@ def download_saxon():
             path = zipfile.extract(file)
             del zipfile
             return path
-    raise IMASPyError(f"No Saxon jar found in given zipfile '{SAXON_PATH}'")
+    raise FileNotFoundError(f"No Saxon jar found in given zipfile '{SAXON_PATH}'")
 
 
 def get_data_dictionary_repo() -> Tuple[bool, bool]:
     try:
         import git  # Import git here, the user might not have it!
     except ModuleNotFoundError:
-        raise IMASPyError(
+        raise RuntimeError(
             "Could not find 'git' module, try 'pip install gitpython'. \
             Will not build Data Dictionaries!"
         )

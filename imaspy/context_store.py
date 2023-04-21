@@ -28,7 +28,7 @@ class ContextStore(dict):
         do not allow for duplicated contexts to be opened.
         """
         if key in self:
-            raise Exception(
+            raise RuntimeError(
                 "Trying to set context {!s} to {!s}, but was not released. \
                 Currently is {!s}".format(
                     key, value, self[key]
@@ -39,7 +39,7 @@ class ContextStore(dict):
 
     def update(self, ctx, newCtx):
         if ctx not in self:
-            raise Exception("Trying to update non-existing context {!s}".format(ctx))
+            raise KeyError("Trying to update non-existing context {!s}".format(ctx))
         super().__setitem__(ctx, newCtx)
 
     def decodeContextInfo(self, ctxLst=None):
@@ -61,6 +61,25 @@ class ContextStore(dict):
                     continue
                 key, val = line.split("=")
                 info[key.strip()] = val.strip()
+
+    def strip_context(self, path: str, ctx: int) -> str:
+        """Get the path relative to given context from an absolute path"""
+        # TODO: This could be replaced with the fullPath() method provided by the LL-UAL
+        if path.startswith(self[ctx]):
+            # strip the context path as well as any numeric indices
+            # (those are handled by the context store)
+            return path[len(self[ctx]) :].lstrip("/0123456789")
+        else:
+            raise ContextError(
+                "Could not strip context from absolute path {!s}, "
+                "ctx: {!s}, store: {!s}".format(path, ctx, self)
+            )
+
+
+class ContextError(Exception):
+    """Error raised on internal failure of the context store."""
+
+    pass
 
 
 # Keep a single 'global' variable context_store
