@@ -111,5 +111,5 @@ def needs_imas(func):
             raise RuntimeError(
                 f"Function {func.__name__} requires IMAS, but IMAS is not available."
             )
-        func(*args, **kwargs)
+        return func(*args, **kwargs)
     return wrapper
