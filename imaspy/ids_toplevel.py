@@ -45,6 +45,7 @@ from imaspy.ids_defs import (
     UNDEFINED_INTERP,
     UNDEFINED_TIME,
     WRITE_OP,
+    needs_imas
 )
 
 
@@ -173,6 +174,7 @@ class IDSToplevel(IDSStructure):
                 self._parent._data_store,
             ) = current_backend_state
 
+    @needs_imas
     def serialize(self, protocol=None):
         """Serialize this IDS to a data buffer.
 
@@ -232,6 +234,7 @@ class IDSToplevel(IDSStructure):
             return bytes([ASCII_SERIALIZER_PROTOCOL]) + data
         raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 
+    @needs_imas
     def deserialize(self, data):
         """Deserialize the data buffer into this IDS.
 
@@ -315,6 +318,7 @@ class IDSToplevel(IDSStructure):
                 )
         return homogeneousTime
 
+    @needs_imas
     def read_data_dictionary_version(self, occurrence):
         data_dictionary_version = ""
         path = self._name
@@ -343,6 +347,7 @@ class IDSToplevel(IDSStructure):
             )
         return data_dictionary_version
 
+    @needs_imas
     def get(self, occurrence=0, ctx=None, **kwargs):
         """Get data from UAL backend storage format and overwrite data in node
 
@@ -410,6 +415,7 @@ class IDSToplevel(IDSStructure):
                 "Error calling ual_end_action() for {!s}".format(self._name), status
             )
 
+    @needs_imas
     def getSlice(
         self, time_requested, interpolation_method=CLOSEST_INTERP, occurrence=0
     ):
@@ -452,6 +458,7 @@ class IDSToplevel(IDSStructure):
 
         self.get(ctx=ctx)
 
+    @needs_imas
     def putSlice(self, occurrence=0, ctx=None):
         """Put a single slice into the backend. only append is supported"""
         homogeneousTime = self.readHomogeneous(occurrence=occurrence)
@@ -520,6 +527,7 @@ class IDSToplevel(IDSStructure):
             )
         context_store.pop(ctx)
 
+    @needs_imas
     def deleteData(self, occurrence=0):
         """Delete UAL backend storage data
 
@@ -552,6 +560,7 @@ class IDSToplevel(IDSStructure):
             )
         return 0
 
+    @needs_imas
     def to_ualstore(self, ual_data_store, path=None, occurrence=0, **kwargs):
         """Put data into UAL backend storage format
 
@@ -624,6 +633,7 @@ class IDSToplevel(IDSStructure):
         )
         self.setPulseCtx(idx)
 
+    @needs_imas
     def put(self, occurrence=0, data_store=None, **kwargs):
         if data_store is None:
             data_store = self._data_store
@@ -655,6 +665,7 @@ class IDSToplevel(IDSStructure):
     def initIDS(self):
         raise NotImplementedError("{!s}.initIDS()".format(self))
 
+    @needs_imas
     def partialGet(self, dataPath, occurrence=0):
         raise NotImplementedError(
             "{!s}.partialGet(dataPath, occurrence=0)".format(self)

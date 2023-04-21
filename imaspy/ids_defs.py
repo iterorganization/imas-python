@@ -3,6 +3,7 @@
 """ Load IMASPy libs to provide constants
 """
 
+import functools
 import logging
 from typing import Dict, Tuple
 
@@ -42,8 +43,11 @@ try:
         UNDEFINED_TIME,
         WRITE_OP,
     )
+
+    HAS_IMAS = True
 except ImportError as ee:
     logger.critical("IMAS could not be imported. UAL not available! %s", ee)
+    HAS_IMAS = False
 
     # Preset some constants which are used elsewhere
     # this is a bit ugly, perhaps reuse the list of imports from above?
@@ -57,7 +61,7 @@ except ImportError as ee:
     NODE_TYPE_STRUCTURE = OPEN_PULSE = PREVIOUS_INTERP = READ_OP = None
     UDA_BACKEND = UNDEFINED_INTERP = UNDEFINED_TIME = WRITE_OP = None
     # These constants are also useful when not working with the UAL
-    EMPTY_FLOAT = -9E40
+    EMPTY_FLOAT = -9e40
     EMPTY_INT = -999_999_999
     EMPTY_COMPLEX = complex(EMPTY_FLOAT, EMPTY_FLOAT)
     IDS_TIME_MODE_UNKNOWN = EMPTY_INT
@@ -98,3 +102,14 @@ for i in range(0, 7):
     DD_TYPES[f"FLT_{i}D"] = ("FLT", i)
     if i < 4:
         DD_TYPES[f"INT_{i}D"] = ("INT", i)
+
+
+def needs_imas(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if not HAS_IMAS:
+            raise RuntimeError(
+                f"Function {func.__name__} requires IMAS, but IMAS is not available."
+            )
+        func(*args, **kwargs)
+    return wrapper

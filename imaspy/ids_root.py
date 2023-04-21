@@ -40,6 +40,7 @@ try:
         OPEN_PULSE,
         READ_OP,
         UDA_BACKEND,
+        needs_imas,
     )
 except:
     logger.critical("IMAS could not be imported. UAL not available!")
@@ -276,6 +277,7 @@ class IDSRoot:
     def get_units_parser(self):
         return self.ddunits
 
+    @needs_imas
     def open_ual_store(
         self,
         user,
@@ -366,6 +368,7 @@ class IDSRoot:
 
         return store
 
+    @needs_imas
     def create_env(
         self, user, tokamak, version, silent=False, options="", ual_version=None
     ):
@@ -398,6 +401,7 @@ class IDSRoot:
         )
         return (0, store._idx)
 
+    @needs_imas
     def create_env_backend(
         self,
         user,
@@ -439,6 +443,7 @@ class IDSRoot:
         )
         return (0, store._idx)
 
+    @needs_imas
     def open_env(
         self,
         user,
@@ -478,6 +483,7 @@ class IDSRoot:
         )
         return (0, store._idx)
 
+    @needs_imas
     def open_env_backend(
         self,
         user,
@@ -519,6 +525,7 @@ class IDSRoot:
         )
         return (0, store._idx)
 
+    @needs_imas
     def open_public(self, expName, silent=False):
         """Opens a public pulse with the UAL UAD backend."""
         status, idx = self._ull.ual_begin_pulse_action(

@@ -22,7 +22,8 @@ from imaspy.ids_defs import (
     INTEGER_DATA,
     COMPLEX_DATA,
     ids_type_to_default,
-    hli_utils
+    hli_utils,
+    needs_imas,
 )
 from imaspy.ids_mixin import IDSMixin
 
@@ -171,6 +172,7 @@ class IDSPrimitive(IDSMixin):
             raise Exception
         return value
 
+    @needs_imas
     def put(self, ctx, homogeneousTime, **kwargs):
         """Put data into UAL backend storage format
 
@@ -253,6 +255,7 @@ class IDSPrimitive(IDSMixin):
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
 
+    @needs_imas
     def get(self, ctx, homogeneousTime):
         """Get data from UAL backend storage format
 
