@@ -5,9 +5,11 @@ data dictionary version.
 import logging
 import os
 
-import imas  # import old HLI
 import numpy as np
 import pytest
+
+# import IMAS HLI, skip module when this is an install without IMAS
+imas = pytest.importorskip("imas")
 
 from imaspy.ids_defs import (
     ASCII_BACKEND,
