@@ -1,110 +1,71 @@
 Installing IMASPy
 =================
 
-IMASPy is a Python package with a compiled component, specifically the
-:al_cython:`Cython layer of the IMAS Access Layer (AL) <browse>`. This component
-is optional, but necessary to interact with the IMAS-AL, and thus with data stored
-to disk by said AL.
-
-IMASPy also needs the :al_lib:`IMAS Python helper functions <browse>`. Currently, both
-dependencies are pulled it using :std:doc:`GitPython <gitpython:index>`, until the
-:issue:`separate Python HLI parts are available as packages <IMAS-584>`.
-
-.. :std:doc:`Cython <cython:index>` of the
+IMASPy is a pure Python package. For full functionality of the package you need
+an installation of `the IMAS Access Layer <https://imas.iter.org/>`_. See
+:ref:`IMASPy 5 minute introduction` for an overview of functionality which does
+(not) require the IMAS Access Layer available.
 
 
-Python is very flexible, and so is it's install procedure. This is a double-edged sword:
-Because of it flexibility, many different install options are available and in use in the
-community. For an introduction to the topic, read the
-:pypa:`guide to installing Python packaging by the Python Packaging Authority (PyPA) <tutorials/installing-packages/>`.
+Installing on the ITER cluster and EuroFusion gateway
+-----------------------------------------------------
 
-Installing on the ITER cluster
-------------------------------
-To interact with the AL, we need the IMAS environment
-activated. I'm assuming a bash shell for all these commands:
+There is a `module` available on the ITER and Eurofusion Gateway clusters, so
+you can run
 
 .. code-block:: bash
 
-    module load IMAS-2020a/3.30.0-4.8.5-2020a
+    module load IMASPy
 
-This should give us all we need, namely at time of testing:
-
-* ``python`` with a recent version: ``python --version #Python 3.8.2``
-* The Python package installer ``pip``:
-  ``pip --version #pip 20.0.2 from /work/imas/opt/EasyBuild/software/Python/3.8.2-GCCcore-9.3.0/lib/python3.8/site-packages/pip-20.0.2-py3.8.egg/pip (python 3.8)``
-
-We are all developers, install imaspy in `pip editable <https://pip.pypa.io/en/stable/reference/pip_install/#options>`_ /`setuptools develop <https://setuptools.readthedocs.io/en/latest/setuptools.html#development-mode>`_ mode. **We are not using PEP517 build isolation to link to the systems numpy.**, **We are not using PyPA's recommended environment management, but instead install into the USER_SITE, this is ~/.local by default.**
+Additionally, if you wish to use the MDSPlus backend, you should load
 
 .. code-block:: bash
 
-    git clone git@git.iter.org/IMAS/imaspy.git
-    pip install --user -e imaspy
+    module load MDSplus-Java/7.96.17-GCCcore-10.2.0-Java-11
 
 
-We should now be able to run the tests
+Local installation
+------------------
 
-.. code-block:: bash
-
-    pip install --user -r requirements_test.txt
-    pytest imaspy/ --mini
-
-Note that at the time of writing access layer version 4.8.5 has an issue which causes
-several tests to fail.
-
-Develop install
-^^^^^^^^^^^^^^^
-
-.. note:: Check if this is still needed
-
-pip install --user -e .[backends_al,backends_xarray,test]
-
-Check if you have access to the AL repository. This is currently needed to pull 'secret' dependencies. This will be checked by `pip` too but better to know it now.
-
-* Access to ``libimas.a``, located in ``$IMAS_PREFIX/lib``:
-  ``ls $IMAS_PREFIX/lib/libimas #/work/imas/core/IMAS/3.28.1-4.8.3/lib/libimas.a``
-  in our ``LD_LIBRARY_PATH=$IMAS_PREFIX/lib:$LD_LIBRARY_PATH``
-* A ``UAL_VERSION``, which will be used to pull the low-level AL files from the ITER
-  repository. ``echo $UAL_VERSION #4.8.3``
+We recommend using a :external:py:mod:`venv`. Then, clone the IMASPy repository
+and run `pip install`:
 
 .. code-block:: bash
 
-    (git ls-remote ssh://git@git.iter.org/imas/access-layer.git > /dev/null) && echo 'Connection successful!' || echo 'Connection failed!'
-    # Connection successful!
+    python3 -m venv ./venv
+    . venv/bin/activate
+    git clone ssh://git@git.iter.org/imas/imaspy.git
+    cd imaspy
+    pip install --upgrade pip
+    pip install --upgrade wheel setuptools
+    pip install .
 
 
-Quick primer on Python packages
--------------------------------
-A :pypa:`Python package <glossary/#term-import-package>`, commonly just called 'package', is a collection of :pypa:`Python modules <glossary/#term-module>`; reusable pieces of Python code. After installation, these packages are importable in scripts of other users, with the ``import package_name`` statement. On HPC systems, packages available to the user come from the following common locations:
+Development installation
+------------------------
 
-1. From the globally installed Python packages. These are installed by the system administrator (e.g. someone with `sudo` rights). For example on the ITER cluster:
-
-.. code-block:: bash
-
-    module purge
-    module load Python/3.6.4-intel-2018a
-    python -c 'import site; print(site.getsitepackages())'
-    # ['/work/imas/opt/EasyBuild/software/Python/3.6.4-intel-2018a/lib/python3.6/site-packages']
-
-2. From imported modules. These are usually centrally managed and also handled by the system administrator. For example on the ITER cluster:
+For development an installation in editable mode may be more convenient, and you
+will need some extra dependencies to run the test suite and build documentation.
 
 .. code-block:: bash
 
-    module purge
-    module load Python/3.6.4-intel-2018a PyAL
-    python -m site
-    # sys.path = [
-    #   <snip>
-    #   '/work/imas/opt/EasyBuild/software/Python/3.6.4-intel-2018a/lib/python3.6/site-packages/numpy-1.14.0-py3.6-linux-x86_64.egg'
-    #   <snip>
-    # ]
+    pip install -e .[test, docs]
 
-3. From the local user environment, usually in the users' HOME directory:
+Test your installation by trying
 
 .. code-block:: bash
 
-    python -c 'import site; print(site.USER_SITE)'
-    # /home/ITER/vandepk/.local/lib/python3.6/site-packages
+    cd ~
+    python -c "import imaspy; print(imaspy.__version__)"
 
-4. From the current working directory. E.g. if I have a file called ``fancy_code.py`` in my current folder, I can call ``from fancy_code import *`` from my other Python files.
 
-Installing a Python package just means putting the Python files somewhere the python binary can find it. It does this by walking down the `sys.path` until a package with the right name is found. See :std:doc:`python:library/importlib`
+Installation without ITER access
+--------------------------------
+
+The installation script tries to access the `ITER IMAS Core Data Dictionary
+repository <https://git.iter.org/projects/IMAS/repos/data-dictionary/browse>`_
+to fetch the latest versions. If you do not have git+ssh access there, you can
+try to find this repository elsewhere, and do a ``git fetch --tags``.
+
+Alternatively you could try to obtain an ``IDSDef.zip`` and place it in
+``~/.config/imaspy/``.
