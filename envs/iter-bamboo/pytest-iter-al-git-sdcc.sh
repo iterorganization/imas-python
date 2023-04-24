@@ -27,3 +27,6 @@ DD_GIT_IDENTIFIER="${2:-}"
 . $common_dir/35_build_imaspy.sh
 . $common_dir/36_install_imaspy.sh
 . $common_dir/70_pytest_imaspy.sh mini
+
+# Convert coverage report from Cobertura XML to Clover XML
+xsltproc $iter_dir/transform.xslt empty/coverage.xml empty/clover.xml
