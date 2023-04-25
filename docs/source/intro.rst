@@ -73,7 +73,7 @@ We can now use this ``core_profiles`` IDS and assign some data to it:
     Until :issue:`IMAS-4680` is addressed, you should use :code:`.value` to get the
     value of a quantity in IMASPy.
 
-As you can see in above example, IMASPy automatically checks the data you try to
+As you can see in the example above, IMASPy automatically checks the data you try to
 assign to an IDS with the data type specified in the Data Dictionary. When
 possible, your data is automatically converted to the expected type. You will
 get an error message if this is not possible:
@@ -99,8 +99,8 @@ Store an IDS to disk
       2023).
 
 To store an IDS to disk, we need to indicate the following information to the
-IMAS Access Layer. Please check the IMAS Access Layer documentation for more
-information on this.
+IMAS Access Layer. Please check the `IMAS Access Layer documentation
+<https://imas.iter.org/>`_ for more information on this.
 
 - ``shot``
 - ``run``
