@@ -5,11 +5,18 @@ data dictionary version.
 import logging
 import os
 
-import imas  # import old HLI
 import numpy as np
 import pytest
 
-from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
+# import IMAS HLI, skip module when this is an install without IMAS
+imas = pytest.importorskip("imas")
+
+from imaspy.ids_defs import (
+    ASCII_BACKEND,
+    IDS_TIME_MODE_HOMOGENEOUS,
+    MEMORY_BACKEND,
+    MDSPLUS_BACKEND,
+)
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.test_helpers import open_ids
 
@@ -82,8 +89,9 @@ def test_hli_time_slicing_put(backend, worker_id, tmp_path):
         shot = int(worker_id[2:]) + 1
 
     # ensure presence of mdsplus model dir
-    os.environ["ids_path"] = mdsplus_model_dir(version=os.environ["IMAS_VERSION"])
-    ensure_data_dir(str(tmp_path), "test", "3")
+    if backend == MDSPLUS_BACKEND:
+        os.environ["ids_path"] = mdsplus_model_dir(version=os.environ["IMAS_VERSION"])
+        ensure_data_dir(str(tmp_path), "test", "3")
     db_entry = imas.DBEntry(backend, "test", shot, 9999, user_name=str(tmp_path))
     status, ctx = db_entry.create()
     if status != 0:

@@ -15,6 +15,7 @@ from packaging.version import Version as V
 
 from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
+from imaspy.ids_defs import needs_imas
 from imaspy.ids_mixin import IDSMixin, get_coordinates
 from imaspy.ids_primitive import IDSPrimitive, create_leaf_container
 
@@ -361,6 +362,7 @@ class IDSStructure(IDSMixin):
             )
         return time
 
+    @needs_imas
     def get(self, ctx, homogeneousTime):
         """Get data from UAL backend storage format and overwrite data in node
 
@@ -400,6 +402,7 @@ class IDSStructure(IDSMixin):
             "{!s}._getData(ctx, homogeneousTime, nodePath, analyzeTime)".format(self)
         )
 
+    @needs_imas
     def put(self, ctx, homogeneousTime, **kwargs):
         """Put data into UAL backend storage format
 
@@ -431,6 +434,7 @@ class IDSStructure(IDSMixin):
             "IDSs should not set context directly, set on Root node instead"
         )
 
+    @needs_imas
     def delete(self, ctx):
         """Delete data from UAL backend storage"""
         for child_name in self._children:

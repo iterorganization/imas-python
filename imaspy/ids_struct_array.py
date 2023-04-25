@@ -11,6 +11,7 @@ from packaging.version import Version as V
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
+from imaspy.ids_defs import needs_imas
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure, get_coordinates
 from imaspy.setup_logging import root_logger as logger
@@ -170,6 +171,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             )
         )
 
+    @needs_imas
     def get(self, parentCtx, homogeneousTime):
         """Get data from UAL backend storage format and overwrite data in node
 
@@ -204,6 +206,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             context_store.pop(aosCtx)
             self._ull.ual_end_action(aosCtx)
 
+    @needs_imas
     def put(self, parentCtx, homogeneousTime, **kwargs):
         """Put data into UAL backend storage format
 

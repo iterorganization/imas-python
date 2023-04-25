@@ -75,7 +75,7 @@ mr_url = urljoin(repository_url, "/pull-requests")
 # unique name: (base URL, label prefix)
 extlinks = {
     "src": (blob_url + "%s", f"{src_group}/{src_project}/%s"),
-    "issue": (issue_url + "%s", "#%s"),
+    "issue": (issue_url + "%s", "%s"),
     "merge": (mr_url + "%s", "!%s"),
     "netcdf4": (netcdf4_docs + "%s", "netcdf4 %s"),
     "dd": (dd_url + "%s", "%s"),
@@ -104,6 +104,7 @@ release = str(full_version)
 # ones.
 extensions = [
     "sphinx.ext.autodoc",  # To auto-generate docs from Python docstrings
+    "sphinx.ext.autosectionlabel",
     "sphinx.ext.todo",  # nature theme
     "sphinx.ext.githubpages",  # nature theme
     "sphinx.ext.napoleon",  # Support for NumPy and Google style docstrings

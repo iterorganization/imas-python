@@ -11,12 +11,7 @@ import numpy as np
 import pytest
 
 import imaspy
-from imaspy.ids_defs import (
-    ASCII_BACKEND,
-    IDS_TIME_MODE_HOMOGENEOUS,
-    MEMORY_BACKEND,
-    IMAS_HAS_SERIALIZATION,
-)
+from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
 from imaspy.test_helpers import compare_children, fill_with_random_data, open_ids
 
 root_logger = logging.getLogger("imaspy")
@@ -85,13 +80,14 @@ def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
         compare_children(ids[ids_name], ids_ref[ids_name])
 
 
-@pytest.mark.skipif(not IMAS_HAS_SERIALIZATION, reason="IMAS has no serialization")
-def test_latest_dd_autofill_serialize(ids_name):
+def test_latest_dd_autofill_serialize(ids_name, has_imas):
     """Serialize and then deserialize again a full IDSRoot and all IDSToplevels"""
     # TODO: test with multiple serialization protocols
     ids = imaspy.ids_root.IDSRoot(0, 0)
     fill_with_random_data(ids[ids_name])
 
+    if not has_imas:
+        return  # rest of the test requires an IMAS install
     data = ids[ids_name].serialize()
 
     ids2 = imaspy.ids_root.IDSRoot(0, 0)

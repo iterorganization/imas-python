@@ -11,6 +11,12 @@ from imaspy.ids_defs import ASCII_BACKEND, HDF5_BACKEND, MDSPLUS_BACKEND, MEMORY
 from imaspy.ids_root import IDSRoot
 from imaspy.test_minimal_types_io import TEST_DATA
 
+try:
+    import imas
+except ImportError:
+    imas = None
+_has_imas = imas is not None
+
 
 def pytest_addoption(parser):
     # if none of these are specified, test with all backends
@@ -24,27 +30,40 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_generate_tests(metafunc):
-    if "backend" in metafunc.fixturenames:
-        all = True
-        if metafunc.config.getoption("ascii"):
-            metafunc.parametrize("backend", [ASCII_BACKEND])
-            all = False
-        if metafunc.config.getoption("memory"):
-            metafunc.parametrize("backend", [MEMORY_BACKEND])
-            all = False
-        if metafunc.config.getoption("hdf5"):
-            metafunc.parametrize("backend", [HDF5_BACKEND])
-            all = False
-        if metafunc.config.getoption("mdsplus"):
-            metafunc.parametrize("backend", [MDSPLUS_BACKEND])
-            all = False
-        if all:
-            metafunc.parametrize(
-                "backend",
-                # Do not test with HDF5 backend for now, it is not done
-                [MEMORY_BACKEND, ASCII_BACKEND, MDSPLUS_BACKEND],
+_BACKENDS = {
+    "ascii": ASCII_BACKEND,
+    "memory": MEMORY_BACKEND,
+    "hdf5": HDF5_BACKEND,
+    "mdsplus": MDSPLUS_BACKEND,
+}
+
+
+@pytest.fixture(scope="session", params=_BACKENDS)
+def backend(pytestconfig: pytest.Config, request: pytest.FixtureRequest):
+    backends_provided = any(map(pytestconfig.getoption, _BACKENDS))
+    if not _has_imas:
+        if backends_provided:
+            raise RuntimeError(
+                "Explicit backends are provided, but IMAS is not available."
             )
+        pytest.skip("No IMAS available, skip tests using a backend")
+    if backends_provided and not pytestconfig.getoption(request.param):
+        pytest.skip(f"Tests for {request.param} backend are skipped.")
+    return _BACKENDS[request.param]
+
+
+@pytest.fixture(scope="session")
+def has_imas():
+    return _has_imas
+
+
+@pytest.fixture(scope="session")
+def requires_imas():
+    if not _has_imas:
+        pytest.skip("No IMAS available")
+
+
+def pytest_generate_tests(metafunc):
     if "ids_type" in metafunc.fixturenames:
         if metafunc.config.getoption("mini"):
             metafunc.parametrize("ids_type", ["int_0d"])

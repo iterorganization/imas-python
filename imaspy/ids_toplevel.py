@@ -26,33 +26,27 @@ from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 
-try:
-    from imaspy.ids_defs import (
-        ASCII_BACKEND,
-        ASCII_SERIALIZER_PROTOCOL,
-        CHAR_DATA,
-        CLOSEST_INTERP,
-        DEFAULT_SERIALIZER_PROTOCOL,
-        EMPTY_INT,
-        IDS_TIME_MODE_HETEROGENEOUS,
-        IDS_TIME_MODE_HOMOGENEOUS,
-        IDS_TIME_MODE_INDEPENDENT,
-        IDS_TIME_MODE_UNKNOWN,
-        IDS_TIME_MODES,
-        IMAS_HAS_SERIALIZATION,
-        INTEGER_DATA,
-        LINEAR_INTERP,
-        PREVIOUS_INTERP,
-        READ_OP,
-        UNDEFINED_INTERP,
-        UNDEFINED_TIME,
-        WRITE_OP,
-    )
-except:
-    logger.critical("IMAS could not be imported. UAL not available!")
-
-
-_NO_SERIALIZATION_ERROR = "Serialization requires Access Layer version 4.11 or newer."
+from imaspy.ids_defs import (
+    ASCII_BACKEND,
+    ASCII_SERIALIZER_PROTOCOL,
+    CHAR_DATA,
+    CLOSEST_INTERP,
+    DEFAULT_SERIALIZER_PROTOCOL,
+    EMPTY_INT,
+    IDS_TIME_MODE_HETEROGENEOUS,
+    IDS_TIME_MODE_HOMOGENEOUS,
+    IDS_TIME_MODE_INDEPENDENT,
+    IDS_TIME_MODE_UNKNOWN,
+    IDS_TIME_MODES,
+    INTEGER_DATA,
+    LINEAR_INTERP,
+    PREVIOUS_INTERP,
+    READ_OP,
+    UNDEFINED_INTERP,
+    UNDEFINED_TIME,
+    WRITE_OP,
+    needs_imas
+)
 
 
 class IDSToplevel(IDSStructure):
@@ -153,8 +147,6 @@ class IDSToplevel(IDSStructure):
     @staticmethod
     def default_serializer_protocol():
         """Return the default serializer protocol."""
-        if not IMAS_HAS_SERIALIZATION:
-            raise NotImplementedError(_NO_SERIALIZATION_ERROR)
         return DEFAULT_SERIALIZER_PROTOCOL
 
     @contextlib.contextmanager
@@ -182,7 +174,8 @@ class IDSToplevel(IDSStructure):
                 self._parent._data_store,
             ) = current_backend_state
 
-    def serialize(self, protocol=DEFAULT_SERIALIZER_PROTOCOL):
+    @needs_imas
+    def serialize(self, protocol=None):
         """Serialize this IDS to a data buffer.
 
         The data buffer can be deserialized from any Access Layer High-Level Interface
@@ -216,8 +209,8 @@ class IDSToplevel(IDSStructure):
         Returns:
             Data buffer that can be deserialized using :meth:`deserialize`.
         """
-        if not IMAS_HAS_SERIALIZATION:
-            raise NotImplementedError(_NO_SERIALIZATION_ERROR)
+        if protocol is None:
+            protocol = self.default_serializer_protocol()
         if self.ids_properties.homogeneous_time == IDS_TIME_MODE_UNKNOWN:
             raise ALException("IDS is found to be EMPTY (homogeneous_time undefined)")
         if protocol == ASCII_SERIALIZER_PROTOCOL:
@@ -241,6 +234,7 @@ class IDSToplevel(IDSStructure):
             return bytes([ASCII_SERIALIZER_PROTOCOL]) + data
         raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 
+    @needs_imas
     def deserialize(self, data):
         """Deserialize the data buffer into this IDS.
 
@@ -249,8 +243,6 @@ class IDSToplevel(IDSStructure):
         Args:
             data: binary data created by serializing an IDS.
         """
-        if not IMAS_HAS_SERIALIZATION:
-            raise NotImplementedError(_NO_SERIALIZATION_ERROR)
         if len(data) <= 1:
             raise ValueError("No data provided")
         protocol = int(data[0])  # first byte of data contains serialization protocol
@@ -326,6 +318,7 @@ class IDSToplevel(IDSStructure):
                 )
         return homogeneousTime
 
+    @needs_imas
     def read_data_dictionary_version(self, occurrence):
         data_dictionary_version = ""
         path = self._name
@@ -354,6 +347,7 @@ class IDSToplevel(IDSStructure):
             )
         return data_dictionary_version
 
+    @needs_imas
     def get(self, occurrence=0, ctx=None, **kwargs):
         """Get data from UAL backend storage format and overwrite data in node
 
@@ -421,6 +415,7 @@ class IDSToplevel(IDSStructure):
                 "Error calling ual_end_action() for {!s}".format(self._name), status
             )
 
+    @needs_imas
     def getSlice(
         self, time_requested, interpolation_method=CLOSEST_INTERP, occurrence=0
     ):
@@ -463,6 +458,7 @@ class IDSToplevel(IDSStructure):
 
         self.get(ctx=ctx)
 
+    @needs_imas
     def putSlice(self, occurrence=0, ctx=None):
         """Put a single slice into the backend. only append is supported"""
         homogeneousTime = self.readHomogeneous(occurrence=occurrence)
@@ -531,6 +527,7 @@ class IDSToplevel(IDSStructure):
             )
         context_store.pop(ctx)
 
+    @needs_imas
     def deleteData(self, occurrence=0):
         """Delete UAL backend storage data
 
@@ -563,6 +560,7 @@ class IDSToplevel(IDSStructure):
             )
         return 0
 
+    @needs_imas
     def to_ualstore(self, ual_data_store, path=None, occurrence=0, **kwargs):
         """Put data into UAL backend storage format
 
@@ -635,6 +633,7 @@ class IDSToplevel(IDSStructure):
         )
         self.setPulseCtx(idx)
 
+    @needs_imas
     def put(self, occurrence=0, data_store=None, **kwargs):
         if data_store is None:
             data_store = self._data_store
@@ -666,6 +665,7 @@ class IDSToplevel(IDSStructure):
     def initIDS(self):
         raise NotImplementedError("{!s}.initIDS()".format(self))
 
+    @needs_imas
     def partialGet(self, dataPath, occurrence=0):
         raise NotImplementedError(
             "{!s}.partialGet(dataPath, occurrence=0)".format(self)

@@ -15,20 +15,17 @@ import numpy as np
 from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.ids_defs import DD_TYPES
+from imaspy.ids_defs import (
+    DD_TYPES,
+    CHAR_DATA,
+    DOUBLE_DATA,
+    INTEGER_DATA,
+    COMPLEX_DATA,
+    ids_type_to_default,
+    hli_utils,
+    needs_imas,
+)
 from imaspy.ids_mixin import IDSMixin
-
-try:
-    from imaspy.ids_defs import (
-        CHAR_DATA,
-        DOUBLE_DATA,
-        INTEGER_DATA,
-        COMPLEX_DATA,
-        hli_utils,
-        ids_type_to_default,
-    )
-except ImportError:
-    logger.critical("IMAS could not be imported. UAL not available!")
 
 
 class IDSPrimitive(IDSMixin):
@@ -240,6 +237,7 @@ class IDSPrimitive(IDSMixin):
             return True
         return False
 
+    @needs_imas
     def put(self, ctx, homogeneousTime, **kwargs):
         """Put data into UAL backend storage format
 
@@ -286,6 +284,7 @@ class IDSPrimitive(IDSMixin):
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
 
+    @needs_imas
     def get(self, ctx, homogeneousTime):
         """Get data from UAL backend storage format
 
