@@ -91,7 +91,7 @@ import imaspy
 root = imaspy.IDSRoot(shot=1, run=0)
 print(root.equilibrium)
 
-root.equilibrium.ids_properties.homogeneous_time = 0
+root.equilibrium.ids_properties.homogeneous_time = imaspy.ids_defs.IDS_TIME_MODE_HETEROGENEOUS
 root.equilibrium.ids_properties.comment = "testing"
 
 root.open_ual_store(user="daan", tokamak="ITER", version="3", backend_type=imaspy.ids_defs.HDF5_BACKEND, mode="w")
