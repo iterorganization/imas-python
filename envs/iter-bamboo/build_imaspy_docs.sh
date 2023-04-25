@@ -23,7 +23,9 @@ DD_GIT_IDENTIFIER="${2:-}"
 . $common_dir/10_setenv_python.sh
 . $iter_dir/20_setenv_imas_git_sdcc.sh
 . $common_dir/22_build_python_venv.sh
-. $common_dir/25_build_imas_git.sh $AL_GIT_IDENTIFIER $DD_GIT_IDENTIFIER
+# Custom AL build disabled, using default IMAS module instead
+#. $common_dir/25_build_imas_git.sh $AL_GIT_IDENTIFIER $DD_GIT_IDENTIFIER
+module load IMAS
 . $common_dir/35_build_imaspy.sh
 . $common_dir/36_install_imaspy.sh
 . $common_dir/80_build_docs.sh

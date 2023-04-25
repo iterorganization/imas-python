@@ -11,6 +11,7 @@ from packaging.version import Version as V
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
+from imaspy.ids_defs import needs_imas
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure, get_coordinates
 from imaspy.setup_logging import root_logger as logger
@@ -90,10 +91,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             # Convert IDS type on set time. Never try this for hidden attributes!
             if list_idx in self.value:
                 struct = self.value[list_idx]
-                try:
-                    struct.value = value
-                except Exception as ee:
-                    raise ee
+                struct.value = value
         self.value[list_idx] = value
 
     def __iter__(self):
@@ -113,7 +111,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             # Just blindly append for now
             # TODO: Maybe check if user is not trying to append weird elements
             if self.metadata.maxoccur and len(self.value) >= self.metadata.maxoccur:
-                raise ValueError(
+                raise RuntimeError(
                     "Maxoccur is set to %s for %s, not adding %s"
                     % (
                         self.metadata.maxoccur,
@@ -173,6 +171,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             )
         )
 
+    @needs_imas
     def get(self, parentCtx, homogeneousTime):
         """Get data from UAL backend storage format and overwrite data in node
 
@@ -207,14 +206,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             context_store.pop(aosCtx)
             self._ull.ual_end_action(aosCtx)
 
-    def getRelCTXPath(self, ctx):
-        """Get the path relative to given context from an absolute path"""
-        if self._path.startswith(context_store[ctx]):
-            rel_path = self._path[len(context_store[ctx]) + 1 :]
-        else:
-            raise Exception("Could not strip context from absolute path")
-        return rel_path
-
+    @needs_imas
     def put(self, parentCtx, homogeneousTime, **kwargs):
         """Put data into UAL backend storage format
 

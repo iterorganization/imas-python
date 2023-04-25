@@ -15,20 +15,17 @@ import numpy as np
 from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.ids_defs import DD_TYPES
+from imaspy.ids_defs import (
+    DD_TYPES,
+    CHAR_DATA,
+    DOUBLE_DATA,
+    INTEGER_DATA,
+    COMPLEX_DATA,
+    ids_type_to_default,
+    hli_utils,
+    needs_imas,
+)
 from imaspy.ids_mixin import IDSMixin
-
-try:
-    from imaspy.ids_defs import (
-        CHAR_DATA,
-        DOUBLE_DATA,
-        INTEGER_DATA,
-        COMPLEX_DATA,
-        hli_utils,
-        ids_type_to_default,
-    )
-except ImportError:
-    logger.critical("IMAS could not be imported. UAL not available!")
 
 
 class IDSPrimitive(IDSMixin):
@@ -77,7 +74,7 @@ class IDSPrimitive(IDSMixin):
         )
 
         if ids_type != "STR" and ndims != 0 and self.__class__ == IDSPrimitive:
-            raise Exception(
+            raise ValueError(
                 "{!s} should be 0D! Got ndims={:d}. "
                 "Instantiate using IDSNumericArray instead".format(
                     self.__class__, ndims
@@ -172,21 +169,28 @@ class IDSPrimitive(IDSMixin):
                         ]
                     )
             else:
-                logger.critical(
-                    "Unknown numpy type %s, cannot convert from python to IDS type",
-                    value.dtype,
+                raise TypeError(
+                    "Unknown numpy type %s, cannot convert from python to IDS type"
+                    % (value.dtype,)
                 )
-                raise Exception
         else:
-            logger.critical(
-                "Unknown python type %s, cannot convert from python to IDS type",
-                type(value),
+            raise TypeError(
+                "Unknown python type %s, cannot convert from python to IDS type"
+                % (type(value),)
             )
-            raise Exception
         return value
 
     @staticmethod
     def parse_data(name, ndims, write_type, value):
+        """ Parse IDS information to generate a IMASPy data structure.
+
+
+        Args:
+            name: The name of the IDS node, e.g. b0_error_upper
+            ndims: Dimensionality of the given data
+            write_type: Type as defined in the IDS or backend, e.g. FLT
+            value: The value of the data saved in IMASPy
+        """
         # Convert imaspy ids_type to ual scalar_type
         if write_type == "INT":
             scalar_type = 1
@@ -207,7 +211,7 @@ class IDSPrimitive(IDSMixin):
         elif write_type in ["INT", "FLT", "CPX"]:
             # Arrays will be converted by isTypeValid
             if not hli_utils.HLIUtils.isTypeValid(value, name, "NP_ARRAY"):
-                raise Exception
+                raise RuntimeError(f"Value {value} not valid for field {name}")
             data = value
         else:
             # TODO: convert data on write time here
@@ -233,6 +237,7 @@ class IDSPrimitive(IDSMixin):
             return True
         return False
 
+    @needs_imas
     def put(self, ctx, homogeneousTime, **kwargs):
         """Put data into UAL backend storage format
 
@@ -240,7 +245,9 @@ class IDSPrimitive(IDSMixin):
         Tries to dynamically build all needed information for the UAL.
         """
         if self._name is None:
-            raise Exception("Location in tree undefined, cannot put in database")
+            raise RuntimeError("_name attribute not defined."
+                               " Cannot put in database as location in "
+                               "tree can not be determined")
         if "types" in kwargs:
             if self._var_type not in kwargs["types"]:
                 logger.debug(
@@ -277,6 +284,7 @@ class IDSPrimitive(IDSMixin):
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self._name))
 
+    @needs_imas
     def get(self, ctx, homogeneousTime):
         """Get data from UAL backend storage format
 

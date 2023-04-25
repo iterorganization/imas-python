@@ -50,18 +50,9 @@ class IDSMixin:
         self._backend_name = None
         self.metadata = IDSMetadata(structure_xml=self._structure_xml)
 
-    def getRelCTXPath(self, ctx):
+    def getRelCTXPath(self, ctx: int) -> str:
         """Get the path relative to given context from an absolute path"""
-        # This could be replaced with the fullPath() method provided by the LL-UAL
-        if self._path.startswith(context_store[ctx]):
-            # strip the context path as well as any numeric indices
-            # (those are handled by the context store)
-            return self._path[len(context_store[ctx]) :].lstrip("/0123456789")
-        else:
-            raise Exception(
-                "Could not strip context from absolute path {!s}, "
-                "ctx: {!s}, store: {!s}".format(self._path, ctx, context_store)
-            )
+        return context_store.strip_context(self._path, ctx)
 
     def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):
         strTimeBasePath = ""
@@ -157,7 +148,7 @@ class IDSMixin:
         try:
             return self._parent._ull
         except AttributeError as ee:
-            raise Exception("ULL directly connected to %s", self) from ee
+            raise RuntimeError("ULL directly connected to %s", self) from ee
 
     def __getstate__(self):
         """Override getstate so _ull is not passed along. Otherwise we have
@@ -202,7 +193,8 @@ class IDSMixin:
 
         if homogeneousTime is None:
             raise ValueError(
-                "Homogeneous_Time not specified or not called from toplevel"
+                "homogeneous_time is not specified in ids_properties nor given"
+                " as keyword argument"
             )
 
         if homogeneousTime != IDS_TIME_MODE_HOMOGENEOUS:
