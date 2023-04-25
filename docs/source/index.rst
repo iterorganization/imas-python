@@ -31,7 +31,6 @@ It provides:
    intro
    api_overview
    mdsplus
-   developing
 
 
 README
