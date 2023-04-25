@@ -92,4 +92,4 @@ RUN cd /root/access-layer/pythoninterface/package/ && \
 #RUN git clone https://gitlab.com/klimex/imaspy.git && \
     #pip install -e imaspy[backends_xarray,test]
 ADD imaspy/ /root/imaspy
-RUN pip install -e imaspy[backends_al,backends_xarray,test]
+RUN pip install -e imaspy[test]

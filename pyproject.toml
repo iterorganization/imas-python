@@ -64,10 +64,7 @@ dependencies = [
 [project.optional-dependencies]
 # these self-dependencies are available since pip 21.2
 all = [
-    "imaspy[test,docs,backends_al,examples]"
-]
-backends_al = [
-    "imas",
+    "imaspy[test,docs]"
 ]
 docs = [
     "sphinx>=3.2.1,!=4.1.0",
@@ -76,9 +73,6 @@ docs = [
     "sphinx-autosummary-accessors>=0.1.2",
     "sphinx-autodoc-typehints>=1.1.1",
     "sphinxcontrib.mermaid>=0.8"
-]
-examples = [
-    "imas",
 ]
 test = [
     "pytest>=5.4.1",
