@@ -24,7 +24,7 @@ be outdated.
 
     If you have an IMASPy install without the IMAS Access Layer, importing
     IMASPy will display an error message. You can still use IMASPy, but not all
-    functionality is available.
+    functionalities are available.
 
 
 Create and use an IDS
