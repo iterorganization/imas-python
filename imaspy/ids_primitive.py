@@ -182,7 +182,7 @@ class IDSPrimitive(IDSMixin):
 
     @staticmethod
     def parse_data(name, ndims, write_type, value):
-        """ Parse IDS information to generate a IMASPy data structure.
+        """Parse IDS information to generate a IMASPy data structure.
 
 
         Args:
@@ -228,9 +228,7 @@ class IDSPrimitive(IDSMixin):
         # Do not write if data is the same as the default of the leaf node
         # TODO: set default of backend xml instead
         if isinstance(data, (list, np.ndarray)):
-            if len(data) == 0 or np.array_equal(
-                np.asarray(data), np.asarray(default)
-            ):
+            if len(data) == 0 or np.array_equal(np.asarray(data), np.asarray(default)):
                 return True
             # we need the extra asarray to convert the list back to an np ndarray
         elif data == default:
@@ -245,9 +243,11 @@ class IDSPrimitive(IDSMixin):
         Tries to dynamically build all needed information for the UAL.
         """
         if self._name is None:
-            raise RuntimeError("_name attribute not defined."
-                               " Cannot put in database as location in "
-                               "tree can not be determined")
+            raise RuntimeError(
+                "_name attribute not defined."
+                " Cannot put in database as location in "
+                "tree can not be determined"
+            )
         if "types" in kwargs:
             if self._var_type not in kwargs["types"]:
                 logger.debug(
@@ -464,7 +464,13 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
         if type(result) is tuple:
             # multiple return values
             return tuple(
-                type(self)(self._name, self._ids_type, self._ndims, value=x)
+                type(self)(
+                    self._name,
+                    self._ids_type,
+                    self._ndims,
+                    value=x,
+                    structure_xml=self._structure_xml,
+                )
                 for x in result
             )
         elif method == "at":
@@ -472,7 +478,13 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
             return None
         else:
             # one return value
-            return type(self)(self._name, self._ids_type, self._ndims, value=result)
+            return type(self)(
+                self._name,
+                self._ids_type,
+                self._ndims,
+                value=result,
+                structure_xml=self._structure_xml,
+            )
 
     def resize(self, new_shape):
         """Resize underlying data
