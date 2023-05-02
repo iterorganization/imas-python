@@ -242,24 +242,18 @@ class IDSPrimitive(IDSMixin):
         Does minor sanity checking before calling the cython backend.
         Tries to dynamically build all needed information for the UAL.
         """
-        if self._name is None:
-            raise RuntimeError(
-                "_name attribute not defined."
-                " Cannot put in database as location in "
-                "tree can not be determined"
-            )
         if "types" in kwargs:
             if self._var_type not in kwargs["types"]:
                 logger.debug(
                     "Skipping write of %s because var_type %s not in %s",
-                    self._name,
+                    self.metadata.name,
                     self._var_type,
                     kwargs["types"],
                 )
                 return
         write_type = self._backend_type or self._ids_type
         ndims = self._backend_ndims or self._ndims
-        data = self.parse_data(self._name, ndims, write_type, self.value)
+        data = self.parse_data(self.metadata.name, ndims, write_type, self.value)
 
         if self.data_is_default(data, self._default):
             return
@@ -282,7 +276,7 @@ class IDSPrimitive(IDSMixin):
             ctx, rel_path, strTimeBasePath, data, dataType=write_type, dim=ndims
         )
         if status != 0:
-            raise ALException('Error writing field "{!s}"'.format(self._name))
+            raise ALException('Error writing field "{!s}"'.format(self.metadata.name))
 
     @needs_imas
     def get(self, ctx, homogeneousTime):
@@ -338,7 +332,7 @@ class IDSPrimitive(IDSMixin):
         else:
             logger.critical(
                 "Unknown type {!s} ndims {!s} of field {!s}, skipping for now".format(
-                    read_type, ndims, self._name
+                    read_type, ndims, self.metadata.name
                 )
             )
             status = data = None
@@ -389,7 +383,7 @@ class IDSPrimitive(IDSMixin):
             self._backend_ndims = None
 
         # only set backend name if different from name
-        if xml_child.get("name") != self._name:
+        if xml_child.get("name") != self.metadata.name:
             self._backend_name = xml_child.get("name")
         else:
             self._backend_name = None
@@ -397,7 +391,7 @@ class IDSPrimitive(IDSMixin):
         if self._backend_name:
             logger.info(
                 "Setting up mapping from %s (mem) to %s (file)",
-                self._name,
+                self.metadata.name,
                 self._path,
             )
 
@@ -465,7 +459,7 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
             # multiple return values
             return tuple(
                 type(self)(
-                    self._name,
+                    self.metadata.name,
                     self._ids_type,
                     self._ndims,
                     value=x,
@@ -479,7 +473,7 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
         else:
             # one return value
             return type(self)(
-                self._name,
+                self.metadata.name,
                 self._ids_type,
                 self._ndims,
                 value=result,

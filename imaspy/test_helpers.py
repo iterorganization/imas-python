@@ -91,7 +91,7 @@ def fill_with_random_data(structure, max_children=3):
 def compare_children(st1, st2, _ascii_empty_array_skip=False):
     """Perform a deep compare of two structures using asserts."""
     for child1, child2 in zip(st1, st2):
-        assert child1._name == child2._name
+        assert child1.metadata.name == child2.metadata.name
         assert type(child1) == type(child2)
 
         if type(child1) in [IDSStructure, IDSToplevel, IDSRoot]:

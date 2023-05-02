@@ -7,13 +7,11 @@ This contains references to :py:class:`IDSStructure`s
 """
 
 
-from packaging.version import Version as V
-
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_defs import needs_imas
 from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_structure import IDSStructure, get_coordinates
+from imaspy.ids_structure import IDSStructure
 from imaspy.setup_logging import root_logger as logger
 
 
@@ -70,7 +68,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
     @property
     def _element_structure(self):
         """Prepare an element structure JIT"""
-        struct = IDSStructure(self, self._name + "_el", self._structure_xml)
+        struct = IDSStructure(self, self.metadata.name + "_el", self._structure_xml)
         return struct
 
     def __setattr__(self, key, value):
@@ -221,7 +219,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         if status != 0 or aosCtx < 0:
             raise ALException(
                 'ERROR: ual_begin_arraystruct_action failed for "{!s}"'.format(
-                    self._name
+                    self.metadata.name
                 ),
                 status,
             )
@@ -239,7 +237,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             if status != 0:
                 raise ALException(
                     'ERROR: ual_iterate_over_arraystruct failed for "{!s}"'.format(
-                        self._name
+                        self.metadata.name
                     ),
                     status,
                 )
@@ -248,7 +246,8 @@ class IDSStructArray(IDSStructure, IDSMixin):
         context_store.pop(aosCtx)
         if status != 0:
             raise ALException(
-                'ERROR: ual_end_action failed for "{!s}"'.format(self._name), status
+                'ERROR: ual_end_action failed for "{!s}"'.format(self.metadata.name),
+                status,
             )
 
     def set_backend_properties(self, structure_xml):
