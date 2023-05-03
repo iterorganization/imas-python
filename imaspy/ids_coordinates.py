@@ -4,10 +4,15 @@
 """
 
 import logging
-from typing import Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Union
+
+import numpy as np
 
 from imaspy.ids_path import IDSPath
 
+if TYPE_CHECKING:  # Prevent circular imports
+    from imaspy.ids_mixin import IDSMixin
+    from imaspy.ids_primitive import IDSPrimitive
 
 logger = logging.getLogger(__name__)
 
@@ -74,3 +79,61 @@ class IDSCoordinate:
     def __hash__(self) -> int:
         """IDSCoordinate objects are immutable, we can be used e.g. as dict key."""
         return hash(self._coordinate_spec)
+
+
+class IDSCoordinates:
+    """Class representing coordinates of an IDSMixin.
+
+    Can be used to automatically retrieve coordinate values.
+    """
+
+    def __init__(self, mixin: "IDSMixin") -> None:
+        self._mixin = mixin
+
+    def __len__(self) -> int:
+        """Number of coordinates is equal to the dimension of the bound IDSMixin."""
+        return self._mixin.metadata.ndim
+
+    def __getitem__(self, key: int) -> Union["IDSPrimitive", np.ndarray]:
+        """Get the coordinate of the given dimension.
+
+        When the coordinate is an index (e.g. 1...N) this will return an numpy arange
+        with the same size as the data currently has in that dimension.
+
+        When one coordinate path is defined in the DD, the corresponding IDSPrimitive
+        object is returned.
+
+        When multiple coordinate paths are defined, the one that is set is returned. A
+        ValueError is raised when multiple or none are defined.1
+        """
+        coordinate = self._mixin.metadata.coordinates[key]
+        if not coordinate.references:
+            return np.arange(self._mixin.value.shape[key])
+        if not coordinate.has_alternatives:
+            return coordinate.references[0].goto(self._mixin)
+        refs = [ref.goto(self._mixin) for ref in coordinate.references]
+        ref_is_defined = [len(ref.value) > 0 for ref in refs]
+        if sum(ref_is_defined) == 0:
+            if coordinate.max_size is not None:
+                # alternatively we can be an index
+                return np.arange(self._mixin.value.shape[key])
+            raise RuntimeError(
+                "Cannot get coordinate: none of the alternative coordinate options "
+                f"{coordinate.references} are set."
+            )
+        if sum(ref_is_defined) == 1:
+            for i in range(len(refs)):
+                if ref_is_defined[i]:
+                    return refs[i]
+        raise RuntimeError(
+            "Cannot get coordinate: multiple alternative coordinate options are set."
+        )
+
+    @property
+    def time_index(self) -> Optional[int]:
+        """Get the index of the time coordinate, or None if there is no time coordinate.
+        """
+        for i, coor in enumerate(self._mixin.metadata.coordinates):
+            if coor.is_time_coordinate:
+                return i
+        return None

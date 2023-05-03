@@ -14,6 +14,7 @@ except ImportError:
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
+from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.setup_logging import root_logger as logger
 
@@ -29,79 +30,36 @@ class IDSMixin:
     """The base class which unifies properties of structure, struct_array, toplevel, root
     and primitive nodes (IDSPrimitive and IDSNumericArray)"""
 
-    def __init__(self, parent, name, coordinates=None, structure_xml=None):
+    def __init__(self, parent, structure_xml):
         """Setup basic properties for a tree node (leaf or non-leaf) such as
         name, _parent, _backend_name etc."""
         self._parent = parent
-
-        self._coordinates = coordinates
-
-        # As we cannot restore the parent from just a string, save a reference
-        # to the parent. Take care when (deep)copying this!
         self._structure_xml = structure_xml
-        if structure_xml and self._coordinates is None:
-            self._coordinates = get_coordinates(structure_xml)
-
-        self._last_backend_xml_hash = None
+        self.metadata = IDSMetadata(structure_xml=self._structure_xml)
+        self.coordinates = IDSCoordinates(self)
 
         self._last_backend_xml_hash = None
         self._backend_name = None
-        self.metadata = IDSMetadata(structure_xml=self._structure_xml)
 
     def getRelCTXPath(self, ctx: int) -> str:
         """Get the path relative to given context from an absolute path"""
         return context_store.strip_context(self._path, ctx)
 
     def getTimeBasePath(self, homogeneousTime, ignore_nbc_change=1):
-        strTimeBasePath = ""
-        # Grab timebasepath from the coordinates.
-        # TODO: In some cases the timebasepath is stored in the XML directly.
-        #       What has priority in case it conflicts? Regardless, this is not
-        #       handled by imaspy atm
-        if self._coordinates != {}:
-            if (
-                self._coordinates["coordinate1"].endswith("time")
-                and "coordinate2" not in self._coordinates
-            ):
-                # Should Walk up the tree
-                # Just stupid copy for now
-                # strTimeBasePath = self._coordinates['coordinate1']
-                try:  # see if we can get a value out of the thing
-                    homogeneousTime = homogeneousTime.value
-                except AttributeError:
-                    pass
-                if homogeneousTime == IDS_TIME_MODE_HOMOGENEOUS:
-                    strTimeBasePath = "/time"
-                elif homogeneousTime == IDS_TIME_MODE_HETEROGENEOUS:
-                    strTimeBasePath = self.getAOSPath(ignore_nbc_change) + "/time"
-                else:
-                    raise ALException(
-                        "Unexpected call to function getTimeBasePath(cls, homogeneousTime) \
-                        with undefined homogeneous time. {!s}".format(
-                            homogeneousTime
-                        )
-                    )
-                pass
-            elif (
-                self._coordinates["coordinate1"] == "1...N"
-                and "coordinate2" not in self._coordinates
-            ):
-                # If variable only depends on 1...N, no timebasepath
-                pass
-            else:
-                # Seems like the python HLI gives an empty time base path in this case
-                # replicate this behaviour:
-                return ""  # TODO: further investigate this.
-
-        # any time fields march by their own drum
-        # problems occur when a timebasepath is set for subfields (even if it is just 'time')
-        # also, problems occur (with time slicing) when there is no timebasepath
-        # of /time for the field /time
-        # (n.b. the path contains /equilibrium/ for instance, but we need /time since
-        # it is in this context)
+        if any(coordinate.is_time_coordinate for coordinate in self.metadata.coordinates):
+            if homogeneousTime == IDS_TIME_MODE_HOMOGENEOUS:
+                return "/time"
+            if homogeneousTime == IDS_TIME_MODE_HETEROGENEOUS:
+                # TODO: this probably doesn't work, but heterogeneous time mode is not
+                # tested at all...
+                return self.getAOSPath(ignore_nbc_change) + "/time"
+            raise ALException(
+                "Unexpected call to function getTimeBasePath(cls, homogeneousTime) "
+                f"with undefined homogeneous time. {homogeneousTime}"
+            )
         if self.metadata.name == "time" and self.depth == 1:
             return "/time"
-        return strTimeBasePath
+        return ""
 
     def getAOSPath(self, ignore_nbc_change=1):
         # TODO: Fix in case it gives trouble
@@ -203,7 +161,6 @@ class IDSMixin:
             )
 
         # we need to import here to avoid circular dependencies
-        from imaspy.ids_primitive import IDSPrimitive
         from imaspy.ids_toplevel import IDSToplevel
 
         def visitor(el):
@@ -244,16 +201,7 @@ class IDSMixin:
     @cached_property
     def time_axis(self):
         """Return the time axis for this node (None if no time dependence)"""
-        if self._coordinates != {}:
-            for ii in range(7):
-                # TODO: this could be nicer
-                try:
-                    if self._coordinates["coordinate%s" % (ii + 1,)].endswith("time"):
-                        return ii
-                except KeyError:
-                    return None
-        else:
-            return None
+        return self.coordinates.time_index
 
     def set_backend_properties(self, structure_xml):
         """Walk existing children to match those in structure_xml, then
@@ -298,30 +246,3 @@ class IDSMixin:
         self._backend_name = structure_xml.attrib["name"]
 
         return up, False
-
-
-# TODO: cythonize this?
-def get_coordinates(el):
-    """Given an XML element, extract the coordinate attributes from el.attrib"""
-    coords = {}
-    if "coordinate1" in el.attrib:
-        coords["coordinate1"] = el.attrib["coordinate1"]
-        if "coordinate2" in el.attrib:
-            coords["coordinate2"] = el.attrib["coordinate2"]
-            if "coordinate3" in el.attrib:
-                coords["coordinate3"] = el.attrib["coordinate3"]
-                if "coordinate4" in el.attrib:
-                    coords["coordinate4"] = el.attrib["coordinate4"]
-                    if "coordinate5" in el.attrib:
-                        coords["coordinate5"] = el.attrib["coordinate5"]
-                        if "coordinate6" in el.attrib:
-                            coords["coordinate6"] = el.attrib["coordinate6"]
-    return coords
-
-    # This is ugly code, but it is around 3.5x faster than the below!
-    # for dim in range(1, 6):
-    # key = "coordinate" + str(dim)
-    # if key in el.attrib:
-    # coords[key] = el.attrib[key]
-    # else:
-    # break

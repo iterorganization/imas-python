@@ -1,4 +1,5 @@
 from imaspy.ids_path import IDSPath
+from imaspy.ids_root import IDSRoot
 
 import pytest
 
@@ -85,8 +86,58 @@ def test_path_time():
         "nor are spaces",
         "or.periods",
         "or_commas,",
+        "unmatched(parentheses()",
+        "unmatched)(parentheses",
     ],
 )
 def test_invalid_paths(path):
     with pytest.raises(ValueError):
         IDSPath(path)
+
+
+def test_path_goto(fake_toplevel_xml):
+    ids = IDSRoot(xml_path=fake_toplevel_xml).gyrokinetics
+
+    version_put_path = IDSPath("ids_properties/version_put")
+    assert version_put_path.goto(ids) is ids.ids_properties.version_put
+
+    ids.wavevector.resize(2)
+    ids.wavevector[0].eigenmode.resize(2)
+
+    ids.wavevector[0].eigenmode[0].growth_rate_norm = 1.23
+    growth_rate_norm_path = IDSPath("wavevector(i1)/eigenmode(i2)/growth_rate_norm")
+    # We cannot address this path from the root (because of the dummy 'i1' and 'i2'):
+    with pytest.raises(ValueError):
+        growth_rate_norm_path.goto(ids)
+    # But we can when there is a common parent
+    assert (
+        growth_rate_norm_path.goto(ids.wavevector[0].eigenmode[0].frequency_norm)
+        is ids.wavevector[0].eigenmode[0].growth_rate_norm
+    )
+    # One common parent (of the two) is not enough
+    with pytest.raises(ValueError):
+        growth_rate_norm_path.goto(ids.wavevector[0])
+
+    # With explicit (1-based) indices we can resolve from ids
+    growth_rate_norm_path2 = IDSPath("wavevector(1)/eigenmode(1)/growth_rate_norm")
+    assert (
+        growth_rate_norm_path2.goto(ids)
+        is ids.wavevector[0].eigenmode[0].growth_rate_norm
+    )
+
+    radial_component_norm_path = IDSPath("wavevector(i1)/radial_component_norm")
+    assert (
+        radial_component_norm_path.goto(ids.wavevector[0].eigenmode[0].frequency_norm)
+        is ids.wavevector[0].radial_component_norm
+    )
+
+    # Use homogeneous_time (the only INT_0D in this fake IDS) as an indirect index
+    ids.ids_properties.homogeneous_time = 1
+    indirect_path = IDSPath("wavevector(ids_properties/homogeneous_time)")
+    assert indirect_path.goto(ids) is ids.wavevector[0]
+    ids.ids_properties.homogeneous_time = 2
+    assert indirect_path.goto(ids) is ids.wavevector[1]
+
+    # But it's not allowed to use a non INT_0D as indirect index
+    with pytest.raises(ValueError):
+        IDSPath("wavevector(ids_properties/comment)").goto(ids)

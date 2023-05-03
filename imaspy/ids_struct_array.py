@@ -36,7 +36,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
     def getBackendInfo(parentCtx, index, homogeneousTime):  # Is this specific?
         raise NotImplementedError("getBackendInfo(parentCtx, index, homogeneousTime)")
 
-    def __init__(self, parent, name, structure_xml, base_path_in="element"):
+    def __init__(self, parent, structure_xml, base_path_in="element"):
         """Initialize IDSStructArray from XML specification
 
         Args:
@@ -48,7 +48,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
                 an instance of `xml.etree.ElementTree.Element`
             base_path_in: Not implemented yet
         """
-        super().__init__(parent, name, structure_xml)
+        super().__init__(parent, structure_xml)
 
         self._base_path = base_path_in
         self._convert_ids_types = False
@@ -68,7 +68,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
     @property
     def _element_structure(self):
         """Prepare an element structure JIT"""
-        struct = IDSStructure(self, self.metadata.name + "_el", self._structure_xml)
+        struct = IDSStructure(self, self._structure_xml)
         return struct
 
     def __setattr__(self, key, value):

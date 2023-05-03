@@ -187,7 +187,6 @@ class IDSRoot:
                     key,
                     IDSToplevel(
                         self,
-                        key,
                         ids,
                         backend_version=self._backend_version,
                         backend_xml_path=self._backend_xml_path,
