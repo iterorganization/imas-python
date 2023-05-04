@@ -313,7 +313,7 @@ class IDSRoot:
                 )
 
             # ensure presence of model dir
-            ensure_data_dir(str(user), tokamak, version)
+            ensure_data_dir(str(user), tokamak, version, self.run)
 
         # TODO: add more
         backend_names = {

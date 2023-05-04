@@ -325,18 +325,18 @@ def jTraverser_jar() -> Path:
         raise RuntimeError("jTraverser.jar not found, cannot build MDSPlus models.")
 
 
-def ensure_data_dir(user: str, tokamak: str, version: str) -> None:
+def ensure_data_dir(user: str, tokamak: str, version: str, run: int) -> None:
     """Ensure that a data dir exists with a similar algorithm that
     the MDSplus backend uses to set the data path.
     See also mdsplus_backend.cpp:751 (setDataEnv)"""
     if user == "public":
-        dir = Path(os.environ["IMAS_HOME"]) / "shared" / "imasdb" / tokamak / version
+        dbdir = Path(os.environ["IMAS_HOME"]) / "shared" / "imasdb" / tokamak / version
     elif user[0] == "/":
-        dir = Path(user) / tokamak / version
+        dbdir = Path(user) / tokamak / version
     else:
-        dir = Path.home() / "public" / "imasdb" / tokamak / version
+        dbdir = Path.home() / "public" / "imasdb" / tokamak / version
 
-    for index in range(10):
-        # this is a bit brute force. We could also calculate the index from
-        # the run number. But it's only 10 directories...
-        (dir / str(index)).mkdir(parents=True, exist_ok=True)
+    # Check subfolder based on run
+    assert 0 <= run <= 99_999
+    index = run // 10_000
+    (dbdir / str(index)).mkdir(parents=True, exist_ok=True)
