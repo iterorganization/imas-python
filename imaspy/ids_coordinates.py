@@ -4,7 +4,7 @@
 """
 
 import logging
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -37,8 +37,12 @@ class IDSCoordinate:
     """
 
     _init_done = False
+    _cache: Dict[str, "IDSCoordinate"] = {}
 
-    def __init__(self, coordinate_spec: str) -> None:
+    def __new__(cls, coordinate_spec: str) -> "IDSCoordinate":
+        if coordinate_spec in cls._cache:
+            return cls._cache[coordinate_spec]
+        self = super().__new__(cls)
         self._coordinate_spec = coordinate_spec
         self.max_size: Optional[int] = None
 
@@ -67,6 +71,8 @@ class IDSCoordinate:
         self.has_alternatives = num_rules > 1
         self.is_time_coordinate = any(ref.is_time_path for ref in self.references)
         self._init_done = True
+        cls._cache[coordinate_spec] = self
+        return self
 
     def __setattr__(self, name: str, value: Any) -> None:
         if self._init_done:

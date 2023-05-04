@@ -4,6 +4,12 @@ from imaspy.ids_root import IDSRoot
 import pytest
 
 
+def test_path_cache():
+    path = IDSPath("uniq")
+    path2 = IDSPath("uniq")
+    assert path is path2
+
+
 def test_empty_path():
     path = IDSPath("")
     assert path.parts == ()

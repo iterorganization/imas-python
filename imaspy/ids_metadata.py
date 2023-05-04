@@ -3,7 +3,7 @@
 """ Core of the IMASPy interpreted IDS metadata
 """
 from enum import Enum
-from typing import Optional, Any, Tuple
+from typing import Optional, Any, Dict, Tuple
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_coordinates import IDSCoordinate
@@ -27,7 +27,7 @@ class IDSDataType(Enum):
     """Complex data."""
 
 
-class IDSMetadata(dict):
+class IDSMetadata:
     """Container for IDS Metadata
 
     Metadata is everything saved in the attributes of variables in IDSDef.xml.
@@ -37,8 +37,12 @@ class IDSMetadata(dict):
     """
 
     _init_done = False
+    _cache: Dict[Element, "IDSMetadata"] = {}
 
-    def __init__(self, structure_xml: Element):
+    def __new__(cls, structure_xml: Element):
+        if structure_xml in cls._cache:
+            return cls._cache[structure_xml]
+        self = super().__new__(cls)
         attrib = structure_xml.attrib
 
         # Mandatory attributes
@@ -55,35 +59,30 @@ class IDSMetadata(dict):
         for dim in range(self.ndim):
             coor = f"coordinate{dim + 1}"
             if coor in attrib:
-                self[coor] = coors[dim] = IDSCoordinate(attrib[coor])
+                coors[dim] = IDSCoordinate(attrib[coor])
+                setattr(self, coor, coors[dim])
             if coor + "_same_as" in attrib:
-                self[coor + "_same_as"] = coors_same_as[dim] = IDSCoordinate(
-                    attrib[coor + "_same_as"]
-                )
+                coors_same_as[dim] = IDSCoordinate(attrib[coor + "_same_as"])
+                setattr(self, coor + "_same_as", coors_same_as[dim])
         self.coordinates = tuple(coors)
         self.coordinates_same_as = tuple(coors_same_as)
 
         # Store any remaining attributes from the DD XML
-        for attr_name in set(attrib) - set(self):
-            self[attr_name] = attrib[attr_name]
+        for attr_name in attrib:
+            if not hasattr(self, attr_name):
+                setattr(self, attr_name, attrib[attr_name])
 
-        # For some reason self._init_done = True doesn't work.
-        # Maybe because we are subclassing dict?
-        object.__setattr__(self, "_init_done", True)
+        self._init_done = True
+        cls._cache[structure_xml] = self
+        return self
 
     def __setattr__(self, key: str, value: Any):
-        self[key] = value
-
-    def __setitem__(self, key: Any, value: Any) -> None:
         if self._init_done:
-            raise RuntimeError("Cannot set item: IDSMetadata is read-only.")
-        return super().__setitem__(key, value)
+            raise RuntimeError("Cannot set attribute: IDSMetadata is read-only.")
+        super().__setattr__(key, value)
 
-    def __getattr__(self, key: str):
-        try:
-            return self[key]
-        except KeyError:
-            return super().__getattribute__(key)
+    def __copy__(self):
+        return self  # IDSMetadata is immutable
 
     def __deepcopy__(self, memo: dict):
         return self  # IDSMetadata is immutable

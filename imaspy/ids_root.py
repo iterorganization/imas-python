@@ -9,6 +9,7 @@ Provides the class for an IDS Primitive data type
 
 import importlib
 import os
+from typing import Iterator
 
 try:
     from functools import cached_property
@@ -223,6 +224,10 @@ class IDSRoot:
 
     def __del__(self):
         return 1
+
+    def __iter__(self) -> Iterator[IDSToplevel]:
+        for child in self._children:
+            yield self[child]
 
     def setShot(self, inShot):
         self.shot = inShot

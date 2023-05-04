@@ -5,6 +5,12 @@ import numpy as np
 import pytest
 
 
+def test_coordinate_cache():
+    coordinate = IDSCoordinate("1...N")
+    coordinate2 = IDSCoordinate("1...N")
+    assert coordinate is coordinate2
+
+
 def test_coordinate_index_unbounded():
     coordinate = IDSCoordinate("1...N")
     assert coordinate.max_size is None
@@ -56,6 +62,7 @@ def test_coordinate_with_path_or_size():
 def test_coordinate_invalid(spec, caplog: pytest.LogCaptureFixture):
     with caplog.at_level("DEBUG", "imaspy.ids_coordinates"):
         caplog.clear()
+        IDSCoordinate._cache.pop(spec, None)  # Remove spec from cache (if exists)
         coordinate = IDSCoordinate(spec)
         assert len(caplog.records) == 1
         assert not coordinate.has_validation

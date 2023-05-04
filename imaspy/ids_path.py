@@ -5,7 +5,7 @@
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any, Tuple, Union, List, Iterator
+from typing import TYPE_CHECKING, Any, Tuple, Union, List, Iterator, Dict
 
 if TYPE_CHECKING:  # Prevent circular imports
     from imaspy.ids_mixin import IDSMixin
@@ -117,12 +117,18 @@ class IDSPath:
     """
 
     _init_done = False
+    _cache: Dict[str, "IDSPath"] = {}
 
-    def __init__(self, path: str) -> None:
+    def __new__(cls, path: str) -> "IDSPath":
+        if path in cls._cache:
+            return cls._cache[path]
+        self = super().__new__(cls)
         self._path = path
         self.parts, self.indices = _parse_path(path)
         self.is_time_path = self.parts and self.parts[-1] == "time"
         self._init_done = True
+        cls._cache[path] = self
+        return self
 
     def __setattr__(self, name: str, value: Any) -> None:
         if self._init_done:
