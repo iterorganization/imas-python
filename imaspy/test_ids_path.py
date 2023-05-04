@@ -63,7 +63,9 @@ def test_path_with_slices():
 def test_path_immutable():
     path = IDSPath("")
     with pytest.raises(RuntimeError):
-        path.immutable = True
+        path.some_attr = True
+    with pytest.raises(RuntimeError):
+        path.parts = (1, 2)
 
 
 def test_path_time():

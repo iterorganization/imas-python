@@ -1,3 +1,8 @@
+# This file is part of IMASPy.
+# You should have received IMASPy LICENSE file with this project.
+"""Logic for interpreting coordinates in an IDS
+"""
+
 import logging
 from typing import Any, List, Optional
 
