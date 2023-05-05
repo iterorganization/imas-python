@@ -172,8 +172,8 @@ class IDSStructure(IDSMixin):
                         ]
                         logger.info(
                             "Mapping field %s.%s->%s",
-                            self._name,
-                            child._name,
+                            self.metadata.name,
+                            child.metadata.name,
                             child_name,
                         )
                         # in principle this doesn't have to mean that we have
@@ -187,7 +187,9 @@ class IDSStructure(IDSMixin):
                 # which could have been renamed to the current one, and after
                 # that check the current name.
                 xml_child = structure_xml.find(
-                    "field[@change_nbc_previous_name='{name}']".format(name=child._name)
+                    "field[@change_nbc_previous_name='{name}']".format(
+                        name=child.metadata.name
+                    )
                 )
                 # the renamed field can actually be a path instead of a name
                 # in which case we have the following situation
@@ -210,7 +212,7 @@ class IDSStructure(IDSMixin):
                     try:
                         xml_child = self._parent._backend_structure_xml.find(
                             "field[@change_nbc_previous_name='{pname}/{name}']".format(
-                                pname=self._name, name=child._name
+                                pname=self.metadata.name, name=child.metadata.name
                             )
                         )
                     except AttributeError:
@@ -233,8 +235,8 @@ class IDSStructure(IDSMixin):
                     else:
                         logger.info(
                             "Mapping field %s.%s->%s",
-                            self._name,
-                            child._name,
+                            self.metadata.name,
+                            child.metadata.name,
                             xml_child.attrib["name"],
                         )
 
@@ -250,21 +252,21 @@ class IDSStructure(IDSMixin):
                     logger.warning(
                         "No matching child %s found for %s.%s.",
                         child_name,
-                        self._name,
-                        child._name,
+                        self.metadata.name,
+                        child.metadata.name,
                     )
                 else:
                     if no_backend_structure_xml_found:
                         logger.warning(
                             "Rename not supported for delayed construction of %s.%s",
-                            self._name,
-                            child._name,
+                            self.metadata.name,
+                            child.metadata.name,
                         )
                     logger.warning(
                         "Tried to find renamed field %s for %s.%s but failed, skipping.",
                         child_name,
-                        self._name,
-                        child._name,
+                        self.metadata.name,
+                        child.metadata.name,
                     )
 
             else:
@@ -295,7 +297,7 @@ class IDSStructure(IDSMixin):
         raise NotImplementedError("{!s}.copyValues(ids)".format(self))
 
     def __str__(self):
-        return '%s("%s")' % (type(self).__name__, self._name)
+        return '%s("%s")' % (type(self).__name__, self.metadata.name)
 
     def __getitem__(self, key):
         keyname = str(key)
@@ -339,9 +341,9 @@ class IDSStructure(IDSMixin):
         time = []
         path = None
         if occurrence == 0:
-            path = self._name
+            path = self.metadata.name
         else:
-            path = self._name + "/" + str(occurrence)
+            path = self.metadata.name + "/" + str(occurrence)
 
         status, ctx = self._ull.ual_begin_global_action(self._idx, path, READ_OP)
         if status != 0:
@@ -369,7 +371,9 @@ class IDSStructure(IDSMixin):
         Tries to dynamically build all needed information for the UAL.
         """
         if len(self._children) == 0:
-            logger.warning('Trying to get structure "%s" with 0 children', self._name)
+            logger.warning(
+                'Trying to get structure "%s" with 0 children', self.metadata.name
+            )
         if logger.level <= logging.DEBUG:
             log_string = " " * self.depth + " - % -38s get"
         for child_name in self._children:
@@ -411,7 +415,7 @@ class IDSStructure(IDSMixin):
         if len(self._children) == 0:
             logger.warning(
                 "Trying to put structure {!s} without children to data store".format(
-                    self._name
+                    self.metadata.name
                 )
             )
         for child_name in self._children:
@@ -450,17 +454,15 @@ class IDSStructure(IDSMixin):
                 if status != 0:
                     raise ALException(
                         'ERROR: ual_delete_data failed for "{!s}". Status code {!s}'.format(
-                            rel_path + "/" + child_name
+                            rel_path + "/" + child_name, status
                         ),
-                        status,
                     )
             else:
                 status = child.delete(ctx)
                 if status != 0:
                     raise ALException(
                         'ERROR: delete failed for "{!s}". Status code {!s}'.format(
-                            rel_path + "/" + child_name
+                            rel_path + "/" + child_name, status
                         ),
-                        status,
                     )
         return 0

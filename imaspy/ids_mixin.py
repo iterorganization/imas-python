@@ -14,7 +14,6 @@ except ImportError:
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.ids_defs import DD_TYPES
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.setup_logging import root_logger as logger
 
@@ -33,7 +32,6 @@ class IDSMixin:
     def __init__(self, parent, name, coordinates=None, structure_xml=None):
         """Setup basic properties for a tree node (leaf or non-leaf) such as
         name, _parent, _backend_name etc."""
-        self._name = name
         self._parent = parent
 
         self._coordinates = coordinates
@@ -101,19 +99,19 @@ class IDSMixin:
         # of /time for the field /time
         # (n.b. the path contains /equilibrium/ for instance, but we need /time since
         # it is in this context)
-        if self._name == "time" and self.depth == 1:
+        if self.metadata.name == "time" and self.depth == 1:
             return "/time"
         return strTimeBasePath
 
     def getAOSPath(self, ignore_nbc_change=1):
         # TODO: Fix in case it gives trouble
         # This is probably wrong! Should walk up the tree
-        return self._backend_name or self._name
+        return self._backend_name or self.metadata.name
 
     @cached_property
     def _path(self):
         """Build absolute path from node to root _in backend coordinates_"""
-        my_path = self._backend_name or self._name
+        my_path = self._backend_name or self.metadata.name
         if hasattr(self, "_parent"):
             # these exceptions may be slow. (But cached, so not so bad?)
             try:
@@ -211,7 +209,10 @@ class IDSMixin:
         def visitor(el):
             if not el.has_value:
                 return
-            if getattr(el, "_var_type", None) == "dynamic" and el._name != "time":
+            if (
+                getattr(el, "_var_type", None) == "dynamic"
+                and el.metadata.name != "time"
+            ):
                 # effectively a guard to get only idsPrimitive
                 # TODO: also support time axes as dimension of IDSStructArray
                 if el.time_axis is None:

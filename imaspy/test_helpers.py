@@ -3,7 +3,6 @@ import random
 import string
 
 import numpy as np
-import pytest
 
 import imaspy
 
@@ -44,9 +43,9 @@ def random_data(ids_type, ndims):
             raise NotImplementedError(
                 "Strings of dimension 2 or higher " "are not supported"
             )
-        return np.random.randint(0, 2 ** 31 - 1, size=randdims(ndims))
+        return np.random.randint(0, 2**31 - 1, size=randdims(ndims))
     elif ids_type == "INT":
-        return np.random.randint(0, 2 ** 31 - 1, size=randdims(ndims))
+        return np.random.randint(0, 2**31 - 1, size=randdims(ndims))
     elif ids_type == "FLT":
         return np.random.random_sample(size=randdims(ndims))
     elif ids_type == "CPX":
@@ -61,7 +60,7 @@ def fill_with_random_data(structure, max_children=3):
 
     Sets homogeneous_time to homogeneous _always_.
     TODO: also test other time types
-    
+
     Args:
         structure: IDS object to fill
         max_children: The maximum amount of children to create for IDSStructArrays.
@@ -85,13 +84,15 @@ def fill_with_random_data(structure, max_children=3):
             if child_name == "homogeneous_time":
                 child.value = IDS_TIME_MODE_HOMOGENEOUS
             else:
-                child.value = random_data(child._ids_type, child._ndims)
+                child.value = random_data(
+                    child.metadata.data_type.value, child.metadata.ndim
+                )
 
 
 def compare_children(st1, st2, _ascii_empty_array_skip=False):
     """Perform a deep compare of two structures using asserts."""
     for child1, child2 in zip(st1, st2):
-        assert child1._name == child2._name
+        assert child1.metadata.name == child2.metadata.name
         assert type(child1) == type(child2)
 
         if type(child1) in [IDSStructure, IDSToplevel, IDSRoot]:

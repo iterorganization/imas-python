@@ -22,8 +22,6 @@ from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.dd_zip import dd_etree
-from imaspy.ids_primitive import IDSPrimitive
-from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 
 from imaspy.ids_defs import (
@@ -45,7 +43,7 @@ from imaspy.ids_defs import (
     UNDEFINED_INTERP,
     UNDEFINED_TIME,
     WRITE_OP,
-    needs_imas
+    needs_imas,
 )
 
 
@@ -92,10 +90,14 @@ class IDSToplevel(IDSStructure):
         """
         if xml_path is not None:
             self._backend_xml_path = xml_path
-            logger.info("Generating backend %s from file %s", self._name, xml_path)
+            logger.info(
+                "Generating backend %s from file %s", self.metadata.name, xml_path
+            )
         elif version is not None:
             self._backend_version = version
-            logger.info("Generating backend %s for version %s", self._name, version)
+            logger.info(
+                "Generating backend %s for version %s", self.metadata.name, version
+            )
         else:
             return
         tree = dd_etree(version=version, xml_path=xml_path)
@@ -120,7 +122,7 @@ class IDSToplevel(IDSStructure):
                 logger.warning("No version number found in file %s", xml_path)
 
         self.set_backend_properties(
-            root.find("./*[@name='{name}']".format(name=self._name))
+            root.find("./*[@name='{name}']".format(name=self.metadata.name))
         )
 
     def set_backend_properties(self, structure_xml):
@@ -284,9 +286,9 @@ class IDSToplevel(IDSStructure):
         """
         homogeneousTime = IDS_TIME_MODE_UNKNOWN
         if occurrence == 0:
-            path = self._name
+            path = self.metadata.name
         else:
-            path = self._name + "/" + str(occurrence)
+            path = self.metadata.name + "/" + str(occurrence)
 
         # only read from the backend if it is not defined locally.
         homogeneousTime = self.ids_properties.homogeneous_time.value
@@ -321,7 +323,7 @@ class IDSToplevel(IDSStructure):
     @needs_imas
     def read_data_dictionary_version(self, occurrence):
         data_dictionary_version = ""
-        path = self._name
+        path = self.metadata.name
         if occurrence != 0:
             path += "/" + str(occurrence)
 
@@ -357,14 +359,16 @@ class IDSToplevel(IDSStructure):
         """
         path = None
         if occurrence == 0:
-            path = self._name
+            path = self.metadata.name
         else:
-            path = self._name + "/" + str(occurrence)
+            path = self.metadata.name + "/" + str(occurrence)
 
         homogeneousTime = self.readHomogeneous(occurrence)
         if homogeneousTime not in IDS_TIME_MODES:
             logger.error(
-                "Unknown time mode %s, stop getting of %s", homogeneousTime, self._name
+                "Unknown time mode %s, stop getting of %s",
+                homogeneousTime,
+                self.metadata.name,
             )
             return
 
@@ -399,20 +403,21 @@ class IDSToplevel(IDSStructure):
             if status != 0:
                 raise ALException(
                     "Error calling ual_begin_global_action() for {!s}".format(
-                        self._name
+                        self.metadata.name
                     ),
                     status,
                 )
             context_store[ctx] = context_store[self._idx] + path
 
-        logger.debug("{:53.53s} get".format(self._name))
+        logger.debug("{:53.53s} get".format(self.metadata.name))
         super().get(ctx, homogeneousTime, **kwargs)
 
         status = self._ull.ual_end_action(ctx)
         context_store.pop(ctx)
         if status != 0:
             raise ALException(
-                "Error calling ual_end_action() for {!s}".format(self._name), status
+                "Error calling ual_end_action() for {!s}".format(self.metadata.name),
+                status,
             )
 
     @needs_imas
@@ -485,7 +490,7 @@ class IDSToplevel(IDSStructure):
         if stored_time_mode == IDS_TIME_MODE_UNKNOWN:
             logger.info(
                 "Slice is added to an empty IDS %s, calling PUT instead",
-                self._name,
+                self.metadata.name,
             )
 
             # put only static and constant quantities, and use putSlice below
@@ -500,7 +505,7 @@ class IDSToplevel(IDSStructure):
             # we then have to stop, before we write the slice twice
             return
 
-        path = "/" + self._name
+        path = "/" + self.metadata.name
 
         self._is_slice = True
 
@@ -572,7 +577,7 @@ class IDSToplevel(IDSStructure):
         """
         if path is not None:
             raise NotImplementedError("Explicit paths, implicitly handled by structure")
-        path = "/" + self._name
+        path = "/" + self.metadata.name
 
         if occurrence != 0:
             path += "/" + str(occurrence)
@@ -613,7 +618,7 @@ class IDSToplevel(IDSStructure):
             raise ALException(
                 "Error {!s} calling ual_begin_global_action() for {!s}".format(
                     status,
-                    self._name,
+                    self.metadata.name,
                 )
             )
         context_store[ctx] = path
@@ -624,7 +629,8 @@ class IDSToplevel(IDSStructure):
         status = self._ull.ual_end_action(ctx)
         if status != 0:
             raise ALException(
-                "Error calling ual_end_action() for {!s}".format(self._name), status
+                "Error calling ual_end_action() for {!s}".format(self.metadata.name),
+                status,
             )
 
     def setExpIdx(self, idx):

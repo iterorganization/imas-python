@@ -25,6 +25,7 @@ from imaspy.ids_defs import (
     hli_utils,
     needs_imas,
 )
+from imaspy.ids_metadata import IDSDataType
 from imaspy.ids_mixin import IDSMixin
 
 
@@ -38,8 +39,6 @@ class IDSPrimitive(IDSMixin):
     def __init__(
         self,
         name,
-        ids_type,
-        ndims,
         parent=None,
         value=None,
         coordinates=None,
@@ -51,9 +50,6 @@ class IDSPrimitive(IDSMixin):
         Args:
             name: Name of the leaf node. Will be used in path generation when
                 stored in DB
-            ids_type: String representing the IDS type. Will be used to convert
-                to Python equivalent
-            ndims: Dimensionality of data
             parent: Parent node of this leaf. Can be anything with a _path attribute.
                 Will be used in path generation when stored in DB
             value: Value to fill the leaf with. Can be anything castable by
@@ -73,18 +69,20 @@ class IDSPrimitive(IDSMixin):
             structure_xml=structure_xml,
         )
 
-        if ids_type != "STR" and ndims != 0 and self.__class__ == IDSPrimitive:
+        if (
+            self.metadata.data_type is not IDSDataType.STR
+            and self.metadata.ndim != 0
+            and self.__class__ == IDSPrimitive
+        ):
             raise ValueError(
                 "{!s} should be 0D! Got ndims={:d}. "
                 "Instantiate using IDSNumericArray instead".format(
-                    self.__class__, ndims
+                    self.__class__, self.metadata.ndim
                 )
             )
 
         self.__value = value
-        self._ids_type = ids_type
         self._var_type = var_type
-        self._ndims = ndims
         self._backend_type = None
         self._backend_ndims = None
 
@@ -95,9 +93,10 @@ class IDSPrimitive(IDSMixin):
 
     @property
     def _default(self):
-        if self._ndims == 0:
-            return ids_type_to_default[self._ids_type]
-        return np.full((0,) * self._ndims, ids_type_to_default[self._ids_type])
+        default_value = ids_type_to_default[self.metadata.data_type.value]
+        if self.metadata.ndim == 0:
+            return default_value
+        return np.full((0,) * self.metadata.ndim, default_value)
 
     def __iter__(self):
         return iter([])
@@ -115,8 +114,8 @@ class IDSPrimitive(IDSMixin):
         if isinstance(setter_value, type(self)):
             # No need to cast, just overwrite contained value
             if (
-                setter_value._ids_type == self._ids_type
-                and setter_value._ndims == self._ndims
+                setter_value.metadata.data_type is self.metadata.data_type
+                and setter_value.metadata.ndim == self.metadata.ndim
             ):
                 self.__value = setter_value.value
             # Can we cast the internal value to a valid value?
@@ -131,7 +130,7 @@ class IDSPrimitive(IDSMixin):
         else:
             ref = other
 
-        if self._ndims >= 1:
+        if self.metadata.ndim >= 1:
             return np.array_equal(self.value, ref)
         else:
             return self.value == ref
@@ -142,22 +141,25 @@ class IDSPrimitive(IDSMixin):
             value = np.array(value)
 
         # Cast values to their IDS-python types
-        if self._ids_type == "STR" and self._ndims == 0:
-            value = str(value)
-        elif self._ids_type == "INT" and self._ndims == 0:
-            value = int(value)
-        elif self._ids_type == "FLT" and self._ndims == 0:
-            value = float(value)
-        elif self._ids_type == "CPX" and self._ndims == 0:
-            value = complex(value)
-        elif self._ndims >= 1:
-            if self._ids_type == "FLT":
+        if self.metadata.ndim == 0:
+            if self.metadata.data_type is IDSDataType.STR:
+                value = str(value)
+            elif self.metadata.data_type is IDSDataType.INT:
+                value = int(value)
+            elif self.metadata.data_type is IDSDataType.FLT:
+                value = float(value)
+            elif self.metadata.data_type is IDSDataType.CPX:
+                value = complex(value)
+            else:
+                raise ValueError(f"Invalid data_type: {self.metadata.data_type}")
+        else:  # ndim >= 1
+            if self.metadata.data_type is IDSDataType.FLT:
                 value = np.array(value, dtype=np.float64)
-            elif self._ids_type == "CPX":
+            elif self.metadata.data_type is IDSDataType.CPX:
                 value = np.array(value, dtype=np.complex128)
-            elif self._ids_type == "INT":
+            elif self.metadata.data_type is IDSDataType.INT:
                 value = np.array(value, dtype=np.int64)
-            elif self._ids_type == "STR":
+            elif self.metadata.data_type is IDSDataType.STR:
                 # make sure that all the strings are decoded
                 if isinstance(value, np.ndarray):
                     value = list(
@@ -169,21 +171,12 @@ class IDSPrimitive(IDSMixin):
                         ]
                     )
             else:
-                raise TypeError(
-                    "Unknown numpy type %s, cannot convert from python to IDS type"
-                    % (value.dtype,)
-                )
-        else:
-            raise TypeError(
-                "Unknown python type %s, cannot convert from python to IDS type"
-                % (type(value),)
-            )
+                raise ValueError(f"Invalid data_type: {self.metadata.data_type}")
         return value
 
     @staticmethod
     def parse_data(name, ndims, write_type, value):
-        """ Parse IDS information to generate a IMASPy data structure.
-
+        """Parse IDS information to generate a IMASPy data structure.
 
         Args:
             name: The name of the IDS node, e.g. b0_error_upper
@@ -191,14 +184,6 @@ class IDSPrimitive(IDSMixin):
             write_type: Type as defined in the IDS or backend, e.g. FLT
             value: The value of the data saved in IMASPy
         """
-        # Convert imaspy ids_type to ual scalar_type
-        if write_type == "INT":
-            scalar_type = 1
-        elif write_type == "FLT":
-            scalar_type = 2
-        elif write_type == "CPX":  # TODO: Add CPX to ids_minimal_types.xml
-            scalar_type = 3
-
         # Check sanity of given data
         if write_type in ["INT", "FLT", "CPX"] and ndims == 0:
             # Manually convert value to write_type
@@ -228,9 +213,7 @@ class IDSPrimitive(IDSMixin):
         # Do not write if data is the same as the default of the leaf node
         # TODO: set default of backend xml instead
         if isinstance(data, (list, np.ndarray)):
-            if len(data) == 0 or np.array_equal(
-                np.asarray(data), np.asarray(default)
-            ):
+            if len(data) == 0 or np.array_equal(np.asarray(data), np.asarray(default)):
                 return True
             # we need the extra asarray to convert the list back to an np ndarray
         elif data == default:
@@ -244,22 +227,18 @@ class IDSPrimitive(IDSMixin):
         Does minor sanity checking before calling the cython backend.
         Tries to dynamically build all needed information for the UAL.
         """
-        if self._name is None:
-            raise RuntimeError("_name attribute not defined."
-                               " Cannot put in database as location in "
-                               "tree can not be determined")
         if "types" in kwargs:
             if self._var_type not in kwargs["types"]:
                 logger.debug(
                     "Skipping write of %s because var_type %s not in %s",
-                    self._name,
+                    self.metadata.name,
                     self._var_type,
                     kwargs["types"],
                 )
                 return
-        write_type = self._backend_type or self._ids_type
-        ndims = self._backend_ndims or self._ndims
-        data = self.parse_data(self._name, ndims, write_type, self.value)
+        write_type = self._backend_type or self.metadata.data_type.value
+        ndims = self._backend_ndims or self.metadata.ndim
+        data = self.parse_data(self.metadata.name, ndims, write_type, self.value)
 
         if self.data_is_default(data, self._default):
             return
@@ -282,7 +261,7 @@ class IDSPrimitive(IDSMixin):
             ctx, rel_path, strTimeBasePath, data, dataType=write_type, dim=ndims
         )
         if status != 0:
-            raise ALException('Error writing field "{!s}"'.format(self._name))
+            raise ALException('Error writing field "{!s}"'.format(self.metadata.name))
 
     @needs_imas
     def get(self, ctx, homogeneousTime):
@@ -295,8 +274,8 @@ class IDSPrimitive(IDSMixin):
         # Strip context from absolute path
         strNodePath = self.getRelCTXPath(ctx)
         strTimeBasePath = self.getTimeBasePath(homogeneousTime)
-        read_type = self._backend_type or self._ids_type
-        ndims = self._backend_ndims or self._ndims
+        read_type = self._backend_type or self.metadata.data_type.value
+        ndims = self._backend_ndims or self.metadata.ndim
         # we are not really ready to deal with a change in ndims
 
         if read_type == "STR" and ndims == 0:
@@ -325,20 +304,20 @@ class IDSPrimitive(IDSMixin):
             )
         elif read_type == "FLT" and ndims > 0:
             status, data = self._ull.ual_read_data_array(
-                ctx, strNodePath, strTimeBasePath, DOUBLE_DATA, self._ndims
+                ctx, strNodePath, strTimeBasePath, DOUBLE_DATA, ndims
             )
         elif read_type == "INT" and ndims > 0:
             status, data = self._ull.ual_read_data_array(
-                ctx, strNodePath, strTimeBasePath, INTEGER_DATA, self._ndims
+                ctx, strNodePath, strTimeBasePath, INTEGER_DATA, ndims
             )
         elif read_type == "CPX" and ndims > 0:
             status, data = self._ull.ual_read_data_array(
-                ctx, strNodePath, strTimeBasePath, COMPLEX_DATA, self._ndims
+                ctx, strNodePath, strTimeBasePath, COMPLEX_DATA, ndims
             )
         else:
             logger.critical(
                 "Unknown type {!s} ndims {!s} of field {!s}, skipping for now".format(
-                    read_type, ndims, self._name
+                    read_type, ndims, self.metadata.name
                 )
             )
             status = data = None
@@ -363,7 +342,7 @@ class IDSPrimitive(IDSMixin):
     @property
     def data_type(self):
         """Combine imaspy ids_type and ndims to UAL data_type"""
-        return "{!s}_{!s}D".format(self._ids_type, self._ndims)
+        return "{!s}_{!s}D".format(self.metadata.data_type.value, self.metadata.ndim)
 
     def set_backend_properties(self, xml_child):
         """Set the backend properties on this IDSPrimitive"""
@@ -389,7 +368,7 @@ class IDSPrimitive(IDSMixin):
             self._backend_ndims = None
 
         # only set backend name if different from name
-        if xml_child.get("name") != self._name:
+        if xml_child.get("name") != self.metadata.name:
             self._backend_name = xml_child.get("name")
         else:
             self._backend_name = None
@@ -397,22 +376,22 @@ class IDSPrimitive(IDSMixin):
         if self._backend_name:
             logger.info(
                 "Setting up mapping from %s (mem) to %s (file)",
-                self._name,
+                self.metadata.name,
                 self._path,
             )
 
-        if self._backend_type != self._ids_type:
+        if self._backend_type != self.metadata.data_type.value:
             logger.info(
                 "Setting up conversion at %s, memory=%s, backend=%s",
                 self._path,
-                self._ids_type,
+                self.metadata.data_type.value,
                 self._backend_type,
             )
-        if self._backend_ndims != self._ndims:
+        if self._backend_ndims != self.metadata.ndim:
             logger.error(
                 "Dimensions mismatch at %s, memory=%s, backend=%s",
                 self._path,
-                self._ndims,
+                self.metadata.ndim,
                 self._backend_ndims,
             )
 
@@ -424,14 +403,14 @@ def create_leaf_container(name, data_type, **kwargs):
     ids_type, ndims = DD_TYPES[data_type]
     # legacy support
     if ndims == 0:
-        leaf = IDSPrimitive(name, ids_type, ndims, **kwargs)
+        leaf = IDSPrimitive(name, **kwargs)
     else:
         if ids_type == "STR":
             # Array of strings should behave more like lists
             # this is an assumption on user expectation!
-            leaf = IDSPrimitive(name, ids_type, ndims, **kwargs)
+            leaf = IDSPrimitive(name, **kwargs)
         else:
-            leaf = IDSNumericArray(name, ids_type, ndims, **kwargs)
+            leaf = IDSNumericArray(name, **kwargs)
     return leaf
 
 
@@ -464,7 +443,9 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
         if type(result) is tuple:
             # multiple return values
             return tuple(
-                type(self)(self._name, self._ids_type, self._ndims, value=x)
+                type(self)(
+                    self.metadata.name, value=x, structure_xml=self._structure_xml
+                )
                 for x in result
             )
         elif method == "at":
@@ -472,7 +453,9 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
             return None
         else:
             # one return value
-            return type(self)(self._name, self._ids_type, self._ndims, value=result)
+            return type(self)(
+                self.metadata.name, value=result, structure_xml=self._structure_xml
+            )
 
     def resize(self, new_shape):
         """Resize underlying data

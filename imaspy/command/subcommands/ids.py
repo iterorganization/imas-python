@@ -6,7 +6,6 @@ import logging
 import os.path
 from pathlib import Path
 
-import numpy as np
 from tree_format import format_tree
 import click
 
@@ -31,10 +30,10 @@ def info(name, version, xml_path, paths):
         else:
             ids = open_from_file(file, version=version, xml_path=xml_path)
 
-            if name and ids._name != name:
+            if name and ids.metadata.name != name:
                 ids = ids[name]
 
-            print(ids._name)
+            print(ids.metadata.name)
 
             print(
                 format_tree(
@@ -100,13 +99,13 @@ def convert():
 
 
 def format_node(el):
-    return el._name
+    return el.metadata.name
 
 
 def format_node_value(el):
     if isinstance(el, imaspy.ids_primitive.IDSPrimitive):
-        return "%- 22s%s = %s" % (el._name, "    " * (6 - el.depth), el.value)
-    return el._name
+        return "%- 22s%s = %s" % (el.metadata.name, "    " * (6 - el.depth), el.value)
+    return el.metadata.name
 
 
 def has_value(el):
@@ -155,7 +154,7 @@ def tree():
         else:
             ids = open_from_file(file)
 
-            if args.name and ids._name != args.name:
+            if args.name and ids.metadata.name != args.name:
                 ids = ids[args.name]
 
             try:
