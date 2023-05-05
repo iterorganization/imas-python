@@ -14,7 +14,6 @@ except ImportError:
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.setup_logging import root_logger as logger
 
@@ -36,7 +35,6 @@ class IDSMixin:
         self._parent = parent
         self._structure_xml = structure_xml
         self.metadata = IDSMetadata(structure_xml=self._structure_xml)
-        self.coordinates = IDSCoordinates(self)
 
         self._last_backend_xml_hash = None
         self._backend_name = None

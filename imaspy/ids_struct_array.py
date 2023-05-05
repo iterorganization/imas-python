@@ -9,6 +9,7 @@ This contains references to :py:class:`IDSStructure`s
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
+from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_defs import needs_imas
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure
@@ -49,6 +50,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             base_path_in: Not implemented yet
         """
         super().__init__(parent, structure_xml)
+        self.coordinates = IDSCoordinates(self)
 
         self._base_path = base_path_in
         self._convert_ids_types = False

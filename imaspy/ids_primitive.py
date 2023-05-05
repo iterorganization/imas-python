@@ -15,6 +15,7 @@ import numpy as np
 from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
+from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_defs import (
     DD_TYPES,
     CHAR_DATA,
@@ -61,6 +62,7 @@ class IDSPrimitive(IDSMixin):
         # signature of np.lib.mixins.NDArrayOperatorsMixins __init__ to
         # let IDSNumericArray act as a numpy array
         super().__init__(parent, structure_xml=structure_xml)
+        self.coordinates = IDSCoordinates(self)
 
         if (
             self.metadata.data_type is not IDSDataType.STR
