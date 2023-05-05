@@ -36,13 +36,16 @@ class IDSCoordinate:
         "length" as coordinate, or this dimension must have size one.
     """
 
-    _init_done = False
     _cache: Dict[str, "IDSCoordinate"] = {}
 
     def __new__(cls, coordinate_spec: str) -> "IDSCoordinate":
-        if coordinate_spec in cls._cache:
-            return cls._cache[coordinate_spec]
-        self = super().__new__(cls)
+        if coordinate_spec not in cls._cache:
+            cls._cache[coordinate_spec] = super().__new__(cls)
+        return cls._cache[coordinate_spec]
+
+    def __init__(self, coordinate_spec: str) -> None:
+        if hasattr(self, "_init_done"):
+            return  # Already initialized, __new__ returned from cache
         self._coordinate_spec = coordinate_spec
         self.max_size: Optional[int] = None
 
@@ -66,16 +69,17 @@ class IDSCoordinate:
                         f"Ignoring invalid coordinate specifier {spec}", exc_info=True
                     )
         self.references = tuple(refs)
+
         num_rules = len(self.references) + (self.max_size is not None)
         self.has_validation = num_rules > 0
         self.has_alternatives = num_rules > 1
         self.is_time_coordinate = any(ref.is_time_path for ref in self.references)
-        self._init_done = True
-        cls._cache[coordinate_spec] = self
-        return self
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        if self._init_done:
+        # Prevent accidentally modifying attributes
+        self._init_done = True
+
+    def __setattr__(self, name: str, value: Any):
+        if hasattr(self, "_init_done"):
             raise RuntimeError("Cannot set attribute: IDSCoordinate is read-only.")
         super().__setattr__(name, value)
 

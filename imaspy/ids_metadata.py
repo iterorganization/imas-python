@@ -36,13 +36,16 @@ class IDSMetadata:
     IMASPy.
     """
 
-    _init_done = False
     _cache: Dict[Element, "IDSMetadata"] = {}
 
-    def __new__(cls, structure_xml: Element):
-        if structure_xml in cls._cache:
-            return cls._cache[structure_xml]
-        self = super().__new__(cls)
+    def __new__(cls, structure_xml: Element) -> "IDSMetadata":
+        if structure_xml not in cls._cache:
+            cls._cache[structure_xml] = super().__new__(cls)
+        return cls._cache[structure_xml]
+
+    def __init__(self, structure_xml: Element) -> None:
+        if hasattr(self, "_init_done"):
+            return  # Already initialized, __new__ returned from cache
         attrib = structure_xml.attrib
 
         # Mandatory attributes
@@ -72,14 +75,13 @@ class IDSMetadata:
             if not hasattr(self, attr_name):
                 setattr(self, attr_name, attrib[attr_name])
 
+        # Prevent accidentally modifying attributes
         self._init_done = True
-        cls._cache[structure_xml] = self
-        return self
 
-    def __setattr__(self, key: str, value: Any):
-        if self._init_done:
+    def __setattr__(self, name: str, value: Any):
+        if hasattr(self, "_init_done"):
             raise RuntimeError("Cannot set attribute: IDSMetadata is read-only.")
-        super().__setattr__(key, value)
+        super().__setattr__(name, value)
 
     def __copy__(self):
         return self  # IDSMetadata is immutable

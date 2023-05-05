@@ -83,6 +83,9 @@ def _parse_path(
             path_indices[-1] = int(index)
         elif _slice.fullmatch(index):
             start, stop = index.split(":")
+            # TODO: currently stores (Fortran-style) 1:3 as slice(1, 3), maybe we should
+            # immediately convert it to 0-based Python syntax slice(0, 3). Similarly for
+            # explicit indices like (1)
             path_indices[-1] = slice(
                 int(start) if start else None,
                 int(stop) if stop else None,
@@ -116,22 +119,24 @@ class IDSPath:
       IDSPath as index.
     """
 
-    _init_done = False
     _cache: Dict[str, "IDSPath"] = {}
 
     def __new__(cls, path: str) -> "IDSPath":
-        if path in cls._cache:
-            return cls._cache[path]
-        self = super().__new__(cls)
+        if path not in cls._cache:
+            cls._cache[path] = super().__new__(cls)
+        return cls._cache[path]
+
+    def __init__(self, path: str) -> None:
+        if hasattr(self, "_init_done"):
+            return  # Already initialized, __new__ returned from cache
         self._path = path
         self.parts, self.indices = _parse_path(path)
         self.is_time_path = self.parts and self.parts[-1] == "time"
+        # Prevent accidentally modifying attributes
         self._init_done = True
-        cls._cache[path] = self
-        return self
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        if self._init_done:
+    def __setattr__(self, name: str, value: Any):
+        if hasattr(self, "_init_done"):
             raise RuntimeError("Cannot set attribute: IDSPath is read-only.")
         super().__setattr__(name, value)
 
