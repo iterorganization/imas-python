@@ -107,14 +107,14 @@ class IDSCoordinates:
     def __getitem__(self, key: int) -> Union["IDSPrimitive", np.ndarray]:
         """Get the coordinate of the given dimension.
 
-        When the coordinate is an index (e.g. 1...N) this will return an numpy arange
+        When the coordinate is an index (e.g. 1...N) this will return a numpy arange
         with the same size as the data currently has in that dimension.
 
         When one coordinate path is defined in the DD, the corresponding IDSPrimitive
         object is returned.
 
         When multiple coordinate paths are defined, the one that is set is returned. A
-        ValueError is raised when multiple or none are defined.1
+        ValueError is raised when multiple or none are defined.
         """
         coordinate = self._mixin.metadata.coordinates[key]
         if not coordinate.references:

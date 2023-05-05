@@ -6,6 +6,7 @@ This contains references to :py:class:`IDSStructure`s
 * :py:class:`IDSStructArray`
 """
 
+from xml.etree.ElementTree import Element
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
@@ -37,14 +38,14 @@ class IDSStructArray(IDSStructure, IDSMixin):
     def getBackendInfo(parentCtx, index, homogeneousTime):  # Is this specific?
         raise NotImplementedError("getBackendInfo(parentCtx, index, homogeneousTime)")
 
-    def __init__(self, parent, structure_xml, base_path_in="element"):
+    def __init__(
+        self, parent: IDSMixin, structure_xml: Element, base_path_in="element"
+    ):
         """Initialize IDSStructArray from XML specification
 
         Args:
             parent: Parent structure. Can be anything, but at database write
                 time should be something with a path attribute
-            name: Name of the node itself. Will be used in path generation when
-                stored in DB
             structure_xml: Object describing the structure of the IDS. Usually
                 an instance of `xml.etree.ElementTree.Element`
             base_path_in: Not implemented yet

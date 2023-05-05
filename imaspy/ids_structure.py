@@ -11,6 +11,8 @@ except ImportError:
     from cached_property import cached_property
 
 import logging
+from xml.etree.ElementTree import Element
+
 from packaging.version import Version as V
 
 from imaspy.setup_logging import root_logger as logger
@@ -46,7 +48,7 @@ class IDSStructure(IDSMixin):
 
     # def __copy__(self):
     #    raise NotImplementedError
-    def __init__(self, parent, structure_xml):
+    def __init__(self, parent: IDSMixin, structure_xml: Element):
         """Initialize IDSStructure from XML specification
 
         Initializes in-memory an IDSStructure. The XML should contain
@@ -57,8 +59,6 @@ class IDSStructure(IDSMixin):
         Args:
             parent: Parent structure. Can be anything, but at database write
                 time should be something with a path attribute
-            name: Name of the node itself. Will be used in path generation when
-                stored in DB
             structure_xml: Object describing the structure of the IDS. Usually
                 an instance of `xml.etree.ElementTree.Element`
         """

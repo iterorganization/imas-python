@@ -3,8 +3,9 @@
 
 import copy
 import logging
-from packaging.version import Version as V
+from xml.etree.ElementTree import Element
 
+from packaging.version import Version as V
 import scipy.interpolate
 
 try:
@@ -29,7 +30,7 @@ class IDSMixin:
     """The base class which unifies properties of structure, struct_array, toplevel, root
     and primitive nodes (IDSPrimitive and IDSNumericArray)"""
 
-    def __init__(self, parent, structure_xml):
+    def __init__(self, parent: "IDSMixin", structure_xml: Element):
         """Setup basic properties for a tree node (leaf or non-leaf) such as
         name, _parent, _backend_name etc."""
         self._parent = parent

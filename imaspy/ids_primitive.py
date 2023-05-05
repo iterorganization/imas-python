@@ -9,6 +9,8 @@ Provides the class for an IDS Primitive data type
 
 import logging
 import numbers
+from typing import Any
+from xml.etree.ElementTree import Element
 
 import numpy as np
 
@@ -39,16 +41,14 @@ class IDSPrimitive(IDSMixin):
 
     def __init__(
         self,
-        parent,
-        structure_xml,
-        value=None,
-        var_type="dynamic",
+        parent: IDSMixin,
+        structure_xml: Element,
+        value: Any = None,
+        var_type: str = "dynamic",
     ):
         """Initialize IDSPrimitive
 
         Args:
-            name: Name of the leaf node. Will be used in path generation when
-                stored in DB
             parent: Parent node of this leaf. Can be anything with a _path attribute.
                 Will be used in path generation when stored in DB
             value: Value to fill the leaf with. Can be anything castable by
