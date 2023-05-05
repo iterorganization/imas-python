@@ -32,6 +32,12 @@ It provides:
    api_overview
    mdsplus
 
+.. toctree::
+   :hidden:
+   :caption: IMASPy training courses
+
+   courses/basic_user_training
+
 
 README
 ------
