@@ -3,8 +3,17 @@
 """Logic for interpreting paths to elements in an IDS
 """
 
+import logging
 import re
-from typing import Any, Tuple, Union, List
+from typing import TYPE_CHECKING, Any, Tuple, Union, List, Iterator, Dict
+
+if TYPE_CHECKING:  # Prevent circular imports
+    from imaspy.ids_mixin import IDSMixin
+
+
+logger = logging.getLogger(__name__)
+_IndexType = Union[None, str, int, "IDSPath", slice]
+"""Type of an index in a path."""
 
 
 def _split_on_matching_parens(path: str) -> List[str]:
@@ -47,7 +56,7 @@ _valid_field = re.compile(r"[a-z]([a-z0-9]|_(?!_))*", re.ASCII)
 
 def _parse_path(
     path: str,
-) -> Tuple[Tuple[str, ...], Tuple[Union[str, int, "IDSPath", slice], ...]]:
+) -> Tuple[Tuple[str, ...], Tuple[_IndexType, ...]]:
     """Parse an IDS path into its constituent parts.
 
     Args:
@@ -74,6 +83,9 @@ def _parse_path(
             path_indices[-1] = int(index)
         elif _slice.fullmatch(index):
             start, stop = index.split(":")
+            # TODO: currently stores (Fortran-style) 1:3 as slice(1, 3), maybe we should
+            # immediately convert it to 0-based Python syntax slice(0, 3). Similarly for
+            # explicit indices like (1)
             path_indices[-1] = slice(
                 int(start) if start else None,
                 int(stop) if stop else None,
@@ -107,18 +119,29 @@ class IDSPath:
       IDSPath as index.
     """
 
-    _init_done = False
+    _cache: Dict[str, "IDSPath"] = {}
+
+    def __new__(cls, path: str) -> "IDSPath":
+        if path not in cls._cache:
+            cls._cache[path] = super().__new__(cls)
+        return cls._cache[path]
 
     def __init__(self, path: str) -> None:
+        if hasattr(self, "_init_done"):
+            return  # Already initialized, __new__ returned from cache
         self._path = path
         self.parts, self.indices = _parse_path(path)
         self.is_time_path = self.parts and self.parts[-1] == "time"
+        # Prevent accidentally modifying attributes
         self._init_done = True
 
-    def __setattr__(self, name: str, value: Any) -> None:
-        if self._init_done:
+    def __setattr__(self, name: str, value: Any):
+        if hasattr(self, "_init_done"):
             raise RuntimeError("Cannot set attribute: IDSPath is read-only.")
         super().__setattr__(name, value)
+
+    def __len__(self) -> int:
+        return len(self.parts)
 
     def __str__(self) -> str:
         return self._path
@@ -126,3 +149,46 @@ class IDSPath:
     def __hash__(self) -> int:
         """IDSPaths are immutable, we can be used e.g. as dict key."""
         return hash(self._path)
+
+    def items(self) -> Iterator[Tuple[str, _IndexType]]:
+        return zip(self.parts, self.indices)
+
+    def goto(self, from_element: "IDSMixin") -> "IDSMixin":
+        """Go to this path, taking from_element as reference.
+
+        This returns the IDSMixin at the specified path, or raises an error when that
+        path cannot be found.
+        """
+        from_path = from_element.metadata.path  # this path doesn't have indices
+        element = None
+        for i, (part, index) in enumerate(self.items()):
+            if isinstance(index, slice):
+                raise NotImplementedError("Cannot go to slices")
+            if element is None:
+                if i < len(from_path) and part == from_path.parts[i]:
+                    if index is not None and not isinstance(index, str):
+                        logger.warning(
+                            "Ignoring index %s while resolving path %s.", index, self
+                        )
+                else:
+                    # last common parent found, set element to it
+                    element = from_element
+                    for _ in range(len(from_path) - i):
+                        if element.metadata.data_type.value == "struct_array":
+                            # element is a struct array element IDSStructure
+                            # first select the IDSStructArray to then get its parent
+                            element = element._parent
+                        element = element._parent
+            # Not using `else` on the next line, because element might be set above
+            if element is not None:
+                element = getattr(element, part)
+                if index is not None:
+                    if isinstance(index, str):
+                        raise ValueError(f"Unexpected index {index} in path {self}.")
+                    if isinstance(index, IDSPath):
+                        val = index.goto(from_element).value
+                        if not isinstance(val, int):
+                            raise ValueError(f"Invalid index {index} in path {self}.")
+                        index = val
+                    element = element[index - 1]  # path syntax uses 1-based indexing
+        return element
