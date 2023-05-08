@@ -25,6 +25,7 @@ help:
 clean: Makefile
 	@echo Running '$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)'
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+	rm -rf $(GENERATEDDIR)
 
 # This recipe generates source files, so put result in source
 # Seems to overwrite autosummary documentation though! So not using this rn

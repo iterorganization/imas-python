@@ -25,20 +25,25 @@ logger = logging.getLogger(__name__)
 class IDSCoordinate:
     """Class representing a coordinate reference from the DD.
 
-    Examples:
-    - Coordinates are an index:
-      - "1...N": any number of items allowed
-      - "1...3": max 3 items allowed
-    - Coordinates refer to other quantities:
-      - "time": refers to the "time" quantity in the IDS toplevel
-      - "profiles_1d(itime)/time": refers to the "time" quantity in the
-        profiles_1d IDSStructArray with (dummy) index itime
-    - Coordinates specify alternatives:
-      - "distribution(i1)/profiles_2d(itime)/grid/r OR
-        distribution(i1)/profiles_2d(itime)/grid/rho_tor_norm": coordinate can be "r" or
-        "rho_tor_norm" (only one may be filled)
-      - "coherent_wave(i1)/beam_tracing(itime)/beam(i2)/length OR 1...1": either use
-        "length" as coordinate, or this dimension must have size one.
+    Example:
+        - Coordinates are an index:
+
+          - ``1...N``: any number of items allowed
+          - ``1...3``: max 3 items allowed
+
+        - Coordinates refer to other quantities:
+
+          - ``time``: refers to the ``time`` quantity in the IDS toplevel
+          - ``profiles_1d(itime)/time``: refers to the ``time`` quantity in the
+            ``profiles_1d`` IDSStructArray with (dummy) index itime
+
+        - Coordinates specify alternatives:
+
+          - ``distribution(i1)/profiles_2d(itime)/grid/r OR
+            distribution(i1)/profiles_2d(itime)/grid/rho_tor_norm``: coordinate can
+            be ``r`` or ``rho_tor_norm`` (only one may be filled)
+          - ``coherent_wave(i1)/beam_tracing(itime)/beam(i2)/length OR 1...1``: either
+            use ``length`` as coordinate, or this dimension must have size one.
     """
 
     _cache: Dict[str, "IDSCoordinate"] = {}
@@ -53,6 +58,7 @@ class IDSCoordinate:
             return  # Already initialized, __new__ returned from cache
         self._coordinate_spec = coordinate_spec
         self.max_size: Optional[int] = None
+        """Maximum size of this dimension."""
 
         refs: List[IDSPath] = []
         specs = coordinate_spec.split(" OR ")
@@ -74,11 +80,16 @@ class IDSCoordinate:
                         f"Ignoring invalid coordinate specifier {spec}", exc_info=True
                     )
         self.references = tuple(refs)
+        """A tuple of :class:`~imaspy.ids_path.IDSPath` that this coordinate refers to.
+        """
 
         num_rules = len(self.references) + (self.max_size is not None)
         self.has_validation = num_rules > 0
+        """True iff this coordinate specifies a validation rule."""
         self.has_alternatives = num_rules > 1
+        """True iff exclusive alternative coordinates are specified."""
         self.is_time_coordinate = any(ref.is_time_path for ref in self.references)
+        """True iff this coordinate refers to ``time``."""
 
         # Prevent accidentally modifying attributes
         self._init_done = True
@@ -100,8 +111,7 @@ class IDSCoordinate:
 
 
 def _goto(path: IDSPath, element: "IDSMixin") -> "IDSPrimitive":
-    """Wrapper around IDSPath.goto to capture errors and raise a more meaningful error.
-    """
+    """Wrapper around IDSPath.goto to raise more meaningful errors."""
     try:
         return path.goto(element)
     except ValueError as exc:
@@ -113,7 +123,15 @@ def _goto(path: IDSPath, element: "IDSMixin") -> "IDSPrimitive":
 class IDSCoordinates:
     """Class representing coordinates of an IDSMixin.
 
-    Can be used to automatically retrieve coordinate values.
+    Can be used to automatically retrieve coordinate values via the indexing operator.
+
+    Example:
+        >>> import imaspy
+        >>> root = imaspy.ids_root.IDSRoot()
+        >>> root.core_profiles.ids_properties.homogeneous_time = \\
+        ...     imaspy.ids_defs.IDS_TIME_MODE_HOMOGENEOUS
+        >>> root.core_profiles.profiles_1d.coordinates[0]
+        IDSNumericArray("/core_profiles/time", array([], dtype=float64))
     """
 
     def __init__(self, mixin: "IDSMixin") -> None:
@@ -137,7 +155,11 @@ class IDSCoordinates:
         """
         coordinate = self._mixin.metadata.coordinates[key]
         if not coordinate.references:
-            return np.arange(self._mixin.value.shape[key])
+            if key == 0:
+                # Use len for the first dimension, works with list and numpy.ndarray
+                return np.arange(len(self._mixin.value))
+            else:
+                return np.arange(self._mixin.value.shape[key])
         coordinate_path: Optional[IDSPath] = None
         # Time is a special coordinate:
         if coordinate.is_time_coordinate:
@@ -188,7 +210,10 @@ class IDSCoordinates:
 
     @property
     def time_index(self) -> Optional[int]:
-        """Get the index of the time coordinate, or None if there is no time coordinate.
+        """Get the index of the time coordinate
+
+        Returns:
+            The index of the time coordinate, or None if there is no time coordinate.
         """
         for i, coor in enumerate(self._mixin.metadata.coordinates):
             if coor.is_time_coordinate:

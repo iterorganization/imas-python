@@ -30,6 +30,7 @@ It provides:
    installing
    intro
    api_overview
+   metadata
    mdsplus
 
 
