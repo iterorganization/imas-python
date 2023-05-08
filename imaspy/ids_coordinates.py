@@ -8,6 +8,11 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 
+from imaspy.ids_data_type import IDSDataType
+from imaspy.ids_defs import (
+    IDS_TIME_MODE_HOMOGENEOUS as HOMOGENEOUS_TIME,
+    IDS_TIME_MODE_HETEROGENEOUS as HETEROGENEOUS_TIME,
+)
 from imaspy.ids_path import IDSPath
 
 if TYPE_CHECKING:  # Prevent circular imports
@@ -86,9 +91,23 @@ class IDSCoordinate:
     def __str__(self) -> str:
         return self._coordinate_spec
 
+    def __repr__(self) -> str:
+        return f"IDSCoordinate({self._coordinate_spec!r})"
+
     def __hash__(self) -> int:
         """IDSCoordinate objects are immutable, we can be used e.g. as dict key."""
         return hash(self._coordinate_spec)
+
+
+def _goto(path: IDSPath, element: "IDSMixin") -> "IDSPrimitive":
+    """Wrapper around IDSPath.goto to capture errors and raise a more meaningful error.
+    """
+    try:
+        return path.goto(element)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"The data dictionary coordinate definition '{path}' cannot be found: {exc}"
+        ) from None
 
 
 class IDSCoordinates:
@@ -119,9 +138,37 @@ class IDSCoordinates:
         coordinate = self._mixin.metadata.coordinates[key]
         if not coordinate.references:
             return np.arange(self._mixin.value.shape[key])
-        if not coordinate.has_alternatives:
-            return coordinate.references[0].goto(self._mixin)
-        refs = [ref.goto(self._mixin) for ref in coordinate.references]
+        coordinate_path: Optional[IDSPath] = None
+        # Time is a special coordinate:
+        if coordinate.is_time_coordinate:
+            time_mode = self._mixin._time_mode
+            if time_mode == HOMOGENEOUS_TIME:
+                coordinate_path = IDSPath("time")
+            elif time_mode == HETEROGENEOUS_TIME:
+                # Time coordinates are guaranteed to be unique (no alternatives)
+                coordinate_path = coordinate.references[0]
+            else:
+                raise ValueError(
+                    "Invalid IDS time mode: ids_properties/homogeneous_time is "
+                    f"{time_mode}, was expecting {HETEROGENEOUS_TIME} or "
+                    f"{HOMOGENEOUS_TIME}."
+                )
+        elif not coordinate.has_alternatives:
+            coordinate_path = coordinate.references[0]
+
+        # Check if the coordinate is inside the AoS
+        if coordinate_path is not None:
+            if self._mixin.metadata.data_type is IDSDataType.STRUCT_ARRAY:
+                if self._mixin.metadata.path.is_ancestor_of(coordinate_path):
+                    # Create a numpy array with the contents of all elements in the AoS
+                    # TODO: move this to IDSPath?
+                    data = [_goto(coordinate_path, ele).value for ele in self._mixin]
+                    return np.array(data)
+            return _goto(coordinate_path, self._mixin)
+
+        # Handle alternative coordinates, currently (DD 3.38.1) the `coordinate in
+        # structure` logic is not applicable for these cases:
+        refs = [_goto(ref, self._mixin) for ref in coordinate.references]
         ref_is_defined = [len(ref.value) > 0 for ref in refs]
         if sum(ref_is_defined) == 0:
             if coordinate.max_size is not None:

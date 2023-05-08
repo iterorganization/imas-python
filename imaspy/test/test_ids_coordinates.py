@@ -1,4 +1,5 @@
 from imaspy.ids_coordinates import IDSCoordinate
+from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS
 from imaspy.ids_root import IDSRoot
 
 import numpy as np
@@ -9,6 +10,12 @@ def test_coordinate_cache():
     coordinate = IDSCoordinate("1...N")
     coordinate2 = IDSCoordinate("1...N")
     assert coordinate is coordinate2
+
+
+def test_coordinate_str_repr():
+    coordinate = IDSCoordinate("test_coordinate")
+    assert str(coordinate) == "test_coordinate"
+    assert repr(coordinate) == "IDSCoordinate('test_coordinate')"
 
 
 def test_coordinate_index_unbounded():
@@ -101,3 +108,34 @@ def test_coordinates(ids_minimal_types):
     ids.int_1d = [1]
     with pytest.raises(RuntimeError):
         ids.cpx_1d.coordinates[0]
+
+
+def test_coordinates_with_core_profiles():
+    core_profiles = IDSRoot(version="3.38.1").core_profiles
+    with pytest.raises(ValueError):  # homogeneous_time not set
+        core_profiles.profiles_1d.coordinates[0]
+
+    core_profiles.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    assert core_profiles.profiles_1d.coordinates[0] is core_profiles.time
+
+    core_profiles.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
+    # Test logic for getting time coordinates from inside the core_profiles AoS
+    core_profiles.profiles_1d.resize(2)
+    core_profiles.profiles_1d[0].time = 1
+    core_profiles.profiles_1d[1].time = 2
+    assert np.array_equal(core_profiles.profiles_1d.coordinates[0], [1.0, 2.0])
+
+
+def test_coordinates_with_equilibrium():
+    # Test error handling of a time-based coordinate outside our own timebasepath
+    # https://jira.iter.org/browse/IMAS-4675
+    equilibrium = IDSRoot(version="3.38.1").equilibrium
+    equilibrium.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
+    equilibrium.grids_ggd.resize(1)
+    equilibrium.time_slice.resize(1)
+    with pytest.raises(RuntimeError):
+        equilibrium.time_slice[0].ggd.coordinates[0]
+
+
+# TODO: test "<path> OR 1...1" coordinates: https://jira.iter.org/browse/IMAS-4661
+# TODO: test complex amns_data coordinates: https://jira.iter.org/browse/IMAS-4666
