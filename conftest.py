@@ -4,8 +4,7 @@
 # Set up pytest so that any mention of 'backend' as a test argument
 # gets run with all four backends.
 # Same for ids_type, with all types
-from pathlib import Path
-
+import importlib_resources
 import pytest
 
 from imaspy.ids_defs import ASCII_BACKEND, HDF5_BACKEND, MDSPLUS_BACKEND, MEMORY_BACKEND
@@ -80,16 +79,32 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize("ids_name", IDSRoot()._children)
 
 
-@pytest.fixture
-def fake_toplevel_xml():
-    return Path(__file__).parent / "imaspy/assets/IDS_fake_toplevel.xml"
+# Fixtures for various assets
+@pytest.fixture(scope="session")
+def imaspy_assets():
+    return importlib_resources.files("imaspy") / "assets"
 
 
-@pytest.fixture
-def ids_minimal():
-    return Path(__file__).parent / "imaspy/assets/IDS_minimal.xml"
+@pytest.fixture(scope="session")
+def fake_toplevel_xml(imaspy_assets):
+    return imaspy_assets / "IDS_fake_toplevel.xml"
 
 
-@pytest.fixture
-def ids_minimal_types():
-    return Path(__file__).parent / "imaspy/assets/IDS_minimal_types.xml"
+@pytest.fixture(scope="session")
+def ids_minimal(imaspy_assets):
+    return imaspy_assets / "IDS_minimal.xml"
+
+
+@pytest.fixture(scope="session")
+def ids_minimal2(imaspy_assets):
+    return imaspy_assets / "IDS_minimal_2.xml"
+
+
+@pytest.fixture(scope="session")
+def ids_minimal_struct_array(imaspy_assets):
+    return imaspy_assets / "IDS_minimal_struct_array.xml"
+
+
+@pytest.fixture(scope="session")
+def ids_minimal_types(imaspy_assets):
+    return imaspy_assets / "IDS_minimal_types.xml"
