@@ -18,6 +18,7 @@ from packaging.version import Version as V
 from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.ids_defs import needs_imas
+from imaspy.ids_metadata import IDSDataType
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_primitive import IDSPrimitive, create_leaf_container
 
@@ -113,6 +114,12 @@ class IDSStructure(IDSMixin):
                 )
         # After initialization, always try to convert setting attributes on this structure
         self._convert_ids_types = True
+
+    @property
+    def _dd_parent(self) -> IDSMixin:
+        if self.metadata.data_type is IDSDataType.STRUCT_ARRAY:
+            return self._parent._parent
+        return self._parent
 
     @property
     def has_value(self):

@@ -17,6 +17,7 @@ from imaspy.ids_structure import IDSStructure
 from imaspy.setup_logging import root_logger as logger
 
 
+# FIXME: IDSStructArray should not be a child type of IDSStructure?
 class IDSStructArray(IDSStructure, IDSMixin):
     """IDS array of structures (AoS) node
 
@@ -73,6 +74,11 @@ class IDSStructArray(IDSStructure, IDSMixin):
         """Prepare an element structure JIT"""
         struct = IDSStructure(self, self._structure_xml)
         return struct
+
+    # FIXME: need to override this because IDSStructure is our parent class
+    @property
+    def _dd_parent(self) -> IDSMixin:
+        return self._parent
 
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)

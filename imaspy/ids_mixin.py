@@ -40,6 +40,24 @@ class IDSMixin:
         self._last_backend_xml_hash = None
         self._backend_name = None
 
+    @property
+    def _time_mode(self) -> int:
+        """Retrieve the time mode from `/ids_properties/homogeneous_time`"""
+        return self._parent._time_mode
+
+    @property
+    def _dd_parent(self) -> "IDSMixin":
+        """Return the DD parent element
+
+        Usually this is the same as the _parent element, but for IDSStructArray
+        structure sub-elements, this will return the parent of the IDSStructArray.
+
+        Examples:
+            - `ids.ids_properties.provenance._dd_parent` is `ids.ids_properties`
+            - `ids.ids_properties.provenance[0]._dd_parent` is also `ids.ids_properties`
+        """
+        return self._parent
+
     def getRelCTXPath(self, ctx: int) -> str:
         """Get the path relative to given context from an absolute path"""
         return context_store.strip_context(self._path, ctx)

@@ -125,6 +125,11 @@ class IDSToplevel(IDSStructure):
             root.find("./*[@name='{name}']".format(name=self.metadata.name))
         )
 
+    @property
+    def _time_mode(self) -> int:
+        """Retrieve the time mode from `/ids_properties/homogeneous_time`"""
+        return self.ids_properties.homogeneous_time
+
     def set_backend_properties(self, structure_xml):
         """Set backend properties for this IDSToplevel and provide some logging"""
         # TODO: better naming (structure_xml -> backend etc)
