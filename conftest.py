@@ -10,7 +10,6 @@ import pytest
 
 from imaspy.ids_defs import ASCII_BACKEND, HDF5_BACKEND, MDSPLUS_BACKEND, MEMORY_BACKEND
 from imaspy.ids_root import IDSRoot
-from imaspy.test_minimal_types_io import TEST_DATA
 
 try:
     import imas
@@ -65,12 +64,6 @@ def requires_imas():
 
 
 def pytest_generate_tests(metafunc):
-    if "ids_type" in metafunc.fixturenames:
-        if metafunc.config.getoption("mini"):
-            metafunc.parametrize("ids_type", ["int_0d"])
-        else:
-            metafunc.parametrize("ids_type", [None] + list(TEST_DATA.keys()))
-
     if "ids_name" in metafunc.fixturenames:
         if metafunc.config.getoption("ids"):
             metafunc.parametrize(
@@ -85,11 +78,6 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize("ids_name", ["pulse_schedule"])
         else:
             metafunc.parametrize("ids_name", IDSRoot()._children)
-
-    # Any variables ending with _bool will be set to both true and false
-    for name in metafunc.fixturenames:
-        if name.endswith("_bool"):
-            metafunc.parametrize(name, [True, False])
 
 
 @pytest.fixture

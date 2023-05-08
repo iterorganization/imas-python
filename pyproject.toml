@@ -103,3 +103,4 @@ markers = [
     "cli: Tests for the command line interface.",
     "slow: Slow tests.",
 ]
+testpaths = "imaspy"

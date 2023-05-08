@@ -2,7 +2,7 @@ import pytest
 
 from imaspy.dd_zip import dd_xml_versions
 from imaspy.ids_root import IDSRoot
-from imaspy.test_helpers import fill_with_random_data
+from imaspy.test.test_helpers import fill_with_random_data
 
 
 @pytest.fixture(params=dd_xml_versions())

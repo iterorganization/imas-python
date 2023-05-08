@@ -8,17 +8,16 @@ import os
 import numpy as np
 import pytest
 
-# import IMAS HLI, skip module when this is an install without IMAS
-imas = pytest.importorskip("imas")
-
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     IDS_TIME_MODE_HOMOGENEOUS,
-    MEMORY_BACKEND,
     MDSPLUS_BACKEND,
 )
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
-from imaspy.test_helpers import open_ids
+from imaspy.test.test_helpers import open_ids
+
+# import IMAS HLI, skip module when this is an install without IMAS
+imas = pytest.importorskip("imas")
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger

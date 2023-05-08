@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
-from imaspy.test_helpers import open_ids, randdims
+from imaspy.test.test_helpers import open_ids, randdims
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -32,7 +32,7 @@ for i in range(0, 7):
 
 @pytest.fixture
 def xml():
-    return Path(__file__).parent / "assets/IDS_minimal_types.xml"
+    return Path(__file__).parents[1] / "assets" / "IDS_minimal_types.xml"
 
 
 def test_minimal_types_io(backend, xml, worker_id, tmp_path):

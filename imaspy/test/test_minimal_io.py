@@ -1,19 +1,12 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
 
 import logging
-import os
+from pathlib import Path
 
 import pytest
 
-import imaspy
-from imaspy.ids_defs import (
-    ASCII_BACKEND,
-    HDF5_BACKEND,
-    IDS_TIME_MODE_INDEPENDENT,
-    MDSPLUS_BACKEND,
-    MEMORY_BACKEND,
-)
-from imaspy.test_helpers import open_ids
+from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
+from imaspy.test.test_helpers import open_ids
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -22,9 +15,7 @@ logger.setLevel(logging.INFO)
 
 @pytest.fixture
 def xml():
-    from pathlib import Path
-
-    return Path(__file__).parent / "assets/IDS_minimal.xml"
+    return Path(__file__).parents[1] / "assets" / "IDS_minimal.xml"
 
 
 def test_minimal_io(backend, xml, worker_id, tmp_path):

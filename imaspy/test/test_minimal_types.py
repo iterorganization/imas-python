@@ -14,7 +14,7 @@ logger.setLevel(logging.INFO)
 
 @pytest.fixture
 def ids_minimal_types():
-    return Path(__file__).parent / "assets/IDS_minimal_types.xml"
+    return Path(__file__).parents[1] / "assets" / "IDS_minimal_types.xml"
 
 
 def test_load_minimal_types(ids_minimal_types):

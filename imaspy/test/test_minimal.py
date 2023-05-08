@@ -2,8 +2,6 @@
 
 import logging
 
-import pytest
-
 import imaspy
 
 root_logger = logging.getLogger("imaspy")

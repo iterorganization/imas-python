@@ -8,9 +8,9 @@ import numpy as np
 import pytest
 
 import imaspy
-from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
-from imaspy.test_helpers import fill_with_random_data, open_ids
-from imaspy.test_minimal_types_io import TEST_DATA
+from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
+from imaspy.test.test_helpers import fill_with_random_data, open_ids
+from imaspy.test.test_minimal_types_io import TEST_DATA
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -19,7 +19,7 @@ logger.setLevel(logging.INFO)
 
 @pytest.fixture
 def xml():
-    return Path(__file__).parent / "assets/IDS_minimal_types.xml"
+    return Path(__file__).parents[1] / "assets" / "IDS_minimal_types.xml"
 
 
 def test_minimal_types_str_1d_decode(xml):

@@ -1,12 +1,13 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
 
 import logging
+from pathlib import Path
 
 import pytest
 
 import imaspy
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
-from imaspy.test_helpers import open_ids
+from imaspy.test.test_helpers import open_ids
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -15,9 +16,7 @@ logger.setLevel(logging.INFO)
 
 @pytest.fixture
 def xml():
-    from pathlib import Path
-
-    return Path(__file__).parent / "assets/IDS_minimal_struct_array.xml"
+    return Path(__file__).parents[1] / "assets" / "IDS_minimal_struct_array.xml"
 
 
 def test_minimal_struct_array_maxoccur(backend, xml):
