@@ -5,7 +5,6 @@
 
 import functools
 import logging
-from typing import Dict, Tuple
 
 from imaspy.setup_logging import root_logger as logger
 
@@ -70,38 +69,12 @@ except ImportError as ee:
     IDS_TIME_MODE_INDEPENDENT = 2
     IDS_TIME_MODES = [0, 1, 2]
 
-# Translation dictionary to go from an ids (primitive) type (without the dimensionality) to a default value
-ids_type_to_default = {
-    "STR": "",
-    "INT": EMPTY_INT,
-    "FLT": EMPTY_FLOAT,
-    "CPX": EMPTY_COMPLEX,
-}
-
 try:
     # Since serialisation is a HLI-feature for now we can always enable it
     from imas.imasdef import ASCII_SERIALIZER_PROTOCOL, DEFAULT_SERIALIZER_PROTOCOL
 except ImportError:
     ASCII_SERIALIZER_PROTOCOL = 60
     DEFAULT_SERIALIZER_PROTOCOL = 60
-
-
-DD_TYPES: Dict[str, Tuple[str, int]] = {
-    "STR_0D": ("STR", 0),
-    "STR_1D": ("STR", 1),
-    "str_type": ("STR", 0),
-    "str_1d_type": ("STR", 1),
-    "flt_type": ("FLT", 0),
-    "flt_1d_type": ("FLT", 1),
-    "int_type": ("INT", 0),
-}
-
-for i in range(0, 7):
-    # dimensions are random
-    DD_TYPES[f"CPX_{i}D"] = ("CPX", i)
-    DD_TYPES[f"FLT_{i}D"] = ("FLT", i)
-    if i < 4:
-        DD_TYPES[f"INT_{i}D"] = ("INT", i)
 
 
 def needs_imas(func):
@@ -112,4 +85,5 @@ def needs_imas(func):
                 f"Function {func.__name__} requires IMAS, but IMAS is not available."
             )
         return func(*args, **kwargs)
+
     return wrapper

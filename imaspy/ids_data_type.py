@@ -5,7 +5,7 @@
 from enum import Enum
 from typing import Tuple, Optional
 
-from imaspy.ids_defs import DD_TYPES
+from imaspy.ids_defs import EMPTY_INT, EMPTY_FLOAT, EMPTY_COMPLEX
 
 
 class IDSDataType(Enum):
@@ -30,6 +30,16 @@ class IDSDataType(Enum):
     CPX = "CPX"
     """Complex data."""
 
+    def __init__(self, value) -> None:
+        self.default = {
+            "STR": "",
+            "INT": EMPTY_INT,
+            "FLT": EMPTY_FLOAT,
+            "CPX": EMPTY_COMPLEX,
+        }.get(value, None)
+        """Default value for a field with this type."""
+
+    @staticmethod
     def parse(data_type: Optional[str]) -> Tuple[Optional["IDSDataType"], int]:
         """Parse data type string from the Data Dictionary.
 
@@ -52,12 +62,18 @@ class IDSDataType(Enum):
         """
         if data_type is None:
             return None, 0
-        if data_type in DD_TYPES:
-            data_type, ndim = DD_TYPES[data_type]
-        elif data_type == "structure":
+        if data_type == "structure":
             ndim = 0
         elif data_type == "struct_array":
             ndim = 1
         else:
-            raise ValueError(f"Unknown IDS data type: {data_type}")
+            dtype, *rest = data_type.upper().split("_")
+            if rest == ["TYPE"]:  # legacy str_type, int_type, flt_type, cpx_type:
+                ndim = 0
+            elif rest and '0' <= rest[0][0] <= '9':
+                # works for both legacy flt_1d_type and regular TYP_ND
+                ndim = int(rest[0][0])
+            else:
+                raise ValueError(f"Unknown IDS data type: {data_type}")
+            data_type = dtype
         return IDSDataType(data_type), ndim

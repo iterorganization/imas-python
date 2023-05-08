@@ -19,12 +19,10 @@ from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_defs import (
-    DD_TYPES,
     CHAR_DATA,
     DOUBLE_DATA,
     INTEGER_DATA,
     COMPLEX_DATA,
-    ids_type_to_default,
     hli_utils,
     needs_imas,
 )
@@ -88,7 +86,7 @@ class IDSPrimitive(IDSMixin):
 
     @property
     def _default(self):
-        default_value = ids_type_to_default[self.metadata.data_type.value]
+        default_value = self.metadata.data_type.default
         if self.metadata.ndim == 0:
             return default_value
         return np.full((0,) * self.metadata.ndim, default_value)
@@ -357,7 +355,9 @@ class IDSPrimitive(IDSMixin):
         # we set the backend_type to None (otherwise you could have bugs
         # when switching backend_xml multiple times)
         if data_type:
-            self._backend_type, self._backend_ndims = DD_TYPES[data_type]
+            dtype, ndims = IDSDataType.parse(data_type)
+            self._backend_type = dtype.value
+            self._backend_ndims = ndims
         else:
             self._backend_type = None
             self._backend_ndims = None
@@ -395,7 +395,7 @@ def create_leaf_container(parent, structure_xml, **kwargs):
     """Wrapper to create IDSPrimitive/IDSNumericArray from IDS syntax.
     TODO: move this elsewhere.
     """
-    ids_type, ndims = DD_TYPES[structure_xml.attrib["data_type"]]
+    ids_type, ndims = IDSDataType.parse(structure_xml.attrib["data_type"])
     # legacy support
     if ndims == 0:
         leaf = IDSPrimitive(parent, structure_xml, **kwargs)
