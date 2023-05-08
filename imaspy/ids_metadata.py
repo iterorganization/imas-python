@@ -2,29 +2,12 @@
 # You should have received IMASPy LICENSE file with this project.
 """ Core of the IMASPy interpreted IDS metadata
 """
-from enum import Enum
-from typing import Optional, Any, Dict, Tuple
+from typing import Optional, Any, Dict
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_coordinates import IDSCoordinate
-from imaspy.ids_defs import DD_TYPES
+from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_path import IDSPath
-
-
-class IDSDataType(Enum):
-    STRUCTURE = "structure"
-    """IDS structure. Maps to an IDSStructure object."""
-    STRUCT_ARRAY = "struct_array"
-    """IDS array of structures. Maps to an IDSStructArray object with IDSStructure
-    children."""
-    STR = "STR"
-    """String data."""
-    INT = "INT"
-    """Integer data."""
-    FLT = "FLT"
-    """Floating point data."""
-    CPX = "CPX"
-    """Complex data."""
 
 
 class IDSMetadata:
@@ -53,7 +36,7 @@ class IDSMetadata:
 
         # These are special and used in IMASPy logic, so we need to ensure proper values
         self.maxoccur = self.parse_maxoccur(attrib.get("maxoccur", "unbounded"))
-        self.data_type, self.ndim = self.parse_datatype(attrib.get("data_type", None))
+        self.data_type, self.ndim = IDSDataType.parse(attrib.get("data_type", None))
         self.path = IDSPath(attrib.get("path", ""))  # IDSToplevel has no path
 
         # Parse coordinates
@@ -94,19 +77,3 @@ class IDSMetadata:
         if value == "unbounded":
             return None
         return int(value)
-
-    def parse_datatype(
-        self, data_type: Optional[str]
-    ) -> Tuple[Optional[IDSDataType], int]:
-        """Parse data type and set self.data_type and self.ndim."""
-        if data_type is None:
-            return None, 0
-        if data_type in DD_TYPES:
-            data_type, ndim = DD_TYPES[data_type]
-        elif data_type == "structure":
-            ndim = 0
-        elif data_type == "struct_array":
-            ndim = 1
-        else:
-            raise ValueError(f"Unknown IDS data type: {data_type}")
-        return IDSDataType(data_type), ndim
