@@ -20,8 +20,7 @@ def xml():
 
 
 def test_str_1d_empty(backend, xml, worker_id, tmp_path):
-    """Write and then read again a number on our minimal IDS.
-    This gets run with all 4 backend options and with all ids_types (+ None->all)
+    """Write and then read again a string on our minimal IDS.
     """
     ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=xml)
     ids.minimal.str_1d = []
@@ -39,8 +38,7 @@ def test_str_1d_empty(backend, xml, worker_id, tmp_path):
 
 
 def test_str_1d_long_single(backend, xml, worker_id, tmp_path):
-    """Write and then read again a number on our minimal IDS.
-    This gets run with all 4 backend options and with all ids_types (+ None->all)
+    """Write and then read again a string on our minimal IDS.
     """
     ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=xml)
     ids.minimal.str_1d = [string.ascii_uppercase * 100]
@@ -58,8 +56,7 @@ def test_str_1d_long_single(backend, xml, worker_id, tmp_path):
 
 
 def test_str_1d_multiple(backend, xml, worker_id, tmp_path):
-    """Write and then read again a number on our minimal IDS.
-    This gets run with all 4 backend options and with all ids_types (+ None->all)
+    """Write and then read again a string on our minimal IDS.
     """
     ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=xml)
     ids.minimal.str_1d = [string.ascii_uppercase, string.ascii_lowercase]
@@ -80,8 +77,7 @@ def test_str_1d_multiple(backend, xml, worker_id, tmp_path):
 
 
 def test_str_1d_long_multiple(backend, xml, worker_id, tmp_path):
-    """Write and then read again a number on our minimal IDS.
-    This gets run with all 4 backend options and with all ids_types (+ None->all)
+    """Write and then read again a string on our minimal IDS.
     """
     ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=xml)
     ids.minimal.str_1d = [string.ascii_uppercase * 100, string.ascii_lowercase * 100]

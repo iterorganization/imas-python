@@ -42,8 +42,7 @@ def test_minimal_types_str_1d_decode_and_put(backend, xml, worker_id, tmp_path):
 
 
 def test_minimal_types_io_automatic(backend, xml, worker_id, tmp_path):
-    """Write and then read again a number on our minimal IDS.
-    This gets run with all 4 backend options and with all ids_types (+ None->all)
+    """Write and then read again our minimal IDS.
     """
     ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=xml)
     fill_with_random_data(ids)
