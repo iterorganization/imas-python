@@ -38,6 +38,9 @@ class IDSMetadata:
         self.maxoccur = self.parse_maxoccur(attrib.get("maxoccur", "unbounded"))
         self.data_type, self.ndim = IDSDataType.parse(attrib.get("data_type", None))
         self.path = IDSPath(attrib.get("path", ""))  # IDSToplevel has no path
+        self.type = attrib.get("type" , None)  # TODO: parse into an enum?
+        """Type of data: "static", "constant", "dynamic" or None"""
+        self.timebasepath = attrib.get("timebasepath", "")
 
         # Parse coordinates
         coors = [IDSCoordinate("")] * self.ndim
