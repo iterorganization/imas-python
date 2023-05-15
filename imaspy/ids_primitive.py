@@ -105,6 +105,7 @@ class IDSPrimitive(IDSMixin):
         if self._time_mode == IDS_TIME_MODE_HETEROGENEOUS:
             # FIXME: this should be based on backend metadata!
             return self.metadata.timebasepath
+        return ""  # FIXME: handle this case
 
     def __iter__(self):
         return iter([])

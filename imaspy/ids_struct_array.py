@@ -100,6 +100,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
             return "/time"
         if self._time_mode == IDS_TIME_MODE_HETEROGENEOUS:
             return self._aos_path + "/time"
+        return ""  # FIXME: handle this case
 
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)

@@ -380,6 +380,7 @@ class IDSToplevel(IDSStructure):
                 self.metadata.name,
             )
             return
+        self.ids_properties.homogeneous_time = homogeneousTime
 
         backend_version = self.read_data_dictionary_version(occurrence)
         if self._backend_xml_path:
