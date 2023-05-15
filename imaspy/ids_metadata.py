@@ -2,12 +2,44 @@
 # You should have received IMASPy LICENSE file with this project.
 """ Core of the IMASPy interpreted IDS metadata
 """
+from enum import Enum
 from typing import Optional, Any, Dict
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_coordinates import IDSCoordinate
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_path import IDSPath
+
+
+class IDSType(Enum):
+    """Data dictionary indication of the time-variation character of a DD node
+
+    The Data Model distinguishes between categories of data according to their
+    time-variation. ``constant`` data are data which are not varying within the context
+    of the data being referred to (e.g. pulse, simulation, calculation); ``static`` data
+    are likely to be constant over a wider range (e.g. nominal coil positions during
+    operation); ``dynamic`` data are those which vary in time within the context of the
+    data.
+
+    As in the Python HLI, IMASPy only distinguishes between dynamic and non-dynamic
+    nodes.
+    """
+
+    NONE = None
+    """The DD node has no type attribute.
+    """
+
+    DYNAMIC = "dynamic"
+    """Data that is varying in time.
+    """
+
+    CONSTANT = "constant"
+    """Data that does not vary within the IDS.
+    """
+
+    STATIC = "static"
+    """Data that does not vary between multiple IDSs.
+    """
 
 
 class IDSMetadata:
@@ -38,8 +70,7 @@ class IDSMetadata:
         self.maxoccur = self.parse_maxoccur(attrib.get("maxoccur", "unbounded"))
         self.data_type, self.ndim = IDSDataType.parse(attrib.get("data_type", None))
         self.path = IDSPath(attrib.get("path", ""))  # IDSToplevel has no path
-        self.type = attrib.get("type" , None)  # TODO: parse into an enum?
-        """Type of data: "static", "constant", "dynamic" or None"""
+        self.type = IDSType(attrib.get("type" , None))
         self.timebasepath = attrib.get("timebasepath", "")
 
         # Parse coordinates

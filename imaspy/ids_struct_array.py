@@ -16,6 +16,7 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_HETEROGENEOUS,
     IDS_TIME_MODE_HOMOGENEOUS,
 )
+from imaspy.ids_metadata import IDSType
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure
 from imaspy.setup_logging import root_logger as logger
@@ -94,7 +95,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         """
         # Follow logic from
         # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#367-384
-        if self.metadata.type != "dynamic":
+        if self.metadata.type is not IDSType.DYNAMIC:
             return ""
         if self._time_mode == IDS_TIME_MODE_HOMOGENEOUS:
             return "/time"

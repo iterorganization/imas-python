@@ -16,7 +16,7 @@ except ImportError:
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_data_type import IDSDataType
-from imaspy.ids_metadata import IDSMetadata
+from imaspy.ids_metadata import IDSMetadata, IDSType
 from imaspy.setup_logging import root_logger as logger
 
 try:
@@ -63,7 +63,7 @@ class IDSMixin:
     def _is_dynamic(self) -> bool:
         """True iff this element has type=dynamic, or it has a parent with type=dynamic
         """
-        return self.metadata.type == "dynamic" or self._dd_parent._is_dynamic
+        return self.metadata.type is IDSType.DYNAMIC or self._dd_parent._is_dynamic
 
     @cached_property
     def _aos_path(self) -> str:

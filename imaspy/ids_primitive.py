@@ -18,6 +18,7 @@ from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_coordinates import IDSCoordinates
+from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
     CHAR_DATA,
     DOUBLE_DATA,
@@ -28,7 +29,7 @@ from imaspy.ids_defs import (
     hli_utils,
     needs_imas,
 )
-from imaspy.ids_metadata import IDSDataType
+from imaspy.ids_metadata import IDSType
 from imaspy.ids_mixin import IDSMixin
 
 
@@ -98,7 +99,7 @@ class IDSPrimitive(IDSMixin):
         """Timebase path to supply to the backend."""
         # Follow logic from
         # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#1524-1566
-        if self.metadata.type != "dynamic" or self._parent._is_dynamic:
+        if self.metadata.type is not IDSType.DYNAMIC or self._parent._is_dynamic:
             return ""
         if self._time_mode == IDS_TIME_MODE_HOMOGENEOUS:
             return "/time"
