@@ -98,7 +98,7 @@ class IDSPrimitive(IDSMixin):
         """Timebase path to supply to the backend."""
         # Follow logic from
         # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#1524-1566
-        if not self._is_dynamic:
+        if self.metadata.type != "dynamic" or self._parent._is_dynamic:
             return ""
         if self._time_mode == IDS_TIME_MODE_HOMOGENEOUS:
             return "/time"
