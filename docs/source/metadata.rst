@@ -120,7 +120,7 @@ data_type
 
 ndim
     The number of dimensions of the IDS element. A structure node always has 0
-    dimensions, an array of structure node always 1 dimension. For data nodes
+    dimensions. An array of structure node has 1 dimension. For data nodes
     the dimensionality can be between 0 and 6.
 
 documentation
