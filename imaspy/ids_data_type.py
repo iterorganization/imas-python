@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Tuple, Optional
 
 from imaspy.ids_defs import EMPTY_INT, EMPTY_FLOAT, EMPTY_COMPLEX
+from imaspy.ids_defs import INTEGER_DATA, DOUBLE_DATA, COMPLEX_DATA, CHAR_DATA
 
 
 class IDSDataType(Enum):
@@ -35,6 +36,12 @@ class IDSDataType(Enum):
             "INT": EMPTY_INT,
             "FLT": EMPTY_FLOAT,
             "CPX": EMPTY_COMPLEX,
+        }.get(value, None)
+        self.ual_type = {
+            "STR": CHAR_DATA,
+            "INT": INTEGER_DATA,
+            "FLT": DOUBLE_DATA,
+            "CPX": COMPLEX_DATA,
         }.get(value, None)
         """Default value for a field with this type."""
 
