@@ -110,7 +110,7 @@ coordinate from IMASPy, four things may happen:
 Other useful metadata
 '''''''''''''''''''''
 
-A brief (and incomplete) overview of useful metadata attributes follows below.
+A brief overview of useful metadata attributes follows below.
 Note that some attributes may not be set, this usually indicates that that
 metadata attribute is not specified by the Data Dictionary.
 
