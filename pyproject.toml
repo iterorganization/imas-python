@@ -72,7 +72,8 @@ docs = [
     "recommonmark>=0.6",
     "sphinx-autosummary-accessors>=0.1.2",
     "sphinx-autodoc-typehints>=1.1.1",
-    "sphinxcontrib.mermaid>=0.8"
+    "sphinxcontrib.mermaid>=0.8",
+    "sphinx-tabs",
 ]
 test = [
     "pytest>=5.4.1",

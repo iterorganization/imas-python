@@ -123,6 +123,7 @@ extensions = [
     "recommonmark",  # For markdown support, does not support 'full' CommonMark syntax (yet)!
     "sphinx_autodoc_typehints",  # Auto-parse type hints. Napoleon BEFORE typehints
     "sphinxcontrib.mermaid",  # Draw graphs using Mermaid.js
+    "sphinx_tabs.tabs", # Toggleable HTML tabs
 ]
 
 todo_include_todos = True
