@@ -26,7 +26,7 @@ Get coordinate values
 
 All data nodes and array of structures have a ``coordinates`` attribute. By
 indexing this attribute, you can retrieve the coordinate values for that
-dimension. For example ``coordinates[2]`` attempts to retrieve the coordinate
+dimension. For example, ``coordinates[2]`` attempts to retrieve the coordinate
 values for the third dimension of the data.
 
 When another quantity in the IDS is used as a coordinate, that quantity is
