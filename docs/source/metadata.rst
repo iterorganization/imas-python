@@ -24,7 +24,7 @@ nodes.
 Get coordinate values
 '''''''''''''''''''''
 
-All data nodes and array of structures have a ``coordinates`` attribute. By
+Each data node and array of structures has a ``coordinates`` attribute. By
 indexing this attribute, you can retrieve the coordinate values for that
 dimension. For example, ``coordinates[2]`` attempts to retrieve the coordinate
 values for the third dimension of the data.

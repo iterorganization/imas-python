@@ -1,7 +1,6 @@
 # This file is part of IMASPy.
-# You should have received IMASPy LICENSE file with this project.
-"""Logic for IDS data types.
-"""
+# You should have received the IMASPy LICENSE file with this project.
+
 from enum import Enum
 from typing import Tuple, Optional
 

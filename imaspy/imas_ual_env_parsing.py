@@ -1,5 +1,5 @@
 # This file is part of IMASPy.
-# You should have received IMASPy LICENSE file with this project.
+# You should have received the IMASPy LICENSE file with this project.
 def parse_UAL_version_string(string):
     """Parses a UAL_VERSION string
 
