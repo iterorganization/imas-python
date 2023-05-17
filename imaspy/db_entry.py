@@ -1,10 +1,9 @@
 # This file is part of IMASPy.
 # You should have received IMASPy LICENSE file with this project.
 
-from contextlib import contextmanager
 import importlib
 import os
-from typing import Any, Callable, Iterator, Optional, Tuple, Union
+from typing import Any, Optional
 
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
@@ -22,9 +21,6 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_INDEPENDENT,
     IDS_TIME_MODE_UNKNOWN,
     IDS_TIME_MODES,
-    CLOSEST_INTERP,
-    LINEAR_INTERP,
-    PREVIOUS_INTERP,
     UNDEFINED_INTERP,
     UNDEFINED_TIME,
     needs_imas,
@@ -35,91 +31,7 @@ from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_root import IDSRoot
 from imaspy.ids_toplevel import IDSToplevel
-
-
-class UalContext:
-    def __init__(self, ctx, ull):
-        self.ctx = ctx
-        self.ull = ull
-
-    @contextmanager
-    def global_action(self, path: str, rwmode: int) -> Iterator["UalContext"]:
-        ctx = self._begin_action(self.ull.ual_begin_global_action, path, rwmode)
-        try:
-            yield ctx
-        finally:
-            self.ull.ual_end_action(ctx.ctx)
-
-    @contextmanager
-    def slice_action(
-        self, path: str, rwmode: int, time_requested: float, interpolation_method: int
-    ) -> Iterator["UalContext"]:
-        if interpolation_method not in [
-            CLOSEST_INTERP,
-            LINEAR_INTERP,
-            PREVIOUS_INTERP,
-            UNDEFINED_INTERP,
-        ]:
-            raise ValueError(
-                "get_slice called with unexpected interpolation method: "
-                f"{interpolation_method}"
-            )
-        ctx = self._begin_action(
-            self.ull.ual_begin_slice_action,
-            path,
-            rwmode,
-            time_requested,
-            interpolation_method,
-        )
-        try:
-            yield ctx
-        finally:
-            self.ull.ual_end_action(ctx.ctx)
-
-    @contextmanager
-    def arraystruct_action(
-        self, path: str, timebase: str, size: int
-    ) -> Iterator[Tuple["UalContext", int]]:
-        ctx, size = self._begin_action(
-            self.ull.ual_begin_arraystruct_action, path, timebase, size
-        )
-        try:
-            yield ctx, size
-        finally:
-            self.ull.ual_end_action(ctx.ctx)
-
-    def iterate_over_arraystruct(self, step: int) -> None:
-        status = self.ull.ual_iterate_over_arraystruct(self.ctx, step)
-        if status != 0:
-            raise RuntimeError(f"Error iterating over arraystruct: {status=}")
-
-    def _begin_action(
-        self, action: Callable, *args: Any
-    ) -> Union["UalContext", Tuple["UalContext", Any]]:
-        status, ctx, *rest = action(self.ctx, *args)
-        if status != 0:
-            raise RuntimeError(f"Error calling {action.__name__}: {status=}")
-        if rest:
-            return UalContext(ctx, self.ull), *rest
-        return UalContext(ctx, self.ull)
-
-    def read_data(self, path: str, timebasepath: str, datatype: int, dim: int) -> Any:
-        status, data = self.ull.ual_read_data(
-            self.ctx, path, timebasepath, datatype, dim
-        )
-        if status != 0:
-            raise RuntimeError(f"Error reading data at {path!r}: {status=}")
-        return data
-
-    def delete_data(self, path: str) -> None:
-        status = self.ull.ual_delete_data(self.ctx, path)
-        if status != 0:
-            raise RuntimeError(f"Error deleting data at {path!r}: {status=}")
-
-    def write_data(self, path: str, timebasepath: str, data: Any) -> None:
-        status = self.ull.ual_write_data(self.ctx, path, timebasepath, data)
-        if status != 0:
-            raise RuntimeError(f"Error writing data at {path!r}: {status=}")
+from imaspy.ual_context import UalContext
 
 
 class DBEntry:
