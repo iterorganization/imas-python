@@ -1,17 +1,12 @@
 # A testcase loading multiple data dictionary files
 # (all IMAS data-dictionary files in the zip with version >= min).
 
-import logging
 from packaging.version import Version as V
 
 import pytest
 
 import imaspy
 from imaspy.dd_zip import dd_xml_versions, get_dd_xml
-
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
 
 
 def test_known_version():

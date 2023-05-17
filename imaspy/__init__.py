@@ -42,6 +42,7 @@ try:
     # We need these to work with data in the right format
     from . import (
         al_exception,
+        db_entry,
         context_store, # todo: Import with side-effects?
         dd_helpers,
         dd_zip,

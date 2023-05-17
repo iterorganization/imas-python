@@ -1,14 +1,8 @@
 """A testcase checking if resampling works for the latest data dictionary version.
 """
 
-import logging
-
 import imaspy
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
-
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
 
 
 def test_single_resample_inplace():

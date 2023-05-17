@@ -7,6 +7,7 @@ import numpy as np
 import imaspy
 
 # TODO: import these from imaspy (i.e. expose them publicly?)
+from imaspy.db_entry import DBEntry
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_root import IDSRoot
 from imaspy.ids_struct_array import IDSStructArray
@@ -151,3 +152,20 @@ def open_ids(backend, mode, worker_id, tmp_path, **kwargs):
         ids.open_ual_store(tmp_path, "test", str(ver), backend, mode=mode)
 
     return ids
+
+
+def open_dbentry(backend, mode, worker_id, tmp_path) -> DBEntry:
+    """Open a DBEntry, with a tmpdir in place of the user argument"""
+    if worker_id == "master":
+        shot = 1
+    else:
+        shot = int(worker_id[2:]) + 1
+
+    dbentry = DBEntry(backend, "test", shot, 0, str(tmp_path))
+    options = f"-prefix {tmp_path}/" if backend == ASCII_BACKEND else None
+    if mode == "w":
+        dbentry.create(options=options)
+    else:
+        dbentry.open(options=options)
+
+    return dbentry
