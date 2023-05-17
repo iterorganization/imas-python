@@ -154,14 +154,18 @@ def open_ids(backend, mode, worker_id, tmp_path, **kwargs):
     return ids
 
 
-def open_dbentry(backend, mode, worker_id, tmp_path) -> DBEntry:
+def open_dbentry(
+    backend, mode, worker_id, tmp_path, version=None, xml_path=None
+) -> DBEntry:
     """Open a DBEntry, with a tmpdir in place of the user argument"""
     if worker_id == "master":
         shot = 1
     else:
         shot = int(worker_id[2:]) + 1
 
-    dbentry = DBEntry(backend, "test", shot, 0, str(tmp_path))
+    dbentry = DBEntry(
+        backend, "test", shot, 0, str(tmp_path), version=version, xml_path=xml_path
+    )
     options = f"-prefix {tmp_path}/" if backend == ASCII_BACKEND else None
     if mode == "w":
         dbentry.create(options=options)

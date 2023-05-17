@@ -26,6 +26,8 @@ def test_known_failing_version():
         get_dd_xml("0.0")
 
 
+# FIXME: duplicate of test_all_dd_versions
+@pytest.mark.slow
 def test_load_all_dds():
     """Test loading all of the data dictionaries.
     Only load those we support (OLDEST_SUPPORTED_VERSION and up)

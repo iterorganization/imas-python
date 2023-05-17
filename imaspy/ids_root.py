@@ -128,6 +128,7 @@ class IDSRoot:
         if xml_path:
             logger.info("Generating IDS structures from file %s", xml_path)
             self._xml_path = xml_path
+            ver = None
         else:
             logger.info("Generating IDS structures for version %s", ver)
             self._imas_version = ver

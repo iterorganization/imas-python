@@ -2,6 +2,7 @@
 # You should have received IMASPy LICENSE file with this project.
 
 import importlib
+import logging
 import os
 from typing import Any, Optional
 
@@ -25,13 +26,15 @@ from imaspy.ids_defs import (
     UNDEFINED_TIME,
     needs_imas,
 )
+from imaspy.ids_factory import IDSFactory
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_metadata import IDSType
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
-from imaspy.ids_root import IDSRoot
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.ual_context import UalContext
+
+logger = logging.getLogger(__name__)
 
 
 class DBEntry:
@@ -46,8 +49,24 @@ class DBEntry:
         run: int,
         user_name: Optional[str] = None,
         data_version: Optional[str] = None,
+        *,
+        version: Optional[str] = None,
+        xml_path: Optional[str] = None,
     ) -> None:
         """Create a new IMAS database entry object.
+
+        You may use the optional arguments ``dd_version`` or ``xml_path`` to indicate
+        the Data Dictionary version for usage with this Database Entry. If neither are
+        supplied, the version is obtained from the IMAS_VERSION environment variable. If
+        that also is not available, the latest available DD version is used.
+
+        When using this DBEntry for reading data (:meth:`get` or :meth:`get_slice`), the
+        returned IDSToplevel will be in the DD version specified. If the on-disk format
+        is for a different DD version, the data is converted automatically.
+
+        When using this DBEntry for writing data (:met:`put` or :meth:`put_slice`), the
+        specified DD version is used for writing to the backend. If the provided
+        IDSToplevel is for a different DD version, the data is converted automatically.
 
         Args:
             backend_id: ID of the backend to use, e.g. HDF5_BACKEND.
@@ -58,6 +77,8 @@ class DBEntry:
                 supplied.
             data_version: Major version of the access layer, retrieved from environment
                 when not supplied.
+            dd_version: Data dictionary version to use.
+            xml_path: Data dictionary definition XML file to use.
         """
         self.backend_id = backend_id
         self.db_name = db_name
@@ -69,6 +90,12 @@ class DBEntry:
         # TODO: don't import all of IMAS, only load _ual_lowlevel, see
         # https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
         self._ull = importlib.import_module("imas._ual_lowlevel")
+        self._ids_factory = IDSFactory(version, xml_path)
+
+    @property
+    def factory(self):
+        """Get the IDS factory used by this DB entry."""
+        return self._ids_factory
 
     def _ual_open_pulse(self, mode: int, options: Any) -> None:
         """Internal method implementing open()/create()."""
@@ -236,9 +263,18 @@ class DBEntry:
             )
         if time_mode not in IDS_TIME_MODES:
             raise RuntimeError()  # FIXME!
+
+        if not dd_version:
+            logger.warning(
+                "Loaded IDS (%s, occurrence %s) does not specify a data dictionary "
+                "version. Some data may not be loaded.",
+                ids_name,
+                occurrence,
+            )
+        elif dd_version != self._ids_factory._version:
+            raise NotImplementedError("DD version conversion is not yet implemented.")
         # Create a new IDSToplevel with the same version as stored in the backend
-        ids_root = IDSRoot(version=dd_version)
-        toplevel = ids_root[ids_name]
+        toplevel = self._ids_factory.new(ids_name)
         # Now fill the IDSToplevel
         if time_requested is None:  # get
             manager = self._db_ctx.global_action(ll_path, READ_OP)
@@ -334,6 +370,9 @@ class DBEntry:
         """Actual implementation of put() and put_slice()"""
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
+
+        if not ids._parent or ids._parent._version != self._ids_factory._version:
+            raise NotImplementedError("DD version conversion is not yet implemented.")
 
         # Verify homogeneous_time is set
         time_mode = ids.ids_properties.homogeneous_time

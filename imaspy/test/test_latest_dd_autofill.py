@@ -4,7 +4,7 @@ data dictionary version.
 
 import copy
 
-import imaspy
+from imaspy.ids_factory import IDSFactory
 from imaspy.ids_root import IDSRoot
 from imaspy.test.test_helpers import (
     compare_children,
@@ -14,11 +14,11 @@ from imaspy.test.test_helpers import (
 
 
 def test_latest_dd_autofill_consistency(ids_name):
-    ids = imaspy.ids_root.IDSRoot(1, 0)
-    fill_with_random_data(ids[ids_name])
+    ids = IDSFactory().new(ids_name)
+    fill_with_random_data(ids)
 
-    # check that each element in ids[ids_name] has _parent set.
-    ids[ids_name].visit_children(has_parent, leaf_only=False)
+    # check that each element in ids has _parent set.
+    ids.visit_children(has_parent, leaf_only=False)
 
 
 def has_parent(child):
@@ -27,9 +27,9 @@ def has_parent(child):
 
 
 def test_latest_dd_autofill_separate(ids_name, backend, worker_id, tmp_path):
-    """Write and then read again a full IDSRoot and all IDSToplevels."""
+    """Write and then read again all IDSToplevels."""
     dbentry = open_dbentry(backend, "w", worker_id, tmp_path)
-    ids = IDSRoot()[ids_name]
+    ids = IDSFactory().new(ids_name)
     fill_with_random_data(ids)
 
     dbentry.put(ids)
@@ -40,9 +40,9 @@ def test_latest_dd_autofill_separate(ids_name, backend, worker_id, tmp_path):
 
 
 def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
-    """Write and then read again a full IDSRoot and all IDSToplevels."""
+    """Write and then read again all IDSToplevels."""
     dbentry = open_dbentry(backend, "w", worker_id, tmp_path)
-    ids = IDSRoot()[ids_name]
+    ids = IDSFactory().new(ids_name)
     fill_with_random_data(ids)
 
     dbentry.put(ids)
@@ -57,16 +57,16 @@ def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
 
 
 def test_latest_dd_autofill_serialize(ids_name, has_imas):
-    """Serialize and then deserialize again a full IDSRoot and all IDSToplevels"""
+    """Serialize and then deserialize again all IDSToplevels"""
     # TODO: test with multiple serialization protocols
-    ids = imaspy.ids_root.IDSRoot(0, 0)
+    ids = IDSRoot(0, 0)
     fill_with_random_data(ids[ids_name])
 
     if not has_imas:
         return  # rest of the test requires an IMAS install
     data = ids[ids_name].serialize()
 
-    ids2 = imaspy.ids_root.IDSRoot(0, 0)
+    ids2 = IDSRoot(0, 0)
     ids2[ids_name].deserialize(data)
 
     compare_children(ids[ids_name], ids2[ids_name])

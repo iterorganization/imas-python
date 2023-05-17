@@ -15,7 +15,7 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_HETEROGENEOUS,
     MDSPLUS_BACKEND,
 )
-from imaspy.ids_root import IDSRoot
+from imaspy.ids_factory import IDSFactory
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.test.test_helpers import open_dbentry
 
@@ -35,7 +35,7 @@ def time_mode(request):
 def test_write_read_time(backend, worker_id, tmp_path, time_mode):
     """Write some data to an IDS and then check that all slices match."""
     dbentry = open_dbentry(backend, "w", worker_id, tmp_path)
-    eq = IDSRoot()["equilibrium"]
+    eq = IDSFactory().new("equilibrium")
     eq.ids_properties.homogeneous_time = time_mode
 
     eq.time = np.array([0.0, 0.1, 0.2])
@@ -50,7 +50,7 @@ def test_time_slicing_get(backend, worker_id, tmp_path, time_mode):
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
     dbentry = open_dbentry(backend, "w", worker_id, tmp_path)
-    eq = IDSRoot()["equilibrium"]
+    eq = IDSFactory().new("equilibrium")
     eq.ids_properties.homogeneous_time = time_mode
 
     # eq.time is the time coordinate for b0 in heterogeneous mode as well
@@ -68,7 +68,7 @@ def test_time_slicing_put(backend, worker_id, tmp_path, request, time_mode):
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
     dbentry = open_dbentry(backend, "w", worker_id, tmp_path)
-    eq = IDSRoot()["equilibrium"]
+    eq = IDSFactory().new("equilibrium")
     eq.ids_properties.homogeneous_time = time_mode
 
     for time in range(3):
@@ -125,7 +125,7 @@ def test_time_slicing_put_two(backend, worker_id, tmp_path, time_mode):
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
     dbentry = open_dbentry(backend, "w", worker_id, tmp_path)
-    eq = IDSRoot()["equilibrium"]
+    eq = IDSFactory().new("equilibrium")
     eq.ids_properties.homogeneous_time = time_mode
 
     for time in range(3):
@@ -148,7 +148,7 @@ def test_time_slicing_time_mode(backend, worker_id, tmp_path, time_mode):
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
     dbentry = open_dbentry(backend, "w", worker_id, tmp_path)
-    ctrls = IDSRoot().controllers
+    ctrls = IDSFactory().new("controllers")
     ctrls.ids_properties.homogeneous_time = time_mode
 
     ctrls.time = [0.1, 0.2, 0.3]

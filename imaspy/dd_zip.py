@@ -36,7 +36,6 @@ from packaging.version import Version as V
 from functools import lru_cache
 from pathlib import Path
 from zipfile import ZipFile
-import site
 from typing import List
 from importlib_resources import files
 
@@ -77,19 +76,56 @@ def _build_zipfile_locations() -> List[Path]:
     return zipfile_locations
 
 
+# Note: DD etrees don't consume a lot of memory, so we'll keep max 32 in memory
+_DD_CACHE_SIZE = 32
 ZIPFILE_LOCATIONS = _build_zipfile_locations()
 
 
-# for version conversion we would expect 2 to be sufficient. Give it some extra space.
-@lru_cache(maxsize=4)
+@lru_cache(_DD_CACHE_SIZE)
 def dd_etree(version=None, xml_path=None):
-    """Get an ElementTree describing a DD by version or path"""
+    """Return the DD element tree corresponding to the provided dd_version or xml_file.
+
+    By default (``dd_version`` and ``dd_xml`` are not supplied), this will attempt
+    to get the version from the environment (``IMAS_VERSION``) and use the latest
+    available version as fallback.
+
+    You can also specify a specific DD version to use (e.g. "3.38.1") or point to a
+    specific data-dictionary XML file. These options are exclusive.
+
+    Args:
+        version: DD version string, e.g. "3.38.1".
+        xml_path: XML file containing data dictionary definition.
+    """
+    if version and xml_path:
+        raise ValueError("version and xml_path cannot be provided both.")
+    if not version and not xml_path:
+        # Figure out which DD version to use
+        if "IMAS_VERSION" in os.environ:
+            imas_version = os.environ["IMAS_VERSION"]
+            if imas_version in dd_xml_versions():
+                # Use bundled DD version when available
+                version = imas_version
+            elif "IMAS_PREFIX" in os.environ:
+                # Try finding the IDSDef.xml in this installation
+                imas_prefix = Path(os.environ["IMAS_PREFIX"]).resolve()
+                xml_file = imas_prefix / "include" / "IDSDef.xml"
+                if xml_file.exists():
+                    xml_path = str(xml_file)
+            if not version and not xml_path:
+                logger.warning(
+                    "Unable to load IMAS version %s, falling back to latest version.",
+                    imas_version,
+                )
+    if not version and not xml_path:
+        # Use latest available from
+        version = latest_dd_version()
+
     if xml_path:
+        logger.info("Parsing data dictionary from file: %s", xml_path)
         tree = ET.parse(xml_path)
-    elif version:
-        tree = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
     else:
-        raise ValueError("version or xml_path are required")
+        logger.info("Parsing data dictionary version %s", version)
+        tree = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
     return tree
 
 
@@ -131,7 +167,7 @@ def safe_get(fun):
                 try:
                     return fun(dd_zip)
                 except KeyError:
-                    logger.warning("IMAS DD version not found in %s", file)
+                    logger.debug("IMAS DD version not found in %s", file)
     raise FileNotFoundError(
         "IMAS DD zipfile IDSDef.zip not found, checked {!s}".format(ZIPFILE_LOCATIONS)
     )
