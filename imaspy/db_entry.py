@@ -529,6 +529,11 @@ def _put_children(
     # IDSStructArray elements if they don't contain dynamic data nodes. That is hard to
     # detect now, so we just recurse and check the data elements
     for element in structure:
+        if (
+            element.metadata.type is IDSType.DYNAMIC
+            and time_mode == IDS_TIME_MODE_INDEPENDENT
+        ):
+            continue  # skip dynamic data when in time independent mode
         name = element.metadata.name
         new_path = f"{ctx_path}/{name}" if ctx_path else name
 
