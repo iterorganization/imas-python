@@ -22,6 +22,7 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_INDEPENDENT,
     IDS_TIME_MODE_UNKNOWN,
     IDS_TIME_MODES,
+    MDSPLUS_BACKEND,
     UNDEFINED_INTERP,
     UNDEFINED_TIME,
     needs_imas,
@@ -32,6 +33,7 @@ from imaspy.ids_metadata import IDSType
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_toplevel import IDSToplevel
+from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.ual_context import UalContext
 
 logger = logging.getLogger(__name__)
@@ -90,6 +92,8 @@ class DBEntry:
         # TODO: don't import all of IMAS, only load _ual_lowlevel, see
         # https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
         self._ull = importlib.import_module("imas._ual_lowlevel")
+        self._version = version
+        self._xml_path = xml_path
         self._ids_factory = IDSFactory(version, xml_path)
 
     @property
@@ -101,6 +105,8 @@ class DBEntry:
         """Internal method implementing open()/create()."""
         if self._db_ctx is not None:
             self.close()
+        if self.backend_id == MDSPLUS_BACKEND:
+            self._setup_mdsplus()
         status, idx = self._ull.ual_begin_pulse_action(
             self.backend_id,
             self.shot,
@@ -115,6 +121,34 @@ class DBEntry:
         status = self._ull.ual_open_pulse(self._db_ctx.ctx, mode, options)
         if status != 0:
             raise RuntimeError(f"Error opening/creating database entry: {status=}")
+
+    def _setup_mdsplus(self):
+        """Additional setup required for MDSPLUS backend"""
+        # Load the model directory of the IMAS version that we got instantiated with.
+        # This does not cover the case of reading an idstoplevel and only then finding
+        # out which version it is. But, I think that the model dir is not required if
+        # there is an existing file.
+        if self._version or self._xml_path:
+            model_dir = mdsplus_model_dir(self._version, self._xml_path)
+        elif self._ids_factory._version:
+            model_dir = mdsplus_model_dir(self._ids_factory._version)
+        else:
+            # This doesn't actually matter much, since if we are auto-loading
+            # the backend version it is an existing file and we don't need
+            # the model (I think). If we are not auto-loading then one of
+            # the above two conditions should be true.
+            logger.warning(
+                "No backend version information available, not building MDSPlus model."
+            )
+        os.environ["ids_path"] = model_dir
+
+        # Note: MDSPLUS model directory only uses the major version component of
+        # IMAS_VERSION, so we'll take the first character of IMAS_VERSION, or fallback
+        # to "3" (older we don't support, newer is not available and probably never will
+        # with Access Layer 4.x). This needs to be revised for AL5 either way, since the
+        # directory structures are changing.
+        version = self._version[0] if self._version else "3"
+        ensure_data_dir(str(self.user_name), self.db_name, version, self.run)
 
     def close(self, *, options=None, erase=False):
         """Close this Database Entry.

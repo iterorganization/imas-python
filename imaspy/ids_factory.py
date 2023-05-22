@@ -58,7 +58,7 @@ class IDSFactory:
             self._version = version
         else:
             logger.warning("Ignoring missing Data Dictionary version in loaded DD.")
-            self._version = -1
+            self._version = "-1"
         if version and version != self._version:
             logger.warning(
                 "Ignoring mismatch between requested DD version %s and actual "
