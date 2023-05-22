@@ -129,9 +129,9 @@ class DBEntry:
         # out which version it is. But, I think that the model dir is not required if
         # there is an existing file.
         if self._version or self._xml_path:
-            model_dir = mdsplus_model_dir(self._version, self._xml_path)
+            os.environ["ids_path"] = mdsplus_model_dir(self._version, self._xml_path)
         elif self._ids_factory._version:
-            model_dir = mdsplus_model_dir(self._ids_factory._version)
+            os.environ["ids_path"] = mdsplus_model_dir(self._ids_factory._version)
         else:
             # This doesn't actually matter much, since if we are auto-loading
             # the backend version it is an existing file and we don't need
@@ -140,7 +140,6 @@ class DBEntry:
             logger.warning(
                 "No backend version information available, not building MDSPlus model."
             )
-        os.environ["ids_path"] = model_dir
 
         # Note: MDSPLUS model directory only uses the major version component of
         # IMAS_VERSION, so we'll take the first character of IMAS_VERSION, or fallback
@@ -496,7 +495,9 @@ def _delete_children(structure: IDSStructure, ctx: UalContext, ctx_path: str) ->
     for element in structure:
         name = element.metadata.name
         new_path = f"{ctx_path}/{name}" if ctx_path else name
-        if isinstance(element, IDSStructure):
+        # FIXME: `and not` clause can be removed when IDSStructArray no longer inherits
+        # from IDSStructure.
+        if isinstance(element, IDSStructure) and not isinstance(IDSStructArray):
             _delete_children(element, ctx, new_path)
         else:  # Data elements and IDSStructArray
             ctx.delete_data(new_path)
