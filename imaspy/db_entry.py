@@ -497,7 +497,7 @@ def _delete_children(structure: IDSStructure, ctx: UalContext, ctx_path: str) ->
         new_path = f"{ctx_path}/{name}" if ctx_path else name
         # FIXME: `and not` clause can be removed when IDSStructArray no longer inherits
         # from IDSStructure.
-        if isinstance(element, IDSStructure) and not isinstance(IDSStructArray):
+        if isinstance(element, IDSStructure) and not isinstance(element, IDSStructArray):
             _delete_children(element, ctx, new_path)
         else:  # Data elements and IDSStructArray
             ctx.delete_data(new_path)
