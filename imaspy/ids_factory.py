@@ -95,3 +95,7 @@ class IDSFactory:
         if ids_name not in self._ids_elements:
             raise ValueError(f"IDS {ids_name} not found in the Data Dictionary.")
         return IDSToplevel(self, self._ids_elements[ids_name])
+
+    def exists(self, ids_name: str) -> bool:
+        """Check if an IDS type with the given name exists."""
+        return ids_name in self._ids_elements

@@ -7,15 +7,67 @@ by writing them as the old and reading as new and vice-versa
 
 import logging
 
+import numpy
 import pytest
 
+from imaspy.ids_convert import convert_ids
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
+from imaspy.ids_factory import IDSFactory
 from imaspy.test.test_helpers import compare_children, fill_with_random_data, open_ids
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
 logger.setLevel(logging.INFO)
 
+
+@pytest.fixture(autouse=True)
+def debug_log(caplog):
+    """Make sure we capture all debug output when tests fail."""
+    caplog.set_level(logging.DEBUG, "imaspy.ids_convert")
+
+
+def test_nbc_change_aos_renamed():
+    """Test renamed AoS in pulse_schedule: ec/antenna -> ec/launcher.
+
+    Also tests renamed structures:
+    - ec/antenna/launching_angle_pol -> ec/launcher/steering_angle_pol
+    - ec/antenna/launching_angle_tor -> ec/launcher/steering_angle_tor
+    """
+    # AOS was renamed at v3.26.0. NBC metadata introduced in 3.28.0
+    ps = IDSFactory("3.28.0").new("pulse_schedule")
+    ps.ec.launcher.resize(2)
+    for i in range(2):
+        ps.ec.launcher[i].name = f"test{i}"
+
+    # Test conversion from 3.28.0 -> 3.25.0
+    ps2 = convert_ids(ps, "3.25.0")
+    assert len(ps2.ec.antenna.value) == 2
+    for i in range(2):
+        assert ps2.ec.antenna[i].name == f"test{i}"
+
+    # Test conversion from 3.25.0 -> 3.28.0
+    ps3 = convert_ids(ps2, "3.28.0")
+    assert len(ps3.ec.launcher.value) == 2
+    for i in range(2):
+        assert ps3.ec.launcher[i].name == f"test{i}"
+
+
+def test_nbc_change_leaf_renamed():
+    """Test renamed leaf in reflectometer_profile: position/r/data -> position/r
+    """
+    # Leaf was renamed at 3.23.3. NBC metadata introduced in 3.28.0
+    rp = IDSFactory("3.28.0").new("reflectometer_profile")
+    rp.channel.resize(1)
+    data = numpy.linspace([0, 1, 2], [1, 2, 3], 5)
+    rp.channel[0].position.r = data
+
+    # Test conversion from 3.28.0 -> 3.23.0
+    rp2 = convert_ids(rp, "3.23.0")
+    assert numpy.array_equal(rp2.channel[0].position.r.data.value, data)
+
+    # Test conversion from 3.23.0 -> 3.28.0
+    rp3 = convert_ids(rp2, "3.28.0")
+    assert numpy.array_equal(rp3.channel[0].position.r.value, data)
 
 def test_pulse_schedule_aos_renamed_up(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
