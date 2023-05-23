@@ -26,12 +26,13 @@ can use it as normal Python data.
 .. tabs::
 
     .. tab:: Exercise
-        For the ``shot/run/user/database`` = ``134173/106/public/ITER`` scenario:
+        For the example scenario ``shot=134173``, ``run = 106``,
+        ``user="public"``, ``database="ITER"``
 
-        * Read and print the ``time`` of the ``equilibrium`` IDS for the whole
-          scenario
-        * Read and print the electron temperature profile (:math:`T_e`) in the
-          ``equilibrium`` IDS at time slice t=253s
+        1. Read and print the ``time`` of the ``equilibrium`` IDS for the whole
+           scenario
+        2. Read and print the electron temperature profile (:math:`T_e`) in the
+           ``equilibrium`` IDS at time slice t=253s
 
     .. tab:: AL4
         .. literalinclude:: al4_snippets/read_whole_equilibrium.py
