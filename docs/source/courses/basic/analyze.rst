@@ -30,7 +30,7 @@ can use it as normal Python data.
 
         * Read and print the ``time`` of the ``equilibrium`` IDS for the whole
           scenario
-        * Read and print the electron temperature profile in the
+        * Read and print the electron temperature profile (:math:`T_e`) in the
           ``equilibrium`` IDS at time slice t=253s
 
     .. tab:: AL4
@@ -60,7 +60,7 @@ and/or coordinates inside the data structure though!
 Dealing with large IDSs
 '''''''''''''''''''''''
 If the data structure is too large and it order to save time and memory, one can
-decide to read only the :math:`T_e` profile of the ``core_profiles`` IDS at
+decide to read only the  :math:`T_e` profile of the ``core_profiles`` IDS at
 ``t=253s``. As before, one has to know that it corresponds to ``index=261`` of
 the core_profiles.time array, which can be found with the method above. This
 assumes that the equilibrium and core_profiles IDSs are defined on the same time
@@ -88,3 +88,9 @@ Now we can plot the :math:`T_e` profile obtained above:
 
     .. tab:: IMASPy
         .. literalinclude:: imaspy_snippets/plot_core_profiles_te_timeslice.py
+
+.. figure:: core_profiles_te_timeslice.png
+    :scale: 100%
+    :alt: matplotlib plot of electron temperature vs normalized toroidal flux coordinate
+
+    A plot of :math:`T_e` vs :math:`\rho_{tor_{norm}}`
