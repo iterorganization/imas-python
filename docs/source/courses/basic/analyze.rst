@@ -7,20 +7,20 @@ Loading IMAS data
 -----------------
 
 For this part of the training we will learn to open an IMAS database entry, and
-plot some basic data in it using `matplotlib <https://matplotlib.org/>`.
+plot some basic data in it using `matplotlib <https://matplotlib.org/>`_.
 
 Open an IMAS database entry
 '''''''''''''''''''''''''''
 IMAS explicitly separates the data on disk from the data in memory. To get
 started we load an existing IMAS data file from disk. The on-disk file
-is represented by an `imas.DBEntry`, which we have to
-:meth:`~imaspy.ids_root.IDSRoot.open_env` to get a reference to the data file we
+is represented by an ``imas.DBEntry``, which we have to
+:meth:`~imaspy.ids_root.IDSRoot.open_env()` to get a reference to the data file we
 will manipulate. The connection to the data file is kept intact until we neatly
 :meth:`~imaspy.ids_root.IDSRoot.close()` the file. Note that the on-disk file
 will not be changed until an explicit ``.put()`` (e.g.
-:meth:`~imaspy.ids_toplevel.IDSToplevel.put`) is called. This is similar to e.g.
+:meth:`~imaspy.ids_toplevel.IDSToplevel.put()`) is called. This is similar to e.g.
 a `xarray Dataset <https://docs.xarray.dev/en/stable/getting-started-guide/quick-overview.html#datasets>`_.
-We load data in memory with the `get` and `get_slice` commands, after which we
+We load data in memory with the ``get`` and ``get_slice`` methods, after which we
 can use it as normal Python data.
 
 .. tabs::
@@ -41,7 +41,7 @@ can use it as normal Python data.
 
 When dealing with unknown data, it can be dangerous to blindly load whole IDSs.
 For sure when dealing with larger data files, this might fill up the RAM of your
-machine quickly. To deal with this we use partial_get, which allows us to load
+machine quickly. To deal with this we use ``partial_get``, which allows us to load
 only a small part of the IDS into memory. One first needs to know some names
 and/or coordinates inside the data structure though!
 
