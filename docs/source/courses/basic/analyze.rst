@@ -47,9 +47,9 @@ and/or coordinates inside the data structure though!
 
 .. tabs::
     .. tab:: Exercise
-        Read the time array of the equilibrium IDS to get the time trace of a
-        given scenario. This is how e.g, one can find the index corresponding a
-        specific time slice.
+        Read the time array of the ``equilibrium`` IDS to get the time trace of
+        a given scenario. This is how e.g, one can find the index corresponding
+        a specific time slice.
 
     .. tab:: AL4
         .. literalinclude:: al4_snippets/read_equilibrium_time_array.py
@@ -62,9 +62,9 @@ Dealing with large IDSs
 If the data structure is too large and it order to save time and memory, one can
 decide to read only the  :math:`T_e` profile of the ``core_profiles`` IDS at
 ``t=253s``. As before, one has to know that it corresponds to ``index=261`` of
-the core_profiles.time array, which can be found with the method above. This
-assumes that the equilibrium and core_profiles IDSs are defined on the same time
-array, which is not necessarily the case
+the ``core_profiles.time`` array, which can be found with the method above. This
+assumes that the ``equilibrium`` and ``core_profiles`` IDSs are defined on the
+same time array, which is not necessarily the case
 
 .. tabs::
     .. tab:: Exercise
