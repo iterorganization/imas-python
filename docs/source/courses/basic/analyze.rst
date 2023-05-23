@@ -24,8 +24,8 @@ can use it as normal Python data.
 .. tabs::
 
     .. tab:: Exercise
-        For the example scenario ``shot=134173``, ``run = 106``,
-        ``user="public"``, ``database="ITER"``
+        For the example scenario ``shot = 134173``, ``run = 106``,
+        ``user = "public"``, ``database = "ITER"``
 
         1. Read and print the ``time`` of the ``equilibrium`` IDS for the whole
            scenario
