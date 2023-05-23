@@ -1,9 +1,8 @@
-import pytest
-
 from imaspy.ids_root import IDSRoot
 
+
 def test_root_init():
-    root = IDSRoot()
+    IDSRoot()
 
 
 def test_stringify():

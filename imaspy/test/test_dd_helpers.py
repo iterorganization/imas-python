@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from imaspy.dd_helpers import *
+from imaspy.dd_helpers import find_saxon_classpath, download_saxon
 
 
 # TODO: Write tests!

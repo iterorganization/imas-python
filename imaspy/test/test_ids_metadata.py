@@ -12,10 +12,15 @@ def fake_structure_xml(fake_toplevel_xml):
     return tree.find("IDS")
 
 
+def test_metadata_cache(fake_structure_xml):
+    meta = IDSMetadata(structure_xml=fake_structure_xml)
+    meta2 = IDSMetadata(structure_xml=fake_structure_xml)
+    assert meta is meta2
+
+
 def test_metadata_init_structure_xml(fake_structure_xml):
     meta = IDSMetadata(structure_xml=fake_structure_xml)
     assert fake_structure_xml.attrib["name"] == "gyrokinetics"
-    assert meta["name"] == "gyrokinetics"
     assert meta.name == "gyrokinetics"
 
 

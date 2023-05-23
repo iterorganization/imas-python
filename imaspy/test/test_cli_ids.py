@@ -1,16 +1,9 @@
-from importlib.metadata import version
-
 from click.testing import CliRunner
 import pytest
 
 from imaspy.command.subcommands.ids import info, open_from_file
-from imaspy.ids_defs import (
-    ASCII_BACKEND,
-    IDS_TIME_MODE_INDEPENDENT,
-    IDS_TIME_MODE_HOMOGENEOUS,
-)
-from imaspy.ids_root import IDSRoot
-from imaspy.test_helpers import open_ids
+from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS
+from imaspy.test.test_helpers import open_ids
 
 
 @pytest.fixture

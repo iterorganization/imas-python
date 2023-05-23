@@ -1,15 +1,10 @@
 """A testcase checking if resampling works for the latest data dictionary version.
 """
 
-import copy
 import logging
 
-import numpy as np
-import pytest
-
 import imaspy
-from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
-from imaspy.test_helpers import compare_children, fill_with_random_data, open_ids
+from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
