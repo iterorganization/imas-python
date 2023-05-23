@@ -34,10 +34,10 @@ can use it as normal Python data.
           ``equilibrium`` IDS at time slice t=253s
 
     .. tab:: AL4
-        .. literalinclude:: al4_snippits/read_whole_equilibrium.py
+        .. literalinclude:: al4_snippets/read_whole_equilibrium.py
 
     .. tab:: IMASPy
-        .. literalinclude:: imaspy_snippits/read_whole_equilibrium.py
+        .. literalinclude:: imaspy_snippets/read_whole_equilibrium.py
 
 When dealing with unknown data, it can be dangerous to blindly load whole IDSs.
 For sure when dealing with larger data files, this might fill up the RAM of your
@@ -52,10 +52,10 @@ and/or coordinates inside the data structure though!
         specific time slice.
 
     .. tab:: AL4
-        .. literalinclude:: al4_snippits/read_equilibrium_time_array.py
+        .. literalinclude:: al4_snippets/read_equilibrium_time_array.py
 
     .. tab:: IMASPy
-        .. literalinclude:: imaspy_snippits/read_equilibrium_time_array.py
+        .. literalinclude:: imaspy_snippets/read_equilibrium_time_array.py
 
 Dealing with large IDSs
 '''''''''''''''''''''''
@@ -71,10 +71,10 @@ array, which is not necessarily the case
         Use ``partial_get`` to get the ``core_profiles`` :math:`T_e` and
         :math:`\rho_{tor_{norm}}` at ``index=261``
     .. tab:: AL4
-        .. literalinclude:: al4_snippits/read_core_profiles_te_timeslice.py
+        .. literalinclude:: al4_snippets/read_core_profiles_te_timeslice.py
 
     .. tab:: IMASPy
-        .. literalinclude:: imaspy_snippits/read_core_profiles_te_timeslice.py
+        .. literalinclude:: imaspy_snippets/read_core_profiles_te_timeslice.py
 
 
 Now we can plot the :math:`T_e` profile obtained above:
@@ -84,7 +84,7 @@ Now we can plot the :math:`T_e` profile obtained above:
         Using ``matplotlib``, create a plot of :math:`T_e` on the y-axis and
         :math:`\rho_{tor_{norm}}` on the x-axis.
     .. tab:: AL4
-        .. literalinclude:: al4_snippits/plot_core_profiles_te_timeslice.py
+        .. literalinclude:: al4_snippets/plot_core_profiles_te_timeslice.py
 
     .. tab:: IMASPy
-        .. literalinclude:: imaspy_snippits/plot_core_profiles_te_timeslice.py
+        .. literalinclude:: imaspy_snippets/plot_core_profiles_te_timeslice.py
