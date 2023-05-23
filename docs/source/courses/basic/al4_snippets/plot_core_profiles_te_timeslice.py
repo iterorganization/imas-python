@@ -20,6 +20,9 @@ te = input.partial_get("core_profiles", "profiles_1d(261)/electrons/temperature"
 rho = input.partial_get("core_profiles", "profiles_1d(261)/grid/rho_tor_norm")
 
 # Plot the figure
-plt.figure()
-plt.plot(rho, te)
+fig, ax = plt.subplots()
+ax.plot(rho, te)
+ax.set_ylabel(r"$T_e$")
+ax.set_xlabel(r"$\rho_{tor, norm}$")
+ax.ticklabel_format(axis="y", scilimits=(-1, 1))
 plt.show()

@@ -69,7 +69,7 @@ array, which is not necessarily the case
 .. tabs::
     .. tab:: Exercise
         Use ``partial_get`` to get the ``core_profiles`` :math:`T_e` and
-        :math:`\rho_{tor_{norm}}` at ``index=261``
+        :math:`\rho_{tor, norm}` at ``index=261``
     .. tab:: AL4
         .. literalinclude:: al4_snippets/read_core_profiles_te_timeslice.py
 
@@ -82,7 +82,7 @@ Now we can plot the :math:`T_e` profile obtained above:
 .. tabs::
     .. tab:: Exercise
         Using ``matplotlib``, create a plot of :math:`T_e` on the y-axis and
-        :math:`\rho_{tor_{norm}}` on the x-axis.
+        :math:`\rho_{tor, norm}` on the x-axis.
     .. tab:: AL4
         .. literalinclude:: al4_snippets/plot_core_profiles_te_timeslice.py
 
@@ -93,4 +93,4 @@ Now we can plot the :math:`T_e` profile obtained above:
     :scale: 100%
     :alt: matplotlib plot of electron temperature vs normalized toroidal flux coordinate
 
-    A plot of :math:`T_e` vs :math:`\rho_{tor_{norm}}`
+    A plot of :math:`T_e` vs :math:`\rho_{tor, norm}`
