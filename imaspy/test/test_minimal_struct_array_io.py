@@ -1,27 +1,13 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
-
-import logging
-
 import pytest
 
 import imaspy
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
-from imaspy.test_helpers import open_ids
-
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
+from imaspy.test.test_helpers import open_ids
 
 
-@pytest.fixture
-def xml():
-    from pathlib import Path
-
-    return Path(__file__).parent / "assets/IDS_minimal_struct_array.xml"
-
-
-def test_minimal_struct_array_maxoccur(backend, xml):
-    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml)
+def test_minimal_struct_array_maxoccur(backend, ids_minimal_struct_array):
+    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=ids_minimal_struct_array)
     ids.minimal_struct_array.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
 
     # Can't we do this transparently?
@@ -36,9 +22,11 @@ def test_minimal_struct_array_maxoccur(backend, xml):
         a.append(a._element_structure)
 
 
-def test_minimal_struct_array_io(backend, xml, worker_id, tmp_path):
+def test_minimal_struct_array_io(
+    backend, ids_minimal_struct_array, worker_id, tmp_path
+):
     """Write and then read again a number on our minimal IDS."""
-    ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=xml)
+    ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=ids_minimal_struct_array)
     a = ids.minimal_struct_array.struct_array
     ids.minimal_struct_array.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     a.append(a._element_structure)
@@ -54,7 +42,9 @@ def test_minimal_struct_array_io(backend, xml, worker_id, tmp_path):
     assert a[0].a.flt_0d.value == 2.0
     assert a[1].a.flt_0d.value == 4.0
 
-    ids2 = open_ids(backend, "a", worker_id, tmp_path, xml_path=xml)
+    ids2 = open_ids(
+        backend, "a", worker_id, tmp_path, xml_path=ids_minimal_struct_array
+    )
     ids2.minimal_struct_array.get()
     if backend == MEMORY_BACKEND:
         pytest.skip("Memory backend cannot be opened from different root")

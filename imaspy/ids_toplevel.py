@@ -55,7 +55,7 @@ class IDSToplevel(IDSStructure):
     """
 
     def __init__(
-        self, parent, name, structure_xml, backend_version=None, backend_xml_path=None
+        self, parent, structure_xml, backend_version=None, backend_xml_path=None
     ):
         """Save backend_version and backend_xml and build translation layer.
 
@@ -70,7 +70,7 @@ class IDSToplevel(IDSStructure):
                 ``IDSRoot.xml``. Overwrites ``version`` similar to ``xml_path``.
                 See :py:class:`IDSRoot`.
         """
-        super().__init__(parent, name, structure_xml)
+        super().__init__(parent, structure_xml)
 
         # Set an explicit backend_version or xml path
         # these will be used when put() or get() is called.

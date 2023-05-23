@@ -4,12 +4,11 @@
 # Set up pytest so that any mention of 'backend' as a test argument
 # gets run with all four backends.
 # Same for ids_type, with all types
+import importlib_resources
 import pytest
 
-from imaspy.dd_zip import dd_xml_versions, latest_dd_version
 from imaspy.ids_defs import ASCII_BACKEND, HDF5_BACKEND, MDSPLUS_BACKEND, MEMORY_BACKEND
 from imaspy.ids_root import IDSRoot
-from imaspy.test_minimal_types_io import TEST_DATA
 
 try:
     import imas
@@ -64,12 +63,6 @@ def requires_imas():
 
 
 def pytest_generate_tests(metafunc):
-    if "ids_type" in metafunc.fixturenames:
-        if metafunc.config.getoption("mini"):
-            metafunc.parametrize("ids_type", ["int_0d"])
-        else:
-            metafunc.parametrize("ids_type", [None] + list(TEST_DATA.keys()))
-
     if "ids_name" in metafunc.fixturenames:
         if metafunc.config.getoption("ids"):
             metafunc.parametrize(
@@ -85,26 +78,33 @@ def pytest_generate_tests(metafunc):
         else:
             metafunc.parametrize("ids_name", IDSRoot()._children)
 
-    # Any variables ending with _bool will be set to both true and false
-    for name in metafunc.fixturenames:
-        if name.endswith("_bool"):
-            metafunc.parametrize(name, [True, False])
 
-@pytest.fixture
-def fake_toplevel_xml():
-    from pathlib import Path
-
-    return Path(__file__).parent / "imaspy/assets/IDS_fake_toplevel.xml"
-
-@pytest.fixture
-def ids_minimal():
-    from pathlib import Path
-
-    return Path(__file__).parent / "imaspy/assets/IDS_minimal.xml"
+# Fixtures for various assets
+@pytest.fixture(scope="session")
+def imaspy_assets():
+    return importlib_resources.files("imaspy") / "assets"
 
 
-@pytest.fixture
-def ids_minimal_types():
-    from pathlib import Path
+@pytest.fixture(scope="session")
+def fake_toplevel_xml(imaspy_assets):
+    return imaspy_assets / "IDS_fake_toplevel.xml"
 
-    return Path(__file__).parent / "imaspy/assets/IDS_minimal_types.xml"
+
+@pytest.fixture(scope="session")
+def ids_minimal(imaspy_assets):
+    return imaspy_assets / "IDS_minimal.xml"
+
+
+@pytest.fixture(scope="session")
+def ids_minimal2(imaspy_assets):
+    return imaspy_assets / "IDS_minimal_2.xml"
+
+
+@pytest.fixture(scope="session")
+def ids_minimal_struct_array(imaspy_assets):
+    return imaspy_assets / "IDS_minimal_struct_array.xml"
+
+
+@pytest.fixture(scope="session")
+def ids_minimal_types(imaspy_assets):
+    return imaspy_assets / "IDS_minimal_types.xml"

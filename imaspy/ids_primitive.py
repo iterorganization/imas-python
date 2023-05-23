@@ -9,12 +9,15 @@ Provides the class for an IDS Primitive data type
 
 import logging
 import numbers
+from typing import Any
+from xml.etree.ElementTree import Element
 
 import numpy as np
 
 from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
+from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_defs import (
     DD_TYPES,
     CHAR_DATA,
@@ -38,18 +41,14 @@ class IDSPrimitive(IDSMixin):
 
     def __init__(
         self,
-        name,
-        parent=None,
-        value=None,
-        coordinates=None,
-        structure_xml=None,
-        var_type="dynamic",
+        parent: IDSMixin,
+        structure_xml: Element,
+        value: Any = None,
+        var_type: str = "dynamic",
     ):
         """Initialize IDSPrimitive
 
         Args:
-            name: Name of the leaf node. Will be used in path generation when
-                stored in DB
             parent: Parent node of this leaf. Can be anything with a _path attribute.
                 Will be used in path generation when stored in DB
             value: Value to fill the leaf with. Can be anything castable by
@@ -62,12 +61,8 @@ class IDSPrimitive(IDSMixin):
         # subclasses np.lib.mixins.NDArrayOperatorsMixin, copy the call
         # signature of np.lib.mixins.NDArrayOperatorsMixins __init__ to
         # let IDSNumericArray act as a numpy array
-        super().__init__(
-            parent,
-            name,
-            coordinates=coordinates,
-            structure_xml=structure_xml,
-        )
+        super().__init__(parent, structure_xml=structure_xml)
+        self.coordinates = IDSCoordinates(self)
 
         if (
             self.metadata.data_type is not IDSDataType.STR
@@ -396,21 +391,21 @@ class IDSPrimitive(IDSMixin):
             )
 
 
-def create_leaf_container(name, data_type, **kwargs):
+def create_leaf_container(parent, structure_xml, **kwargs):
     """Wrapper to create IDSPrimitive/IDSNumericArray from IDS syntax.
     TODO: move this elsewhere.
     """
-    ids_type, ndims = DD_TYPES[data_type]
+    ids_type, ndims = DD_TYPES[structure_xml.attrib["data_type"]]
     # legacy support
     if ndims == 0:
-        leaf = IDSPrimitive(name, **kwargs)
+        leaf = IDSPrimitive(parent, structure_xml, **kwargs)
     else:
         if ids_type == "STR":
             # Array of strings should behave more like lists
             # this is an assumption on user expectation!
-            leaf = IDSPrimitive(name, **kwargs)
+            leaf = IDSPrimitive(parent, structure_xml, **kwargs)
         else:
-            leaf = IDSNumericArray(name, **kwargs)
+            leaf = IDSNumericArray(parent, structure_xml, **kwargs)
     return leaf
 
 
@@ -440,22 +435,12 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
             )
         result = getattr(ufunc, method)(*inputs, **kwargs)
 
-        if type(result) is tuple:
-            # multiple return values
-            return tuple(
-                type(self)(
-                    self.metadata.name, value=x, structure_xml=self._structure_xml
-                )
-                for x in result
-            )
-        elif method == "at":
+        if method == "at":
             # no return value
             return None
         else:
             # one return value
-            return type(self)(
-                self.metadata.name, value=result, structure_xml=self._structure_xml
-            )
+            return result
 
     def resize(self, new_shape):
         """Resize underlying data

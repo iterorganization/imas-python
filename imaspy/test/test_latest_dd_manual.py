@@ -8,7 +8,7 @@ import pytest
 
 from imaspy.ids_root import IDSRoot
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
-from imaspy.test_helpers import open_ids
+from imaspy.test.test_helpers import open_ids
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger

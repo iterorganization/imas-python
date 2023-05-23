@@ -11,12 +11,14 @@ except ImportError:
     from cached_property import cached_property
 
 import logging
+from xml.etree.ElementTree import Element
+
 from packaging.version import Version as V
 
 from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.ids_defs import needs_imas
-from imaspy.ids_mixin import IDSMixin, get_coordinates
+from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_primitive import IDSPrimitive, create_leaf_container
 
 try:
@@ -46,7 +48,7 @@ class IDSStructure(IDSMixin):
 
     # def __copy__(self):
     #    raise NotImplementedError
-    def __init__(self, parent, name, structure_xml):
+    def __init__(self, parent: IDSMixin, structure_xml: Element):
         """Initialize IDSStructure from XML specification
 
         Initializes in-memory an IDSStructure. The XML should contain
@@ -57,8 +59,6 @@ class IDSStructure(IDSMixin):
         Args:
             parent: Parent structure. Can be anything, but at database write
                 time should be something with a path attribute
-            name: Name of the node itself. Will be used in path generation when
-                stored in DB
             structure_xml: Object describing the structure of the IDS. Usually
                 an instance of `xml.etree.ElementTree.Element`
         """
@@ -66,9 +66,9 @@ class IDSStructure(IDSMixin):
         # to canonical forms
         # Since __setattr__ looks for _convert_ids_types we set it through __dict__
         self.__dict__["_convert_ids_types"] = False
-        super().__init__(parent, name, structure_xml=structure_xml)
+        super().__init__(parent, structure_xml=structure_xml)
 
-        self._base_path = name
+        self._base_path = self.metadata.name
         self._children = []  # Store the children as a list of strings.
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
@@ -86,12 +86,12 @@ class IDSStructure(IDSMixin):
             # Decide what to do based on the data_type attribute
             my_data_type = child.get("data_type")
             if my_data_type == "structure":
-                child_hli = IDSStructure(self, my_name, child)
+                child_hli = IDSStructure(self, child)
                 setattr(self, my_name, child_hli)
             elif my_data_type == "struct_array":
                 from imaspy.ids_struct_array import IDSStructArray
 
-                child_hli = IDSStructArray(self, my_name, child)
+                child_hli = IDSStructArray(self, child)
                 setattr(self, my_name, child_hli)
             else:
                 # If it is not a structure or struct_array, it is probably a
@@ -102,15 +102,11 @@ class IDSStructure(IDSMixin):
                     # logger.critical(
                     # "Found a timebasepath of {!s}! Should not happen".format(tbp)
                     # )
-                coordinates = get_coordinates(child)
                 setattr(
                     self,
                     my_name,
                     create_leaf_container(
-                        my_name,
-                        my_data_type,
                         parent=self,
-                        coordinates=coordinates,
                         structure_xml=child,
                         var_type=child.get("type"),
                     ),

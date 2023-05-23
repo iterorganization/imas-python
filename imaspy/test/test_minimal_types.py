@@ -1,20 +1,5 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
-
-import logging
-from pathlib import Path
-
-import pytest
-
 import imaspy
-
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
-
-
-@pytest.fixture
-def ids_minimal_types():
-    return Path(__file__).parent / "assets/IDS_minimal_types.xml"
 
 
 def test_load_minimal_types(ids_minimal_types):

@@ -2,7 +2,6 @@ from click.testing import CliRunner
 import pytest
 
 from importlib.metadata import version
-from imaspy import __version__
 from imaspy.command.cli import print_version
 
 

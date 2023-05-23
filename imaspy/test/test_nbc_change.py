@@ -10,7 +10,7 @@ import logging
 import pytest
 
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
-from imaspy.test_helpers import compare_children, fill_with_random_data, open_ids
+from imaspy.test.test_helpers import compare_children, fill_with_random_data, open_ids
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger

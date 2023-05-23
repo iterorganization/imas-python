@@ -4,15 +4,12 @@ data dictionary version.
 
 import copy
 import logging
-import os
-from pathlib import Path
 
-import numpy as np
 import pytest
 
 import imaspy
-from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
-from imaspy.test_helpers import compare_children, fill_with_random_data, open_ids
+from imaspy.ids_defs import ASCII_BACKEND, MEMORY_BACKEND
+from imaspy.test.test_helpers import compare_children, fill_with_random_data, open_ids
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
