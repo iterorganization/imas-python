@@ -1,8 +1,6 @@
 Analyze with IMASPy
 ===================
 
-.. TODO:: Add content
-
 Loading IMAS data
 -----------------
 
