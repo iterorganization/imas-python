@@ -84,13 +84,15 @@ def fill_with_random_data(structure, max_children=3):
         else:  # leaf node
             if child_name == "homogeneous_time":
                 child.value = IDS_TIME_MODE_HOMOGENEOUS
+            elif child_name == "time" and not isinstance(structure, IDSToplevel):
+                pass  # skip non-root time arrays when in HOMOGENEOUS_TIME
             else:
                 child.value = random_data(
                     child.metadata.data_type.value, child.metadata.ndim
                 )
 
 
-def compare_children(st1, st2, _ascii_empty_array_skip=False):
+def compare_children(st1, st2, _ascii_empty_array_skip=False, deleted_paths=set()):
     """Perform a deep compare of two structures using asserts."""
     for child1, child2 in zip(st1, st2):
         assert child1.metadata.name == child2.metadata.name
@@ -98,15 +100,21 @@ def compare_children(st1, st2, _ascii_empty_array_skip=False):
 
         if type(child1) in [IDSStructure, IDSToplevel, IDSRoot]:
             compare_children(
-                child1, child2, _ascii_empty_array_skip=_ascii_empty_array_skip
+                child1, child2, _ascii_empty_array_skip=_ascii_empty_array_skip, deleted_paths=deleted_paths
             )
         elif isinstance(child1, IDSStructArray):
             for ch1, ch2 in zip(child1.value, child2.value):
                 compare_children(
-                    ch1, ch2, _ascii_empty_array_skip=_ascii_empty_array_skip
+                    ch1, ch2, _ascii_empty_array_skip=_ascii_empty_array_skip, deleted_paths=deleted_paths
                 )
         else:  # leaf node
-            if isinstance(child1.value, (list, np.ndarray)):
+            path = str(child1.metadata.path)
+            if "_error_" in path:
+                # No duplicated entries for _error_upper, _error_lower and _error_index
+                path = path[:path.find("_error_")]
+            if path in deleted_paths:
+                assert not child2.has_value
+            elif isinstance(child1.value, (list, np.ndarray)):
                 one = np.asarray(child1.value)
                 two = np.asarray(child2.value)
                 if (one.size == 0 or two.size == 0) and _ascii_empty_array_skip:
