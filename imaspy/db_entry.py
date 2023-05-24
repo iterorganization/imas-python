@@ -6,6 +6,7 @@ import logging
 import os
 from typing import Any, Optional
 
+from imaspy.ids_convert import convert_ids
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
     CHAR_DATA,
@@ -304,10 +305,12 @@ class DBEntry:
                 ids_name,
                 occurrence,
             )
-        elif dd_version != self._ids_factory._version:
-            raise NotImplementedError("DD version conversion is not yet implemented.")
         # Create a new IDSToplevel with the same version as stored in the backend
-        toplevel = self._ids_factory.new(ids_name)
+        if not dd_version or dd_version == self._ids_factory._version:
+            toplevel = self._ids_factory.new(ids_name)
+        else:
+            toplevel = IDSFactory(version=dd_version).new(ids_name)
+
         # Now fill the IDSToplevel
         if time_requested is None:  # get
             manager = self._db_ctx.global_action(ll_path, READ_OP)
@@ -317,6 +320,9 @@ class DBEntry:
             )
         with manager as read_ctx:
             _get_children(toplevel, read_ctx, time_mode, "")
+
+        if dd_version != self._ids_factory._version:
+            return convert_ids(toplevel, version=None, factory=self._ids_factory)
         return toplevel
 
     def put(self, ids: IDSToplevel, occurrence: int = 0) -> None:
@@ -404,8 +410,10 @@ class DBEntry:
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
 
+        original_ids = None
         if not ids._parent or ids._parent._version != self._ids_factory._version:
-            raise NotImplementedError("DD version conversion is not yet implemented.")
+            original_ids = ids
+            ids = convert_ids(ids, version=None, factory=self._ids_factory)
 
         # Verify homogeneous_time is set
         time_mode = ids.ids_properties.homogeneous_time
@@ -419,11 +427,14 @@ class DBEntry:
         if occurrence != 0:
             ll_path += f"/{occurrence}"
 
-        if hasattr(ids.ids_properties, "version_put"):  # Only available in DD 3.22+
-            version_put = ids.ids_properties.version_put
-            version_put.data_dictionary = ids._version
-            # TODO! AL version
-            version_put.access_layer_language
+        # Set version_put properties on the original and converted IDS
+        for i in (original_ids, ids):
+            # version_put was added in DD 3.22
+            if i and hasattr(i.ids_properties, "version_put"):
+                version_put = i.ids_properties.version_put
+                version_put.data_dictionary = ids._version
+                # TODO! AL version
+                version_put.access_layer_language = "imaspy"
 
         if is_slice:
             with self._db_ctx.global_action(ll_path, READ_OP) as read_ctx:

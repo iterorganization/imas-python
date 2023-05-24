@@ -21,8 +21,9 @@ def convert_ids(
     toplevel: IDSToplevel,
     version: Optional[str],
     *,
-    xml_path: Optional[str] = None,
     deepcopy: bool = False,
+    xml_path: Optional[str] = None,
+    factory: Optional[IDSFactory] = None,
 ) -> IDSToplevel:
     """Convert an IDS to the specified data dictionary version.
 
@@ -41,26 +42,28 @@ def convert_ids(
     Args:
         toplevel: The IDS element to convert.
         version: The data dictionary version to convert to, for example "3.38.0". Must
-            be None when using ``xml_path``.
+            be None when using ``xml_path`` or ``factory``.
 
     Keyword Args:
-        xml_path: Path to a data dictionary XML file that should be used instead of the
-            released data dictionary version specified by ``version``.
         deepcopy: When True, performs a deep copy of all data. When False (default),
             numpy arrays are not copied and the converted IDS shares the same underlying
             data buffers.
+        xml_path: Path to a data dictionary XML file that should be used instead of the
+            released data dictionary version specified by ``version``.
+        factory: Existing IDSFactory to use for as target version.
     """
-    target_factory = IDSFactory(version, xml_path)
+    if factory is None:
+        factory = IDSFactory(version, xml_path)
     ids_name = toplevel.metadata.name
-    if not target_factory.exists(ids_name):
+    if not factory.exists(ids_name):
         raise RuntimeError(
             f"There is no IDS with name {ids_name} in DD version {version}."
         )
-    target_ids = target_factory.new(ids_name)
+    target_ids = factory.new(ids_name)
 
     source_version = Version(toplevel._version)
     target_version = Version(target_ids._version)
-    logger.debug(
+    logger.info(
         "Starting conversion for IDS %s of version %s to version %s.",
         ids_name,
         source_version,
@@ -70,7 +73,7 @@ def convert_ids(
         _copy_data(toplevel, target_ids, deepcopy, True, target_version)
     else:
         _copy_data(target_ids, toplevel, deepcopy, False, source_version)
-    logger.debug("Conversion for IDS %s finished.", ids_name)
+    logger.info("Conversion for IDS %s finished.", ids_name)
     return target_ids
 
 
@@ -91,6 +94,7 @@ def _copy_data(
             structure the target of the copy operation. False otherwise.
         old_version: The DD version of the old structure.
     """
+    old_items = []
     for item in new:
         # Resolve NBC changes, if needed
         nbc_description = getattr(item.metadata, "change_nbc_description", None)
@@ -116,11 +120,13 @@ def _copy_data(
         # Copy the data or recurse into sub-structures
         from_item, to_item = (item, old_item) if new_is_source else (old_item, item)
         if old_item is None:
-            logger.debug(
-                "Cannot find element %r in %r, ignoring.",
-                nbc_previous_name if resolved_nbc else item.metadata.name,
-                old.metadata.path,
-            )
+            if new_is_source:  # TODO, only log if new_item has data
+                logger.info(
+                    "Cannot find element %s/%s in DD %s. Data is not copied.",
+                    old.metadata.path,
+                    nbc_previous_name if resolved_nbc else item.metadata.name,
+                    old_version,
+                )
 
         elif type(old_item) != type(item):
             # TODO: Should we use logging.error instead?
@@ -137,9 +143,23 @@ def _copy_data(
             _copy_data(item, old_item, deepcopy, new_is_source, old_version)
 
         else:  # Data elements
+            # TODO: only copy if value is non-default
             if deepcopy:
                 # Using deepcopy to deal with STR_1D (list of strings)
                 # For numpy arrays and basic types, copy would be sufficient
                 to_item.value = copy.deepcopy(from_item.value)
             else:
                 to_item.value = from_item.value
+
+        if old_item is not None:
+            old_items.append(old_item)
+
+    # Find out which elements were removed in the newer DD version
+    if not new_is_source:
+        for item in old:
+            if item not in old_items:  # TODO, only log if old_item has data
+                logger.info(
+                    "Cannot find element %s in DD %s. Data might not be copied.",
+                    item.metadata.path,
+                    new._version,
+                )
