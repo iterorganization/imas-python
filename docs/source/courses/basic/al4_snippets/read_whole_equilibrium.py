@@ -12,7 +12,7 @@ print(equilibrium.time)
 # 2. Read and print the electron temperature profile in the equilibrium IDS
 # at time slice t=253s
 core_profiles = input.get_slice(
-    "core_profiles", 253, 2
+    "core_profiles", 253, imas.imasdef.PREVIOUS_INTERP,
 )
 print(core_profiles.profiles_1d[0].electrons.temperature)
 
