@@ -12,7 +12,7 @@ basic_al4_snippets = (basic_course / "al4_snippets").glob("*.py")
 
 @pytest.mark.skipif(
     "IMAS_HOME" not in os.environ,
-    reason="IMAS_HOME must be set for tests that use the public" " IMAS database",
+    reason="IMAS_HOME must be set for tests that use the public IMAS database",
 )  # /work/imas on SDCC
 @pytest.mark.parametrize("snippets", basic_al4_snippets)
 def test_script_execution(snippets):
