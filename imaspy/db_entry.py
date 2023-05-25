@@ -306,11 +306,11 @@ class DBEntry:
             ll_path += f"/{occurrence}"
 
         with self._db_ctx.global_action(ll_path, READ_OP) as read_ctx:
-            dd_version = read_ctx.read_data(
-                "ids_properties/version_put/data_dictionary", "", CHAR_DATA, 1
-            )
             time_mode = read_ctx.read_data(
                 "ids_properties/homogeneous_time", "", INTEGER_DATA, 0
+            )
+            dd_version = read_ctx.read_data(
+                "ids_properties/version_put/data_dictionary", "", CHAR_DATA, 1
             )
         if time_mode not in IDS_TIME_MODES:
             raise RuntimeError()  # FIXME!
