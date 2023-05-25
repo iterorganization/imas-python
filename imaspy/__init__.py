@@ -43,7 +43,6 @@ try:
     from . import (
         al_exception,
         db_entry,
-        context_store, # todo: Import with side-effects?
         dd_helpers,
         dd_zip,
         imas_ual_env_parsing,
@@ -51,32 +50,6 @@ try:
     )
 except Exception:
     logger.critical("Global IMASPy __init__ could not import core IMAS AL/DD Python submodules. Trying continuing without AL/DD...")
-    if _RAISE_ON_FAILED_INIT:
-        raise
-else:
-    # Load the IMASPy IMAS AL backend
-    # We can do all not-IMAS-AL-backend operations, so we only optionally need this
-    try:
-        from .backends import (
-            ual
-        )
-    except Exception:
-        logger.critical("Global IMASPy __init__ could not import core IMAS AL backend. Trying continuing without IMAS AL...")
-
-# Load the rest of the IMASPy backends
-try:
-    # Hardcode this for stricter imports and debugging
-    # These backends are partially needed or alpha/beta.
-    # We can operate without many of these loaded
-    from .backends import (
-        common,
-        file_manager,
-        xarray_core_indexing,
-        xarray_core_utils,
-    )
-except Exception:
-    logger.critical("IMASPy __init__ could not import core IMASPy backends. Trying continuing without backends")
-    if _RAISE_ON_FAILED_INIT:
-        raise
+    raise
 
 OLDEST_SUPPORTED_VERSION = V("3.21.1")
