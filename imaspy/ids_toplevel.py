@@ -160,31 +160,6 @@ class IDSToplevel(IDSStructure):
         """Return the default serializer protocol."""
         return DEFAULT_SERIALIZER_PROTOCOL
 
-    @contextlib.contextmanager
-    def _serialize_open_temporary_backend(self, *args, **kwargs):
-        """Helper context manager to open a temporary backend.
-
-        All arguments are forwarded to :meth:`IDSRoot.create_env_backend`.
-        """
-        # these state variables are overwritten in create_env_backend
-        current_backend_state = (
-            self._parent.connected,
-            self._parent.expIdx,
-            getattr(self._parent, "_data_store", None),  # _data_store may not exist
-        )
-        self._parent.create_env_backend(*args, **kwargs)
-        try:
-            yield
-        finally:
-            # close the temporary backend
-            self._parent._data_store.close()
-            # restore state
-            (
-                self._parent.connected,
-                self._parent.expIdx,
-                self._parent._data_store,
-            ) = current_backend_state
-
     @needs_imas
     def serialize(self, protocol=None):
         """Serialize this IDS to a data buffer.
@@ -225,17 +200,14 @@ class IDSToplevel(IDSStructure):
         if self.ids_properties.homogeneous_time == IDS_TIME_MODE_UNKNOWN:
             raise ALException("IDS is found to be EMPTY (homogeneous_time undefined)")
         if protocol == ASCII_SERIALIZER_PROTOCOL:
+            from imaspy.db_entry import DBEntry
+
             tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
             tmpfile = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
-            # Temporarily open an ASCII backend for serialization to tmpfile
-            with self._serialize_open_temporary_backend(
-                "serialize",
-                "serialize",
-                "3",
-                ASCII_BACKEND,
-                options=f"-fullpath {tmpfile}",
-            ):
-                self.put()
+            dbentry = DBEntry(ASCII_BACKEND, "serialize", 1, 1, "serialize")
+            dbentry.create(options=f"-fullpath {tmpfile}")
+            dbentry.put(self)
+
             try:
                 # read contents of tmpfile
                 with open(tmpfile, "rb") as f:
@@ -258,6 +230,8 @@ class IDSToplevel(IDSStructure):
             raise ValueError("No data provided")
         protocol = int(data[0])  # first byte of data contains serialization protocol
         if protocol == ASCII_SERIALIZER_PROTOCOL:
+            from imaspy.db_entry import DBEntry
+
             tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
             tmpfile = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
             # write data into tmpfile
@@ -265,14 +239,9 @@ class IDSToplevel(IDSStructure):
                 with open(tmpfile, "wb") as f:
                     f.write(data[1:])
                 # Temporarily open an ASCII backend for deserialization from tmpfile
-                with self._serialize_open_temporary_backend(
-                    "serialize",
-                    "serialize",
-                    "3",
-                    ASCII_BACKEND,
-                    options=f"-fullpath {tmpfile}",
-                ):
-                    self.get()
+                dbentry = DBEntry(ASCII_BACKEND, "serialize", 1, 1, "serialize")
+                dbentry.open(options=f"-fullpath {tmpfile}")
+                dbentry.get(self.metadata.name, destination=self)
             finally:
                 # tmpfile may not exist depending if an error occurs in above code
                 if os.path.exists(tmpfile):
