@@ -157,10 +157,15 @@ def mdsplus_model_dir(version=None, xml_file=None):
         generate_tmp_cache = not wait_for_model(cache_dir_path)
         # We expect cache_dir_path is empty when we need to generate
         if generate_tmp_cache and len(os.listdir(cache_dir_path)) > 1:
-            if not model_exists(cache_dir_name):
+            if not model_exists(cache_dir_path):
+                logger.debug(
+                    "Model directory %s contents: %s",
+                    cache_dir_path,
+                    os.listdir(cache_dir_path),
+                )
                 raise RuntimeError(
                     "The IMASPy cache directory is corrupted. Please clean the"
-                    f" cache directory ({cache_dir_name}) and try again."
+                    f" cache directory ({cache_dir_path}) and try again."
                 )
     elif not cache_dir_path.is_dir() and not model_exists(cache_dir_path):
         # The cache did not exist, we will create a new cache in this process
