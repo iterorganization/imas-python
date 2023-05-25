@@ -59,14 +59,15 @@ def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
 def test_latest_dd_autofill_serialize(ids_name, has_imas):
     """Serialize and then deserialize again all IDSToplevels"""
     # TODO: test with multiple serialization protocols
-    ids = IDSRoot(0, 0)
-    fill_with_random_data(ids[ids_name])
+    factory = IDSFactory()
+    ids = factory.new(ids_name)
+    fill_with_random_data(ids)
 
     if not has_imas:
         return  # rest of the test requires an IMAS install
-    data = ids[ids_name].serialize()
+    data = ids.serialize()
 
-    ids2 = IDSRoot(0, 0)
-    ids2[ids_name].deserialize(data)
+    ids2 = factory.new(ids_name)
+    ids2.deserialize(data)
 
-    compare_children(ids[ids_name], ids2[ids_name])
+    compare_children(ids, ids2)

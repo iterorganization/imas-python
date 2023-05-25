@@ -132,36 +132,6 @@ def compare_children(st1, st2, _ascii_empty_array_skip=False, deleted_paths=set(
                 assert child1.value == child2.value
 
 
-def open_ids(backend, mode, worker_id, tmp_path, **kwargs):
-    """Open an IDS in a standardised way, with a tmpdir in place of the user argument"""
-    if worker_id == "master":
-        shot = 1
-    else:
-        shot = int(worker_id[2:]) + 1
-
-    ids = imaspy.ids_root.IDSRoot(shot, 0, **kwargs)
-
-    if "version" in kwargs:
-        ver = kwargs["version"].split(".")[0]
-    else:
-        logger.warning("no version specified in test, hardcoding 3")
-        ver = 3
-
-    if backend == ASCII_BACKEND:
-        ids.open_ual_store(
-            tmp_path,
-            "test",
-            str(ver),
-            backend,
-            mode=mode,
-            options="-prefix %s/" % (tmp_path,),
-        )
-    else:
-        ids.open_ual_store(tmp_path, "test", str(ver), backend, mode=mode)
-
-    return ids
-
-
 def open_dbentry(
     backend, mode, worker_id, tmp_path, version=None, xml_path=None
 ) -> DBEntry:
