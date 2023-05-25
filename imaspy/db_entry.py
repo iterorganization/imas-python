@@ -207,7 +207,13 @@ class DBEntry:
         """  # noqa
         self._ual_open_pulse(FORCE_OPEN_PULSE if force else OPEN_PULSE, options)
 
-    def get(self, ids_name: str, occurrence: int = 0) -> IDSToplevel:
+    def get(
+        self,
+        ids_name: str,
+        occurrence: int = 0,
+        *,
+        destination: Optional[IDSToplevel] = None,
+    ) -> IDSToplevel:
         """Read the contents of the an IDS into memory.
 
         This method fetches an IDS in its entirety, with all time slices it may contain.
@@ -219,6 +225,9 @@ class DBEntry:
         Args:
             ids_name: Name of the IDS to read from the backend.
             occurrence: Which occurrence of the IDS to read. Defaults to 0.
+
+        Keyword Args:
+            destination: Populate this IDSToplevel instead of creating an empty one.
 
         Returns:
             The loaded IDS.
@@ -233,7 +242,7 @@ class DBEntry:
                 imas_entry.open()
                 core_profiles = imas_entry.get("core_profiles")
         """  # noqa
-        return self._get(ids_name, occurrence, None, 0)
+        return self._get(ids_name, occurrence, None, 0, destination)
 
     def get_slice(
         self,
@@ -241,6 +250,8 @@ class DBEntry:
         time_requested: float,
         interpolation_method: int,
         occurrence: int = 0,
+        *,
+        destination: Optional[IDSToplevel] = None,
     ) -> IDSToplevel:
         """Read a single time slice from an IDS in this Database Entry.
 
@@ -259,6 +270,9 @@ class DBEntry:
 
             occurrence: Which occurrence of the IDS to read. Defaults to 0.
 
+        Keyword Args:
+            destination: Populate this IDSToplevel instead of creating an empty one.
+
         Returns:
             The loaded IDS.
 
@@ -272,7 +286,9 @@ class DBEntry:
                 imas_entry.open()
                 core_profiles = imas_entry.get_slice("core_profiles", 370, imasdef.PREVIOUS_INTERP)
         """  # noqa
-        return self._get(ids_name, occurrence, time_requested, interpolation_method)
+        return self._get(
+            ids_name, occurrence, time_requested, interpolation_method, destination
+        )
 
     def _get(
         self,
@@ -280,6 +296,7 @@ class DBEntry:
         occurrence: int,
         time_requested: Optional[float],
         interpolation_method: int,
+        destination: Optional[IDSToplevel] = None,
     ) -> IDSToplevel:
         """Actual implementation of get() and get_slice()"""
         if self._db_ctx is None:
@@ -306,7 +323,10 @@ class DBEntry:
                 occurrence,
             )
         # Create a new IDSToplevel with the same version as stored in the backend
-        if not dd_version or dd_version == self._ids_factory._version:
+        if destination and (not dd_version or dd_version == destination._version):
+            toplevel = destination
+            destination = None
+        elif not dd_version or dd_version == self._ids_factory._version:
             toplevel = self._ids_factory.new(ids_name)
         else:
             toplevel = IDSFactory(version=dd_version).new(ids_name)
@@ -321,8 +341,11 @@ class DBEntry:
         with manager as read_ctx:
             _get_children(toplevel, read_ctx, time_mode, "")
 
-        if dd_version != self._ids_factory._version:
+        if dd_version and dd_version != self._ids_factory._version:
+            if destination is not None:
+                return convert_ids(toplevel, version=None, target=destination)
             return convert_ids(toplevel, version=None, factory=self._ids_factory)
+        assert destination is None
         return toplevel
 
     def put(self, ids: IDSToplevel, occurrence: int = 0) -> None:
@@ -462,6 +485,22 @@ class DBEntry:
         with manager as write_ctx:
             _put_children(ids, write_ctx, time_mode, "", is_slice)
 
+    def delete_data(self, ids_name: str, occurrence: int = 0) -> None:
+        """Delete the provided IDS occurrence from this IMAS database entry.
+
+        Args:
+            ids_name: Name of the IDS to delete from the backend.
+            occurrence: Which occurrence of the IDS to delete. Defaults to 0.
+        """
+        if self._db_ctx is None:
+            raise RuntimeError("Database entry is not opened, use open() first.")
+        ll_path = ids_name
+        if occurrence != 0:
+            ll_path += f"/{occurrence}"
+        ids = self._ids_factory.new(ids_name)
+        with self._db_ctx.global_action(ll_path, WRITE_OP) as write_ctx:
+            _delete_children(ids, write_ctx, "")
+
 
 def _get_children(
     structure: IDSStructure, ctx: UalContext, time_mode: int, ctx_path: str
@@ -508,7 +547,9 @@ def _delete_children(structure: IDSStructure, ctx: UalContext, ctx_path: str) ->
         new_path = f"{ctx_path}/{name}" if ctx_path else name
         # FIXME: `and not` clause can be removed when IDSStructArray no longer inherits
         # from IDSStructure.
-        if isinstance(element, IDSStructure) and not isinstance(element, IDSStructArray):
+        if isinstance(element, IDSStructure) and not isinstance(
+            element, IDSStructArray
+        ):
             _delete_children(element, ctx, new_path)
         else:  # Data elements and IDSStructArray
             ctx.delete_data(new_path)

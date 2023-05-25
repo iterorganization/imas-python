@@ -24,6 +24,7 @@ def convert_ids(
     deepcopy: bool = False,
     xml_path: Optional[str] = None,
     factory: Optional[IDSFactory] = None,
+    target: Optional[IDSToplevel] = None,
 ) -> IDSToplevel:
     """Convert an IDS to the specified data dictionary version.
 
@@ -51,15 +52,19 @@ def convert_ids(
         xml_path: Path to a data dictionary XML file that should be used instead of the
             released data dictionary version specified by ``version``.
         factory: Existing IDSFactory to use for as target version.
+        destination: Use this IDSToplevel as target toplevel instead of creating one.
     """
-    if factory is None:
-        factory = IDSFactory(version, xml_path)
-    ids_name = toplevel.metadata.name
-    if not factory.exists(ids_name):
-        raise RuntimeError(
-            f"There is no IDS with name {ids_name} in DD version {version}."
-        )
-    target_ids = factory.new(ids_name)
+    if target is None:
+        if factory is None:
+            factory = IDSFactory(version, xml_path)
+        ids_name = toplevel.metadata.name
+        if not factory.exists(ids_name):
+            raise RuntimeError(
+                f"There is no IDS with name {ids_name} in DD version {version}."
+            )
+        target_ids = factory.new(ids_name)
+    else:
+        target_ids = target
 
     source_version = Version(toplevel._version)
     target_version = Version(target_ids._version)
