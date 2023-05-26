@@ -3,7 +3,7 @@ from copy import deepcopy
 import pytest
 
 from imaspy.dd_zip import dd_etree
-from imaspy.ids_metadata import IDSMetadata
+from imaspy.ids_metadata import IDSMetadata, IDSType
 
 
 @pytest.fixture
@@ -37,3 +37,10 @@ def test_metadata_immutable(fake_structure_xml):
     meta = IDSMetadata(fake_structure_xml)
     with pytest.raises(RuntimeError):
         meta.immutable = True
+
+
+def test_ids_type():
+    assert not IDSType.NONE.is_dynamic
+    assert not IDSType.CONSTANT.is_dynamic
+    assert not IDSType.STATIC.is_dynamic
+    assert IDSType.DYNAMIC.is_dynamic
