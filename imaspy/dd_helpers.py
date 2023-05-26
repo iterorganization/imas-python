@@ -203,6 +203,28 @@ def get_data_dictionary_repo() -> Tuple[bool, bool]:
     return repo
 
 
+def run_data_dictionary(args, tag, saxon_jar_path):
+    """Run in a Data Dictionary environment. Used e.g. to run the DD Makefile"""
+    result = subprocess.run(
+        args,
+        bufsize=0,
+        capture_output=True,
+        cwd=os.getcwd() + "/data-dictionary",
+        env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
+        shell=True,
+        text=True,
+    )
+
+    if result.returncode != 0:
+        logger.warning("Error making DD version %s, make reported:", tag)
+        logger.warning("CLASSPATH ='%s'", saxon_jar_path)
+        logger.warning("PATH = '%s'", os.environ["PATH"])
+        logger.warning("stdout = '%s'", result.stdout.strip())
+        logger.warning("stderr = '%s'", result.stderr.strip())
+        logger.warning("continuing without DD version %s", tag)
+    return result.returncode
+
+
 def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
     """Build a single version of the data dictionary given by the tag argument
     if the IDS does not already exist.
@@ -223,24 +245,9 @@ def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
     # dd_data_dictionary.xml is a generated file, so we can always remove this
     # This is needed to let Make know that we want to fully rebuild the DD
     dd_data_dictionary.unlink(missing_ok=True)
-    if not result_xml.exists():
-        result = subprocess.run(
-            ["make", "IDSDef.xml"],
-            bufsize=0,
-            capture_output=True,
-            cwd=os.getcwd() + "/data-dictionary",
-            env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
-            shell=True,
-            text=True,
-        )
 
-        if result.returncode != 0:
-            logger.warning("Error making DD version %s, make reported:", tag)
-            logger.warning("CLASSPATH ='%s'", saxon_jar_path)
-            logger.warning("PATH = '%s'", os.environ["PATH"])
-            logger.warning("stdout = '%s'", result.stdout.strip())
-            logger.warning("stderr = '%s'", result.stderr.strip())
-            logger.warning("continuing without = '%s'", tag)
+    if not result_xml.exists():
+        if run_data_dictionary(["make", "IDSDef.xml"], tag, saxon_jar_path):
             return
 
     # copy and delete original instead of move (to follow symlink)
