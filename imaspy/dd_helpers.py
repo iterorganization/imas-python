@@ -244,7 +244,8 @@ def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
     dd_data_dictionary = Path("data-dictionary/dd_data_dictionary.xml")
     # dd_data_dictionary.xml is a generated file, so we can always remove this
     # This is needed to let Make know that we want to fully rebuild the DD
-    dd_data_dictionary.unlink(missing_ok=True)
+    if run_data_dictionary(["make", "clean"], tag, saxon_jar_path):
+        return
 
     if not result_xml.exists():
         if run_data_dictionary(["make", "IDSDef.xml"], tag, saxon_jar_path):
