@@ -19,6 +19,7 @@ logger = logging.getLogger("imaspy")
 logger.setLevel(logging.INFO)
 
 _idsdef_zip_relpath = Path("imaspy/assets/IDSDef.zip")
+_build_dir = Path("build")
 _saxon_local_default_name = "saxon9he.jar"  # For pre-3.30.0 builds
 _saxon_regex = "saxon(.*).jar"  # Can be used in re.match
 
@@ -51,7 +52,7 @@ def prepare_data_dictionaries():
             mode="w",  # this needs w, since zip can have multiple same entries
             compression=ZIP_DEFLATED,
         ) as dd_zip:
-            for filename in glob.glob("data-dictionary/[0-9]*.xml"):
+            for filename in _build_dir.glob("[0-9]*.xml"):
                 dd_zip.write(filename)
 
 
@@ -232,24 +233,18 @@ def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
     In the data-dictionary repository sometimes IDSDef.xml is stored
     directly, in which case we do not call make.
     """
-    if (
-        os.path.exists("data-dictionary/{version}.xml".format(version=tag))
-        and not rebuild
-    ):
+    _build_dir.mkdir(exist_ok=True)
+    result_xml = _build_dir / f"{tag}.xml"
+
+    if result_xml.exists() and not rebuild:
         logger.debug(f"XML for tag '{tag}' already exists, skipping")
         return
 
     repo.git.checkout(tag, force=True)
-    result_xml = Path(f"data-dictionary/{tag}.xml")
-    dd_data_dictionary = Path("data-dictionary/dd_data_dictionary.xml")
-    # dd_data_dictionary.xml is a generated file, so we can always remove this
-    # This is needed to let Make know that we want to fully rebuild the DD
-    if run_data_dictionary(["make", "clean"], tag, saxon_jar_path):
+    if run_data_dictionary(["make", "clean"], tag, saxon_jar_path) != 0:
         return
-
-    if not result_xml.exists():
-        if run_data_dictionary(["make", "IDSDef.xml"], tag, saxon_jar_path):
-            return
+    if run_data_dictionary(["make", "IDSDef.xml"], tag, saxon_jar_path) != 0:
+        return
 
     # copy and delete original instead of move (to follow symlink)
     IDSDef = Path("data-dictionary/IDSDef.xml")
