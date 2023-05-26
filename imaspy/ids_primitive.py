@@ -9,7 +9,7 @@ Provides the class for an IDS Primitive data type
 
 import logging
 import numbers
-from typing import Any
+from typing import Any, Tuple
 from xml.etree.ElementTree import Element
 
 import numpy as np
@@ -83,15 +83,49 @@ class IDSPrimitive(IDSMixin):
         self._backend_ndims = None
 
     @property
-    def has_value(self):
-        """True if a value is defined here"""
-        return self.__value is not None
+    def shape(self) -> Tuple[int, ...]:
+        """Get the shape of the contained data.
+
+        For 0D data types, the shape is always an empty tuple.
+        See also :external:py:meth:`numpy.shape`.
+        """
+        if self.metadata.ndim == 0:
+            return tuple()
+        if self.__value is None:
+            return (0,) * self.metadata.ndim
+        return np.shape(self.__value)
+
+    @property
+    def size(self) -> int:
+        """Get the size of stored data (number of elements stored).
+
+        For 0D data types, the size is always 1 (even when set to the default).
+        For 1+D data types, the size is the number of elements stored, see
+        :external:py:meth:`numpy.ndarray.size`.
+        """
+        if self.metadata.ndim == 0:
+            return 1
+        if self.__value is None:
+            return 0
+        if self.metadata.data_type == IDSDataType.STR:
+            return len(self.__value)
+        # self.__value must be a numpy array
+        return self.__value.size
+
+    @property
+    def has_value(self) -> bool:
+        """True if a value is defined here that is not the default"""
+        if self.__value is None:  # No value set
+            return False
+        return self.size > 0  # Default for ndarray and STR_1D types is size == 0
 
     @property
     def _default(self):
         default_value = self.metadata.data_type.default
         if self.metadata.ndim == 0:
             return default_value
+        if self.metadata.data_type is IDSDataType.STR:
+            return []
         return np.full((0,) * self.metadata.ndim, default_value)
 
     @property
@@ -116,11 +150,19 @@ class IDSPrimitive(IDSMixin):
         """Return the value of this IDSPrimitive if it is set,
         otherwise return the default"""
         if self.__value is None:
-            return self._default
+            if self.metadata.ndim == 0:
+                return self._default
+            # 1+D data types can be modified in-place, first set before returning so,
+            # for example, `ids.time.value.resize(10)`` always works as expected.
+            self.__value = self._default
         return self.__value
 
     @value.setter
     def value(self, setter_value):
+        if self.metadata.ndim == 0 and setter_value == self.metadata.data_type.default:
+            # Unset 0D types when setting them to their magic default value
+            self.__value = None
+            return
         if isinstance(setter_value, type(self)):
             # No need to cast, just overwrite contained value
             if (

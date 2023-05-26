@@ -1,4 +1,6 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
+import pytest
+
 import imaspy
 
 
@@ -45,3 +47,65 @@ def test_numeric_array_value(ids_minimal_types):
 
     ids.minimal.flt_1d.value = [1.3, 3.4]
     assert ids.minimal.flt_1d.has_value
+
+
+@pytest.mark.parametrize("tp", ["flt_0d", "cpx_0d", "int_0d", "str_0d"])
+def test_ids_primitive_properties_0d(ids_minimal_types, tp):
+    minimal = imaspy.ids_root.IDSRoot(0, 0, xml_path=ids_minimal_types).minimal
+
+    assert not minimal[tp].has_value
+    assert minimal[tp].shape == tuple()
+    assert minimal[tp].size == 1
+
+    minimal[tp] = 1
+    assert minimal[tp].has_value
+    assert minimal[tp].shape == tuple()
+    assert minimal[tp].size == 1
+
+    minimal[tp] = minimal[tp].metadata.data_type.default
+    assert not minimal[tp].has_value
+    assert minimal[tp].shape == tuple()
+    assert minimal[tp].size == 1
+
+
+def test_ids_primitive_properties_str_1d(ids_minimal_types):
+    minimal = imaspy.ids_root.IDSRoot(0, 0, xml_path=ids_minimal_types).minimal
+
+    assert minimal.str_1d.shape == (0,)
+    assert minimal.str_1d.size == 0
+    assert not minimal.str_1d.has_value
+
+    minimal.str_1d.value.append("1")
+    assert minimal.str_1d.has_value
+    assert minimal.str_1d.shape == (1,)
+    assert minimal.str_1d.size == 1
+
+    minimal.str_1d.value.pop()
+    assert not minimal.str_1d.has_value
+    assert minimal.str_1d.shape == (0,)
+    assert minimal.str_1d.size == 0
+
+
+@pytest.mark.parametrize("typ, max_dim", [("flt", 6), ("cpx", 6), ("int", 3)])
+def test_ids_primitive_properties_numeric_arrays(ids_minimal_types, typ, max_dim):
+    minimal = imaspy.ids_root.IDSRoot(0, 0, xml_path=ids_minimal_types).minimal
+
+    for dim in range(1, max_dim + 1):
+        tp = f"{typ}_{dim}d"
+
+        assert not minimal[tp].has_value
+        assert minimal[tp].shape == (0,) * dim
+        assert minimal[tp].size == 0
+
+        new_size = (2,) * dim
+        minimal[tp].value.resize(new_size)
+        assert minimal[tp].has_value
+        assert minimal[tp].shape == new_size
+        assert minimal[tp].size == 2**dim
+
+        minimal[tp] = []
+        assert not minimal[tp].has_value
+        if dim > 1:  # TODO: expected failure due to IMAS-4681
+            with pytest.raises(AssertionError):
+                assert minimal[tp].shape == (0,) * dim
+        assert minimal[tp].size == 0

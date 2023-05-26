@@ -72,7 +72,7 @@ def test_str1d_empty_default_no_write(backend, ids_minimal_types, worker_id, tmp
     if backend == MEMORY_BACKEND:
         pytest.skip("memory backend cannot be opened from different root")
     else:
-        assert ids2.minimal["str_1d"].value.size == 0
+        assert ids2.minimal["str_1d"].size == 0
 
     if backend == ASCII_BACKEND:
         # test that it did not show up in the file
