@@ -47,7 +47,7 @@ if [ "$RUNMODE" == "normal" ] || [ "$RUNMODE" == "only" ]; then
     if [ $TESTSET == "mini" ]; then
         # Do not exit when tests fail
         set +e
-        $PYTEST --ids=$IDSS $PYTEST_FLAGS $COV_FLAGS $JUNIT_FLAGS -m "$PYTEST_MARK" "$PYTEST_FILE_OR_DIR"
+        (unset DISPLAY; $PYTEST --ids=$IDSS $PYTEST_FLAGS $COV_FLAGS $JUNIT_FLAGS -m "$PYTEST_MARK" "$PYTEST_FILE_OR_DIR")
         set -e
     else
         echo Untested! Dropping shell!
