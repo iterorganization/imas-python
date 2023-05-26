@@ -213,13 +213,15 @@ def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
         os.path.exists("data-dictionary/{version}.xml".format(version=tag))
         and not rebuild
     ):
+        logger.debug(f"XML for tag '{tag}' already exists, skipping")
         return
 
     repo.git.checkout(tag, force=True)
+    result_xml = Path(f"data-dictionary/{tag}.xml")
     # this could cause issues if someone else has added or left IDSDef.xml
     # in this directory. However, we go through the tags in order
     # so 1.0.0 comes first, where git checks out IDSDef.xml
-    if not _idsdef_zip_relpath.exists():
+    if not result_xml.exists():
         try:
             subprocess.check_output(
                 "make IDSDef.xml 2>/dev/null",
@@ -235,8 +237,8 @@ def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
     # copy and delete original instead of move (to follow symlink)
     try:
         shutil.copy(
-            "data-dictionary/IDSDef.xml",
-            "data-dictionary/{version}.xml".format(version=tag),
+            "data-dictionary/IDSDef.xml",  # Hardcoded in access-layer makefile
+            result_xml,
             follow_symlinks=True,
         )
     except shutil.SameFileError:
