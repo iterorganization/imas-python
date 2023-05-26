@@ -218,9 +218,10 @@ def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
 
     repo.git.checkout(tag, force=True)
     result_xml = Path(f"data-dictionary/{tag}.xml")
-    # this could cause issues if someone else has added or left IDSDef.xml
-    # in this directory. However, we go through the tags in order
-    # so 1.0.0 comes first, where git checks out IDSDef.xml
+    dd_data_dictionary = Path("data-dictionary/dd_data_dictionary.xml")
+    # dd_data_dictionary.xml is a generated file, so we can always remove this
+    # This is needed to let Make know that we want to fully rebuild the DD
+    dd_data_dictionary.unlink(missing_ok=True)
     if not result_xml.exists():
         try:
             subprocess.check_output(
@@ -235,12 +236,13 @@ def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
             print(f"PATH = '{os.environ['PATH']}'")
             print(ee.output.decode("UTF-8"))
     # copy and delete original instead of move (to follow symlink)
+    IDSDef = Path("data-dictionary/IDSDef.xml")
     try:
         shutil.copy(
-            "data-dictionary/IDSDef.xml",  # Hardcoded in access-layer makefile
+            IDSDef,  # Hardcoded in access-layer makefile
             result_xml,
             follow_symlinks=True,
         )
     except shutil.SameFileError:
         pass
-    os.remove("data-dictionary/IDSDef.xml")
+    IDSDef.unlink(missing_ok=True)
