@@ -1,18 +1,16 @@
 """Helper functions to build IDSDef.xml"""
 
-import glob
 import logging
 import os
 import re
 import shutil
 import subprocess
 from packaging.version import Version as V
-from io import BytesIO, StringIO
-import io
+from io import BytesIO
 from pathlib import Path
 from urllib.request import urlopen
 from zipfile import ZIP_DEFLATED, ZipFile
-from typing import Tuple
+from typing import Tuple, Sequence, Union
 
 
 logger = logging.getLogger("imaspy")
@@ -204,8 +202,18 @@ def get_data_dictionary_repo() -> Tuple[bool, bool]:
     return repo
 
 
-def run_data_dictionary(args, tag, saxon_jar_path):
-    """Run in a Data Dictionary environment. Used e.g. to run the DD Makefile"""
+def run_data_dictionary(
+    args: Union[Sequence, str], tag: str, saxon_jar_path: str
+) -> int:
+    """Run in a Data Dictionary environment. Used e.g. to run the DD Makefile
+
+    Args:
+        args: The "args" argument directly passed to :func:`subprocess.run`,
+            e.g. ``["make", "clean"]``
+        tag: The DD version tag that will be printed on error
+        saxon_jar_path: The path to the saxon jar; Added to CLASSPATH and used
+            to generate the DD
+    """
     result = subprocess.run(
         args,
         bufsize=0,
@@ -226,12 +234,19 @@ def run_data_dictionary(args, tag, saxon_jar_path):
     return result.returncode
 
 
-def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
+def build_data_dictionary(repo, tag: str, saxon_jar_path: str, rebuild=False) -> None:
     """Build a single version of the data dictionary given by the tag argument
     if the IDS does not already exist.
 
     In the data-dictionary repository sometimes IDSDef.xml is stored
     directly, in which case we do not call make.
+
+    Args:
+        repo: Repository object containing the DD source code
+        tag: The DD version tag that will be build
+        saxon_jar_path: The path to the saxon jar; Added to CLASSPATH and used
+            to generate the DD
+        rebuild: If true, overwrites existing pre-build tagged DD version
     """
     _build_dir.mkdir(exist_ok=True)
     result_xml = _build_dir / f"{tag}.xml"
