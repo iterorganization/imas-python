@@ -126,6 +126,9 @@ class IDSStructArray(IDSStructure, IDSMixin):
                 struct.value = value
         self.value[list_idx] = value
 
+    def __len__(self) -> int:
+        return len(self.value)
+
     def __iter__(self):
         return iter(self.value)
 
@@ -170,6 +173,8 @@ class IDSStructArray(IDSStructure, IDSMixin):
             Specifies if the targeted array of structure should keep
             existing data in remaining elements after resizing it.
         """
+        if nbelt < 0:
+            raise ValueError(f"Invalid size {nbelt}: size may not be negative")
         if not keep:
             self.value = []
         cur = len(self.value)
@@ -182,17 +187,9 @@ class IDSStructArray(IDSStructure, IDSMixin):
                 new_els.append(new_el)
             self.append(new_els)
         elif nbelt < cur:
-            raise NotImplementedError("Making IDSStructArrays smaller")
-            for i in range(nbelt, cur):
-                self.value.pop()
-        elif not keep:  # case nbelt = cur
-            raise NotImplementedError("Overwriting IDSStructArray elements")
-            self.append(
-                [
-                    process_charge_state__structArrayElement(self._base_path)
-                    for i in range(nbelt)
-                ]
-            )
+            self.value = self.value[:nbelt]
+        else:  # nbelt == cur
+            pass  # nothing to do, already correct size
 
     def _getData(
         self, aosCtx, indexFrom, indexTo, homogeneousTime, nodePath, analyzeTime
