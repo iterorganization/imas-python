@@ -15,7 +15,8 @@ except ImportError:
 
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
-from imaspy.ids_metadata import IDSMetadata
+from imaspy.ids_data_type import IDSDataType
+from imaspy.ids_metadata import IDSMetadata, IDSType
 from imaspy.setup_logging import root_logger as logger
 
 try:
@@ -57,6 +58,22 @@ class IDSMixin:
             - `ids.ids_properties.provenance[0]._dd_parent` is also `ids.ids_properties`
         """
         return self._parent
+
+    @cached_property
+    def _is_dynamic(self) -> bool:
+        """True iff this element has type=dynamic, or it has a parent with type=dynamic
+        """
+        return self.metadata.type is IDSType.DYNAMIC or self._dd_parent._is_dynamic
+
+    @cached_property
+    def _aos_path(self) -> str:
+        """Path string relative to the nearest ancestor Array of Structure
+        """
+        # FIXME: logic should be based on backend xml!
+        if self._dd_parent.metadata.data_type in (None, IDSDataType.STRUCT_ARRAY):
+            # data_type is None for IDS toplevel
+            return self.metadata.name
+        return self._dd_parent._aos_path + "/" + self.metadata.name
 
     def getRelCTXPath(self, ctx: int) -> str:
         """Get the path relative to given context from an absolute path"""

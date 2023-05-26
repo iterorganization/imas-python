@@ -130,6 +130,10 @@ class IDSToplevel(IDSStructure):
         """Retrieve the time mode from `/ids_properties/homogeneous_time`"""
         return self.ids_properties.homogeneous_time
 
+    @property
+    def _is_dynamic(self) -> bool:
+        return False
+
     def set_backend_properties(self, structure_xml):
         """Set backend properties for this IDSToplevel and provide some logging"""
         # TODO: better naming (structure_xml -> backend etc)
@@ -376,6 +380,7 @@ class IDSToplevel(IDSStructure):
                 self.metadata.name,
             )
             return
+        self.ids_properties.homogeneous_time = homogeneousTime
 
         backend_version = self.read_data_dictionary_version(occurrence)
         if self._backend_xml_path:

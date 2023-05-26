@@ -18,15 +18,18 @@ from imaspy.setup_logging import root_logger as logger
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_coordinates import IDSCoordinates
+from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
     CHAR_DATA,
     DOUBLE_DATA,
     INTEGER_DATA,
     COMPLEX_DATA,
+    IDS_TIME_MODE_HETEROGENEOUS,
+    IDS_TIME_MODE_HOMOGENEOUS,
     hli_utils,
     needs_imas,
 )
-from imaspy.ids_metadata import IDSDataType
+from imaspy.ids_metadata import IDSType
 from imaspy.ids_mixin import IDSMixin
 
 
@@ -91,6 +94,20 @@ class IDSPrimitive(IDSMixin):
             return default_value
         return np.full((0,) * self.metadata.ndim, default_value)
 
+    @property
+    def _timebase_path(self) -> str:
+        """Timebase path to supply to the backend."""
+        # Follow logic from
+        # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#1524-1566
+        if self.metadata.type is not IDSType.DYNAMIC or self._parent._is_dynamic:
+            return ""
+        if self._time_mode == IDS_TIME_MODE_HOMOGENEOUS:
+            return "/time"
+        if self._time_mode == IDS_TIME_MODE_HETEROGENEOUS:
+            # FIXME: this should be based on backend metadata!
+            return self.metadata.timebasepath
+        return ""  # FIXME: handle this case
+
     def __iter__(self):
         return iter([])
 
@@ -151,7 +168,7 @@ class IDSPrimitive(IDSMixin):
             elif self.metadata.data_type is IDSDataType.CPX:
                 value = np.array(value, dtype=np.complex128)
             elif self.metadata.data_type is IDSDataType.INT:
-                value = np.array(value, dtype=np.int64)
+                value = np.array(value, dtype=np.int32)
             elif self.metadata.data_type is IDSDataType.STR:
                 # make sure that all the strings are decoded
                 if isinstance(value, np.ndarray):
@@ -236,23 +253,18 @@ class IDSPrimitive(IDSMixin):
         if self.data_is_default(data, self._default):
             return
 
-        # Call signature
-        # ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData, dataType=0, dim = 0, sizeArray = np.empty([0], dtype=np.int32))
-        # data_type = self._ull._getDataType(data)
+        # Call signature (at least since AL4.0.0, there are additional kwargs, which are
+        # ignored)
+        # ual_write_data(ctx, pyFieldPath, pyTimebasePath, inputData)
 
         # Strip context from absolute path
         rel_path = self.getRelCTXPath(ctx)
-        # TODO: Check ignore_nbc_change
-        strTimeBasePath = self.getTimeBasePath(homogeneousTime)
 
         if logger.level <= logging.DEBUG:
             log_string = " " * self.depth + " - % -38s write"
             logger.debug(log_string, "/".join([context_store[ctx], rel_path]))
 
-        # TODO: the data_type argument seems to be unused in the ual_write_data routine, remove it?
-        status = self._ull.ual_write_data(
-            ctx, rel_path, strTimeBasePath, data, dataType=write_type, dim=ndims
-        )
+        status = self._ull.ual_write_data(ctx, rel_path, self._timebase_path, data)
         if status != 0:
             raise ALException('Error writing field "{!s}"'.format(self.metadata.name))
 
@@ -266,7 +278,7 @@ class IDSPrimitive(IDSMixin):
         """
         # Strip context from absolute path
         strNodePath = self.getRelCTXPath(ctx)
-        strTimeBasePath = self.getTimeBasePath(homogeneousTime)
+        strTimeBasePath = self._timebase_path
         read_type = self._backend_type or self.metadata.data_type.value
         ndims = self._backend_ndims or self.metadata.ndim
         # we are not really ready to deal with a change in ndims

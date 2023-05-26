@@ -11,6 +11,7 @@ import pytest
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     IDS_TIME_MODE_HOMOGENEOUS,
+    IDS_TIME_MODE_HETEROGENEOUS,
     MDSPLUS_BACKEND,
 )
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
@@ -24,11 +25,16 @@ logger = root_logger
 logger.setLevel(logging.INFO)
 
 
-def test_write_read_time(backend, worker_id, tmp_path):
+@pytest.fixture(params=(IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS))
+def time_mode(request):
+    return request.param
+
+
+def test_write_read_time(backend, worker_id, tmp_path, time_mode):
     """Write some data to an IDS and then check that all slices match."""
     ids = open_ids(backend, "w", worker_id, tmp_path)
     eq = ids["equilibrium"]
-    eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    eq.ids_properties.homogeneous_time = time_mode
 
     eq.time = np.array([0.0, 0.1, 0.2])
     eq.put()
@@ -39,14 +45,15 @@ def test_write_read_time(backend, worker_id, tmp_path):
     assert eq.time == np.array([0.0, 0.1, 0.2])
 
 
-def test_time_slicing_get(backend, worker_id, tmp_path):
+def test_time_slicing_get(backend, worker_id, tmp_path, time_mode):
     """Write some data to an IDS and then check that all slices match."""
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
     ids = open_ids(backend, "w", worker_id, tmp_path)
     eq = ids["equilibrium"]
-    eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    eq.ids_properties.homogeneous_time = time_mode
 
+    # eq.time is the time coordinate for b0 in heterogeneous mode as well
     eq.time = np.array([0.0, 0.1, 0.2])
     eq.vacuum_toroidal_field.b0 = np.array([3.0, 4.0, 5.0])
     eq.put()
@@ -56,15 +63,16 @@ def test_time_slicing_get(backend, worker_id, tmp_path):
         assert eq.vacuum_toroidal_field.b0.value == time + 3.0
 
 
-def test_time_slicing_put(backend, worker_id, tmp_path, request):
+def test_time_slicing_put(backend, worker_id, tmp_path, request, time_mode):
     """Write some slices to an IDS and then check that they are all there"""
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
     ids = open_ids(backend, "w", worker_id, tmp_path)
     eq = ids["equilibrium"]
-    eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    eq.ids_properties.homogeneous_time = time_mode
 
     for time in range(3):
+        # eq.time is the time coordinate for b0 in heterogeneous mode as well
         eq.time = [time * 0.1]
         eq.vacuum_toroidal_field.b0 = [time + 3.0]
         eq.putSlice()
@@ -75,7 +83,7 @@ def test_time_slicing_put(backend, worker_id, tmp_path, request):
     assert np.allclose(eq.time.value, [0.0, 0.1, 0.2])
 
 
-def test_hli_time_slicing_put(backend, worker_id, tmp_path):
+def test_hli_time_slicing_put(backend, worker_id, tmp_path, time_mode):
     """Write some slices to an IDS and then check that they are all there"""
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
@@ -96,10 +104,11 @@ def test_hli_time_slicing_put(backend, worker_id, tmp_path):
     if status != 0:
         logger.error("Error opening db entry %s", status)
 
-    ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    ids.ids_properties.homogeneous_time = time_mode
 
     for time in range(3):
         ids.vacuum_toroidal_field.b0 = np.asarray([time + 3.0])
+        # eq.time is the time coordinate for b0 in heterogeneous mode as well
         ids.time = np.asarray([time * 0.1])
         ids.putSlice(0, db_entry)
 
@@ -111,16 +120,17 @@ def test_hli_time_slicing_put(backend, worker_id, tmp_path):
     assert np.allclose(ids.time, [0.0, 0.1, 0.2])
 
 
-def test_time_slicing_put_two(backend, worker_id, tmp_path):
+def test_time_slicing_put_two(backend, worker_id, tmp_path, time_mode):
     """Write some slices to an IDS and then check that they are all there"""
     if backend == ASCII_BACKEND:
         pytest.skip("ASCII backend does not support slice mode")
     ids = open_ids(backend, "w", worker_id, tmp_path)
     eq = ids["equilibrium"]
-    eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    eq.ids_properties.homogeneous_time = time_mode
 
     for time in range(3):
         eq.vacuum_toroidal_field.b0 = [time + 3.0, time + 3.5]
+        # eq.time is the time coordinate for b0 in heterogeneous mode as well
         eq.time = [time * 0.1, (time + 0.5) * 0.1]
         eq.putSlice()
 
@@ -133,12 +143,12 @@ def test_time_slicing_put_two(backend, worker_id, tmp_path):
     assert np.allclose(eq.time.value, [0.0, 0.05, 0.1, 0.15, 0.2, 0.25])
 
 
-def test_get_default(backend, worker_id, tmp_path):
+def test_get_default(backend, worker_id, tmp_path, time_mode):
     """Write some slices to an IDS and then check that they are all there"""
     ids = open_ids(backend, "w", worker_id, tmp_path)
     eq = ids["equilibrium"]
-    eq.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    assert eq.ids_properties.homogeneous_time == IDS_TIME_MODE_HOMOGENEOUS
+    eq.ids_properties.homogeneous_time = time_mode
+    assert eq.ids_properties.homogeneous_time == time_mode
     eq.put()
 
     eq.vacuum_toroidal_field.b0 = [1.0]
@@ -146,7 +156,7 @@ def test_get_default(backend, worker_id, tmp_path):
 
     # a get() does not overwrite values which are default in the backend
     assert eq.vacuum_toroidal_field.b0.value == [1.0]
-    assert eq.ids_properties.homogeneous_time == IDS_TIME_MODE_HOMOGENEOUS
+    assert eq.ids_properties.homogeneous_time == time_mode
     eq.put()
 
     eq.vacuum_toroidal_field.b0.value = [2.0]
@@ -154,3 +164,38 @@ def test_get_default(backend, worker_id, tmp_path):
     eq.get()
     # a get() should overwrite values which are changed in the backend
     assert eq.vacuum_toroidal_field.b0.value == [1.0]
+
+
+def test_time_slicing_time_mode(backend, worker_id, tmp_path, time_mode):
+    """Write data to controllers IDS to test heterogeneous time mode."""
+    if backend == ASCII_BACKEND:
+        pytest.skip("ASCII backend does not support slice mode")
+    ids = open_ids(backend, "w", worker_id, tmp_path)
+    ctrls = ids.controllers
+    ctrls.ids_properties.homogeneous_time = time_mode
+
+    ctrls.time = [0.1, 0.2, 0.3]
+    ctrls.linear_controller.resize(2)
+    # This time base is ignored for IDS_TIME_MODE_HOMOGENEOUS
+    ctrls.linear_controller[0].inputs.time = [0.0, 0.1, 0.2]
+    ctrls.linear_controller[0].inputs.data = [[0.0, 1.0, 2.0]]
+    # This time base is ignored for IDS_TIME_MODE_HOMOGENEOUS
+    ctrls.linear_controller[1].inputs.time = [0.2, 0.3, 0.4]
+    ctrls.linear_controller[1].inputs.data = [[0.0, 1.0, 2.0]]
+    # code.output_flag always uses /time as timebase
+    ctrls.code.output_flag = [0, 1, 2]
+
+    ctrls.put()
+    ctrls.getSlice(0.2)
+    assert np.array_equal(ctrls.time.value, [0.2])
+    if time_mode == IDS_TIME_MODE_HETEROGENEOUS:
+        assert np.array_equal(ctrls.linear_controller[0].inputs.time.value, [0.2])
+        assert np.array_equal(ctrls.linear_controller[0].inputs.data.value, [[2.0]])
+        assert np.array_equal(ctrls.linear_controller[1].inputs.time.value, [0.2])
+        assert np.array_equal(ctrls.linear_controller[1].inputs.data.value, [[0.0]])
+    else:  # HOMOGENEOUS_TIME
+        # Note: don't test time arrays of linear_controller inputs, as they shouldn't be
+        # used in homogeneous time mode
+        assert np.array_equal(ctrls.linear_controller[0].inputs.data.value, [[1.0]])
+        assert np.array_equal(ctrls.linear_controller[1].inputs.data.value, [[1.0]])
+    assert np.array_equal(ctrls.code.output_flag.value, [1])
