@@ -7,7 +7,8 @@ import re
 import shutil
 import subprocess
 from packaging.version import Version as V
-from io import BytesIO
+from io import BytesIO, StringIO
+import io
 from pathlib import Path
 from urllib.request import urlopen
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -223,18 +224,25 @@ def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
     # This is needed to let Make know that we want to fully rebuild the DD
     dd_data_dictionary.unlink(missing_ok=True)
     if not result_xml.exists():
-        try:
-            subprocess.check_output(
-                "make IDSDef.xml 2>/dev/null",
-                cwd=os.getcwd() + "/data-dictionary",
-                shell=True,
-                env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
-            )
-        except subprocess.CalledProcessError as ee:
+        result = subprocess.run(
+            ["make", "IDSDef.xml"],
+            bufsize=0,
+            capture_output=True,
+            cwd=os.getcwd() + "/data-dictionary",
+            env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
+            shell=True,
+            text=True,
+        )
+
+        if result.returncode != 0:
             logger.warning("Error making DD version %s, make reported:", tag)
-            print(f"CLASSPATH ='{saxon_jar_path}'")
-            print(f"PATH = '{os.environ['PATH']}'")
-            print(ee.output.decode("UTF-8"))
+            logger.warning("CLASSPATH ='%s'", saxon_jar_path)
+            logger.warning("PATH = '%s'", os.environ["PATH"])
+            logger.warning("stdout = '%s'", result.stdout.strip())
+            logger.warning("stderr = '%s'", result.stderr.strip())
+            logger.warning("continuing without = '%s'", tag)
+            return
+
     # copy and delete original instead of move (to follow symlink)
     IDSDef = Path("data-dictionary/IDSDef.xml")
     try:
