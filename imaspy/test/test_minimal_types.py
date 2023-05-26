@@ -1,4 +1,5 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
+import numpy
 import pytest
 
 import imaspy
@@ -98,7 +99,7 @@ def test_ids_primitive_properties_numeric_arrays(ids_minimal_types, typ, max_dim
         assert minimal[tp].size == 0
 
         new_size = (2,) * dim
-        minimal[tp].value.resize(new_size)
+        minimal[tp].value = numpy.ones(new_size)
         assert minimal[tp].has_value
         assert minimal[tp].shape == new_size
         assert minimal[tp].size == 2**dim
