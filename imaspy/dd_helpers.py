@@ -202,7 +202,7 @@ def get_data_dictionary_repo() -> Tuple[bool, bool]:
     return repo
 
 
-def run_data_dictionary(
+def _run_data_dictionary(
     args: Union[Sequence, str], tag: str, saxon_jar_path: str
 ) -> int:
     """Run in a Data Dictionary environment. Used e.g. to run the DD Makefile
@@ -256,9 +256,9 @@ def build_data_dictionary(repo, tag: str, saxon_jar_path: str, rebuild=False) ->
         return
 
     repo.git.checkout(tag, force=True)
-    if run_data_dictionary(["make", "clean"], tag, saxon_jar_path) != 0:
+    if _run_data_dictionary(["make", "clean"], tag, saxon_jar_path) != 0:
         return
-    if run_data_dictionary(["make", "IDSDef.xml"], tag, saxon_jar_path) != 0:
+    if _run_data_dictionary(["make", "IDSDef.xml"], tag, saxon_jar_path) != 0:
         return
 
     # copy and delete original instead of move (to follow symlink)
