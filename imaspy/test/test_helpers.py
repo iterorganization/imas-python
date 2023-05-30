@@ -9,7 +9,6 @@ import imaspy
 # TODO: import these from imaspy (i.e. expose them publicly?)
 from imaspy.db_entry import DBEntry
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS
-from imaspy.ids_root import IDSRoot
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
@@ -69,7 +68,7 @@ def fill_with_random_data(structure, max_children=3):
     for child_name in structure._children:
         child = structure[child_name]
 
-        if type(child) in [IDSStructure, IDSToplevel, IDSRoot]:
+        if type(child) in [IDSStructure, IDSToplevel]:
             fill_with_random_data(child, max_children)
         elif isinstance(child, IDSStructArray):
             if len(child.value) == 0:
@@ -98,7 +97,7 @@ def compare_children(st1, st2, _ascii_empty_array_skip=False, deleted_paths=set(
         assert child1.metadata.name == child2.metadata.name
         assert type(child1) == type(child2)
 
-        if type(child1) in [IDSStructure, IDSToplevel, IDSRoot]:
+        if type(child1) in [IDSStructure, IDSToplevel]:
             compare_children(
                 child1, child2, _ascii_empty_array_skip=_ascii_empty_array_skip, deleted_paths=deleted_paths
             )

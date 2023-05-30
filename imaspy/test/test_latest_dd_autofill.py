@@ -5,7 +5,6 @@ data dictionary version.
 import copy
 
 from imaspy.ids_factory import IDSFactory
-from imaspy.ids_root import IDSRoot
 from imaspy.test.test_helpers import (
     compare_children,
     fill_with_random_data,

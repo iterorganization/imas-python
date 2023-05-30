@@ -8,7 +8,7 @@ from imaspy.test.test_helpers import open_dbentry
 
 
 def test_latest_dd_manual(backend, worker_id, tmp_path):
-    """Write and then read again a full IDSRoot and a single IDSToplevel."""
+    """Write and then read again a single IDSToplevel."""
     dbentry = open_dbentry(backend, "w", worker_id, tmp_path)
     ids_name = "pulse_schedule"
     ids = IDSFactory().new(ids_name)
@@ -26,9 +26,9 @@ def test_latest_dd_manual(backend, worker_id, tmp_path):
 
 def test_dir(backend, worker_id, tmp_path):
     """Test calling `dir()` on `IDSFactory` to test if we can see IDSes"""
-    ir = IDSFactory()
-    ir_dir = dir(ir)
+    factory = IDSFactory()
+    f_dir = dir(factory)
     # Check if we can see the first and last stable IDS
-    assert "amns_data" in ir_dir, "Could not find amns_data in dir(IDSRoot())"
-    assert "workflow" in ir_dir, "Could not find workflow in dir(IDSRoot())"
-    assert "__init__" in ir_dir, "Could not find base attributes in dir(IDSRoot())"
+    assert "amns_data" in f_dir, "Could not find amns_data in dir(IDSFactory())"
+    assert "workflow" in f_dir, "Could not find workflow in dir(IDSFactory())"
+    assert "__init__" in f_dir, "Could not find base attributes in dir(IDSFactory())"

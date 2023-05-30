@@ -60,16 +60,14 @@ def compare_ids_put(imaspy_ids, hli_ids):
     hli_log = imas._ual_lowlevel._log
     imas._ual_lowlevel._log = []
     # And then the imaspy IDS
-    ids_root = imaspy_ids._parent
-    ids_root.shot = 1
-    ids_root.run = 1
-    ids_root.create_env_backend("test", "ITER", "3", imaspy.ids_defs.MEMORY_BACKEND)
+    dbentry = imaspy.DBEntry(imaspy.ids_defs.MEMORY_BACKEND, "ITER", 1, 1, "test")
+    dbentry.create()
     try:
-        imaspy_ids.put()
+        dbentry.put(imaspy_ids)
     except Exception as exc:
         print("Caught error while putting imaspy ids:", exc)
         traceback.print_exc()
-    ids_root.close()
+    dbentry.close()
     imaspy_log = imas._ual_lowlevel._log
     imas._ual_lowlevel._log = []
     hli_log_text = "\n".join("\t".join(item) for item in hli_log)
@@ -81,11 +79,10 @@ def compare_ids_put(imaspy_ids, hli_ids):
 
 def compare_ids_get(imaspy_ids):
     # First put the ids
-    ids_root = imaspy_ids._parent
-    ids_root.shot = 1
-    ids_root.run = 1
-    ids_root.create_env_backend("test", "ITER", "3", imaspy.ids_defs.MEMORY_BACKEND)
-    imaspy_ids.put()
+    idbentry = imaspy.DBEntry(imaspy.ids_defs.MEMORY_BACKEND, "ITER", 1, 1, "test")
+    idbentry.create()
+    idbentry.put(imaspy_ids)
+
     dbentry = imas.DBEntry(imaspy.ids_defs.MEMORY_BACKEND, "ITER", 1, 1, "test")
     dbentry.open()
     # Start with hli IDS
@@ -94,12 +91,12 @@ def compare_ids_get(imaspy_ids):
     hli_log = imas._ual_lowlevel._log
     imas._ual_lowlevel._log = []
     # And then the imaspy IDS
-    imaspy_ids.get()
+    idbentry.get(imaspy_ids.metadata.name)
     imaspy_log = imas._ual_lowlevel._log
     imas._ual_lowlevel._log = []
     # Cleanup
     dbentry.close()
-    ids_root.close()
+    idbentry.close()
     hli_log_text = "\n".join("\t".join(item) for item in hli_log)
     imaspy_log_text = "\n".join("\t".join(item) for item in imaspy_log)
     Path("/tmp/hli.log").write_text(hli_log_text)
@@ -127,7 +124,7 @@ def main(ids_name, method, heterogeneous):
     \b
     IDS_NAME:   The name of the IDS to use for testing, for example "core_profiles".
     """
-    imaspy_ids = imaspy.ids_root.IDSRoot()[ids_name]
+    imaspy_ids = imaspy.IDSFactory().new(ids_name)
     hli_ids = getattr(imas, ids_name)()
 
     fill_with_random_data(imaspy_ids)
