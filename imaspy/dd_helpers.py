@@ -51,7 +51,8 @@ def prepare_data_dictionaries():
             compression=ZIP_DEFLATED,
         ) as dd_zip:
             for filename in _build_dir.glob("[0-9]*.xml"):
-                dd_zip.write(filename)
+                arcname = Path("data-dictionary") / os.path.join(*filename.parts[1:])
+                dd_zip.write(filename, arcname=arcname)
 
 
 # pre 3.30.0 versions of the DD have the `saxon9he.jar` file path hardcoded
