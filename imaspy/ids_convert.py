@@ -129,7 +129,7 @@ def _copy_data(
         # Copy the data or recurse into sub-structures
         from_item, to_item = (item, old_item) if new_is_source else (old_item, item)
         if old_item is None:
-            if new_is_source:  # TODO, only log if new_item has data
+            if new_is_source and item.has_value:
                 logger.info(
                     "Cannot find element %s/%s in DD %s. Data is not copied.",
                     old.metadata.path,
@@ -150,21 +150,18 @@ def _copy_data(
             )
 
         elif isinstance(from_item, IDSStructArray):
-            size = len(from_item.value)
-            if size > 0:
-                to_item.resize(size)
+            size = len(from_item)
+            to_item.resize(size)
             for i in range(size):
                 _copy_data(item[i], old_item[i], deepcopy, new_is_source, old_version)
 
         elif isinstance(from_item, IDSStructure):
             _copy_data(item, old_item, deepcopy, new_is_source, old_version)
 
-        else:  # Data elements
-            # TODO: only copy if value is non-default
+        elif from_item.has_value:  # Data elements; only copy if value is non-default
             if deepcopy:
-                # Using deepcopy to deal with STR_1D (list of strings)
-                # For numpy arrays and basic types, copy would be sufficient
-                to_item.value = copy.deepcopy(from_item.value)
+                # No nested types are used as data, so a shallow copy is sufficient
+                to_item.value = copy.copy(from_item.value)
             else:
                 to_item.value = from_item.value
 
@@ -174,7 +171,7 @@ def _copy_data(
     # Find out which elements were removed in the newer DD version
     if not new_is_source:
         for item in old:
-            if item not in old_items:  # TODO, only log if old_item has data
+            if item not in old_items and item.has_value:
                 logger.info(
                     "Cannot find element %s in DD %s. Data might not be copied.",
                     item.metadata.path,

@@ -525,8 +525,7 @@ def _get_children(
         if isinstance(element, IDSStructArray):
             timebase = _get_timebasepath(element, time_mode, new_path)
             with ctx.arraystruct_action(new_path, timebase, 0) as (new_ctx, size):
-                if size > 0:  # FIXME: resizing an empty aos to 0 raises an error
-                    element.resize(size)
+                element.resize(size)
                 for item in element:
                     _get_children(item, new_ctx, time_mode, "")
                     new_ctx.iterate_over_arraystruct(1)
@@ -580,7 +579,7 @@ def _put_children(
 
         if isinstance(element, IDSStructArray):
             timebase = _get_timebasepath(element, time_mode, new_path)
-            size = len(element.value)
+            size = len(element)
             with ctx.arraystruct_action(new_path, timebase, size) as (new_ctx, _):
                 for item in element:
                     _put_children(item, new_ctx, time_mode, "", is_slice)
@@ -593,7 +592,7 @@ def _put_children(
             if is_slice and not element.metadata.type.is_dynamic:
                 continue  # put_slice only stores dynamic data
             timebase = _get_timebasepath(element, time_mode, new_path)
-            if element.has_value:  # TODO: this should return False when set to default?
+            if element.has_value:
                 ctx.write_data(new_path, timebase, element.value)
 
 
