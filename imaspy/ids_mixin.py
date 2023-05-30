@@ -12,7 +12,7 @@ try:
 except ImportError:
     from cached_property import cached_property
 
-from imaspy.ids_metadata import IDSMetadata, IDSType
+from imaspy.ids_metadata import IDSMetadata
 from imaspy.setup_logging import root_logger as logger
 
 try:
@@ -56,7 +56,7 @@ class IDSMixin:
     def _is_dynamic(self) -> bool:
         """True iff this element has type=dynamic, or it has a parent with type=dynamic
         """
-        return self.metadata.type is IDSType.DYNAMIC or self._dd_parent._is_dynamic
+        return self.metadata.type.is_dynamic or self._dd_parent._is_dynamic
 
     @cached_property
     def _path(self):

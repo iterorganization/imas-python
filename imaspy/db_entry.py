@@ -30,7 +30,6 @@ from imaspy.ids_defs import (
 )
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_metadata import IDSType
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_toplevel import IDSToplevel
@@ -517,10 +516,7 @@ def _get_children(
 ) -> None:
     """Recursively get all children of an IDSStructure"""
     for element in structure:
-        if (
-            time_mode == IDS_TIME_MODE_INDEPENDENT
-            and element.metadata.type is IDSType.DYNAMIC
-        ):
+        if time_mode == IDS_TIME_MODE_INDEPENDENT and element.metadata.type.is_dynamic:
             continue  # skip dynamic (time-dependent) nodes
 
         name = element.metadata.name
@@ -576,11 +572,9 @@ def _put_children(
     # IDSStructArray elements if they don't contain dynamic data nodes. That is hard to
     # detect now, so we just recurse and check the data elements
     for element in structure:
-        if (
-            element.metadata.type is IDSType.DYNAMIC
-            and time_mode == IDS_TIME_MODE_INDEPENDENT
-        ):
+        if time_mode == IDS_TIME_MODE_INDEPENDENT and element.metadata.type.is_dynamic:
             continue  # skip dynamic data when in time independent mode
+
         name = element.metadata.name
         new_path = f"{ctx_path}/{name}" if ctx_path else name
 
@@ -596,7 +590,7 @@ def _put_children(
             _put_children(element, ctx, time_mode, new_path, is_slice)
 
         else:  # Data elements
-            if is_slice and element.metadata.type is not IDSType.DYNAMIC:
+            if is_slice and not element.metadata.type.is_dynamic:
                 continue  # put_slice only stores dynamic data
             timebase = _get_timebasepath(element, time_mode, new_path)
             if element.has_value:  # TODO: this should return False when set to default?
@@ -607,12 +601,12 @@ def _get_timebasepath(ele: IDSMixin, time_mode: int, ctx_path: str) -> str:
     """Calculate the timebasepath to use for the lowlevel."""
     if isinstance(ele, IDSStructArray):
         # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#367-384
-        if ele.metadata.type is not IDSType.DYNAMIC:
+        if not ele.metadata.type.is_dynamic:
             return ""
         timebasepath = ctx_path + "/time"
     else:  # IDSPrimitive
         # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#1524-1566
-        if ele.metadata.type is not IDSType.DYNAMIC or ele._parent._is_dynamic:
+        if not ele.metadata.type.is_dynamic or ele._parent._is_dynamic:
             return ""
         timebasepath = ele.metadata.timebasepath
     if time_mode == IDS_TIME_MODE_HOMOGENEOUS:
