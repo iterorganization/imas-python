@@ -4,9 +4,12 @@
 # Set up pytest so that any mention of 'backend' as a test argument
 # gets run with all four backends.
 # Same for ids_type, with all types
+from copy import deepcopy
+
 import importlib_resources
 import pytest
 
+from imaspy.dd_zip import dd_etree
 from imaspy.ids_defs import ASCII_BACKEND, HDF5_BACKEND, MDSPLUS_BACKEND, MEMORY_BACKEND
 from imaspy.ids_root import IDSRoot
 
@@ -108,3 +111,9 @@ def ids_minimal_struct_array(imaspy_assets):
 @pytest.fixture(scope="session")
 def ids_minimal_types(imaspy_assets):
     return imaspy_assets / "IDS_minimal_types.xml"
+
+
+@pytest.fixture
+def fake_structure_xml(fake_toplevel_xml):
+    tree = dd_etree(version=None, xml_path=fake_toplevel_xml)
+    return deepcopy(tree.find("IDS"))
