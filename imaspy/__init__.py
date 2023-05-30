@@ -38,6 +38,7 @@ from . import (
 # Import main user API objects in the imaspy module
 from .db_entry import DBEntry
 from .ids_factory import IDSFactory
+from .ids_convert import convert_ids
 
 # Load the IMASPy IMAS AL/DD core
 try:

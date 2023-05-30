@@ -99,3 +99,8 @@ class IDSFactory:
     def exists(self, ids_name: str) -> bool:
         """Check if an IDS type with the given name exists."""
         return ids_name in self._ids_elements
+
+    @property
+    def version(self) -> str:
+        """Get the DD version used by this IDS factory"""
+        return self._version

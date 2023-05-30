@@ -36,7 +36,7 @@ class IDSToplevel(IDSStructure):
         """Save backend_version and backend_xml and build translation layer.
 
         Args:
-            parent: Parent of ``self``. Usually an instance of :py:class:`IDSRoot`.
+            parent: Parent of ``self``, an instance of :py:class:`IDSFactory`.
             name: Name of this structure. Usually from the ``name`` attribute of
                 the IDS toplevel definition.
             structure_xml: XML structure that defines this IDS toplevel.
@@ -68,8 +68,7 @@ class IDSToplevel(IDSStructure):
 
         .. code-block: python
 
-            data_entry = imaspy.ids_root.IDSRoot(1, 0)
-            core_profiles = data_entry.core_profiles
+            core_profiles = imaspy.IDSFactory().core_profiles()
             # fill core_profiles with data
             ...
 
@@ -78,8 +77,7 @@ class IDSToplevel(IDSStructure):
             # For example, send `data` to another program with libmuscle.
             # Then deserialize on the receiving side:
 
-            data_entry = imaspy.ids_root.IDSRoot(1, 0)
-            core_profiles = data_entry.core_profiles
+            core_profiles = imaspy.IDSFactory().core_profiles()
             core_profiles.deserialize(data)
             # Use core_profiles:
             ...

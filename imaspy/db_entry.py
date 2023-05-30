@@ -106,6 +106,11 @@ class DBEntry:
         """Get the IDS factory used by this DB entry."""
         return self._ids_factory
 
+    @property
+    def version(self) -> str:
+        """Get the DD version used by this DB entry"""
+        return self._ids_factory.version
+
     def _ual_open_pulse(self, mode: int, options: Any) -> None:
         """Internal method implementing open()/create()."""
         if self._db_ctx is not None:
