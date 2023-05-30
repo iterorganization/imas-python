@@ -35,6 +35,10 @@ from . import (
     ids_toplevel,
 )
 
+# Import main user API objects in the imaspy module
+from .db_entry import DBEntry
+from .ids_factory import IDSFactory
+
 # Load the IMASPy IMAS AL/DD core
 try:
     # Hardcode this for stricter imports and debugging

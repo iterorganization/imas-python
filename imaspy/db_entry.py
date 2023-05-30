@@ -80,6 +80,8 @@ class DBEntry:
                 supplied.
             data_version: Major version of the access layer, retrieved from environment
                 when not supplied.
+
+        Keyword Args:
             dd_version: Data dictionary version to use.
             xml_path: Data dictionary definition XML file to use.
         """
@@ -88,10 +90,12 @@ class DBEntry:
         self.shot = shot
         self.run = run
         self.user_name = user_name or os.environ["USER"]
-        self.data_version = data_version or os.environ["IMAS_VERSION"]
+        self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
         self._db_ctx: Optional[UalContext] = None
         # TODO: don't import all of IMAS, only load _ual_lowlevel, see
         # https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
+        # TODO: allow using a different _ual_lowlevel module? See
+        # imas_ual_env_parsing.build_UAL_package_name
         self._ull = importlib.import_module("imas._ual_lowlevel")
         self._version = version
         self._xml_path = xml_path
@@ -153,7 +157,7 @@ class DBEntry:
     def close(self, *, options=None, erase=False):
         """Close this Database Entry.
 
-        Args:
+        Keyword Args:
             options: Backend specific options. Defaults to None.
             erase: Remove the pulse file from the database. Defaults to False.
         """
@@ -174,17 +178,16 @@ class DBEntry:
         Caution:
             This method erases the previous entry if it existed!
 
-        Args:
-            options: Deprecated, available for backwards compatibility.
-            force: Deprecated, available for backwards compatibility.
+        Keyword Args:
+            options: Backend specific options. Defaults to None.
+            force: Whether to force create the database entry. Defaults to True.
 
         Example:
             .. code-block:: python
 
-                import imas
-                from imas import imasdef
+                import imaspy
 
-                imas_entry = imas.DBEntry("imas:hdf5?path=/home/ITER/username/public/imasdb/test/3/1/1234/")
+                imas_entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 1234)
                 imas_entry.create()
         """  # noqa
         self._ual_open_pulse(FORCE_CREATE_PULSE if force else CREATE_PULSE, options)
@@ -192,17 +195,16 @@ class DBEntry:
     def open(self, *, options=None, force=False) -> None:
         """Open an existing database entry.
 
-        Args:
-            options: Deprecated, available for backwards compatibility.
-            force: Deprecated, available for backwards compatibility.
+        Keyword Args:
+            options: Backend specific options. Defaults to None.
+            force: Whether to force open the database entry. Defaults to False.
 
         Example:
             .. code-block:: python
 
-                import imas
-                from imas import imasdef
+                import imaspy
 
-                imas_entry = imas.DBEntry("imas:hdf5?path=/home/ITER/username/public/imasdb/test/3/1/1234/")
+                imas_entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 1234)
                 imas_entry.open()
         """  # noqa
         self._ual_open_pulse(FORCE_OPEN_PULSE if force else OPEN_PULSE, options)
@@ -235,10 +237,9 @@ class DBEntry:
         Example:
             .. code-block:: python
 
-                import imas
-                from imas import imasdef
+                import imaspy
 
-                imas_entry = imas.DBEntry("imas:mdsplus?user=public;shot=131024;run=41;database=ITER")
+                imas_entry = imaspy.DBEntry(imaspy.ids_defs.MDSPLUS_BACKEND, "ITER", 131024, 41, "public")
                 imas_entry.open()
                 core_profiles = imas_entry.get("core_profiles")
         """  # noqa
@@ -279,12 +280,11 @@ class DBEntry:
         Example:
             .. code-block:: python
 
-                import imas
-                from imas import imasdef
+                import imaspy
 
-                imas_entry = imas.DBEntry("imas:mdsplus?user=public;shot=131024;run=41;database=ITER")
+                imas_entry = imaspy.DBEntry(imaspy.ids_defs.MDSPLUS_BACKEND, "ITER", 131024, 41, "public")
                 imas_entry.open()
-                core_profiles = imas_entry.get_slice("core_profiles", 370, imasdef.PREVIOUS_INTERP)
+                core_profiles = imas_entry.get_slice("core_profiles", 370, imaspy.ids_defs.PREVIOUS_INTERP)
         """  # noqa
         return self._get(
             ids_name, occurrence, time_requested, interpolation_method, destination
@@ -313,7 +313,11 @@ class DBEntry:
                 "ids_properties/version_put/data_dictionary", "", CHAR_DATA, 1
             )
         if time_mode not in IDS_TIME_MODES:
-            raise RuntimeError()  # FIXME!
+            raise RuntimeError(
+                f"Invalid Database Entry: Found invalid value '{time_mode}' for "
+                "ids_properties.homogeneous_time in IDS "
+                f"{ids_name}, occurrence {occurrence}."
+            )
 
         if not dd_version:
             logger.warning(
@@ -368,7 +372,7 @@ class DBEntry:
         Example:
             .. code-block:: python
 
-                ids = imas.pf_active()
+                ids = imaspy.IDSFactory().pf_active()
                 ...  # fill the pf_active IDS here
                 imas_entry.put(ids)
         """
@@ -420,7 +424,7 @@ class DBEntry:
         Example:
             .. code-block:: python
 
-                ids = imas.pf_active()
+                ids = imaspy.IDSFactory().pf_active()
                 ...  # fill the static data of the pf_active IDS here
                 for i in range(N):
                     ... # fill time slice of the pf_active IDS
@@ -476,6 +480,7 @@ class DBEntry:
             # put() must first delete any existing data
             with self._db_ctx.global_action(ll_path, WRITE_OP) as write_ctx:
                 _delete_children(ids, write_ctx, "")
+
         if is_slice:
             manager = self._db_ctx.slice_action(
                 ll_path, WRITE_OP, UNDEFINED_TIME, UNDEFINED_INTERP
@@ -511,8 +516,7 @@ def _get_children(
             time_mode == IDS_TIME_MODE_INDEPENDENT
             and element.metadata.type is IDSType.DYNAMIC
         ):
-            # skip dynamic (time-dependent) nodes
-            continue
+            continue  # skip dynamic (time-dependent) nodes
 
         name = element.metadata.name
         new_path = f"{ctx_path}/{name}" if ctx_path else name
