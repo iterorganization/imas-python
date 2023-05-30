@@ -51,7 +51,7 @@ def prepare_data_dictionaries():
             compression=ZIP_DEFLATED,
         ) as dd_zip:
             for filename in _build_dir.glob("[0-9]*.xml"):
-                arcname = Path("data-dictionary") / os.path.join(*filename.parts[1:])
+                arcname = Path("data-dictionary").joinpath(*filename.parts[1:])
                 dd_zip.write(filename, arcname=arcname)
 
 
