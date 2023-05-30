@@ -4,8 +4,6 @@ import string
 
 import numpy as np
 
-import imaspy
-
 # TODO: import these from imaspy (i.e. expose them publicly?)
 from imaspy.db_entry import DBEntry
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS
@@ -91,42 +89,33 @@ def fill_with_random_data(structure, max_children=3):
                 )
 
 
-def compare_children(st1, st2, _ascii_empty_array_skip=False, deleted_paths=set()):
-    """Perform a deep compare of two structures using asserts."""
+def compare_children(st1, st2, deleted_paths=set()):
+    """Perform a deep compare of two structures using asserts.
+
+    All paths in ``deleted_paths`` are asserted that they are deleted in st2.
+    """
     for child1, child2 in zip(st1, st2):
         assert child1.metadata.name == child2.metadata.name
         assert type(child1) == type(child2)
 
         if type(child1) in [IDSStructure, IDSToplevel]:
-            compare_children(
-                child1, child2, _ascii_empty_array_skip=_ascii_empty_array_skip, deleted_paths=deleted_paths
-            )
+            compare_children(child1, child2, deleted_paths=deleted_paths)
         elif isinstance(child1, IDSStructArray):
             for ch1, ch2 in zip(child1.value, child2.value):
-                compare_children(
-                    ch1, ch2, _ascii_empty_array_skip=_ascii_empty_array_skip, deleted_paths=deleted_paths
-                )
+                compare_children(ch1, ch2, deleted_paths=deleted_paths)
         else:  # leaf node
             path = str(child1.metadata.path)
             if "_error_" in path:
                 # No duplicated entries for _error_upper, _error_lower and _error_index
-                path = path[:path.find("_error_")]
+                path = path[: path.find("_error_")]
             if path in deleted_paths:
                 assert not child2.has_value
             elif isinstance(child1.value, (list, np.ndarray)):
                 one = np.asarray(child1.value)
                 two = np.asarray(child2.value)
-                if (one.size == 0 or two.size == 0) and _ascii_empty_array_skip:
-                    # check that they are both empty, or one is [] and one is ['']
-                    assert (
-                        (one.size == 0 and two.size == 1 and two[0] == "")
-                        or (two.size == 0 and one.size == 1 and one[0] == "")
-                        or (one.size == 0 and two.size == 0)
-                    )
-                else:
-                    assert one.size == two.size
-                    if one.size > 0 and two.size > 0:
-                        assert np.array_equal(one, two)
+                assert one.size == two.size
+                if one.size > 0 and two.size > 0:
+                    assert np.array_equal(one, two)
             else:
                 assert child1.value == child2.value
 
