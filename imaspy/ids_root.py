@@ -13,7 +13,7 @@ class IDSRoot:
 
     def __init__(self, *args, **kwargs):
         raise RuntimeError(
-            "IDSRoot is removed in IMASPy v0.8.0. "
+            "IDSRoot is removed in IMASPy v0.7.0. "
             "See DBEntry for IDS I/O (put, get, etc.). "
             "See IDSFactory for creating empty IDSs."
         )
