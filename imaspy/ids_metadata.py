@@ -41,6 +41,9 @@ class IDSType(Enum):
     """Data that does not vary between multiple IDSs.
     """
 
+    def __init__(self, name):
+        self.is_dynamic = name == "dynamic"
+
 
 class IDSMetadata:
     """Container for IDS Metadata

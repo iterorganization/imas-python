@@ -2,14 +2,7 @@ from copy import deepcopy
 
 import pytest
 
-from imaspy.dd_zip import dd_etree
-from imaspy.ids_metadata import IDSMetadata
-
-
-@pytest.fixture
-def fake_structure_xml(fake_toplevel_xml):
-    tree = dd_etree(version=None, xml_path=fake_toplevel_xml)
-    return tree.find("IDS")
+from imaspy.ids_metadata import IDSMetadata, IDSType
 
 
 def test_metadata_cache(fake_structure_xml):
@@ -37,3 +30,10 @@ def test_metadata_immutable(fake_structure_xml):
     meta = IDSMetadata(fake_structure_xml)
     with pytest.raises(RuntimeError):
         meta.immutable = True
+
+
+def test_ids_type():
+    assert not IDSType.NONE.is_dynamic
+    assert not IDSType.CONSTANT.is_dynamic
+    assert not IDSType.STATIC.is_dynamic
+    assert IDSType.DYNAMIC.is_dynamic
