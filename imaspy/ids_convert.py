@@ -69,7 +69,7 @@ def convert_ids(
     source_version = Version(toplevel._version)
     target_version = Version(target_ids._version)
     logger.info(
-        "Starting conversion for IDS %s of version %s to version %s.",
+        "Starting conversion of IDS %s from version %s to version %s.",
         ids_name,
         source_version,
         target_version,
@@ -78,7 +78,7 @@ def convert_ids(
         _copy_data(toplevel, target_ids, deepcopy, True, target_version)
     else:
         _copy_data(target_ids, toplevel, deepcopy, False, source_version)
-    logger.info("Conversion for IDS %s finished.", ids_name)
+    logger.info("Conversion of IDS %s finished.", ids_name)
     return target_ids
 
 
@@ -121,6 +121,10 @@ def _copy_data(
             else:
                 logger.debug("Cannot resolve previous name %r", nbc_previous_name)
             resolved_nbc = True
+        else:
+            old_item = None  # ignore
+            log_args = (nbc_description, item.metadata.path)
+            logger.error("Ignoring unsupported NBC change: %r for %s.", *log_args)
 
         # Copy the data or recurse into sub-structures
         from_item, to_item = (item, old_item) if new_is_source else (old_item, item)
@@ -134,8 +138,16 @@ def _copy_data(
                 )
 
         elif type(old_item) != type(item):
-            # TODO: Should we use logging.error instead?
-            raise RuntimeError("Non-matching types of old and new items!")
+            # There is only one instance of this case for 3.22.0 <-> 3.38.1:
+            # IDS:radiation/process/ggd/ion/state/emissivity from FLT_1D -> STRUCT, but
+            # no NBC metadata available.
+            logger.error(
+                "Data type of %s changed from %s to %s. This change is not supported "
+                "by IMASPy: no conversion is done.",
+                item.metadata.path,
+                old_item.metadata.data_type.value,
+                item.metadata.data_type.value,
+            )
 
         elif isinstance(from_item, IDSStructArray):
             size = len(from_item.value)

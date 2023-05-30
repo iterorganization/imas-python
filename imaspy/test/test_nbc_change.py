@@ -11,6 +11,7 @@ from unittest.mock import patch
 import numpy
 import pytest
 
+from imaspy.dd_zip import latest_dd_version
 from imaspy.ids_convert import convert_ids
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_factory import IDSFactory
@@ -224,7 +225,7 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
     factory = IDSFactory(version="3.25.0")
     if not factory.exists(ids_name):
         pytest.skip("IDS %s not defined for version 3.25.0" % (ids_name,))
-    ids = IDSFactory(version="3.25.0").new(ids_name)
+    ids = factory.new(ids_name)
     fill_with_random_data(ids)
 
     dbentry.put(ids)
@@ -261,3 +262,23 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
         },
     }.get(ids_name, [])
     compare_children(ids, ids2, deleted_paths=deleted_paths)
+
+
+def test_convert_min_to_max(ids_name):
+    factory = IDSFactory("3.22.0")
+    if not factory.exists(ids_name):
+        pytest.skip("IDS %s not defined for version 3.22.0" % (ids_name,))
+
+    ids = factory.new(ids_name)
+    fill_with_random_data(ids)
+    convert_ids(ids, latest_dd_version())
+
+
+def test_convert_max_to_min(ids_name):
+    factory = IDSFactory("3.22.0")
+    if not factory.exists(ids_name):
+        pytest.skip("IDS %s not defined for version 3.22.0" % (ids_name,))
+
+    ids = IDSFactory(latest_dd_version()).new(ids_name)
+    fill_with_random_data(ids)
+    convert_ids(ids, None, factory=factory)
