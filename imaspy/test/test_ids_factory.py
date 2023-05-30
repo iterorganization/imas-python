@@ -21,7 +21,6 @@ def test_ids_factory_with_xml_path(ids_minimal):
     IDSFactory(xml_path=ids_minimal)
 
 
-@pytest.mark.xfail(reason="IMAS-4729", strict=True)
 def test_ids_factory_latest(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("IMAS_VERSION", raising=False)
     monkeypatch.delenv("IMAS_PREFIX", raising=False)
