@@ -1,5 +1,5 @@
 # This file is part of IMASPy.
-# You should have received IMASPy LICENSE file with this project.
+# You should have received the IMASPy LICENSE file with this project.
 
 from contextlib import contextmanager
 from typing import Any, Callable, Iterator, Tuple, Union
