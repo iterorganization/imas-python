@@ -223,7 +223,6 @@ def _run_data_dictionary(
         capture_output=True,
         cwd=os.getcwd() + "/data-dictionary",
         env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
-        shell=True,
         text=True,
     )
 
