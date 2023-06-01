@@ -131,6 +131,8 @@ def test_classpath_hpc(monkeypatch):
     )
 
 
+# Might be slow, depending on internet connectivity
+@pytest.mark.slow
 def test_download_saxon(tmpdir):
     with tmpdir.as_cwd():
         saxon_path = download_saxon()

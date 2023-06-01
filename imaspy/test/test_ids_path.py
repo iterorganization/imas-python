@@ -10,6 +10,12 @@ def test_path_cache():
     assert path is path2
 
 
+def test_path_str_repr():
+    path = IDSPath("test/path")
+    assert str(path) == "test/path"
+    assert repr(path) == "IDSPath('test/path')"
+
+
 def test_empty_path():
     path = IDSPath("")
     assert path.parts == ()

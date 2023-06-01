@@ -1,5 +1,5 @@
 # This file is part of IMASPy.
-# You should have received IMASPy LICENSE file with this project.
+# You should have received the IMASPy LICENSE file with this project.
 """ IDS StructArray represents an Array of Structures in the IDS tree.
 This contains references to :py:class:`IDSStructure`s
 
@@ -11,12 +11,18 @@ from xml.etree.ElementTree import Element
 from imaspy.al_exception import ALException
 from imaspy.context_store import context_store
 from imaspy.ids_coordinates import IDSCoordinates
-from imaspy.ids_defs import needs_imas
+from imaspy.ids_defs import (
+    needs_imas,
+    IDS_TIME_MODE_HETEROGENEOUS,
+    IDS_TIME_MODE_HOMOGENEOUS,
+)
+from imaspy.ids_metadata import IDSType
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure
 from imaspy.setup_logging import root_logger as logger
 
 
+# FIXME: IDSStructArray should not be a child type of IDSStructure?
 class IDSStructArray(IDSStructure, IDSMixin):
     """IDS array of structures (AoS) node
 
@@ -24,9 +30,11 @@ class IDSStructArray(IDSStructure, IDSMixin):
     but contains references to IDSStructures
     """
 
+    # TODO: HLI compatibility
     def getAOSPath(self, ignore_nbc_change=1):
         raise NotImplementedError("{!s}.getAOSPath(ignore_nbc_change=1)".format(self))
 
+    # TODO: HLI compatibility
     @staticmethod
     def getAoSElement(self):
         logger.warning(
@@ -34,10 +42,12 @@ class IDSStructArray(IDSStructure, IDSMixin):
         )
         return self._element_structure
 
+    # TODO: IMASPy-specific but not implemented. Remove?
     @staticmethod
     def getBackendInfo(parentCtx, index, homogeneousTime):  # Is this specific?
         raise NotImplementedError("getBackendInfo(parentCtx, index, homogeneousTime)")
 
+    # TODO: HLI compatibility `base_path_in`
     def __init__(
         self, parent: IDSMixin, structure_xml: Element, base_path_in="element"
     ):
@@ -74,19 +84,40 @@ class IDSStructArray(IDSStructure, IDSMixin):
         struct = IDSStructure(self, self._structure_xml)
         return struct
 
+    # FIXME: need to override this because IDSStructure is our parent class
+    @property
+    def _dd_parent(self) -> IDSMixin:
+        return self._parent
+
+    @property
+    def _timebase_path(self) -> str:
+        """Timebase path to supply to the backend.
+        """
+        # Follow logic from
+        # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#367-384
+        if self.metadata.type is not IDSType.DYNAMIC:
+            return ""
+        if self._time_mode == IDS_TIME_MODE_HOMOGENEOUS:
+            return "/time"
+        if self._time_mode == IDS_TIME_MODE_HETEROGENEOUS:
+            return self._aos_path + "/time"
+        return ""  # FIXME: handle this case
+
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)
 
     def __getattr__(self, key):
-        object.__getattribute__(self, key)
+        return object.__getattribute__(self, key)
 
     def __getitem__(self, item):
         # value is a list, so the given item should be convertable to integer
+        # TODO: perhaps we should allow slices as well?
         list_idx = int(item)
         return self.value[list_idx]
 
     def __setitem__(self, item, value):
         # value is a list, so the given item should be convertable to integer
+        # TODO: perhaps we should allow slices as well?
         list_idx = int(item)
         if hasattr(self, "_convert_ids_types") and self._convert_ids_types:
             # Convert IDS type on set time. Never try this for hidden attributes!
@@ -94,6 +125,9 @@ class IDSStructArray(IDSStructure, IDSMixin):
                 struct = self.value[list_idx]
                 struct.value = value
         self.value[list_idx] = value
+
+    def __len__(self) -> int:
+        return len(self.value)
 
     def __iter__(self):
         return iter(self.value)
@@ -139,6 +173,8 @@ class IDSStructArray(IDSStructure, IDSMixin):
             Specifies if the targeted array of structure should keep
             existing data in remaining elements after resizing it.
         """
+        if nbelt < 0:
+            raise ValueError(f"Invalid size {nbelt}: size may not be negative")
         if not keep:
             self.value = []
         cur = len(self.value)
@@ -151,17 +187,9 @@ class IDSStructArray(IDSStructure, IDSMixin):
                 new_els.append(new_el)
             self.append(new_els)
         elif nbelt < cur:
-            raise NotImplementedError("Making IDSStructArrays smaller")
-            for i in range(nbelt, cur):
-                self.value.pop()
-        elif not keep:  # case nbelt = cur
-            raise NotImplementedError("Overwriting IDSStructArray elements")
-            self.append(
-                [
-                    process_charge_state__structArrayElement(self._base_path)
-                    for i in range(nbelt)
-                ]
-            )
+            self.value = self.value[:nbelt]
+        else:  # nbelt == cur
+            pass  # nothing to do, already correct size
 
     def _getData(
         self, aosCtx, indexFrom, indexTo, homogeneousTime, nodePath, analyzeTime
@@ -178,10 +206,9 @@ class IDSStructArray(IDSStructure, IDSMixin):
 
         Tries to dynamically build all needed information for the UAL.
         """
-        timeBasePath = self.getTimeBasePath(homogeneousTime, 0)
         nodePath = self.getRelCTXPath(parentCtx)
         status, aosCtx, size = self._ull.ual_begin_arraystruct_action(
-            parentCtx, nodePath, timeBasePath, 0
+            parentCtx, nodePath, self._timebase_path, 0
         )
         if status < 0:
             raise ALException(
@@ -213,11 +240,12 @@ class IDSStructArray(IDSStructure, IDSMixin):
 
         As all children _should_ support being put, just call `put` blindly.
         """
-        timeBasePath = self.getTimeBasePath(homogeneousTime)
+        if len(self.value) == 0:
+            return  # Nothing to be done
         # TODO: This might be to simple for array of array of structures
         nodePath = self.getRelCTXPath(parentCtx)
         status, aosCtx, size = self._ull.ual_begin_arraystruct_action(
-            parentCtx, nodePath, timeBasePath, len(self.value)
+            parentCtx, nodePath, self._timebase_path, len(self.value)
         )
         if status != 0 or aosCtx < 0:
             raise ALException(
@@ -253,6 +281,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
                 status,
             )
 
+    # TODO: IMASPy internal, make this a private function?
     def set_backend_properties(self, structure_xml):
         """set the (structure) backend properties of each child
         and store the structure_xml for new children"""

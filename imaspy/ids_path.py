@@ -1,5 +1,5 @@
 # This file is part of IMASPy.
-# You should have received IMASPy LICENSE file with this project.
+# You should have received the IMASPy LICENSE file with this project.
 """Logic for interpreting paths to elements in an IDS
 """
 
@@ -146,6 +146,9 @@ class IDSPath:
     def __str__(self) -> str:
         return self._path
 
+    def __repr__(self) -> str:
+        return f"IDSPath({self._path!r})"
+
     def __hash__(self) -> int:
         """IDSPaths are immutable, we can be used e.g. as dict key."""
         return hash(self._path)
@@ -174,21 +177,22 @@ class IDSPath:
                     # last common parent found, set element to it
                     element = from_element
                     for _ in range(len(from_path) - i):
-                        if element.metadata.data_type.value == "struct_array":
-                            # element is a struct array element IDSStructure
-                            # first select the IDSStructArray to then get its parent
-                            element = element._parent
-                        element = element._parent
+                        element = element._dd_parent
             # Not using `else` on the next line, because element might be set above
             if element is not None:
                 element = getattr(element, part)
                 if index is not None:
                     if isinstance(index, str):
-                        raise ValueError(f"Unexpected index {index} in path {self}.")
+                        raise ValueError(f"Unexpected index {index} in path '{self}'.")
                     if isinstance(index, IDSPath):
                         val = index.goto(from_element).value
                         if not isinstance(val, int):
-                            raise ValueError(f"Invalid index {index} in path {self}.")
+                            raise ValueError(f"Invalid index {index} in path '{self}'.")
                         index = val
                     element = element[index - 1]  # path syntax uses 1-based indexing
         return element
+
+    def is_ancestor_of(self, other_path: "IDSPath") -> bool:
+        """Test if this path is an ancestor of the other path."""
+        len_self = len(self)
+        return len_self < len(other_path) and other_path.parts[:len_self] == self.parts

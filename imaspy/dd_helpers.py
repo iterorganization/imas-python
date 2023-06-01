@@ -1,6 +1,5 @@
 """Helper functions to build IDSDef.xml"""
 
-import glob
 import logging
 import os
 import re
@@ -11,13 +10,14 @@ from io import BytesIO
 from pathlib import Path
 from urllib.request import urlopen
 from zipfile import ZIP_DEFLATED, ZipFile
-from typing import Tuple
+from typing import Tuple, Sequence, Union
 
 
 logger = logging.getLogger("imaspy")
 logger.setLevel(logging.INFO)
 
 _idsdef_zip_relpath = Path("imaspy/assets/IDSDef.zip")
+_build_dir = Path("build")
 _saxon_local_default_name = "saxon9he.jar"  # For pre-3.30.0 builds
 _saxon_regex = "saxon(.*).jar"  # Can be used in re.match
 
@@ -50,8 +50,9 @@ def prepare_data_dictionaries():
             mode="w",  # this needs w, since zip can have multiple same entries
             compression=ZIP_DEFLATED,
         ) as dd_zip:
-            for filename in glob.glob("data-dictionary/[0-9]*.xml"):
-                dd_zip.write(filename)
+            for filename in _build_dir.glob("[0-9]*.xml"):
+                arcname = Path("data-dictionary").joinpath(*filename.parts[1:])
+                dd_zip.write(filename, arcname=arcname)
 
 
 # pre 3.30.0 versions of the DD have the `saxon9he.jar` file path hardcoded
@@ -202,43 +203,72 @@ def get_data_dictionary_repo() -> Tuple[bool, bool]:
     return repo
 
 
-def build_data_dictionary(repo, tag, saxon_jar_path, rebuild=False):
+def _run_data_dictionary(
+    args: Union[Sequence, str], tag: str, saxon_jar_path: str
+) -> int:
+    """Run in a Data Dictionary environment. Used e.g. to run the DD Makefile
+
+    Args:
+        args: The "args" argument directly passed to :func:`subprocess.run`,
+            e.g. ``["make", "clean"]``
+        tag: The DD version tag that will be printed on error
+        saxon_jar_path: The path to the saxon jar; Added to CLASSPATH and used
+            to generate the DD
+    """
+    result = subprocess.run(
+        args,
+        bufsize=0,
+        capture_output=True,
+        cwd=os.getcwd() + "/data-dictionary",
+        env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
+        text=True,
+    )
+
+    if result.returncode != 0:
+        logger.warning("Error making DD version %s, make reported:", tag)
+        logger.warning("CLASSPATH ='%s'", saxon_jar_path)
+        logger.warning("PATH = '%s'", os.environ["PATH"])
+        logger.warning("stdout = '%s'", result.stdout.strip())
+        logger.warning("stderr = '%s'", result.stderr.strip())
+        logger.warning("continuing without DD version %s", tag)
+    return result.returncode
+
+
+def build_data_dictionary(repo, tag: str, saxon_jar_path: str, rebuild=False) -> None:
     """Build a single version of the data dictionary given by the tag argument
     if the IDS does not already exist.
 
     In the data-dictionary repository sometimes IDSDef.xml is stored
     directly, in which case we do not call make.
+
+    Args:
+        repo: Repository object containing the DD source code
+        tag: The DD version tag that will be build
+        saxon_jar_path: The path to the saxon jar; Added to CLASSPATH and used
+            to generate the DD
+        rebuild: If true, overwrites existing pre-build tagged DD version
     """
-    if (
-        os.path.exists("data-dictionary/{version}.xml".format(version=tag))
-        and not rebuild
-    ):
+    _build_dir.mkdir(exist_ok=True)
+    result_xml = _build_dir / f"{tag}.xml"
+
+    if result_xml.exists() and not rebuild:
+        logger.debug(f"XML for tag '{tag}' already exists, skipping")
         return
 
     repo.git.checkout(tag, force=True)
-    # this could cause issues if someone else has added or left IDSDef.xml
-    # in this directory. However, we go through the tags in order
-    # so 1.0.0 comes first, where git checks out IDSDef.xml
-    if not _idsdef_zip_relpath.exists():
-        try:
-            subprocess.check_output(
-                "make IDSDef.xml 2>/dev/null",
-                cwd=os.getcwd() + "/data-dictionary",
-                shell=True,
-                env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
-            )
-        except subprocess.CalledProcessError as ee:
-            logger.warning("Error making DD version %s, make reported:", tag)
-            print(f"CLASSPATH ='{saxon_jar_path}'")
-            print(f"PATH = '{os.environ['PATH']}'")
-            print(ee.output.decode("UTF-8"))
+    if _run_data_dictionary(["make", "clean"], tag, saxon_jar_path) != 0:
+        return
+    if _run_data_dictionary(["make", "IDSDef.xml"], tag, saxon_jar_path) != 0:
+        return
+
     # copy and delete original instead of move (to follow symlink)
+    IDSDef = Path("data-dictionary/IDSDef.xml")
     try:
         shutil.copy(
-            "data-dictionary/IDSDef.xml",
-            "data-dictionary/{version}.xml".format(version=tag),
+            IDSDef,  # Hardcoded in access-layer makefile
+            result_xml,
             follow_symlinks=True,
         )
     except shutil.SameFileError:
         pass
-    os.remove("data-dictionary/IDSDef.xml")
+    IDSDef.unlink(missing_ok=True)

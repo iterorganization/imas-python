@@ -1,5 +1,5 @@
 # This file is part of IMASPy.
-# You should have received IMASPy LICENSE file with this project.
+# You should have received the IMASPy LICENSE file with this project.
 """ Represents a Top-level IDS (like NBI etc)
 * :py:class:`IDSToplevel`
 """
@@ -124,6 +124,15 @@ class IDSToplevel(IDSStructure):
         self.set_backend_properties(
             root.find("./*[@name='{name}']".format(name=self.metadata.name))
         )
+
+    @property
+    def _time_mode(self) -> int:
+        """Retrieve the time mode from `/ids_properties/homogeneous_time`"""
+        return self.ids_properties.homogeneous_time
+
+    @property
+    def _is_dynamic(self) -> bool:
+        return False
 
     def set_backend_properties(self, structure_xml):
         """Set backend properties for this IDSToplevel and provide some logging"""
@@ -371,6 +380,7 @@ class IDSToplevel(IDSStructure):
                 self.metadata.name,
             )
             return
+        self.ids_properties.homogeneous_time = homogeneousTime
 
         backend_version = self.read_data_dictionary_version(occurrence)
         if self._backend_xml_path:
