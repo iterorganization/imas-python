@@ -11,11 +11,13 @@ import tempfile
 import os
 
 from imaspy.al_exception import ALException
+from imaspy.exception import ValidationError
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     ASCII_SERIALIZER_PROTOCOL,
     DEFAULT_SERIALIZER_PROTOCOL,
     IDS_TIME_MODE_UNKNOWN,
+    IDS_TIME_MODES,
     needs_imas,
 )
 from imaspy.ids_structure import IDSStructure
@@ -143,6 +145,31 @@ class IDSToplevel(IDSStructure):
                     os.unlink(tmpfile)
         else:
             raise ValueError(f"Unrecognized serialization protocol: {protocol}")
+
+    def validate(self) -> None:
+        """Validate the contents of this IDS.
+
+        The following sanity checks are executed on this IDS:
+
+        - The IDS must have a valid time mode (ids_properties.homogeneous_time)
+        - For all non-empty quantities with coordinates:
+
+            - If coordinates have a maximum size (e.g. coordinate1 = 1...3), the size in
+              that dimension may not exceed this.
+            - If coordinates refer to other elements (e.g. coordinate1 = time), the size
+              in that dimension must be the same as the size of the referred quantity.
+            - If a "same_as" coordinate is specified (e.g. coordinate2_same_as = r), the
+              size in that dimension must be the same as the size in that dimension of
+              the referred quantity.
+
+        If any check fails, a ValidationError is raised that describes the problem.
+        """
+        time_mode = self._time_mode
+        if time_mode not in IDS_TIME_MODES:
+            raise ValidationError(
+                f"Invalid value for ids_properties/homogeneous_time: {time_mode}"
+            )
+        self._validate()
 
     @needs_imas
     def get(self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None) -> None:

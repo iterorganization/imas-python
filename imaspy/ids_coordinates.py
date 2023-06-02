@@ -7,6 +7,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
+from imaspy.exception import CoordinateError, ValidationError
 
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
@@ -196,16 +197,19 @@ class IDSCoordinates:
             if coordinate.max_size is not None:
                 # alternatively we can be an index
                 return np.arange(self._mixin.value.shape[key])
-            raise RuntimeError(
-                "Cannot get coordinate: none of the alternative coordinate options "
-                f"{coordinate.references} are set."
+            raise ValidationError(
+                f"Dimension {key} of element {self._mixin.metadata.path} must have "
+                f"exactly one of its coordinates ({coordinate.references}) set, but "
+                "none are set."
             )
         if sum(ref_is_defined) == 1:
             for i in range(len(refs)):
                 if ref_is_defined[i]:
                     return refs[i]
-        raise RuntimeError(
-            "Cannot get coordinate: multiple alternative coordinate options are set."
+        raise ValidationError(
+            f"Dimension {key} of element {self._mixin.metadata.path} must have "
+            f"exactly one of its coordinates ({coordinate.references}) set, but "
+            "multiple are set."
         )
 
     @property
@@ -219,3 +223,90 @@ class IDSCoordinates:
             if coor.is_time_coordinate:
                 return i
         return None
+
+    def _validate(self):
+        """Coordinate validation checks.
+
+        See also:
+            :py:meth:`imaspy.ids_toplevel.IDSToplevel.validate`.
+        """
+        shape = self._mixin.shape
+        metadata = self._mixin.metadata
+
+        # Validate coordinate
+        for dim in range(metadata.ndim):
+            coordinate = metadata.coordinates[dim]
+            if not coordinate.has_validation:
+                continue  # Nothing to validate
+
+            # Validate max_size
+            if coordinate.max_size:
+                if shape[dim] <= coordinate.max_size:
+                    continue  # Smaller than max size
+                elif not coordinate.has_alternatives:
+                    raise CoordinateError(
+                        metadata.path, dim, shape[dim], f"<= {coordinate.max_size}"
+                    )
+
+            # Validate references
+            assert coordinate.references
+            try:
+                other_element = self[dim]
+            except ValidationError:
+                raise
+            except IndexError as exc:
+                # Can happen in IDSPath.goto when an invalid index is encountered.
+                raise ValidationError(
+                    f"Dimension {dim} of element {metadata.path} has an invalid index "
+                    f"provided for coordinate {coordinate.references}."
+                ) from exc
+            except Exception:
+                # Ignore all other exceptions and log them
+                self._log_ignored_validation_warning(coordinate.references, dim)
+                continue
+
+            if isinstance(other_element, np.ndarray) and coordinate.max_size:
+                # other_element may be a numpy array when coordinate = "path OR 1...1"
+                # and path is unset
+                raise CoordinateError(
+                    metadata.path, dim, shape[dim], f"<= {coordinate.max_size}"
+                )
+
+            expected_size = other_element.shape[0]
+            if shape[dim] != expected_size:
+                other_path = other_element.metadata.path
+                raise CoordinateError(
+                    metadata.path, dim, shape[dim], expected_size, other_path
+                )
+
+        # Validate coordinate_same_as
+        for dim in range(metadata.ndim):
+            same_as = metadata.coordinates_same_as[dim]
+            if not same_as.has_validation:
+                continue  # Nothing to validate
+
+            assert len(same_as.references) == 1
+            try:
+                other_element = same_as.references[0].goto(self._mixin)
+            except Exception:
+                # Ignore all exceptions and log them
+                self._log_ignored_validation_warning(same_as.references, dim)
+                continue
+
+            expected_size = other_element.shape[dim]
+            if shape[dim] != expected_size:
+                other_path = other_element.metadata.path
+                raise CoordinateError(
+                    metadata.path, dim, shape[dim], expected_size, other_path
+                )
+
+    def _log_ignored_validation_warning(self, references, dim):
+        logger.warning(
+            "An error occurred while finding coordinate %s of dimension %s, which is "
+            "ignored. This is expected to happen in DD versions <= 3.38.1, where "
+            "some coordinate metadata is incorrect.",
+            references,
+            dim,
+            exc_info=1,
+            stacklevel=2,
+        )

@@ -441,6 +441,11 @@ class DBEntry:
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
 
+        # Automatic validation?
+        validate = os.environ.get("IMAS_AL_ENABLE_VALIDATION_AT_PUT")
+        if validate and validate != "0":
+            ids.validate()
+
         original_ids = None
         if not ids._parent or ids._parent._version != self._ids_factory._version:
             original_ids = ids

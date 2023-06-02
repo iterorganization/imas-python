@@ -106,7 +106,7 @@ def test_coordinates(ids_minimal_types):
     assert ids.cpx_1d.coordinates[0] is ids.flt_1d
     # if both flt_1d and int_1d are set, this should give an error
     ids.int_1d = [1]
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Exception):
         ids.cpx_1d.coordinates[0]
 
 

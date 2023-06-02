@@ -6,17 +6,19 @@ import logging
 from xml.etree.ElementTree import Element
 
 import scipy.interpolate
+from imaspy.ids_data_type import IDSDataType
 
 try:
     from functools import cached_property
 except ImportError:
     from cached_property import cached_property
 
+from imaspy.exception import ValidationError
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.setup_logging import root_logger as logger
 
 try:
-    from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
+    from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_INDEPENDENT
 except ImportError as ee:
     logger.critical("IMAS could not be imported. UAL not available! %s", ee)
 
@@ -170,3 +172,29 @@ class IDSMixin:
     def time_axis(self):
         """Return the time axis for this node (None if no time dependence)"""
         return self.coordinates.time_index
+
+    def _validate(self) -> None:
+        """Actual implementation of validation logic.
+
+        See also:
+            :py:meth:`imaspy.ids_toplevel.IDSToplevel.validate`.
+        """
+        if self.metadata.type.is_dynamic and self.has_value:
+            if self._time_mode == IDS_TIME_MODE_INDEPENDENT:
+                raise ValidationError(
+                    f"Dynamic variable {self.metadata.path} is allocated, but time "
+                    "mode is IDS_TIME_MODE_INDEPENDENT."
+                )
+
+        # Coordinate validation, but only for 1D+ types that are not empty
+        if hasattr(self, "coordinates") and self.has_value:
+            self.coordinates._validate()
+
+        # Recurse into children
+        if self.metadata.data_type in (
+            None,  # IDSToplevel
+            IDSDataType.STRUCTURE,
+            IDSDataType.STRUCT_ARRAY,
+        ):
+            for child in self:
+                child._validate()

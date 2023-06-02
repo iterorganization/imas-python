@@ -6,6 +6,7 @@ This contains references to :py:class:`IDSStructure`s
 * :py:class:`IDSStructArray`
 """
 
+from typing import Tuple
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_coordinates import IDSCoordinates
@@ -86,6 +87,10 @@ class IDSStructArray(IDSMixin):
 
     def __iter__(self):
         return iter(self.value)
+
+    @property
+    def shape(self) -> Tuple[int]:
+        return (len(self.value),)
 
     def append(self, elt):
         """Append elements to the end of the array of structures.
