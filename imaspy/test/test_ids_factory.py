@@ -27,6 +27,7 @@ def test_ids_factory_latest(monkeypatch: pytest.MonkeyPatch):
     dd_etree.cache_clear()
     factory = IDSFactory()
     assert factory._version == latest_dd_version()
+    dd_etree.cache_clear()
 
 
 def test_ids_factory_from_env(monkeypatch: pytest.MonkeyPatch):
@@ -35,3 +36,4 @@ def test_ids_factory_from_env(monkeypatch: pytest.MonkeyPatch):
     dd_etree.cache_clear()
     factory = IDSFactory()
     assert factory._version == version
+    dd_etree.cache_clear()
