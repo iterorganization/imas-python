@@ -260,8 +260,17 @@ class IDSCoordinates:
                     f"Dimension {dim} of element {metadata.path} has an invalid index "
                     f"provided for coordinate {coordinate.references}."
                 ) from exc
-            except Exception:
+            except Exception as exc:
                 # Ignore all other exceptions and log them
+                if "Unexpected index" in str(exc):
+                    logger.debug(
+                        "Ignored AoS coordinate outside our tree (see IMAS-4675) of "
+                        "element %s, dimension %s, coordinate %s",
+                        metadata.path,
+                        dim,
+                        coordinate.references
+                    )
+                    continue
                 self._log_ignored_validation_warning(coordinate.references, dim)
                 continue
 

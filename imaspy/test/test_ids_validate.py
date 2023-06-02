@@ -271,3 +271,17 @@ def test_validate_on_put(monkeypatch, env_value, should_validate):
     assert validate_mock.call_count == 1 * should_validate
     dbentry.put_slice(ids)
     assert validate_mock.call_count == 2 * should_validate
+
+
+def test_validate_ignore_nested_aos():
+    # Ignore coordinates inside an AoS outside our tree, see IMAS-4675
+    equilibrium = IDSFactory("3.38.1").equilibrium()
+    equilibrium.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    equilibrium.time = [1]
+    equilibrium.time_slice.resize(1)
+    equilibrium.validate()
+    equilibrium.time_slice[0].ggd.resize(1)
+    # Coordinate of equilibrium time_slice(itime)/ggd = grids_ggd(itime)/grid
+    # where grids_ggd is a (dynamic) AoS outside our tree, so this coordinate check
+    # should be ignored:
+    equilibrium.validate()
