@@ -105,6 +105,13 @@ class IDSPrimitive(IDSMixin):
             return False
         return self.size > 0  # Default for ndarray and STR_1D types is size == 0
 
+    def __len__(self) -> int:
+        if self.metadata.ndim == 0:
+            raise TypeError(f"IDS data node of type {self.data_type} has no len()")
+        if self.__value is None:
+            return 0
+        return len(self.__value)
+
     @property
     def _default(self):
         default_value = self.metadata.data_type.default

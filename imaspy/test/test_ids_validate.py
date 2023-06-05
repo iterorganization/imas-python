@@ -12,6 +12,7 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_INDEPENDENT,
     MEMORY_BACKEND,
 )
+from imaspy.test.test_helpers import fill_consistent
 
 
 # Ugly hack to enable the tests for development builds after DD 3.38.1, which have
@@ -285,3 +286,12 @@ def test_validate_ignore_nested_aos():
     # where grids_ggd is a (dynamic) AoS outside our tree, so this coordinate check
     # should be ignored:
     equilibrium.validate()
+
+
+@requires_DD_after_3_38_1
+def test_validate_random_fill(ids_name):
+    if ids_name == "amns_data":
+        pytest.skip("Indirect coordinates in amns_data tested separately")
+    ids = IDSFactory().new(ids_name)
+    fill_consistent(ids)
+    ids.validate()

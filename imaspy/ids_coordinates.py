@@ -3,6 +3,7 @@
 """Logic for interpreting coordinates in an IDS
 """
 
+from contextlib import contextmanager
 import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
@@ -115,7 +116,7 @@ def _goto(path: IDSPath, element: "IDSMixin") -> "IDSPrimitive":
     """Wrapper around IDSPath.goto to raise more meaningful errors."""
     try:
         return path.goto(element)
-    except ValueError as exc:
+    except (ValueError, AttributeError) as exc:
         raise RuntimeError(
             f"The data dictionary coordinate definition '{path}' cannot be found: {exc}"
         ) from None
@@ -250,28 +251,9 @@ class IDSCoordinates:
 
             # Validate references
             assert coordinate.references
-            try:
+            with self._capture_goto_errors(metadata, dim, coordinate) as did_capture:
                 other_element = self[dim]
-            except ValidationError:
-                raise
-            except IndexError as exc:
-                # Can happen in IDSPath.goto when an invalid index is encountered.
-                raise ValidationError(
-                    f"Dimension {dim} of element {metadata.path} has an invalid index "
-                    f"provided for coordinate {coordinate.references}."
-                ) from exc
-            except Exception as exc:
-                # Ignore all other exceptions and log them
-                if "Unexpected index" in str(exc):
-                    logger.debug(
-                        "Ignored AoS coordinate outside our tree (see IMAS-4675) of "
-                        "element %s, dimension %s, coordinate %s",
-                        metadata.path,
-                        dim,
-                        coordinate.references
-                    )
-                    continue
-                self._log_ignored_validation_warning(coordinate.references, dim)
+            if did_capture:
                 continue
 
             if isinstance(other_element, np.ndarray) and coordinate.max_size:
@@ -295,11 +277,9 @@ class IDSCoordinates:
                 continue  # Nothing to validate
 
             assert len(same_as.references) == 1
-            try:
+            with self._capture_goto_errors(metadata, dim, coordinate) as did_capture:
                 other_element = same_as.references[0].goto(self._mixin)
-            except Exception:
-                # Ignore all exceptions and log them
-                self._log_ignored_validation_warning(same_as.references, dim)
+            if did_capture:
                 continue
 
             expected_size = other_element.shape[dim]
@@ -309,13 +289,40 @@ class IDSCoordinates:
                     metadata.path, dim, shape[dim], expected_size, other_path
                 )
 
-    def _log_ignored_validation_warning(self, references, dim):
-        logger.warning(
-            "An error occurred while finding coordinate %s of dimension %s, which is "
-            "ignored. This is expected to happen in DD versions <= 3.38.1, where "
-            "some coordinate metadata is incorrect.",
-            references,
-            dim,
-            exc_info=1,
-            stacklevel=2,
-        )
+    @contextmanager
+    def _capture_goto_errors(self, metadata, dim, coordinate):
+        """Helper method for _validate to capture errors encountered during
+        IDSPath.goto().
+        """
+        did_capture = []
+        try:
+            yield did_capture
+        except ValidationError:
+            raise
+        except IndexError as exc:
+            # Can happen in IDSPath.goto when an invalid index is encountered.
+            raise ValidationError(
+                f"Dimension {dim} of element {metadata.path} has an invalid index "
+                f"provided for coordinate {coordinate.references}."
+            ) from exc
+        except Exception as exc:
+            # Ignore all other exceptions and log them
+            if "Unexpected index" in str(exc):
+                logger.debug(
+                    "Ignored AoS coordinate outside our tree (see IMAS-4675) of "
+                    "element %s, dimension %s, coordinate %s",
+                    metadata.path,
+                    dim,
+                    coordinate.references,
+                )
+            else:
+                logger.warning(
+                    "An error occurred while finding coordinate %s of dimension %s, "
+                    "which is ignored. This is expected to happen in DD versions <= "
+                    "3.38.1, where some coordinate metadata is incorrect.",
+                    coordinate.references,
+                    dim,
+                    exc_info=1,
+                )
+            # Flag to the caller that an error was suppressed
+            did_capture.append(1)
