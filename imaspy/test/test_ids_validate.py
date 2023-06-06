@@ -21,7 +21,8 @@ from imaspy.test.test_helpers import fill_consistent
 # released. However, by that point we should just require that as minimum version of the
 # test.
 requires_DD_after_3_38_1 = pytest.mark.skipif(
-    IDSFactory().version <= "3.38.1", reason="DD newer than 3.38.1 required for test"
+    IDSFactory().version <= "3.38.1",
+    reason=f"DD newer than 3.38.1 required for test, version is {IDSFactory().version}"
 )
 
 
