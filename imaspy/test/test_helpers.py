@@ -135,11 +135,11 @@ def maybe_set_random_value(primitive: IDSPrimitive, leave_empty=0.2) -> None:
                 maybe_set_random_value(coordinate_element, 0.5**ndim)
             size = coordinate_element.shape[0 if coordinate.references else dim]
 
-            if coordinate.max_size:  # coordinateX = <path> OR 1...1
+            if coordinate.size:  # coordinateX = <path> OR 1...1
                 if random.random() < 0.5:
-                    size = 1
+                    size = coordinate.size
         else:
-            size = random.randint(1, min(6, coordinate.max_size))
+            size = coordinate.size
         if size == 0:
             return  # Leave empty
         shape.append(size)
@@ -189,10 +189,10 @@ def fill_consistent(structure: IDSStructure):
                         except (RuntimeError, ValueError):
                             pass
                         child.resize(len(coor))
-                    else:  # a numpy array is returned, just resize to 1
-                        child.resize(1)
+                    else:  # a numpy array is returned, resize to coordinate size or 1
+                        child.resize(child.metadata.coordinates[0].size or 1)
             else:
-                child.resize(1)
+                child.resize(child.metadata.coordinates[0].size or 1)
             for ele in child:
                 exclusive_coordinates.extend(fill_consistent(ele))
 

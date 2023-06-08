@@ -59,8 +59,8 @@ class IDSCoordinate:
         if hasattr(self, "_init_done"):
             return  # Already initialized, __new__ returned from cache
         self._coordinate_spec = coordinate_spec
-        self.max_size: Optional[int] = None
-        """Maximum size of this dimension."""
+        self.size: Optional[int] = None
+        """Exact size of this dimension, e.g. 2 when coordinate = 1...2."""
 
         refs: List[IDSPath] = []
         specs = coordinate_spec.split(" OR ")
@@ -68,7 +68,7 @@ class IDSCoordinate:
             if spec.startswith("1..."):
                 if spec != "1...N":
                     try:
-                        self.max_size = int(spec[4:])
+                        self.size = int(spec[4:])
                     except ValueError:
                         logger.debug(
                             f"Ignoring invalid coordinate specifier {spec}",
@@ -85,7 +85,7 @@ class IDSCoordinate:
         """A tuple of :class:`~imaspy.ids_path.IDSPath` that this coordinate refers to.
         """
 
-        num_rules = len(self.references) + (self.max_size is not None)
+        num_rules = len(self.references) + (self.size is not None)
         self.has_validation = num_rules > 0
         """True iff this coordinate specifies a validation rule."""
         self.has_alternatives = num_rules > 1
@@ -157,11 +157,7 @@ class IDSCoordinates:
         """
         coordinate = self._mixin.metadata.coordinates[key]
         if not coordinate.references:
-            if key == 0:
-                # Use len for the first dimension, works with list and numpy.ndarray
-                return np.arange(len(self._mixin.value))
-            else:
-                return np.arange(self._mixin.value.shape[key])
+            return np.arange(self._mixin.shape[key])
         coordinate_path: Optional[IDSPath] = None
         # Time is a special coordinate:
         if coordinate.is_time_coordinate:
@@ -195,9 +191,9 @@ class IDSCoordinates:
         refs = [_goto(ref, self._mixin) for ref in coordinate.references]
         ref_is_defined = [len(ref.value) > 0 for ref in refs]
         if sum(ref_is_defined) == 0:
-            if coordinate.max_size is not None:
+            if coordinate.size is not None:
                 # alternatively we can be an index
-                return np.arange(self._mixin.value.shape[key])
+                return np.arange(self._mixin.shape[key])
             raise ValidationError(
                 f"Dimension {key} of element {self._mixin.metadata.path} must have "
                 f"exactly one of its coordinates ({coordinate.references}) set, but "
@@ -240,13 +236,13 @@ class IDSCoordinates:
             if not coordinate.has_validation:
                 continue  # Nothing to validate
 
-            # Validate max_size
-            if coordinate.max_size:
-                if shape[dim] <= coordinate.max_size:
-                    continue  # Smaller than max size
+            # Validate size
+            if coordinate.size:
+                if shape[dim] == coordinate.size:
+                    continue  # Correct size
                 elif not coordinate.has_alternatives:
                     raise CoordinateError(
-                        metadata.path, dim, shape[dim], f"<= {coordinate.max_size}"
+                        metadata.path, dim, shape[dim], coordinate.size
                     )
 
             # Validate references
@@ -256,11 +252,11 @@ class IDSCoordinates:
             if did_capture:
                 continue
 
-            if isinstance(other_element, np.ndarray) and coordinate.max_size:
+            if isinstance(other_element, np.ndarray) and coordinate.size:
                 # other_element may be a numpy array when coordinate = "path OR 1...1"
                 # and path is unset
                 raise CoordinateError(
-                    metadata.path, dim, shape[dim], f"<= {coordinate.max_size}"
+                    metadata.path, dim, shape[dim], coordinate.size
                 )
 
             expected_size = other_element.shape[0]

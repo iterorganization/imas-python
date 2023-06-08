@@ -102,31 +102,30 @@ def test_validate_time_mode_independent():
         cp.validate()
 
 
-def test_fixed_size_coordinates_up_to_two():
+def test_fixed_size_coordinates_two():
     mag = IDSFactory("3.38.1").magnetics()
     mag.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     mag.b_field_pol_probe.resize(1)
     mag.validate()
     for bandwidth_size in [0, 1, 2, 3, 4, 1000]:
         mag.b_field_pol_probe[0].bandwidth_3db = np.linspace(0, 1, bandwidth_size)
-        if bandwidth_size <= 2:
+        if bandwidth_size in (0, 2):
             mag.validate()
-        else:  # coordinate1 = 1...2, so three or more elements are not allowed
+        else:  # coordinate1 = 1...2, so only size 0 or 2 is allowed
             with pytest.raises(ValidationError):
                 mag.validate()
 
 
-def test_fixed_size_coordinates_up_to_three():
+def test_fixed_size_coordinates_three():
     wall = IDSFactory("3.38.1").wall()
     wall.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     wall.time = np.linspace(0, 1, 10)
-    for size in range(1, 4):
-        data = np.ones((size, 10))
-        wall.global_quantities.electrons.particle_flux_from_wall = data
-        wall.validate()
-    wall.global_quantities.electrons.particle_flux_from_wall = np.ones((4, 10))
-    with pytest.raises(ValidationError):
-        wall.validate()
+    wall.global_quantities.electrons.particle_flux_from_wall = np.ones((3, 10))
+    wall.validate()
+    for size in [1, 2, 4, 5]:
+        wall.global_quantities.electrons.particle_flux_from_wall = np.ones((size, 10))
+        with pytest.raises(ValidationError):
+            wall.validate()
 
 
 @requires_DD_after_3_38_1
