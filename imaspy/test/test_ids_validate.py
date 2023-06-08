@@ -64,7 +64,7 @@ def test_validate_time_coordinate_homogeneous():
         cp.validate()
 
 
-def test_validate_time_coodinate_heterogeneous_core_profiles():
+def test_validate_time_coordinate_heterogeneous_core_profiles():
     cp = IDSFactory("3.38.1").core_profiles()
     cp.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
     cp.profiles_1d.resize(2)
