@@ -66,7 +66,7 @@ class DBEntry:
         returned IDSToplevel will be in the DD version specified. If the on-disk format
         is for a different DD version, the data is converted automatically.
 
-        When using this DBEntry for writing data (:met:`put` or :meth:`put_slice`), the
+        When using this DBEntry for writing data (:meth:`put` or :meth:`put_slice`), the
         specified DD version is used for writing to the backend. If the provided
         IDSToplevel is for a different DD version, the data is converted automatically.
 
@@ -101,7 +101,7 @@ class DBEntry:
         self._ids_factory = IDSFactory(version, xml_path)
 
     @property
-    def factory(self):
+    def factory(self) -> IDSFactory:
         """Get the IDS factory used by this DB entry."""
         return self._ids_factory
 
@@ -138,9 +138,9 @@ class DBEntry:
         # out which version it is. But, I think that the model dir is not required if
         # there is an existing file.
         if self._version or self._xml_path:
-            os.environ["ids_path"] = mdsplus_model_dir(self._version, self._xml_path)
+            ids_path = mdsplus_model_dir(version=self._version, xml_file=self._xml_path)
         elif self._ids_factory._version:
-            os.environ["ids_path"] = mdsplus_model_dir(self._ids_factory._version)
+            ids_path = mdsplus_model_dir(version=self._ids_factory._version)
         else:
             # This doesn't actually matter much, since if we are auto-loading
             # the backend version it is an existing file and we don't need
@@ -149,6 +149,9 @@ class DBEntry:
             logger.warning(
                 "No backend version information available, not building MDSPlus model."
             )
+            ids_path = None
+        if ids_path:
+            os.environ["ids_path"] = ids_path
 
         # Note: MDSPLUS model directory only uses the major version component of
         # IMAS_VERSION, so we'll take the first character of IMAS_VERSION, or fallback
@@ -162,8 +165,8 @@ class DBEntry:
         """Close this Database Entry.
 
         Keyword Args:
-            options: Backend specific options. Defaults to None.
-            erase: Remove the pulse file from the database. Defaults to False.
+            options: Backend specific options.
+            erase: Remove the pulse file from the database.
         """
         if self._db_ctx is None:
             return
@@ -183,8 +186,8 @@ class DBEntry:
             This method erases the previous entry if it existed!
 
         Keyword Args:
-            options: Backend specific options. Defaults to None.
-            force: Whether to force create the database entry. Defaults to True.
+            options: Backend specific options.
+            force: Whether to force create the database entry.
 
         Example:
             .. code-block:: python
@@ -200,8 +203,8 @@ class DBEntry:
         """Open an existing database entry.
 
         Keyword Args:
-            options: Backend specific options. Defaults to None.
-            force: Whether to force open the database entry. Defaults to False.
+            options: Backend specific options.
+            force: Whether to force open the database entry.
 
         Example:
             .. code-block:: python
@@ -230,7 +233,7 @@ class DBEntry:
 
         Args:
             ids_name: Name of the IDS to read from the backend.
-            occurrence: Which occurrence of the IDS to read. Defaults to 0.
+            occurrence: Which occurrence of the IDS to read.
 
         Keyword Args:
             destination: Populate this IDSToplevel instead of creating an empty one.
@@ -273,7 +276,7 @@ class DBEntry:
                 - :const:`~imas.imasdef.PREVIOUS_INTERP`
                 - :const:`~imas.imasdef.LINEAR_INTERP`
 
-            occurrence: Which occurrence of the IDS to read. Defaults to 0.
+            occurrence: Which occurrence of the IDS to read.
 
         Keyword Args:
             destination: Populate this IDSToplevel instead of creating an empty one.
@@ -371,7 +374,7 @@ class DBEntry:
 
         Args:
             ids: IDS object to put.
-            occurrence: Which occurrence of the IDS to write to. Defaults to 0.
+            occurrence: Which occurrence of the IDS to write to.
 
         Example:
             .. code-block:: python
@@ -385,32 +388,10 @@ class DBEntry:
     def put_slice(self, ids: IDSToplevel, occurrence: int = 0) -> None:
         """Append a time slice of the provided IDS to the Database Entry.
 
-        A frequent use case is the simulation of time evolution, in which one has to put
-        the constant and static values only once and then progressively append the
-        subsequent dynamic values calculated at each loop step. In such use case it is
-        expected that the IDS variable contains one or more time slices to be appended
-        to the already stored part of the IDS, in any non-empty dynamic node. It's thus
-        possible to append several time slices to a node of the IDS in one PUT_SLICE
-        call, however the user must ensure that the size of the time dimension of the
-        node remains consistent with the size of its timebase. An initial call to the
-        PUT function at the first iteration of the loop will first delete any previously
-        existing data within the target IDS occurrence in the Data Entry and then put
-        simultaneously the constant/static and the dynamic data of the IDS variable.
-        Then the PUT_SLICE function should be called for every subsequent iteration of
-        the loop, which will append the content of the non-empty dynamic nodes of the
-        IDS variable to the time dimension of the nodes in the stored IDS.
-
-        PUT_SLICE does not require anymore the IDS to be in homogeneous mode (previous
-        limitation of Access Layer 3.x versions). Timebases with different values and
-        sizes can be appended. By not allocating some dynamic nodes in the IDS variable
-        for some iterations of the time loop (e.g. slowly-varying quantities), it is
-        possible to skip appending to them a value, thus enabling to construct an IDS
-        containing time bases with different sizes with a series of PUT_SLICE calls.
-
         Time slices must be appended in strictly increasing time order, since the Access
         Layer is not reordering time arrays. Doing otherwise will result in
         non-monotonic time arrays, which will create confusion and make subsequent
-        GET_SLICE commands to fail.
+        :meth:`get_slice` commands to fail.
 
         Although being put progressively time slice by time slice, the final IDS must be
         compliant with the data dictionary. A typical error when constructing IDS
@@ -418,21 +399,28 @@ class DBEntry:
         during the time loop, which is not allowed but for the children of an array of
         structure which has time as its coordinate.
 
-        The PUT_SLICE command is appending data, so does not modify previously existing
-        data within the target IDS occurrence in the Data Entry
+        The :meth:`put_slice` command is appending data, so does not modify previously
+        existing data within the target IDS occurrence in the Data Entry.
+
+        It is possible possible to append several time slices to a node of the IDS in
+        one :meth:`put_slice` call, however the user must ensure that the size of the
+        time dimension of the node remains consistent with the size of its timebase.
 
         Args:
             ids: IDS object to put.
-            occurrence: Which occurrence of the IDS to write to. Defaults to 0.
+            occurrence: Which occurrence of the IDS to write to.
 
         Example:
+            A frequent use case is storing IMAS data progressively in a time loop. You
+            can fill the constant and static values only once and progressively append
+            the dynamic values calculated in each step of the time loop with
+            :meth:`put_slice`.
+
             .. code-block:: python
 
-                ids = imaspy.IDSFactory().pf_active()
-                ...  # fill the static data of the pf_active IDS here
-                for i in range(N):
-                    ... # fill time slice of the pf_active IDS
-                    imas_entry.put_slice(ids)
+                ids = imaspy.IDSFactory().pf_active() ...  # fill the static data of the
+                pf_active IDS here for i in range(N):
+                    ... # fill time slice of the pf_active IDS imas_entry.put_slice(ids)
         """
         self._put(ids, occurrence, True)
 
@@ -499,7 +487,7 @@ class DBEntry:
 
         Args:
             ids_name: Name of the IDS to delete from the backend.
-            occurrence: Which occurrence of the IDS to delete. Defaults to 0.
+            occurrence: Which occurrence of the IDS to delete.
         """
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")

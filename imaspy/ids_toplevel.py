@@ -85,7 +85,6 @@ class IDSToplevel(IDSStructure):
         Args:
             protocol: Which serialization protocol to use. Currently only
                 ASCII_SERIALIZER_PROTOCOL is supported.
-                Defaults to DEFAULT_SERIALIZER_PROTOCOL.
 
         Returns:
             Data buffer that can be deserialized using :meth:`deserialize`.
