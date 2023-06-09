@@ -1,21 +1,22 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
 import pytest
 
-import imaspy
-from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
-from imaspy.test.test_helpers import open_ids
+from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT
+from imaspy.ids_factory import IDSFactory
+from imaspy.test.test_helpers import open_dbentry
 
 
 def test_minimal_struct_array_maxoccur(backend, ids_minimal_struct_array):
-    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=ids_minimal_struct_array)
-    ids.minimal_struct_array.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
+    factory = IDSFactory(xml_path=ids_minimal_struct_array)
+    minimal_struct_array = factory.new("minimal_struct_array")
+    minimal_struct_array.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
 
     # Can't we do this transparently?
     # i.e.
-    # ids.minimal_struct_array[1].a.flt_0d = 2
+    # minimal_struct_array[1].a.flt_0d = 2
     # such that it automatically makes the struct if it did not exist?
     # maxoccur is 2, so the next one should raise an exception
-    a = ids.minimal_struct_array.struct_array
+    a = minimal_struct_array.struct_array
     a.append(a._element_structure)
     a.append(a._element_structure)
     with pytest.raises(RuntimeError):
@@ -26,9 +27,12 @@ def test_minimal_struct_array_io(
     backend, ids_minimal_struct_array, worker_id, tmp_path
 ):
     """Write and then read again a number on our minimal IDS."""
-    ids = open_ids(backend, "w", worker_id, tmp_path, xml_path=ids_minimal_struct_array)
-    a = ids.minimal_struct_array.struct_array
-    ids.minimal_struct_array.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
+    dbentry = open_dbentry(
+        backend, "w", worker_id, tmp_path, xml_path=ids_minimal_struct_array
+    )
+    minimal_struct_array = dbentry.factory.new("minimal_struct_array")
+    a = minimal_struct_array.struct_array
+    minimal_struct_array.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     a.append(a._element_structure)
 
     # TODO: these are nested one too deeply in my opinion.
@@ -38,16 +42,13 @@ def test_minimal_struct_array_io(
     a.append(a._element_structure)
     a[1].a.flt_0d = 4.0
 
-    ids.minimal_struct_array.put()
+    dbentry.put(minimal_struct_array)
     assert a[0].a.flt_0d.value == 2.0
     assert a[1].a.flt_0d.value == 4.0
 
-    ids2 = open_ids(
+    dbentry2 = open_dbentry(
         backend, "a", worker_id, tmp_path, xml_path=ids_minimal_struct_array
     )
-    ids2.minimal_struct_array.get()
-    if backend == MEMORY_BACKEND:
-        pytest.skip("Memory backend cannot be opened from different root")
-    else:
-        assert ids2.minimal_struct_array.struct_array[0].a.flt_0d.value == 2.0
-        assert ids2.minimal_struct_array.struct_array[1].a.flt_0d.value == 4.0
+    minimal_struct_array2 = dbentry2.get("minimal_struct_array")
+    assert minimal_struct_array2.struct_array[0].a.flt_0d.value == 2.0
+    assert minimal_struct_array2.struct_array[1].a.flt_0d.value == 4.0

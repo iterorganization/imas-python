@@ -11,7 +11,7 @@ import pytest
 
 from imaspy.dd_zip import dd_etree
 from imaspy.ids_defs import ASCII_BACKEND, HDF5_BACKEND, MDSPLUS_BACKEND, MEMORY_BACKEND
-from imaspy.ids_root import IDSRoot
+from imaspy.ids_factory import IDSFactory
 
 try:
     import imas
@@ -79,7 +79,7 @@ def pytest_generate_tests(metafunc):
         elif metafunc.config.getoption("mini"):
             metafunc.parametrize("ids_name", ["pulse_schedule"])
         else:
-            metafunc.parametrize("ids_name", IDSRoot()._children)
+            metafunc.parametrize("ids_name", list(IDSFactory()))
 
 
 # Fixtures for various assets

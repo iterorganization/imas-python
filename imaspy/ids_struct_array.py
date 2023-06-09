@@ -8,31 +8,18 @@ This contains references to :py:class:`IDSStructure`s
 
 from xml.etree.ElementTree import Element
 
-from imaspy.al_exception import ALException
-from imaspy.context_store import context_store
 from imaspy.ids_coordinates import IDSCoordinates
-from imaspy.ids_defs import (
-    needs_imas,
-    IDS_TIME_MODE_HETEROGENEOUS,
-    IDS_TIME_MODE_HOMOGENEOUS,
-)
-from imaspy.ids_metadata import IDSType
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure
 from imaspy.setup_logging import root_logger as logger
 
 
-# FIXME: IDSStructArray should not be a child type of IDSStructure?
-class IDSStructArray(IDSStructure, IDSMixin):
+class IDSStructArray(IDSMixin):
     """IDS array of structures (AoS) node
 
     Represents a node in the IDS tree. Does not itself contain data,
     but contains references to IDSStructures
     """
-
-    # TODO: HLI compatibility
-    def getAOSPath(self, ignore_nbc_change=1):
-        raise NotImplementedError("{!s}.getAOSPath(ignore_nbc_change=1)".format(self))
 
     # TODO: HLI compatibility
     @staticmethod
@@ -42,15 +29,8 @@ class IDSStructArray(IDSStructure, IDSMixin):
         )
         return self._element_structure
 
-    # TODO: IMASPy-specific but not implemented. Remove?
-    @staticmethod
-    def getBackendInfo(parentCtx, index, homogeneousTime):  # Is this specific?
-        raise NotImplementedError("getBackendInfo(parentCtx, index, homogeneousTime)")
-
     # TODO: HLI compatibility `base_path_in`
-    def __init__(
-        self, parent: IDSMixin, structure_xml: Element, base_path_in="element"
-    ):
+    def __init__(self, parent: IDSMixin, structure_xml: Element):
         """Initialize IDSStructArray from XML specification
 
         Args:
@@ -58,20 +38,14 @@ class IDSStructArray(IDSStructure, IDSMixin):
                 time should be something with a path attribute
             structure_xml: Object describing the structure of the IDS. Usually
                 an instance of `xml.etree.ElementTree.Element`
-            base_path_in: Not implemented yet
         """
         super().__init__(parent, structure_xml)
         self.coordinates = IDSCoordinates(self)
 
-        self._base_path = base_path_in
         self._convert_ids_types = False
 
         # signal that this is an array-type addressing
         self._array_type = True
-
-        # Which xml settings to use for backends
-        self._backend_child_xml = None
-        self._backend_name = None
 
         # Initialize with an 0-length list
         self.value = []
@@ -83,25 +57,6 @@ class IDSStructArray(IDSStructure, IDSMixin):
         """Prepare an element structure JIT"""
         struct = IDSStructure(self, self._structure_xml)
         return struct
-
-    # FIXME: need to override this because IDSStructure is our parent class
-    @property
-    def _dd_parent(self) -> IDSMixin:
-        return self._parent
-
-    @property
-    def _timebase_path(self) -> str:
-        """Timebase path to supply to the backend.
-        """
-        # Follow logic from
-        # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#367-384
-        if self.metadata.type is not IDSType.DYNAMIC:
-            return ""
-        if self._time_mode == IDS_TIME_MODE_HOMOGENEOUS:
-            return "/time"
-        if self._time_mode == IDS_TIME_MODE_HETEROGENEOUS:
-            return self._aos_path + "/time"
-        return ""  # FIXME: handle this case
 
     def __setattr__(self, key, value):
         object.__setattr__(self, key, value)
@@ -150,17 +105,13 @@ class IDSStructArray(IDSStructure, IDSMixin):
                     "Maxoccur is set to %s for %s, not adding %s"
                     % (
                         self.metadata.maxoccur,
-                        self._base_path,
+                        self.metadata.path,
                         elt,
                     )
                 )
-                return
             e._convert_ids_types = True
             e._parent = self
             self.value.append(e)
-            # only now can we process the backend properties
-            if self._backend_child_xml:
-                e.set_backend_properties(self._backend_child_xml)
 
     def resize(self, nbelt, keep=False):
         """Resize an array of structures.
@@ -191,117 +142,7 @@ class IDSStructArray(IDSStructure, IDSMixin):
         else:  # nbelt == cur
             pass  # nothing to do, already correct size
 
-    def _getData(
-        self, aosCtx, indexFrom, indexTo, homogeneousTime, nodePath, analyzeTime
-    ):
-        raise NotImplementedError(
-            "{!s}._getData(aosCtx, indexFrom, indexTo, homogeneousTime, nodePath, analyzeTime)".format(
-                self
-            )
-        )
-
-    @needs_imas
-    def get(self, parentCtx, homogeneousTime):
-        """Get data from UAL backend storage format and overwrite data in node
-
-        Tries to dynamically build all needed information for the UAL.
-        """
-        nodePath = self.getRelCTXPath(parentCtx)
-        status, aosCtx, size = self._ull.ual_begin_arraystruct_action(
-            parentCtx, nodePath, self._timebase_path, 0
-        )
-        if status < 0:
-            raise ALException(
-                'ERROR: ual_begin_arraystruct_action failed for "process/products/element"',
-                status,
-            )
-
-        if size < 1:
-            return
-        if aosCtx > 0:
-            context_store[aosCtx] = (
-                context_store[parentCtx] + "/" + nodePath + "/" + str(1)
-            )
-        self.resize(size)
-        for i in range(size):
-            context_store.update(
-                aosCtx, context_store[parentCtx] + "/" + nodePath + "/" + str(i + 1)
-            )  # Update context
-            self.value[i].get(aosCtx, homogeneousTime)
-            self._ull.ual_iterate_over_arraystruct(aosCtx, 1)
-
-        if aosCtx > 0:
-            context_store.pop(aosCtx)
-            self._ull.ual_end_action(aosCtx)
-
-    @needs_imas
-    def put(self, parentCtx, homogeneousTime, **kwargs):
-        """Put data into UAL backend storage format
-
-        As all children _should_ support being put, just call `put` blindly.
-        """
-        if len(self.value) == 0:
-            return  # Nothing to be done
-        # TODO: This might be to simple for array of array of structures
-        nodePath = self.getRelCTXPath(parentCtx)
-        status, aosCtx, size = self._ull.ual_begin_arraystruct_action(
-            parentCtx, nodePath, self._timebase_path, len(self.value)
-        )
-        if status != 0 or aosCtx < 0:
-            raise ALException(
-                'ERROR: ual_begin_arraystruct_action failed for "{!s}"'.format(
-                    self.metadata.name
-                ),
-                status,
-            )
-        context_store[aosCtx] = context_store[parentCtx] + "/" + nodePath + "/" + str(0)
-
-        for i in range(size):
-            context_store.update(
-                aosCtx, context_store[parentCtx] + "/" + nodePath + "/" + str(i + 1)
-            )  # Update context
-            # This loops over the whole array
-            dbg_str = " " * self.depth + "- [" + str(i + 1) + "]"
-            logger.debug("{:53.53s} put".format(dbg_str))
-            self.value[i].put(aosCtx, homogeneousTime, **kwargs)
-            status = self._ull.ual_iterate_over_arraystruct(aosCtx, 1)
-            if status != 0:
-                raise ALException(
-                    'ERROR: ual_iterate_over_arraystruct failed for "{!s}"'.format(
-                        self.metadata.name
-                    ),
-                    status,
-                )
-
-        status = self._ull.ual_end_action(aosCtx)
-        context_store.pop(aosCtx)
-        if status != 0:
-            raise ALException(
-                'ERROR: ual_end_action failed for "{!s}"'.format(self.metadata.name),
-                status,
-            )
-
-    # TODO: IMASPy internal, make this a private function?
-    def set_backend_properties(self, structure_xml):
-        """set the (structure) backend properties of each child
-        and store the structure_xml for new children"""
-
-        _, skip = IDSMixin.set_backend_properties(self, structure_xml)
-        # skip if structure_xml was already seen
-        if skip:
-            return
-
-        # the children have the same structure_xml as the current element
-        for child in self:
-            child.set_backend_properties(structure_xml)
-
-        # Set _backend_xml_structure which can be used to set_backend_properties
-        # on future self._element_structure s
-        self._backend_child_xml = structure_xml
-
-        # we do not want to keep the 'other' reference around though
-        for child in self:
-            try:
-                del child._backend_structure_xml
-            except AttributeError:
-                pass
+    @property
+    def has_value(self) -> bool:
+        """True if this struct-array has nonzero size"""
+        return len(self.value) > 0

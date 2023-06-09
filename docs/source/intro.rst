@@ -18,7 +18,7 @@ be outdated.
 
     >>> import imaspy
     >>> print(imaspy.__version__)
-    0.6.2
+    0.7.0
 
 .. note::
 
@@ -30,24 +30,21 @@ be outdated.
 Create and use an IDS
 '''''''''''''''''''''
 
-To create an IDS, you must first make an :py:class:`~imaspy.ids_root.IDSRoot`
-object. The IDS root is necessary for specifying which version of the IMAS Data
-Dictionary you want to use (the last available one, by default). See
-:ref:`Loading multiple DD versions in the same environment` for more information
+To create an IDS, you must first make an :py:class:`~imaspy.ids_factory.IDSFactory`
+object. The IDS factory is necessary for specifying which version of the IMAS Data
+Dictionary you want to use. If you don't specify anything, IMASPy uses the same Data
+Dictionary version as the loaded IMAS environment, or the latest available version. See
+:ref:`Using multiple DD versions in the same environment` for more information
 on different Data Dictionary versions.
 
 .. code-block:: python
 
     >>> import imaspy
     >>> import numpy as np
-    >>> ids_root = imaspy.ids_root.IDSRoot()
-    10:26:51 [INFO] Generating IDS structures for version 3.38.1 @ids_root.py:130
+    >>> ids_factory = imaspy.IDSFactory()
+    13:26:47 [INFO] Parsing data dictionary version 3.38.1 @dd_zip.py:127
     >>> # Create an empty core_profiles IDS
-    >>> core_profiles = ids_root.core_profiles
-    >>> # Caution: doing this a second time does not create a new one:
-    >>> core_profiles2 = ids_root.core_profiles
-    >>> core_profiles is core_profiles2
-    True
+    >>> core_profiles = ids_factory.core_profiles()
 
 We can now use this ``core_profiles`` IDS and assign some data to it:
 
@@ -62,7 +59,7 @@ We can now use this ``core_profiles`` IDS and assign some data to it:
     array([1., 2., 3.])
     >>> # resize the profiles_1d array of structures to match the size of `time`
     >>> core_profiles.profiles_1d.resize(3)
-    >>> len(core_profiles.profiles_1d.value)
+    >>> len(core_profiles.profiles_1d)
     3
     >>> # assign some data for the first time slice
     >>> core_profiles.profiles_1d[0].grid.rho_tor_norm = [0, 0.5, 1.0]
@@ -102,31 +99,21 @@ To store an IDS to disk, we need to indicate the following information to the
 IMAS Access Layer. Please check the `IMAS Access Layer documentation
 <https://imas.iter.org/>`_ for more information on this.
 
+- Which backend to use (e.g. MDSPLUS or HDF5)
+- ``tokamak`` (also known as database)
 - ``shot``
 - ``run``
-- ``user``
-- ``tokamak`` (also known as database)
-- ``version`` (major version of the access layer, typically ``"3"``)
-- Optional: which backend to use (e.g. the default MDSplus or HDF5).
 
 In IMASPy you do this as follows:
 
 .. code-block:: python
 
-    >>> # you can specify shot=10 and run=2 when creating the IDSRoot object
-    >>> #ids_root = imaspy.ids_root.IDSRoot(s=10, r=2)
-    >>> # you can also set this after creating the ids_root object
-    >>> # as long as you do it before create_env_backend
-    >>> ids_root.shot = 10
-    >>> ids_root.run = 2
     >>> # Create a new IMAS data entry for storing the core_profiles IDS we created earlier
-    >>> # Here we specify user, tokamak, version and the backend
-    >>> import os
-    >>> ids_root.create_env_backend(user=os.environ['USER'], tokamak="ITER", version="3", backend_type=imaspy.ids_defs.HDF5_BACKEND)
-    10:29:13 [INFO] Opening AL backend HDF5 for ITER (shot 10, run 2, user sebregm, ver 3, mode w) @ids_root.py:337
-    (0, 1)
+    >>> # Here we specify the backend, database, shot and run
+    >>> dbentry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "TEST", 10, 2)
+    >>> dbentry.create()
     >>> # now store the core_profiles IDS we just populated
-    >>> ids_root.core_profiles.put()
+    >>> dbentry.put(core_profiles)
 
 
 Load an IDS from disk
@@ -144,12 +131,9 @@ can use ``<IDS>.get()`` to load IDS data from disk:
 
 .. code-block:: python
 
-    >>> # Now load the core_profiles IDS back into a fresh ids_root object
-    >>> ids_root2 = imaspy.ids_root.IDSRoot(s=10, r=2)
-    10:29:56 [INFO] Generating IDS structures for version 3.38.1 @ids_root.py:130
-    >>> ids_root2.open_env_backend(user=os.environ['USER'], tokamak="ITER", version="3", backend_type=imaspy.ids_defs.HDF5_BACKEND)
-    10:30:07 [INFO] Opening AL backend HDF5 for ITER (shot 10, run 2, user sebregm, ver 3, mode r) @ids_root.py:337
-    (0, 2)
-    >>> ids_root2.core_profiles.get()
-    >>> print(ids_root2.core_profiles.ids_properties.comment.value)
+    >>> # Now load the core_profiles IDS back from disk
+    >>> dbentry2 = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "TEST", 10, 2)
+    >>> dbentry2.open()
+    >>> core_profiles2 = dbentry2.get("core_profiles")
+    >>> print(core_profiles2.ids_properties.comment.value)
     Testing IMASPy

@@ -1,5 +1,5 @@
 from imaspy.ids_path import IDSPath
-from imaspy.ids_root import IDSRoot
+from imaspy.ids_factory import IDSFactory
 
 import pytest
 
@@ -108,7 +108,7 @@ def test_invalid_paths(path):
 
 
 def test_path_goto(fake_toplevel_xml):
-    ids = IDSRoot(xml_path=fake_toplevel_xml).gyrokinetics
+    ids = IDSFactory(xml_path=fake_toplevel_xml).new("gyrokinetics")
 
     version_put_path = IDSPath("ids_properties/version_put")
     assert version_put_path.goto(ids) is ids.ids_properties.version_put

@@ -127,10 +127,10 @@ class IDSCoordinates:
 
     Example:
         >>> import imaspy
-        >>> root = imaspy.ids_root.IDSRoot()
-        >>> root.core_profiles.ids_properties.homogeneous_time = \\
+        >>> core_profiles = imaspy.IDSFactory().core_profiles()
+        >>> core_profiles.ids_properties.homogeneous_time = \\
         ...     imaspy.ids_defs.IDS_TIME_MODE_HOMOGENEOUS
-        >>> root.core_profiles.profiles_1d.coordinates[0]
+        >>> core_profiles.profiles_1d.coordinates[0]
         IDSNumericArray("/core_profiles/time", array([], dtype=float64))
     """
 

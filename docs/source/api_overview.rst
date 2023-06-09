@@ -22,7 +22,7 @@ IMASPy uses a tree-style layout, with four container types:
 - :py:class:`IDSNumericArray`
 - :py:class:`IDSPrimitive`
 
-And a root container, :py:class:`IDSRoot`, which contains several
+And a root container, :py:class:`IDSFactory`, which contains several
 :py:class:`IDSToplevels`.  Only :py:class:`IDSPrimitive` and
 :py:class:`IDSNumericArray` contain actual
 values. They are leaf nodes and can be iterated over separately.
@@ -36,52 +36,81 @@ https://numpy.org/doc/stable/reference/generated/numpy.lib.mixins.NDArrayOperato
 IMASPy usage
 ============
 
-The IMASPy project defines a class :py:class:`IDSRoot` which can be instantiated
-with a DD version number or xml_path. It reads the XML file and recreates the
-:py:class:`IDSes` in memory, as :py:class:`IDSToplevel` classes containing
-:py:class:`IDSStructures,` :py:class:`IDSStructArrays,`
-:py:class:`IDSPrimitives` and :py:class:`IDSNumericArrays.`
+The IMASPy project defines a class :py:class:`~imaspy.ids_factory.IDSFactory` which can
+be instantiated with a DD version number or xml_path. It reads the XML file and creates
+the IDSs as :py:class:`IDSToplevel` classes containing :py:class:`IDSStructures`,
+:py:class:`IDSStructArrays`, :py:class:`IDSPrimitives` and :py:class:`IDSNumericArrays`.
+
+See the :ref:`IMASPy 5 minute introduction` for a short introduction on IMASPy.
+
+
+Using multiple DD versions in the same environment
+==================================================
+
+Whereas the default IMAS High Level Interface is built for a single Data Dictionary
+version, IMASPy can transparently handle multiple DD versions.
+
+By default, IMASPy uses the same Data Dictionary version as the loaded IMAS environment
+is using, as specified by the environment variable ``IMAS_VERSION``. If no IMAS
+environment is loaded, the last available DD version is used.
+
+You can also explicitly specify which IMAS version you want to use when constructing a
+:py:class:`~imaspy.db_entry.DBEntry` or :py:class:`~imaspy.ids_factory.IDSFactory`. For
+example:
 
 .. code-block:: python
+    :caption: Using non-default IMAS versions.
 
-    class IDSRoot:
-        """ Root of IDS tree. Contains all top-level IDSs """
-        def __init__(self, s=-1, r=-1, rs=None, rr=None, version=None,
-            xml_path=None, backend_version=None, backend_xml_path=None,
-            backend_version=None, backend_xml_path=None, _lazy=True):
+    import imaspy
 
-The arguments to this function are:
+    factory_default = imaspy.IDSFactory()  # Use default DD version
+    factory_3_32_0 = imaspy.IDSFactory("3.32.0")  # Use DD version 3.32.0
 
-1. Shot number s
-2. Run number r
-3. Reference Shot / Run not implemented (rs, rr)
-4. Version = DD version (“3.30.0”), autoloads, defaults to latest_version if None
-5. xml_path = explicit path to XML file (useful for development and testing)
-6. backend_version = Version to assume for data store (autoloaded if None)
-7. backend_xml_path = XML file to load for data store
-8. _lazy = If True, only load the template of an :py:class:`IDSToplevel`  in
-     memory if it is needed, e.g. if a node of the IDS is addressed. If
-     False, load all IDSs on initialization time.
+    # Will write IDSs to the backend in DD version 3.32.0
+    dbentry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "TEST", 10, 2, version="3.32.0")
+    dbentry.create()
 
-An example of instantiating this structure and opening an AL backend is:
+
+Conversion of IDSes between DD versions
+---------------------------------------
+
+IMASPy can convert IDSs between different versions of the data dictionary. This uses the
+"non-backwards compatible changes" metadata from the DD definitions. You can explicitly
+convert IDSs using :py:func:`imaspy.convert_ids`:
 
 .. code-block:: python
+    :caption: Convert an IDSs to a different DD version
 
-    ids = imaspy.ids_root.IDSRoot(1, 0, xml_path=xml_path)
-    ids.open_ual_store(os.environ.get("USER", "root"), "test", "3", MDSPLUS_BACKEND, mode=mode)
+    import imaspy
+
+    # Create a pulse_schedule IDS in version 3.23.0
+    ps = imaspy.IDSFactory("3.25.0").new("pulse_schedule")
+    ps.ec.antenna.resize(1)
+    ps.ec.antenna[0].name = "IDS conversion test"
+
+    # Convert the IDS to version 3.30.0
+    ps330 = imaspy.convert_ids(ps, "3.30.0")
+    # ec.antenna was renamed to ec.launcher between 3.23.0 and 3.30.0
+    print(len(ps330.ec.launcher))  # 1
+    print(ps330.ec.launcher[0].name.value)  # IDS conversion test
+
+.. note::
+
+    Not all data may be converted. For example, when an IDS node is removed between DD
+    versions, the corresponding data is not copied. IMASPy provides logging to indicate
+    when this happens.
+
+The DBEntry class automatically converts IDSs to the requested version:
+
+- When doing a ``put`` or ``put_slice``, the provided IDS is first converted to the
+  target version of the DBEntry and then put to disk.
+- When doing a ``get`` or ``get_slice``, the IDS is first read from disk in the version
+  as it was stored (by checking ``ids_properties/version_put/data_dictionary``) and then
+  converted to the requested target version.
 
 
-`MDSPLUS_BACKEND` is the identifier from the Access Layer to select the MDSplus backend.
-
-
-Loading multiple DD versions in the same environment
-====================================================
-
-The main change necessary to enable loading multiple DD versions into different
-:py:class:`IDSRoots` is to enable the finding of the relevant
-:py:class:`IDSDef.xml` files. In the ‘classical’ IMAS approach a single
-:py:class:`IDSDef.xml` file is located in a directory specified by an
-environment variable.
+Background information
+----------------------
 
 Since IMASPy needs to have access to multiple DD versions it was chosen to
 bundle these with the code at build-time, in setup.py. If a git clone of the
@@ -100,96 +129,23 @@ versions tagged in the data-dictionary git repository.
 
 
 Extending the DD set
---------------------
+''''''''''''''''''''
 
 A new command has been defined python setup.py build_DD which fetches new tags
 from git and builds IDSDef.zip
 
 The IDSDef.zip search paths have been expanded:
 
-- `$IMASPY_DDZIP` (path to a zip file)
-- `./IDSDef.zip`
-- `~/.config/imaspy/IDSDef.zip` ($XDG_CONFIG_DIR)
-- `__file__/../assets/IDSDef.zip` (provided with IMASPy)
+- ``$IMASPY_DDZIP`` (path to a zip file)
+- ``./IDSDef.zip``
+- ``~/.config/imaspy/IDSDef.zip`` (``$XDG_CONFIG_DIR``)
+- ``__file__/../assets/IDSDef.zip`` (provided with IMASPy)
 
 All paths are searched in order.
 
 
-Conversion of IDSes between DD versions
-=======================================
-
-The conversion between DD versions hinges on the ability to read and write to a
-backend data store in a different version than the current DD. To enable this, IMASPy
-needs to read both the ‘main’ in-memory DD, as well as the ‘backend’ DD. This is
-implemented by creating a new routine read_backend_xml on
-:py:class:`IDSToplevel` and set_backend_properties on :py:class:`IDSStructure.`
-
-.. code-block:: python
-
-    class IDSToplevel(IDSStructure):
-       def __init__(
-            self, parent, name, structure_xml, backend_version=None, backend_xml_path=None
-        ):
-            super().__init__(parent, name, structure_xml)
-
-            # Set an explicit backend_version or xml path
-            # these will be used when put() or get() is called.
-            self._backend_version = backend_version
-            self._backend_xml_path = backend_xml_path
-
-            if backend_xml_path or backend_version:
-                self._read_backend_xml(backend_version, backend_xml_path)
-
-        def _read_backend_xml(self, version=None, xml_path=None):
-            """Find a DD xml from version or path, select the child corresponding to the
-            current name and set the backend properties.
-
-            This is defined on the Toplevel and not on the Root because that allows
-            IDSes to be read from different versions. Still use the ElementTree memoization
-            so performance will not suffer too much from this.
-            """
-
-
-`_read_backend_xml` finds the right DD xml to use, reads it, and
-calls `set_backend_properties` with the subset corresponding to the
-current IDS.
-
-.. code-block:: python
-
-   def set_backend_properties(self, structure_xml):
-        """Walk the union of existing children and those in structure_xml
-        and set backend_type annotations for this element and its children."""
-
-
-This sets `_backend_type`, `_backend_name` and `_backend_ndims` on each
-of the :py:class:`IDSPrimitives` encountered in a Depth-First Search.
-The backend reading routines `get()` and `put()` then use these types
-and dimensions when reading, if they are set.  Reading of data at an
-unknown DD version before the :py:class:`IDSRoot` is created and the
-backend is opened, the DD version of the IDS is unknown. At the time of
-`get()` the DD version is found by `read_data_dictionary_version`, which
-reads :py:class:`IDS_properties/version_put/data_dictionary`
-
-
-Implicit conversions:
----------------------
-
-- Add field
-  - No data can be converted
-- Delete field
-  - No data can be converted
-- Change data_type
-  - Convert data on read/write
-- Move field
-  - Handled by searching for change_nbc_previous_name on backend and current XML
-  - This is complex, since we may have to search many elements to find the one
-    which was renamed. Changing depths makes this harder.
-  - Currently implemented up to a single depth change, though multiple are
-    possible within this design
-
-
 There are some limitations of the change_nbc paradigm:
-------------------------------------------------------
+''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 - Forward only
 - May require reading an arbitrary number of intermediate versions
@@ -198,7 +154,6 @@ There are some limitations of the change_nbc paradigm:
 IMASPy will not load intermediate versions. Double renames are therefore not
 supported yet. This does not appear to be a problem so far. If any problem
 occurs the conversion can easily be done in multiple steps.
-
 
 
 Time slicing
@@ -260,9 +215,9 @@ find the value of new points. This can be used like so:
 
 .. code-block:: python
 
-    ids = IDSRoot()
-    f = scipy.interpolate.interp1d(ids.pulse_schedule.time, ids.pulse_schedule_some_1d_var)
-    ids.pulse_schedule.some_1d_var = f(ids.pulse_schedule.some_1d_var)
+    pulse_schedule = IDSFactory().new("pulse_schedule")
+    f = scipy.interpolate.interp1d(pulse_schedule.time, pulse_schedule_some_1d_var)
+    ids.pulse_schedule.some_1d_var = f(pulse_schedule.some_1d_var)
 
 
 A more general approach would work on the basis of scanning the tree for
@@ -282,44 +237,44 @@ For example, a proposal implementation included in 0.4.0 can be used as such
 
 .. code-block:: python
 
-    ids = imaspy.ids_root.IDSRoot(1, 0)
-    ids.nbi.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    ids.nbi.time = [1, 2, 3]
-    ids.nbi.unit.resize(1)
-    ids.nbi.unit[0].energy.data = 2 * ids.nbi.time
-    old_id = id(ids.nbi.unit[0].energy.data)
+    nbi = imaspy.IDSFactory().new("nbi")
+    nbi.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    nbi.time = [1, 2, 3]
+    nbi.unit.resize(1)
+    nbi.unit[0].energy.data = 2 * nbi.time
+    old_id = id(nbi.unit[0].energy.data)
 
-    assert ids.nbi.unit[0].energy.data.time_axis == 0
+    assert nbi.unit[0].energy.data.time_axis == 0
 
-    ids.nbi.unit[0].energy.data.resample(
-        ids.nbi.time,
+    nbi.unit[0].energy.data.resample(
+        nbi.time,
         [0.5, 1.5],
-        ids.nbi.ids_properties.homogeneous_time,
+        nbi.ids_properties.homogeneous_time,
         inplace=True,
         fill_value="extrapolate",
     )
 
-    assert old_id == id(ids.nbi.unit[0].energy.data)
-    assert ids.nbi.unit[0].energy.data == [1, 3]
+    assert old_id == id(nbi.unit[0].energy.data)
+    assert nbi.unit[0].energy.data == [1, 3]
 
 
 Or as such (explicit in-memory copy + interpolation, producing a new data leaf/container):
 
 .. code-block:: python
 
-    ids = imaspy.ids_root.IDSRoot(1, 0)
-    ids.nbi.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    ids.nbi.time = [1, 2, 3]
-    ids.nbi.unit.resize(1)
-    ids.nbi.unit[0].energy.data = 2 * ids.nbi.time
-    old_id = id(ids.nbi.unit[0].energy.data)
+    nbi = imaspy.IDSFactory().new("nbi")
+    nbi.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    nbi.time = [1, 2, 3]
+    nbi.unit.resize(1)
+    nbi.unit[0].energy.data = 2 * nbi.time
+    old_id = id(nbi.unit[0].energy.data)
 
-    assert ids.nbi.unit[0].energy.data.time_axis == 0
+    assert nbi.unit[0].energy.data.time_axis == 0
 
-    new_data = ids.nbi.unit[0].energy.data.resample(
-        ids.nbi.time,
+    new_data = nbi.unit[0].energy.data.resample(
+        nbi.time,
         [0.5, 1.5],
-        ids.nbi.ids_properties.homogeneous_time,
+        nbi.ids_properties.homogeneous_time,
         inplace=False,
         fill_value="extrapolate",
     )
