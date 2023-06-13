@@ -259,7 +259,11 @@ class IDSCoordinates:
                     metadata.path, dim, shape[dim], coordinate.size
                 )
 
-            expected_size = other_element.shape[0]
+            with self._capture_goto_errors(metadata, dim, coordinate) as did_capture:
+                # other_element may (incorrectly) be a struct in older DD versions
+                expected_size = other_element.shape[0]
+            if did_capture:
+                continue
             if shape[dim] != expected_size:
                 other_path = other_element.metadata.path
                 raise CoordinateError(
