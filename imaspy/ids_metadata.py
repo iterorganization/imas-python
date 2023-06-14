@@ -73,6 +73,7 @@ class IDSMetadata:
         self.maxoccur = self.parse_maxoccur(attrib.get("maxoccur", "unbounded"))
         self.data_type, self.ndim = IDSDataType.parse(attrib.get("data_type", None))
         self.path = IDSPath(attrib.get("path", ""))  # IDSToplevel has no path
+        self.path_doc = attrib.get("path_doc", "")  # IDSToplevel has no path
         self.type = IDSType(attrib.get("type" , None))
         self.timebasepath = attrib.get("timebasepath", "")
 

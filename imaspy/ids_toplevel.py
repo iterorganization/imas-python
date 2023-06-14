@@ -167,9 +167,14 @@ class IDSToplevel(IDSStructure):
         time_mode = self._time_mode
         if time_mode not in IDS_TIME_MODES:
             raise ValidationError(
-                f"Invalid value for ids_properties/homogeneous_time: {time_mode}"
+                f"Invalid value for ids_properties/homogeneous_time: {time_mode}", {}
             )
-        self._validate()
+        try:
+            self._validate({})
+        except ValidationError as exc:
+            # hide recursive stack trace from user
+            logger.debug("Original stack-trace of ValidationError: ", exc_info=1)
+            raise exc.with_traceback(None) from None
 
     @needs_imas
     def get(self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None) -> None:

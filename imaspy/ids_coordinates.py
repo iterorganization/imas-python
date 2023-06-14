@@ -8,7 +8,7 @@ import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
-from imaspy.exception import CoordinateError, ValidationError
+from imaspy.exception import CoordinateError, CoordinateLookupError, ValidationError
 
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
@@ -194,17 +194,17 @@ class IDSCoordinates:
             if coordinate.size is not None:
                 # alternatively we can be an index
                 return np.arange(self._mixin.shape[key])
-            raise ValidationError(
-                f"Dimension {key} of element {self._mixin.metadata.path} must have "
-                f"exactly one of its coordinates ({coordinate.references}) set, but "
-                "none are set."
+            raise CoordinateLookupError(
+                f"Dimension {key} of element `{self._mixin.metadata.path_doc}` must "
+                f"have exactly one of its coordinates ({coordinate.references}) set, "
+                "but none are set."
             )
         if sum(ref_is_defined) == 1:
             for i in range(len(refs)):
                 if ref_is_defined[i]:
                     return refs[i]
-        raise ValidationError(
-            f"Dimension {key} of element {self._mixin.metadata.path} must have "
+        raise CoordinateLookupError(
+            f"Dimension {key} of element `{self._mixin.metadata.path_doc}` must have "
             f"exactly one of its coordinates ({coordinate.references}) set, but "
             "multiple are set."
         )
@@ -221,7 +221,7 @@ class IDSCoordinates:
                 return i
         return None
 
-    def _validate(self):
+    def _validate(self, aos_indices: Dict[str, int]):
         """Coordinate validation checks.
 
         See also:
@@ -229,6 +229,7 @@ class IDSCoordinates:
         """
         shape = self._mixin.shape
         metadata = self._mixin.metadata
+        path = metadata.path_doc
 
         # Validate coordinate
         for dim in range(metadata.ndim):
@@ -242,32 +243,32 @@ class IDSCoordinates:
                     continue  # Correct size
                 elif not coordinate.has_alternatives:
                     raise CoordinateError(
-                        metadata.path, dim, shape[dim], coordinate.size
+                        path, dim, shape[dim], coordinate.size, None, aos_indices
                     )
 
             # Validate references
             assert coordinate.references
-            with self._capture_goto_errors(metadata, dim, coordinate) as did_capture:
+            with _capture_goto_errors(path, dim, coordinate, aos_indices) as captured:
                 other_element = self[dim]
-            if did_capture:
-                continue
+            if captured:
+                continue  # Ignored error, continue to next dimension
 
             if isinstance(other_element, np.ndarray) and coordinate.size:
                 # other_element may be a numpy array when coordinate = "path OR 1...1"
                 # and path is unset
                 raise CoordinateError(
-                    metadata.path, dim, shape[dim], coordinate.size
+                    path, dim, shape[dim], coordinate.size, None, aos_indices
                 )
 
-            with self._capture_goto_errors(metadata, dim, coordinate) as did_capture:
+            with _capture_goto_errors(path, dim, coordinate, aos_indices) as captured:
                 # other_element may (incorrectly) be a struct in older DD versions
                 expected_size = other_element.shape[0]
-            if did_capture:
-                continue
+            if captured:
+                continue  # Ignored error, continue to next dimension
             if shape[dim] != expected_size:
-                other_path = other_element.metadata.path
+                other_path = other_element.metadata.path_doc
                 raise CoordinateError(
-                    metadata.path, dim, shape[dim], expected_size, other_path
+                    path, dim, shape[dim], expected_size, other_path, aos_indices
                 )
 
         # Validate coordinate_same_as
@@ -277,52 +278,54 @@ class IDSCoordinates:
                 continue  # Nothing to validate
 
             assert len(same_as.references) == 1
-            with self._capture_goto_errors(metadata, dim, coordinate) as did_capture:
+            with _capture_goto_errors(path, dim, coordinate, aos_indices) as captured:
                 other_element = same_as.references[0].goto(self._mixin)
-            if did_capture:
-                continue
+            if captured:
+                continue  # Ignored error, continue to next dimension
 
             expected_size = other_element.shape[dim]
             if shape[dim] != expected_size:
-                other_path = other_element.metadata.path
+                other_path = other_element.metadata.path_doc
                 raise CoordinateError(
-                    metadata.path, dim, shape[dim], expected_size, other_path
+                    path, dim, shape[dim], expected_size, other_path, aos_indices
                 )
 
-    @contextmanager
-    def _capture_goto_errors(self, metadata, dim, coordinate):
-        """Helper method for _validate to capture errors encountered during
-        IDSPath.goto().
-        """
-        did_capture = []
-        try:
-            yield did_capture
-        except ValidationError:
-            raise
-        except IndexError as exc:
-            # Can happen in IDSPath.goto when an invalid index is encountered.
-            raise ValidationError(
-                f"Dimension {dim} of element {metadata.path} has an invalid index "
-                f"provided for coordinate {coordinate.references}."
-            ) from exc
-        except Exception as exc:
-            # Ignore all other exceptions and log them
-            if "Unexpected index" in str(exc):
-                logger.debug(
-                    "Ignored AoS coordinate outside our tree (see IMAS-4675) of "
-                    "element %s, dimension %s, coordinate %s",
-                    metadata.path,
-                    dim,
-                    coordinate.references,
-                )
-            else:
-                logger.warning(
-                    "An error occurred while finding coordinate %s of dimension %s, "
-                    "which is ignored. This is expected to happen in DD versions <= "
-                    "3.38.1, where some coordinate metadata is incorrect.",
-                    coordinate.references,
-                    dim,
-                    exc_info=1,
-                )
-            # Flag to the caller that an error was suppressed
-            did_capture.append(1)
+
+@contextmanager
+def _capture_goto_errors(path, dim, coordinate, aos_indices):
+    """Helper method for _validate to capture errors encountered during
+    IDSPath.goto().
+    """
+    did_capture = []
+    try:
+        yield did_capture
+    except CoordinateLookupError as exc:
+        raise ValidationError(exc.args[0], aos_indices)
+    except IndexError as exc:
+        # Can happen in IDSPath.goto when an invalid index is encountered.
+        raise ValidationError(
+            f"Dimension {dim} of element `{path}` has an invalid index "
+            f"provided for coordinate `{coordinate.references}`.",
+            aos_indices,
+        ) from exc
+    except Exception as exc:
+        # Ignore all other exceptions and log them
+        if "Unexpected index" in str(exc):
+            logger.debug(
+                "Ignored AoS coordinate outside our tree (see IMAS-4675) of "
+                "element `%s`, dimension %s, coordinate `%s`",
+                path,
+                dim,
+                coordinate.references,
+            )
+        else:
+            logger.warning(
+                "An error occurred while finding coordinate `%s` of dimension %s, "
+                "which is ignored. This is expected to happen in DD versions <= "
+                "3.38.1, where some coordinate metadata is incorrect.",
+                coordinate.references,
+                dim,
+                exc_info=1,
+            )
+        # Flag to the caller that an error was suppressed
+        did_capture.append(1)

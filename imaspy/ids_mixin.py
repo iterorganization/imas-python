@@ -3,6 +3,7 @@
 
 import copy
 import logging
+from typing import Dict
 from xml.etree.ElementTree import Element
 
 import scipy.interpolate
@@ -56,8 +57,7 @@ class IDSMixin:
 
     @cached_property
     def _is_dynamic(self) -> bool:
-        """True iff this element has type=dynamic, or it has a parent with type=dynamic
-        """
+        """True if this element (or any parent) has type=dynamic"""
         return self.metadata.type.is_dynamic or self._dd_parent._is_dynamic
 
     @cached_property
@@ -79,7 +79,8 @@ class IDSMixin:
                         # instead we use the special index :
                         my_path = "{!s}/:".format(self._parent._path)
                         raise NotImplementedError(
-                            "Paths of unlinked struct array children are not implemented"
+                            "Paths of unlinked struct array children are not"
+                            " implemented"
                         ) from e
                 else:
                     my_path = self._parent._path + "/" + my_path
@@ -173,7 +174,7 @@ class IDSMixin:
         """Return the time axis for this node (None if no time dependence)"""
         return self.coordinates.time_index
 
-    def _validate(self) -> None:
+    def _validate(self, aos_indices: Dict[str, int]) -> None:
         """Actual implementation of validation logic.
 
         See also:
@@ -183,12 +184,13 @@ class IDSMixin:
             if self._time_mode == IDS_TIME_MODE_INDEPENDENT:
                 raise ValidationError(
                     f"Dynamic variable {self.metadata.path} is allocated, but time "
-                    "mode is IDS_TIME_MODE_INDEPENDENT."
+                    "mode is IDS_TIME_MODE_INDEPENDENT.",
+                    aos_indices,
                 )
 
         # Coordinate validation, but only for 1D+ types that are not empty
         if hasattr(self, "coordinates") and self.has_value:
-            self.coordinates._validate()
+            self.coordinates._validate(aos_indices)
 
         # Recurse into children
         if self.metadata.data_type in (
@@ -196,5 +198,18 @@ class IDSMixin:
             IDSDataType.STRUCTURE,
             IDSDataType.STRUCT_ARRAY,
         ):
-            for child in self:
-                child._validate()
+            if hasattr(self, "__len__"):  # only struct_arrays have a length
+                # Find out next aos index
+                if self.metadata.type.is_dynamic:
+                    name = "itime"
+                elif "itime" in aos_indices:
+                    name = f"i{len(aos_indices)}"
+                else:
+                    name = f"i{len(aos_indices)+1}"
+                new_indices = aos_indices.copy()
+                for i, child in enumerate(self):
+                    new_indices[name] = i
+                    child._validate(new_indices)
+            else:
+                for child in self:
+                    child._validate(aos_indices)
