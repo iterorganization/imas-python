@@ -199,6 +199,104 @@ pass on the memory and MDSPlus backend (the ASCII backend does not support
 slicing).
 
 
+IDS validation
+==============
+
+The IDSs you fill should be consistent. To help you in validating that, IMASPy has a
+:py:meth:`~imaspy.ids_toplevel.IDSToplevel.validate` method that executes the following
+checks.
+
+.. contents:: Validation checks
+    :local:
+    :depth: 1
+
+If you call this method and your IDS fails validation, IMASPy raises an error explaining
+the problem. See the following example:
+
+>>> import imaspy
+>>> core_profiles = imaspy.IDSFactory().core_profiles()
+>>> core_profiles.validate()
+imaspy.exception.ValidationError: Invalid value for ids_properties.homogeneous_time: -999999999
+
+IMASPy can also automatically validate an IDS every time you do a
+:py:meth:`~imaspy.db_entry.DBEntry.put` or
+:py:meth:`~imaspy.db_entry.DBEntry.put_slice`. To enable this feature, you must set the
+environment variable ``IMAS_AL_ENABLE_VALIDATION_AT_PUT`` to ``1``. For example:
+
+>>> import os
+>>> os.environ["IMAS_AL_ENABLE_VALIDATION_AT_PUT"] = "1"
+>>> # From now on, ids.validate() is called every time you do a put(ids) or put_slice(ids)
+
+.. seealso::
+    
+    API documentation: :py:meth:`IDSToplevel.validate() <imaspy.ids_toplevel.IDSToplevel.validate>`
+
+
+Validate the time mode
+----------------------
+
+The time mode of an IDS is stored in ``ids_properties.homogeneous_time``
+[#constant_IDS]_. This property must be filled with a valid time mode
+(``IDS_TIME_MODE_HOMOGENEOUS``, ``IDS_TIME_MODE_HETEROGENEOUS`` or
+``IDS_TIME_MODE_INDEPENDENT``). When the time mode is `independent`, all time-dependent
+quantities must be empty.
+
+.. [#constant_IDS] For constant IDSs (introduced in DD version 4.0.0), there is no
+    ``homogeneous_time`` ids property. The corresponding time mode checks are skipped
+    for these IDSs.
+
+
+Validate coordinates
+--------------------
+
+If a quantity in your IDS has coordinates, then these coordinates must be filled. The
+size of your data must match the size of the coordinates:
+
+.. todo:: link to DD docs
+
+1.  Some dimensions must have a fixed size. This is indicated by the Data Dictionary
+    as, for example, ``1...3``.
+
+    For example, in the ``magnetics`` IDS, ``b_field_pol_probe(i1)/bandwidth_3db`` has
+    ``1...2`` as coordinate 1. This means that, if you fill this data field, the first
+    (and only) dimension of this field must be of size 2.
+
+2.  If the coordinate is another quantity in the IDS, then that coordinate must be
+    filled and have the same size as your data.
+
+    For example, in the ``pf_active`` IDS, ``coil(i1)/current_limit_max`` is a
+    two-dimensional quantity with coordinates ``coil(i1)/b_field_max`` and
+    ``coil(i1)/temperature``. This means that, if you fill this data field, their
+    coordinate fields must be filled as well. The first dimension of
+    ``current_limit_max`` must have the same size as ``b_field_max`` and the second
+    dimension the same size as ``temperature``. Expressed in Python code:
+
+    .. code-block:: python
+
+        numpy.shape(current_limit_max) == (len(b_field_max), len(temperature))
+
+3.  The Data Dictionary can indicate exclusive alternative coordinates, see for example
+    :ref:`Alternative coordinates`. Validation works the same as explained in the
+    previous point, except that exactly one of the alternative coordinate must be
+    filled. Its size must, of course, still match the size of the data in the specified
+    dimension.
+
+4.  Some quantites indicate a coordinate must be the same size as another quantity
+    through the property ``coordinateX_same_as``. In this case, the other quantity is
+    not a coordinate, but their data is related and must be of the same size.
+
+    An example can be found in the ``edge_profiles`` IDS, quantity
+    ``ggd(itime)/neutral(i1)/velocity(i2)/diamagnetic``. This is a two-dimensional field
+    for which the first coordinate must be the same as
+    ``ggd(itime)/neutral(i1)/velocity(i2)/radial``. When the diamagnetic velocity
+    component is filled, the radial component must be filled as well, and have a
+    matching size.
+
+.. todo::
+
+    Add point for alternative coordinates (IMAS-4725) once implemented.
+
+
 Resampling
 ==========
 

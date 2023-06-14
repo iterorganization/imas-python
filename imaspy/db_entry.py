@@ -66,7 +66,7 @@ class DBEntry:
         returned IDSToplevel will be in the DD version specified. If the on-disk format
         is for a different DD version, the data is converted automatically.
 
-        When using this DBEntry for writing data (:met:`put` or :meth:`put_slice`), the
+        When using this DBEntry for writing data (:meth:`put` or :meth:`put_slice`), the
         specified DD version is used for writing to the backend. If the provided
         IDSToplevel is for a different DD version, the data is converted automatically.
 
