@@ -1,6 +1,6 @@
 from imaspy.ids_coordinates import IDSCoordinate
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS
-from imaspy.ids_root import IDSRoot
+from imaspy.ids_factory import IDSFactory
 
 import numpy as np
 import pytest
@@ -82,8 +82,8 @@ def test_coordinate_immutable():
 
 
 def test_coordinates(ids_minimal_types):
-    root = IDSRoot(xml_path=ids_minimal_types)
-    ids = root.minimal
+    root = IDSFactory(xml_path=ids_minimal_types)
+    ids = root.new("minimal")
 
     assert len(ids.flt_0d.coordinates) == 0
     assert len(ids.flt_1d.coordinates) == 1
@@ -111,7 +111,7 @@ def test_coordinates(ids_minimal_types):
 
 
 def test_coordinates_with_core_profiles():
-    core_profiles = IDSRoot(version="3.38.1").core_profiles
+    core_profiles = IDSFactory(version="3.38.1").new("core_profiles")
     with pytest.raises(ValueError):  # homogeneous_time not set
         core_profiles.profiles_1d.coordinates[0]
 
@@ -129,7 +129,7 @@ def test_coordinates_with_core_profiles():
 def test_coordinates_with_equilibrium():
     # Test error handling of a time-based coordinate outside our own timebasepath
     # https://jira.iter.org/browse/IMAS-4675
-    equilibrium = IDSRoot(version="3.38.1").equilibrium
+    equilibrium = IDSFactory(version="3.38.1").new("equilibrium")
     equilibrium.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
     equilibrium.grids_ggd.resize(1)
     equilibrium.time_slice.resize(1)

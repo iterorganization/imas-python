@@ -6,193 +6,212 @@ by writing them as the old and reading as new and vice-versa
 """
 
 import logging
+from unittest.mock import patch
 
+import numpy
 import pytest
 
-from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
-from imaspy.test.test_helpers import compare_children, fill_with_random_data, open_ids
+from imaspy.dd_zip import latest_dd_version
+from imaspy.ids_convert import convert_ids
+from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
+from imaspy.ids_factory import IDSFactory
+from imaspy.test.test_helpers import (
+    compare_children,
+    fill_with_random_data,
+    open_dbentry,
+)
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
 logger.setLevel(logging.INFO)
 
 
+@pytest.fixture(autouse=True)
+def debug_log(caplog):
+    """Make sure we capture all debug output when tests fail."""
+    caplog.set_level(logging.DEBUG, "imaspy.ids_convert")
+
+
+def test_nbc_change_aos_renamed():
+    """Test renamed AoS in pulse_schedule: ec/antenna -> ec/launcher.
+
+    Also tests renamed structures:
+    - ec/antenna/launching_angle_pol -> ec/launcher/steering_angle_pol
+    - ec/antenna/launching_angle_tor -> ec/launcher/steering_angle_tor
+    """
+    # AOS was renamed at v3.26.0. NBC metadata introduced in 3.28.0
+    ps = IDSFactory("3.28.0").new("pulse_schedule")
+    ps.ec.launcher.resize(2)
+    for i in range(2):
+        ps.ec.launcher[i].name = f"test{i}"
+
+    # Test conversion from 3.28.0 -> 3.25.0
+    ps2 = convert_ids(ps, "3.25.0")
+    assert len(ps2.ec.antenna.value) == 2
+    for i in range(2):
+        assert ps2.ec.antenna[i].name == f"test{i}"
+
+    # Test conversion from 3.25.0 -> 3.28.0
+    ps3 = convert_ids(ps2, "3.28.0")
+    assert len(ps3.ec.launcher.value) == 2
+    for i in range(2):
+        assert ps3.ec.launcher[i].name == f"test{i}"
+
+
+def test_nbc_change_leaf_renamed():
+    """Test renamed leaf in reflectometer_profile: position/r/data -> position/r"""
+    # Leaf was renamed at 3.23.3. NBC metadata introduced in 3.28.0
+    rp = IDSFactory("3.28.0").new("reflectometer_profile")
+    rp.channel.resize(1)
+    data = numpy.linspace([0, 1, 2], [1, 2, 3], 5)
+    rp.channel[0].position.r = data
+
+    # Test conversion from 3.28.0 -> 3.23.0
+    rp2 = convert_ids(rp, "3.23.0")
+    assert numpy.array_equal(rp2.channel[0].position.r.data.value, data)
+
+    # Test conversion from 3.23.0 -> 3.28.0
+    rp3 = convert_ids(rp2, "3.28.0")
+    assert numpy.array_equal(rp3.channel[0].position.r.value, data)
+
+
+@pytest.mark.xfail(
+    reason="IDSNumericArray always copies values (IMAS-4735)",
+    raises=AssertionError,
+    strict=True,
+)
+def test_ids_convert_deepcopy():
+    time = numpy.linspace(0, 1, 10)
+
+    cp = IDSFactory("3.28.0").new("core_profiles")
+    cp.time = time
+    assert cp.time.value is time
+    return  # TODO: remove this when assert on previous line succeeds
+
+    cp2 = convert_ids(cp, "3.28.0")  # Converting to the same version should also work
+    assert cp2.time.value is time
+
+    cp3 = convert_ids(cp, "3.28.0", deepcopy=True)
+    assert cp3.time.value is not time
+    assert numpy.array_equals(cp3.time.value, time)
+
+
 def test_pulse_schedule_aos_renamed_up(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
     in version 3.26.0."""
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.28.0")
+    ids = IDSFactory("3.25.0").new("pulse_schedule")
+    ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    ids.ec.antenna.resize(1)
+    ids.ec.antenna[0].name = "test"
 
-    ids = open_ids(
-        backend, "w", worker_id, tmp_path, version="3.28.0", backend_version="3.25.0"
-    )
-    ids_name = "pulse_schedule"
-    ids[ids_name].ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    ids[ids_name].ec.launcher.resize(1)
-    ids[ids_name].ec.launcher[0].name = "test"
+    with patch("imaspy.db_entry.convert_ids", side_effect=convert_ids) as mock_convert:
+        # Test automatic conversion up
+        dbentry.put(ids)
+        assert mock_convert.call_count == 1
 
-    ids[ids_name].put()
-
-    if backend == MEMORY_BACKEND:
-        # this one does not store anything between instantiations
-        pass
-    else:
-        ids2 = open_ids(
-            backend,
-            "a",
-            worker_id,
-            tmp_path,
-            version="3.25.0",
-        )
-        ids2[ids_name].get()
-
-        assert ids2[ids_name].ec.antenna[0].name.value == "test"
+        # Now load back and ensure no conversion is done
+        ids2 = dbentry.get("pulse_schedule")
+        assert mock_convert.call_count == 1
+        assert ids2.ec.launcher[0].name.value == "test"
 
 
 def test_pulse_schedule_aos_renamed_autodetect_up(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
     in version 3.26.0."""
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.25.0")
+    ids = dbentry.factory.new("pulse_schedule")
+    ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    ids.ec.antenna.resize(1)
+    ids.ec.antenna[0].name = "test"
 
-    ids = open_ids(
-        backend, "w", worker_id, tmp_path, version="3.28.0", backend_version="3.25.0"
-    )
-    ids_name = "pulse_schedule"
-    ids[ids_name].ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    ids[ids_name].ec.launcher.resize(1)
-    ids[ids_name].ec.launcher[0].name = "test"
+    with patch("imaspy.db_entry.convert_ids", side_effect=convert_ids) as mock_convert:
+        # No conversion required
+        dbentry.put(ids)
+        assert mock_convert.call_count == 0
 
-    ids[ids_name].put()
-
-    if backend == MEMORY_BACKEND:
-        # this one does not store anything between instantiations
-        pass
-    else:
-        ids2 = open_ids(
-            backend,
-            "a",
-            worker_id,
-            tmp_path,
-        )
-        ids2[ids_name].get()
-
-        assert ids2[ids_name].ec.launcher[0].name.value == "test"
+        # Now load back with a newer dbentry version, which does a conversion
+        dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, version="3.28.0")
+        ids2 = dbentry2.get("pulse_schedule")
+        assert mock_convert.call_count == 1
+        assert ids2.ec.launcher[0].name.value == "test"
 
 
 def test_pulse_schedule_aos_renamed_down(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
     in version 3.26.0."""
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.25.0")
+    ids = IDSFactory("3.28.0").new("pulse_schedule")
+    ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    ids.ec.launcher.resize(1)
+    ids.ec.launcher[0].name = "test"
 
-    ids = open_ids(
-        backend, "w", worker_id, tmp_path, version="3.25.0", backend_version="3.28.0"
-    )
-    ids_name = "pulse_schedule"
-    ids[ids_name].ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    ids[ids_name].ec.antenna.resize(1)
-    ids[ids_name].ec.antenna[0].name = "test"
+    with patch("imaspy.db_entry.convert_ids", side_effect=convert_ids) as mock_convert:
+        # Test automatic conversion down
+        dbentry.put(ids)
+        assert mock_convert.call_count == 1
 
-    ids[ids_name].put()
-
-    if backend == MEMORY_BACKEND:
-        # this one does not store anything between instantiations
-        pass
-    else:
-        ids2 = open_ids(
-            backend,
-            "a",
-            worker_id,
-            tmp_path,
-            version="3.28.0",
-        )
-        ids2[ids_name].get()
-
-        assert ids2[ids_name].ec.launcher[0].name.value == "test"
+        # Now load back and ensure no conversion is done
+        ids2 = dbentry.get("pulse_schedule")
+        assert mock_convert.call_count == 1
+        assert ids2.ec.antenna[0].name.value == "test"
 
 
 def test_pulse_schedule_aos_renamed_autodetect_down(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
     in version 3.26.0."""
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.28.0")
+    ids = dbentry.factory.new("pulse_schedule")
+    ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    ids.ec.launcher.resize(1)
+    ids.ec.launcher[0].name = "test"
 
-    ids = open_ids(
-        backend, "w", worker_id, tmp_path, version="3.28.0", backend_version="3.25.0"
-    )
-    ids_name = "pulse_schedule"
-    ids[ids_name].ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    ids[ids_name].ec.launcher.resize(1)
-    ids[ids_name].ec.launcher[0].name = "test"
+    with patch("imaspy.db_entry.convert_ids", side_effect=convert_ids) as mock_convert:
+        # No conversion required
+        dbentry.put(ids)
+        assert mock_convert.call_count == 0
 
-    ids[ids_name].put()
-
-    if backend == MEMORY_BACKEND:
-        # this one does not store anything between instantiations
-        pass
-    else:
-        ids2 = open_ids(
-            backend,
-            "a",
-            worker_id,
-            tmp_path,
-        )
-        ids2[ids_name].get()
-
-        assert ids2[ids_name].ec.launcher[0].name.value == "test"
+        # Now load back with a newer dbentry version, which does a conversion
+        dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, version="3.25.0")
+        ids2 = dbentry2.get("pulse_schedule")
+        assert mock_convert.call_count == 1
+        assert ids2.ec.antenna[0].name.value == "test"
 
 
 def test_pulse_schedule_aos_renamed_autofill_up(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
     in version 3.26.0."""
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.25.0")
+    ids = IDSFactory("3.28.0").new("pulse_schedule")
+    fill_with_random_data(ids)
+    dbentry.put(ids)
 
-    ids = open_ids(
-        backend, "w", worker_id, tmp_path, version="3.28.0", backend_version="3.25.0"
-    )
-    ids_name = "pulse_schedule"
-    fill_with_random_data(ids[ids_name])
+    ids2 = dbentry.get("pulse_schedule")
 
-    ids[ids_name].put()
-
-    if backend == MEMORY_BACKEND:
-        # this one does not store anything between instantiations
-        pass
-    else:
-        ids2 = open_ids(
-            backend,
-            "a",
-            worker_id,
-            tmp_path,
-            version="3.25.0",
-        )
-        ids2[ids_name].get()
-
-        # test the antenna/launcher only
-        for ch1, ch2 in zip(ids[ids_name].ec.launcher, ids2[ids_name].ec.antenna):
-            # compare_children does not work since also the fields were changed.
-            # manually check the common fields
-            assert ch1.name
-            assert ch1.name == ch2.name
-            assert ch1.identifier == ch2.identifier
-            assert ch1.power_type.name == ch2.power_type.name
-            assert ch1.power_type.index == ch2.power_type.index
-            for new, old in [
-                ("power", "power"),
-                ("frequency", "frequency"),
-                ("deposition_rho_tor_norm", "deposition_rho_tor_norm"),
-                ("steering_angle_pol", "launching_angle_pol"),
-                ("steering_angle_tor", "launching_angle_tor"),
-            ]:
-                assert ch1[new].reference_name == ch2[old].reference_name
-                assert ch1[new].reference.data == ch2[old].reference.data
-                assert (
-                    ch1[new].reference.data_error_upper
-                    == ch2[old].reference.data_error_upper
-                )
-                assert (
-                    ch1[new].reference.data_error_lower
-                    == ch2[old].reference.data_error_lower
-                )
-                assert (
-                    ch1[new].reference.data_error_index
-                    == ch2[old].reference.data_error_index
-                )
-                assert ch1[new].reference.time == ch2[old].reference.time
-                assert ch1[new].reference_type == ch2[old].reference_type
-                assert ch1[new].envelope_type == ch2[old].envelope_type
+    # test the antenna/launcher only
+    assert len(ids.ec.launcher.value) == len(ids2.ec.antenna.value)
+    for ch1, ch2 in zip(ids.ec.launcher, ids2.ec.antenna):
+        # compare_children does not work since also the fields were changed.
+        # manually check the common fields
+        assert ch1.name == ch2.name
+        assert ch1.identifier == ch2.identifier
+        assert ch1.power_type.name == ch2.power_type.name
+        assert ch1.power_type.index == ch2.power_type.index
+        for new, old in [
+            (ch1.power, ch2.power),
+            (ch1.frequency, ch2.frequency),
+            (ch1.deposition_rho_tor_norm, ch2.deposition_rho_tor_norm),
+            (ch1.steering_angle_pol, ch2.launching_angle_pol),
+            (ch1.steering_angle_tor, ch2.launching_angle_tor),
+        ]:
+            assert new.reference_name == old.reference_name
+            assert new.reference.data == old.reference.data
+            assert new.reference.data_error_upper == old.reference.data_error_upper
+            assert new.reference.data_error_lower == old.reference.data_error_lower
+            assert new.reference.data_error_index == old.reference.data_error_index
+            assert new.reference.time == old.reference.time
+            assert new.reference_type == old.reference_type
+            assert new.envelope_type == old.envelope_type
 
 
 def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
@@ -202,76 +221,64 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
     TODO: we should also check newer IDSes, since this only checks variables that
     existed in 3.25.0. Doing all versions for all IDSes is too slow however.
     """
-
-    ids = open_ids(
-        backend, "w", worker_id, tmp_path, version="3.25.0", backend_version="3.30.0"
-    )
-    try:
-        ids[ids_name]
-    except AttributeError:
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.30.0")
+    factory = IDSFactory(version="3.25.0")
+    if not factory.exists(ids_name):
         pytest.skip("IDS %s not defined for version 3.25.0" % (ids_name,))
-    fill_with_random_data(ids[ids_name])
+    ids = factory.new(ids_name)
+    fill_with_random_data(ids)
 
-    ids[ids_name].put()
+    dbentry.put(ids)
 
-    if backend == MEMORY_BACKEND:
-        # this one does not store anything between instantiations
-        pass
-    else:
-        ids2 = open_ids(
-            backend,
-            "a",
-            worker_id,
-            tmp_path,
-            version="3.25.0",
-        )
-        ids2[ids_name].get()
+    dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, version="3.25.0")
+    ids2 = dbentry2.get(ids_name)
 
-        if backend == ASCII_BACKEND:
-            compare_children(
-                ids[ids_name], ids2[ids_name], _ascii_empty_array_skip=True
-            )
-        else:
-            compare_children(ids[ids_name], ids2[ids_name])
+    # Some elements were removed between 3.25.0 and 3.30.0, so the conversion discards
+    # the affected data. Pass as deleted_paths to compare_children
+    deleted_paths = {
+        "coils_non_axisymmetric": {"is_periodic", "coils_n"},
+        "langmuir_probes": {
+            "embedded/j_ion_parallel/data",
+            "embedded/j_ion_parallel/validity_timed",
+            "embedded/j_ion_parallel/validity",
+            "reciprocating/plunge/potential_floating",
+            "reciprocating/plunge/t_e",
+            "reciprocating/plunge/t_i",
+            "reciprocating/plunge/saturation_current_ion",
+            "reciprocating/plunge/heat_flux_parallel",
+        },
+        "magnetics": {"method/diamagnetic_flux/data"},
+        "pulse_schedule": {
+            "ec/antenna/phase/reference_name",
+            "ec/antenna/phase/reference/data",
+            "ec/antenna/phase/reference/time",
+            "ec/antenna/phase/reference_type",
+            "ec/antenna/phase/envelope_type",
+        },
+        "spectrometer_x_ray_crystal": {
+            "camera/center/r",
+            "camera/center/z",
+            "camera/center/phi",
+        },
+    }.get(ids_name, [])
+    compare_children(ids, ids2, deleted_paths=deleted_paths)
 
 
-def test_pulse_schedule_change_backend_live(backend, worker_id, tmp_path):
-    """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
-    in version 3.26.0."""
+def test_convert_min_to_max(ids_name):
+    factory = IDSFactory("3.22.0")
+    if not factory.exists(ids_name):
+        pytest.skip("IDS %s not defined for version 3.22.0" % (ids_name,))
 
-    if backend == MEMORY_BACKEND:
-        pytest.skip(
-            "memory backend does not support reading again from different structure"
-        )
-    pytest.skip("Needs implementation of close_ual_store")
+    ids = factory.new(ids_name)
+    fill_with_random_data(ids)
+    convert_ids(ids, latest_dd_version())
 
-    ids = open_ids(backend, "w", worker_id, tmp_path, version="3.25.0")
-    ids_name = "pulse_schedule"
-    fill_with_random_data(ids[ids_name])
-    ids[ids_name].put()
-    ids.close()
 
-    ids2 = open_ids(
-        backend,
-        "a",
-        worker_id,
-        tmp_path,
-        version="3.25.0",
-    )
-    ids2[ids_name].get()
+def test_convert_max_to_min(ids_name):
+    factory = IDSFactory("3.22.0")
+    if not factory.exists(ids_name):
+        pytest.skip("IDS %s not defined for version 3.22.0" % (ids_name,))
 
-    # now change backend to 3.28.0 and save it
-    ids2[ids_name]._read_backend_xml(version="3.28.0")
-    # TODO: close the old ual store
-    ids2.open_ual_store(tmp_path, "test", "3", backend, mode="w")
-    ids2[ids_name].put()
-
-    # now from a third root check the results
-    ids3 = open_ids(
-        backend,
-        "a",
-        worker_id,
-        tmp_path,
-        version="3.25.0",
-    )
-    compare_children(ids[ids_name], ids3[ids_name])
+    ids = IDSFactory(latest_dd_version()).new(ids_name)
+    fill_with_random_data(ids)
+    convert_ids(ids, None, factory=factory)

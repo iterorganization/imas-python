@@ -1,3 +1,5 @@
+# This file is part of IMASPy.
+# You should have received the IMASPy LICENSE file with this project.
 """Helper functions to build IDSDef.xml"""
 
 import logging

@@ -1,7 +1,7 @@
 import pytest
 
 from imaspy.dd_zip import dd_xml_versions
-from imaspy.ids_root import IDSRoot
+from imaspy.ids_factory import IDSFactory
 from imaspy.test.test_helpers import fill_with_random_data
 
 
@@ -12,6 +12,6 @@ def dd_version(request):
 
 @pytest.mark.slow
 def test_autofill_dd_version(dd_version):
-    root = IDSRoot(version=dd_version)
-    for ids in root:
-        fill_with_random_data(ids, max_children=1)
+    factory = IDSFactory(version=dd_version)
+    for ids_name in factory:
+        fill_with_random_data(factory.new(ids_name), max_children=1)

@@ -2,45 +2,33 @@
 data dictionary version.
 """
 
-import logging
-
-import pytest
-
-from imaspy.ids_root import IDSRoot
-from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
-from imaspy.test.test_helpers import open_ids
-
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
+from imaspy.ids_factory import IDSFactory
+from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
+from imaspy.test.test_helpers import open_dbentry
 
 
 def test_latest_dd_manual(backend, worker_id, tmp_path):
-    """Write and then read again a full IDSRoot and a single IDSToplevel."""
-    ids = open_ids(backend, "w", worker_id, tmp_path)
+    """Write and then read again a single IDSToplevel."""
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path)
     ids_name = "pulse_schedule"
-    ids[ids_name].ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    ids[ids_name].ids_properties.comment = "test"
+    ids = IDSFactory().new(ids_name)
+    ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    ids.ids_properties.comment = "test"
 
-    assert ids[ids_name].ids_properties.comment.value == "test"
+    assert ids.ids_properties.comment.value == "test"
 
-    ids[ids_name].put()
+    dbentry.put(ids)
 
-    if backend == MEMORY_BACKEND:
-        # this one does not store anything between instantiations
-        pytest.skip("Cannot open memory backend from different root")
-    else:
-        ids2 = open_ids(backend, "a", worker_id, tmp_path)
-        ids2[ids_name].get()
-
-        assert ids2[ids_name].ids_properties.comment.value == "test"
+    dbentry2 = open_dbentry(backend, "a", worker_id, tmp_path)
+    ids2 = dbentry2.get(ids_name)
+    assert ids2.ids_properties.comment.value == "test"
 
 
 def test_dir(backend, worker_id, tmp_path):
-    """Test calling `dir()` on `IDSRoot` to test if we can see IDSes"""
-    ir = IDSRoot()
-    ir_dir = dir(ir)
+    """Test calling `dir()` on `IDSFactory` to test if we can see IDSes"""
+    factory = IDSFactory()
+    f_dir = dir(factory)
     # Check if we can see the first and last stable IDS
-    assert "amns_data" in ir_dir, "Could not find amns_data in dir(IDSRoot())"
-    assert "workflow" in ir_dir, "Could not find workflow in dir(IDSRoot())"
-    assert "__init__" in ir_dir, "Could not find base attributes in dir(IDSRoot())"
+    assert "amns_data" in f_dir, "Could not find amns_data in dir(IDSFactory())"
+    assert "workflow" in f_dir, "Could not find workflow in dir(IDSFactory())"
+    assert "__init__" in f_dir, "Could not find base attributes in dir(IDSFactory())"

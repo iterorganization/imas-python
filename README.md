@@ -88,21 +88,21 @@ Alternatively you could try to obtain an `IDSDef.zip` and place it in `~/.config
 
 ```python
 import imaspy
-root = imaspy.IDSRoot(shot=1, run=0)
-print(root.equilibrium)
+factory = imaspy.IDSFactory()
+equilibrium = factory.equilibrium()
+print(equilibrium)
 
-root.equilibrium.ids_properties.homogeneous_time = imaspy.ids_defs.IDS_TIME_MODE_HETEROGENEOUS
-root.equilibrium.ids_properties.comment = "testing"
+equilibrium.ids_properties.homogeneous_time = imaspy.ids_defs.IDS_TIME_MODE_HETEROGENEOUS
+equilibrium.ids_properties.comment = "testing"
 
-root.open_ual_store(user="daan", tokamak="ITER", version="3", backend_type=imaspy.ids_defs.HDF5_BACKEND, mode="w")
-root.equilibrium.put()
+dbentry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "ITER", 1, 1)
+dbentry.create()
+dbentry.put(equilibrium)
 
 # TODO: find an example with a significant change between versions (rename?)
-older_root = imaspy.IDSRoot(shot=1, run=0, version="3.35.0")
-# backend_version is autodetected
-older_root.open_ual_store(user="daan", tokamak="ITER", version="3", backend_type=imaspy.ids_defs.HDF5_BACKEND, mode="r")
-older_root.equilibrium.get()
-print(older_root.equilibrium.ids_properties.comment)
+older_dbentry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "ITER", 1, 1, version="3.35.0")
+equilibrium2 = older_root.get("equilibrium")
+print(equilibrium2.ids_properties.comment)
 ```
 
 ## Documentation

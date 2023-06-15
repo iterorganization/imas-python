@@ -35,8 +35,8 @@ looked up. See below example.
 .. code-block:: python
     :caption: Example getting coordinate values belonging to a 1D quantity
     
-    >>> root = imaspy.ids_root.IDSRoot()
-    >>> root.core_profiles.profiles_1d.resize(1)
+    >>> core_profiles = imaspy.IDSFactory().core_profiles()
+    >>> core_profiles.profiles_1d.resize(1)
     >>> profile = root.core_profiles.profiles_1d[0]
     >>> profile.grid.rho_tor_norm = [0, 0.15, 0.3, 0.45, 0.6]
     >>> # Electron temperature has rho_tor_norm as coordinate:
@@ -50,10 +50,10 @@ example.
 .. code-block:: python
     :caption: Example getting index coordinate values belonging to an array of structures
 
-    >>> root = imaspy.ids_root.IDSRoot()
-    >>> root.pf_active.coil.resize(10)
+    >>> pf_active = imaspy.IDSFactory().pf_active()
+    >>> pf_active.coil.resize(10)
     >>> # Coordinate1 of coil is an index 1...N
-    >>> root.pf_active.coil.coordinates[0]
+    >>> pf_active.coil.coordinates[0]
     array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
 
 .. rubric:: Time coordinates
@@ -64,22 +64,22 @@ is in homogeneous time mode or not. IMASPy handles this transparently.
 .. code-block:: python
     :caption: Example getting time coordinate values
 
-    >>> root = imaspy.ids_root.IDSRoot()
+    >>> core_profiles = imaspy.IDSFactory().core_profiles()
     >>> # profiles_1d is a time-dependent array of structures:
-    >>> root.core_profiles.profiles_1d.coordinates[0]
+    >>> core_profiles.profiles_1d.coordinates[0]
     [...]
     ValueError: Invalid IDS time mode: ids_properties/homogeneous_time is -999999999, was expecting 0 or 1.
-    >>> root.core_profiles.ids_properties.homogeneous_time = \\
+    >>> core_profiles.ids_properties.homogeneous_time = \\
     ...     imaspy.ids_defs.IDS_TIME_MODE_HOMOGENEOUS
     >>> # In homogeneous time mode, the root /time array is used
-    >>> root.core_profiles.time = [0, 1]
-    >>> root.core_profiles.profiles_1d.resize(2)
-    >>> root.core_profiles.profiles_1d.coordinates[0]
+    >>> core_profiles.time = [0, 1]
+    >>> core_profiles.profiles_1d.resize(2)
+    >>> core_profiles.profiles_1d.coordinates[0]
     IDSNumericArray("/core_profiles/time", array([0., 1.]))
     >>> # But in heterogeneous time mode, profiles_1d/time is used instead
-    >>> root.core_profiles.ids_properties.homogeneous_time = \\
+    >>> core_profiles.ids_properties.homogeneous_time = \\
     ...     imaspy.ids_defs.IDS_TIME_MODE_HETEROGENEOUS
-    >>> root.core_profiles.profiles_1d.coordinates[0]
+    >>> core_profiles.profiles_1d.coordinates[0]
     array([-9.e+40, -9.e+40])
 
 .. rubric:: Alternative coordinates
@@ -166,14 +166,14 @@ several types of coordinate information:
 .. code-block:: python
     :caption: Examples querying coordinate information
 
-    >>> root = imaspy.ids_root.IDSRoot()
+    >>> pf_active = imaspy.IDSFactory().pf_active()
     >>> # coordinate1 of pf_active/coil is an index (the number of the coil)
-    >>> root.pf_active.coil.metadata.coordinate1
+    >>> pf_active.coil.metadata.coordinate1
     IDSCoordinate('1...N')
-    >>> root.pf_active.coil.resize(1)
+    >>> pf_active.coil.resize(1)
     >>> # pf_active/coil/current_limit_max is 2D, so has two coordinates
     >>> # Both refer to another quantity in the IDS
-    >>> root.pf_active.coil[0].current_limit_max.metadata.coordinates
+    >>> pf_active.coil[0].current_limit_max.metadata.coordinates
     (IDSCoordinate('coil(i1)/b_field_max'), IDSCoordinate('coil(i1)/temperature'))
 
 .. seealso::
@@ -192,8 +192,8 @@ element in an IDS.
     :caption: Example showing all metadata for some ``core_profiles`` elements.
 
     >>> from pprint import pprint
-    >>> root = imaspy.ids_root.IDSRoot()
-    >>> pprint(vars(root.core_profiles.ids_properties.metadata))
+    >>> core_profiles = imaspy.IDSFactory().core_profiles()
+    >>> pprint(vars(core_profiles.ids_properties.metadata))
     {'_init_done': True,
      'coordinates': (),
      'coordinates_same_as': (),
@@ -206,7 +206,7 @@ element in an IDS.
      'path': IDSPath('ids_properties'),
      'path_doc': 'ids_properties',
      'structure_reference': 'ids_properties'}
-    >>> pprint(vars(root.core_profiles.time.metadata))
+    >>> pprint(vars(core_profiles.time.metadata))
     {'_init_done': True,
      'coordinate1': IDSCoordinate('1...N'),
      'coordinates': (IDSCoordinate('1...N'),),
