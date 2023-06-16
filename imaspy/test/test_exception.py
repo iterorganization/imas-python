@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 
 from imaspy.exception import ValidationError
@@ -16,3 +18,12 @@ from imaspy.exception import ValidationError
 )
 def test_validation_error_path_replacement(msg, aos_indices, expected):
     assert ValidationError(msg, aos_indices).args[0] == expected
+
+
+def test_failing_format(caplog):
+    with caplog.at_level(logging.ERROR):
+        caplog.clear()
+        exc = ValidationError("test(i1)/failing(i2)/format", {})
+        assert exc.args[0] == "test(i1)/failing(i2)/format"
+        # Check that the format error is logged
+        assert len(caplog.records) == 1

@@ -242,6 +242,10 @@ class IDSCoordinates:
                 if shape[dim] == coordinate.size:
                     continue  # Correct size
                 elif not coordinate.has_alternatives:
+                    # If the coordinate has alternatives (see test case
+                    # test_validate_reference_or_fixed_size) we continue checking the
+                    # references below.
+                    # If only size is specified, the dimension is not the correct size:
                     raise CoordinateError(
                         path, dim, shape[dim], coordinate.size, None, aos_indices
                     )
