@@ -105,6 +105,8 @@ class IDSMixin:
     @cached_property
     def _version(self):
         """Return the data dictionary version of this in-memory structure."""
+        # As each Mixin (e.g. "data node") should have a parent, we just have to
+        # check its parent.
         if hasattr(self, "_parent"):
             return self._parent._version
 

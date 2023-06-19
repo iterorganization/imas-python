@@ -96,7 +96,7 @@ class DBEntry:
         # TODO: allow using a different _ual_lowlevel module? See
         # imas_ual_env_parsing.build_UAL_package_name
         self._ull = importlib.import_module("imas._ual_lowlevel")
-        self._version = version
+        self._dd_version = version
         self._xml_path = xml_path
         self._ids_factory = IDSFactory(version, xml_path)
 
@@ -137,8 +137,8 @@ class DBEntry:
         # This does not cover the case of reading an idstoplevel and only then finding
         # out which version it is. But, I think that the model dir is not required if
         # there is an existing file.
-        if self._version or self._xml_path:
-            ids_path = mdsplus_model_dir(version=self._version, xml_file=self._xml_path)
+        if self._dd_version or self._xml_path:
+            ids_path = mdsplus_model_dir(version=self._dd_version, xml_file=self._xml_path)
         elif self._ids_factory._version:
             ids_path = mdsplus_model_dir(version=self._ids_factory._version)
         else:
@@ -158,7 +158,7 @@ class DBEntry:
         # to "3" (older we don't support, newer is not available and probably never will
         # with Access Layer 4.x). This needs to be revised for AL5 either way, since the
         # directory structures are changing.
-        version = self._version[0] if self._version else "3"
+        version = self._dd_version[0] if self._dd_version else "3"
         ensure_data_dir(str(self.user_name), self.db_name, version, self.run)
 
     def close(self, *, options=None, erase=False):
@@ -334,7 +334,7 @@ class DBEntry:
                 occurrence,
             )
         # Create a new IDSToplevel with the same version as stored in the backend
-        if destination and (not dd_version or dd_version == destination._version):
+        if destination and (not dd_version or dd_version == destination._dd_version):
             toplevel = destination
             destination = None
         elif not dd_version or dd_version == self._ids_factory._version:
