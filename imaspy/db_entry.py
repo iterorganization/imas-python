@@ -77,8 +77,8 @@ class DBEntry:
             run: Run number of the database entry
             user_name: User name of the database, retrieved from environment when not
                 supplied.
-            data_version: Major version of the access layer, retrieved from environment
-                when not supplied.
+            data_version: Major version of the DD used by the the access layer,
+                retrieved from environment when not supplied.
 
         Keyword Args:
             dd_version: Data dictionary version to use.
