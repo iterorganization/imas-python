@@ -52,7 +52,7 @@ class DBEntry:
         user_name: Optional[str] = None,
         data_version: Optional[str] = None,
         *,
-        version: Optional[str] = None,
+        dd_version: Optional[str] = None,
         xml_path: Optional[str] = None,
     ) -> None:
         """Create a new IMAS database entry object.
@@ -96,9 +96,9 @@ class DBEntry:
         # TODO: allow using a different _ual_lowlevel module? See
         # imas_ual_env_parsing.build_UAL_package_name
         self._ull = importlib.import_module("imas._ual_lowlevel")
-        self._dd_version = version
+        self._dd_version = dd_version
         self._xml_path = xml_path
-        self._ids_factory = IDSFactory(version, xml_path)
+        self._ids_factory = IDSFactory(dd_version, xml_path)
 
     @property
     def factory(self) -> IDSFactory:
@@ -106,7 +106,7 @@ class DBEntry:
         return self._ids_factory
 
     @property
-    def version(self) -> str:
+    def dd_version(self) -> str:
         """Get the DD version used by this DB entry"""
         return self._ids_factory.version
 
