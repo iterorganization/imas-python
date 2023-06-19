@@ -16,6 +16,7 @@ class IDSFactory:
     """Factory class generating IDSToplevel elements for specific DD versions.
 
     Example:
+
     >>> factory = IDSFactory()
     >>> factory.core_profiles()
     <imaspy.ids_toplevel.IDSToplevel object at 0x7f6afa03cdf0>
@@ -33,16 +34,12 @@ class IDSFactory:
     ) -> None:
         """Create a new IDS Factory
 
-        By default (``dd_version`` and ``dd_xml`` are not supplied), this will attempt
-        to get the version from the environment (``IMAS_VERSION``) and use the latest
-        available version as fallback.
-
-        You can also specify a specific DD version to use (e.g. "3.38.1") or point to a
-        specific data-dictionary XML file. These options are exclusive.
+        See :meth:`imaspy.dd_zip.dd_etree` for further details on the ``version`` and
+        ``xml_path`` arguments.
 
         Args:
-            dd_version: DD version string, e.g. "3.38.1".
-            dd_xml: XML file containing data dictionary definition.
+            version: DD version string, e.g. "3.38.1".
+            xml_path: XML file containing data dictionary definition.
         """
         self._dd_version = version
         self._xml_path = xml_path
@@ -60,11 +57,9 @@ class IDSFactory:
             logger.warning("Ignoring missing Data Dictionary version in loaded DD.")
             self._version = "-1"
         if version and version != self._version:
-            logger.warning(
-                "Ignoring mismatch between requested DD version %s and actual "
-                "loaded DD version %s",
-                version,
-                self._version,
+            raise RuntimeError(
+                f"There is a mismatch between the requested DD version {version} and "
+                f"the actual loaded DD version {self._version}."
             )
 
     def __copy__(self) -> "IDSFactory":

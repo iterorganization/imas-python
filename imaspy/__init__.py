@@ -41,20 +41,13 @@ from .ids_factory import IDSFactory
 from .ids_convert import convert_ids
 
 # Load the IMASPy IMAS AL/DD core
-try:
-    # Hardcode this for stricter imports and debugging
-    # These imports define the "IMAS compatibility" for IMASPy.
-    # We need these to work with data in the right format
-    from . import (
-        al_exception,
-        db_entry,
-        dd_helpers,
-        dd_zip,
-        imas_ual_env_parsing,
-        mdsplus_model,
-    )
-except Exception:
-    logger.critical("Global IMASPy __init__ could not import core IMAS AL/DD Python submodules. Trying continuing without AL/DD...")
-    raise
+from . import (
+    al_exception,
+    db_entry,
+    dd_helpers,
+    dd_zip,
+    imas_ual_env_parsing,
+    mdsplus_model,
+)
 
 OLDEST_SUPPORTED_VERSION = V("3.21.1")
