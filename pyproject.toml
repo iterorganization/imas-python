@@ -1,7 +1,7 @@
 [build-system]
 # Minimum requirements for the build system to execute.
 # Keep this on a single line for the grep magic of build scripts to work
-requires = ["setuptools>=43", "wheel", "setuptools_scm[toml]>=3.4", "Cython>=0.28", "numpy", "gitpython", "packaging", "tomli", "versioneer[toml]"]
+requires = ["setuptools>=43", "wheel", "Cython>=0.28", "numpy", "gitpython", "packaging", "tomli", "versioneer[toml]"]
 # needs saxon9he.jar in CLASSPATH
 
 build-backend = "setuptools.build_meta"
@@ -91,10 +91,6 @@ homepage = "https://git.iter.org/projects/IMAS/repos/imaspy"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["imaspy*"]
-
-# See https://pypi.org/project/setuptools-scm/
-[tool.setuptools_scm]
-fallback_version="0.0.0"  # TODO: Check if we can use IMASPY_VERSION here to match with EasyBuild
 
 [tool.pytest.ini_options]
 minversion = "6.0"
