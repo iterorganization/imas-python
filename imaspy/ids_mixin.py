@@ -110,9 +110,6 @@ class IDSMixin:
         if hasattr(self, "_parent"):
             return self._parent._version
 
-    def _dd_version(self):
-        return self._version
-
     def resample(
         self, old_time, new_time, homogeneousTime=None, inplace=False, **kwargs
     ):
