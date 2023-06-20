@@ -51,3 +51,6 @@ from . import (
 )
 
 OLDEST_SUPPORTED_VERSION = V("3.21.1")
+
+from . import _version
+__version__ = _version.get_versions()['version']

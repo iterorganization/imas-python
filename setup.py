@@ -52,6 +52,8 @@ from setuptools import setup
 from setuptools.command.build_ext import build_ext
 from setuptools.command.sdist import sdist
 
+import versioneer
+
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
 if sys.version_info < (3, 7):
@@ -73,7 +75,6 @@ if V(setuptools_version) < V("43"):
 # Workaround for https://github.com/pypa/pip/issues/7953
 # Cannot install into user site directory with editable source
 site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
-
 
 
 # We need to know where we are for many things
@@ -121,7 +122,7 @@ class build_DD_before_ext(build_ext):
 
         pip install -e imaspy
         pip install imaspy
-    
+
     While build_py is only executed when doing a non-editable install (for generating
     the .pyc files).
     """
@@ -152,10 +153,13 @@ class build_DD_before_sdist(sdist):
 
 if __name__ == "__main__":
     setup(
-        zip_safe=False, # https://mypy.readthedocs.io/en/latest/installed_packages.html
-        cmdclass={
-            "build_ext": build_DD_before_ext,
-            "sdist": build_DD_before_sdist,
-            "build_DD": BuildDDCommand,
-        },
+        version=versioneer.get_version(),
+        zip_safe=False,  # https://mypy.readthedocs.io/en/latest/installed_packages.html
+        cmdclass=versioneer.get_cmdclass(
+            {
+                "build_ext": build_DD_before_ext,
+                "sdist": build_DD_before_sdist,
+                "build_DD": BuildDDCommand,
+            }
+        ),
     )

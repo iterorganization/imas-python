@@ -1,7 +1,7 @@
 [build-system]
 # Minimum requirements for the build system to execute.
 # Keep this on a single line for the grep magic of build scripts to work
-requires = ["setuptools>=43", "wheel", "setuptools_scm[toml]>=3.4", "Cython>=0.28", "numpy", "gitpython", "packaging"]
+requires = ["setuptools>=43", "wheel", "setuptools_scm[toml]>=3.4", "Cython>=0.28", "numpy", "gitpython", "packaging", "tomli", "versioneer[toml]"]
 # needs saxon9he.jar in CLASSPATH
 
 build-backend = "setuptools.build_meta"
@@ -104,3 +104,11 @@ markers = [
     "slow: Slow tests.",
 ]
 testpaths = "imaspy"
+
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "imaspy/_version.py"
+versionfile_build = "imaspy/_version.py"
+tag_prefix = ""
+parentdir_prefix = ""
