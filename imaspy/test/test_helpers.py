@@ -131,11 +131,15 @@ def maybe_set_random_value(primitive: IDSPrimitive, leave_empty=0.2) -> None:
                 coordinate_element = np.ones((1,) * 6)
 
             if len(coordinate_element) == 0:
-                # Maybe set it:
+                # Scale chance of not setting a coordinate by our number of dimensions,
+                # such that overall there is roughly a 50% chance that any coordinate
+                # remains empty
                 maybe_set_random_value(coordinate_element, 0.5**ndim)
             size = coordinate_element.shape[0 if coordinate.references else dim]
 
             if coordinate.size:  # coordinateX = <path> OR 1...1
+                # Coin flip whether to use the size as determined by
+                # coordinate.references, or the size from coordinate.size
                 if random.random() < 0.5:
                     size = coordinate.size
         else:
@@ -164,7 +168,12 @@ def fill_consistent(structure: IDSStructure):
 
     Args:
         structure: IDSStructure object to (recursively fill)
-        max_children: The maximum amount of children to create for IDSStructArrays.
+
+    Returns:
+        Nothing: if the provided IDSStructue is an IDSToplevel
+        exclusive_coordinates: list of IDSPrimitives that have exclusive alternative
+            coordinates. These are initially not filled, and only at the very end of
+            filling an IDSToplevel, a choice is made between the exclusive coordinates.
     """
     if isinstance(structure, IDSToplevel):
         structure.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
