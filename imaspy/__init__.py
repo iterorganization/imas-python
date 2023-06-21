@@ -5,17 +5,10 @@ from packaging.version import Version as V
 
 import pkg_resources
 
-# First thing for import, try to determine imaspy version
-try:
-    __version__ = pkg_resources.get_distribution("imaspy").version
-except Exception:
-    # Try local wrongly install copy
-    try:
-        from version import __version__
-    except Exception:
-        # Local copy or not installed with setuptools.
-        # Disable minimum version checks on downstream libraries.
-        __version__ = "0.0.0"
+from . import _version
+
+__version__ = _version.get_versions()["version"]
+
 version = __version__
 
 # Import logging _first_
@@ -51,6 +44,3 @@ from . import (
 )
 
 OLDEST_SUPPORTED_VERSION = V("3.21.1")
-
-from . import _version
-__version__ = _version.get_versions()['version']
