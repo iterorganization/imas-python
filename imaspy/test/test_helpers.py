@@ -191,6 +191,11 @@ def fill_consistent(structure: IDSStructure):
                         child.resize(len(coor))
                     else:  # a numpy array is returned, resize to coordinate size or 1
                         child.resize(child.metadata.coordinates[0].size or 1)
+                        if child.metadata.type.is_dynamic:
+                            # This is a dynamic AoS with time coordinate inside: we must
+                            # set the time coordinate to something else than EMPTY_FLOAT
+                            # to pass validation:
+                            child[0].time = 0.0
             else:
                 child.resize(child.metadata.coordinates[0].size or 1)
             for ele in child:
