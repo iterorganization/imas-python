@@ -26,10 +26,14 @@ classifiers = [
     "Framework :: Matplotlib",
     "Framework :: Pytest",
     "Framework :: Sphinx",
+# Custom trove classifiers are not allowed, and newer versions of python setuptools will fail to build
+# when classifiers other than those listed on: https://pypi.org/classifiers/ are included
 #    "Framework :: IMAS",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Intended Audience :: System Administrators",
+# The license is prepended by private which makes it a valid trove classifier,
+# it will also prevent uploading to package indices such as PyPI
     "Private :: License :: ITER License",
     "Natural Language :: English",
     "Operating System :: POSIX",
