@@ -253,7 +253,7 @@ class IDSCoordinates:
 
             # Validate references
             assert coordinate.references
-            with _capture_goto_errors(path, dim, coordinate, aos_indices) as captured:
+            with self._capture_goto_errors(dim, coordinate, aos_indices) as captured:
                 other_element = self[dim]
             if captured:
                 continue  # Ignored error, continue to next dimension
@@ -268,12 +268,12 @@ class IDSCoordinates:
                 # Otherwise, this is a dynamic AoS with heterogeneous_time, verify that
                 # none of the values are EMPTY_FLOAT
                 if EMPTY_FLOAT in other_element:
-                    n, = np.where(other_element == EMPTY_FLOAT)
+                    (n,) = np.where(other_element == EMPTY_FLOAT)
                     raise ValidationError(
                         f"Coordinate `{path}[{n[0]}]/time` is empty.", aos_indices
                     )
 
-            with _capture_goto_errors(path, dim, coordinate, aos_indices) as captured:
+            with self._capture_goto_errors(dim, coordinate, aos_indices) as captured:
                 # other_element may (incorrectly) be a struct in older DD versions
                 expected_size = other_element.shape[0]
             if captured:
@@ -291,7 +291,7 @@ class IDSCoordinates:
                 continue  # Nothing to validate
 
             assert len(same_as.references) == 1
-            with _capture_goto_errors(path, dim, coordinate, aos_indices) as captured:
+            with self._capture_goto_errors(dim, coordinate, aos_indices) as captured:
                 other_element = same_as.references[0].goto(self._mixin)
             if captured:
                 continue  # Ignored error, continue to next dimension
@@ -303,42 +303,49 @@ class IDSCoordinates:
                     path, dim, shape[dim], expected_size, other_path, aos_indices
                 )
 
-
-@contextmanager
-def _capture_goto_errors(path, dim, coordinate, aos_indices):
-    """Helper method for _validate to capture errors encountered during
-    IDSPath.goto().
-    """
-    did_capture = []
-    try:
-        yield did_capture
-    except CoordinateLookupError as exc:
-        raise ValidationError(exc.args[0], aos_indices)
-    except IndexError as exc:
-        # Can happen in IDSPath.goto when an invalid index is encountered.
-        raise ValidationError(
-            f"Dimension {dim} of element `{path}` has an invalid index "
-            f"provided for coordinate `{coordinate.references}`.",
-            aos_indices,
-        ) from exc
-    except Exception as exc:
-        # Ignore all other exceptions and log them
-        if "Unexpected index" in str(exc):
-            logger.debug(
-                "Ignored AoS coordinate outside our tree (see IMAS-4675) of "
-                "element `%s`, dimension %s, coordinate `%s`",
-                path,
-                dim,
-                coordinate.references,
-            )
-        else:
-            logger.warning(
-                "An error occurred while finding coordinate `%s` of dimension %s, "
-                "which is ignored. This is expected to happen in DD versions <= "
-                "3.38.1, where some coordinate metadata is incorrect.",
-                coordinate.references,
-                dim,
-                exc_info=1,
-            )
-        # Flag to the caller that an error was suppressed
-        did_capture.append(1)
+    @contextmanager
+    def _capture_goto_errors(self, dim, coordinate, aos_indices):
+        """Helper method for _validate to capture errors encountered during
+        IDSPath.goto().
+        """
+        did_capture = []
+        path = self._mixin.metadata.path_doc
+        try:
+            yield did_capture
+        except CoordinateLookupError as exc:
+            raise ValidationError(exc.args[0], aos_indices)
+        except IndexError as exc:
+            # Can happen in IDSPath.goto when an invalid index is encountered.
+            raise ValidationError(
+                f"Dimension {dim} of element `{path}` has an invalid index "
+                f"provided for coordinate `{coordinate.references}`.",
+                aos_indices,
+            ) from exc
+        except Exception as exc:
+            # Ignore all other exceptions and log them
+            if "Unexpected index" in str(exc):
+                logger.debug(
+                    "Ignored AoS coordinate outside our tree (see IMAS-4675) of "
+                    "element `%s`, dimension %s, coordinate `%s`",
+                    path,
+                    dim,
+                    coordinate.references,
+                )
+            else:
+                if self._mixin._version <= "3.38.1":
+                    version_error = (
+                        "This is expected to happen in DD versions <= 3.38.1, where "
+                        "some coordinate metadata is incorrect."
+                    )
+                else:
+                    version_error = "Please report this issue to the IMASPy developers."
+                logger.warning(
+                    "An error occurred while finding coordinate `%s` of dimension %s, "
+                    "which is ignored. %s",
+                    coordinate.references,
+                    dim,
+                    version_error,
+                    exc_info=1,
+                )
+            # Flag to the caller that an error was suppressed
+            did_capture.append(1)
