@@ -3,8 +3,6 @@
 
 from packaging.version import Version as V
 
-import pkg_resources
-
 from . import _version
 
 __version__ = _version.get_versions()["version"]
@@ -12,7 +10,6 @@ __version__ = _version.get_versions()["version"]
 version = __version__
 
 # Import logging _first_
-import logging
 from .setup_logging import root_logger as logger
 
 # Hardcode this for stricter imports and debugging
