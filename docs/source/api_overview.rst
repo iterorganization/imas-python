@@ -275,6 +275,20 @@ size of your data must match the size of the coordinates:
 
         numpy.shape(current_limit_max) == (len(b_field_max), len(temperature))
 
+    Time coordinates are handled depending on the value of
+    ``ids_properties/homogeneous_time``:
+
+    -   When using ``IDS_TIME_MODE_HOMOGENEOUS``, all time coordinates look at the root
+        ``time`` node of the IDS.
+    -   When using ``IDS_TIME_MODE_HETEROGENOUS``, all time coordinates look at the time
+        path specified as coordinate by the Data Dictionary.
+
+        For dynamic array of structures, the time coordinates is a ``FLT_0D`` inside the
+        AoS (see, for example, ``profiles_1d`` in the ``core_profiles`` IDS). In such
+        cases the time node must be set to something different than ``EMPTY_FLOAT``.
+        This is the only case in which values of the coordinates are verified, in all
+        other cases only the sizes of coordinates are validated.
+
 3.  The Data Dictionary can indicate exclusive alternative coordinates, see for example
     :ref:`Alternative coordinates`. Validation works the same as explained in the
     previous point, except that exactly one of the alternative coordinate must be

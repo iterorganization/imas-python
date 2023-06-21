@@ -164,7 +164,9 @@ class IDSToplevel(IDSStructure):
 
               - When using homogeneous time, the time coordinate is the /time node.
               - When using heterogeneous time, the time coordinate is the one specified
-                by the coordinate.
+                by the coordinate. For dynamic Array of Structures, the time element is
+                a FLT_0D inside the AoS (see ``profiles_1d`` in the core_profiles IDS).
+                In such cases the time element must be set.
               - When using independent time mode, no time-dependent quantities may be
                 set.
 
