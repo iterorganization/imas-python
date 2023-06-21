@@ -8,7 +8,7 @@ Provides the class for an IDS Primitive data type
 """
 
 import numbers
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 from xml.etree.ElementTree import Element
 
 import numpy as np
@@ -266,6 +266,13 @@ class IDSPrimitive(IDSMixin):
     def data_type(self):
         """Combine imaspy ids_type and ndims to UAL data_type"""
         return "{!s}_{!s}D".format(self.metadata.data_type.value, self.metadata.ndim)
+
+    def _validate(self, aos_indices: Dict[str, int]) -> None:
+        # Common validation logic
+        super()._validate(aos_indices)
+        # Validate coordinates
+        if self.has_value:
+            self.coordinates._validate(aos_indices)
 
 
 def create_leaf_container(parent, structure_xml, **kwargs):

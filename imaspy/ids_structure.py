@@ -11,6 +11,7 @@ except ImportError:
     from cached_property import cached_property
 
 import logging
+from typing import Dict
 from xml.etree.ElementTree import Element
 
 from imaspy.setup_logging import root_logger as logger
@@ -163,3 +164,10 @@ class IDSStructure(IDSMixin):
             # super().__setattr__(key, attr)
         else:
             super().__setattr__(key, value)
+
+    def _validate(self, aos_indices: Dict[str, int]) -> None:
+        # Common validation logic
+        super()._validate(aos_indices)
+        # IDSStructure specific: validate child nodes
+        for child in self:
+            child._validate(aos_indices)

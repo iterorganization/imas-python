@@ -179,6 +179,10 @@ class IDSMixin:
 
         See also:
             :py:meth:`imaspy.ids_toplevel.IDSToplevel.validate`.
+
+        Args:
+            aos_indices: index_name -> index, e.g. {"i1": 1, "itime": 0}, for all parent
+                array of structures.
         """
         if self.metadata.type.is_dynamic and self.has_value:
             if self._time_mode == IDS_TIME_MODE_INDEPENDENT:
@@ -187,29 +191,3 @@ class IDSMixin:
                     "mode is IDS_TIME_MODE_INDEPENDENT.",
                     aos_indices,
                 )
-
-        # Coordinate validation, but only for 1D+ types that are not empty
-        if hasattr(self, "coordinates") and self.has_value:
-            self.coordinates._validate(aos_indices)
-
-        # Recurse into children
-        if self.metadata.data_type in (
-            None,  # IDSToplevel
-            IDSDataType.STRUCTURE,
-            IDSDataType.STRUCT_ARRAY,
-        ):
-            if hasattr(self, "__len__"):  # only struct_arrays have a length
-                # Find out next aos index
-                if self.metadata.type.is_dynamic:
-                    name = "itime"
-                elif "itime" in aos_indices:
-                    name = f"i{len(aos_indices)}"
-                else:
-                    name = f"i{len(aos_indices)+1}"
-                new_indices = aos_indices.copy()
-                for i, child in enumerate(self):
-                    new_indices[name] = i
-                    child._validate(new_indices)
-            else:
-                for child in self:
-                    child._validate(aos_indices)
