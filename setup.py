@@ -44,7 +44,6 @@ import pkg_resources
 
 # Use setuptools to build packages. Advised to import setuptools before distutils
 import setuptools
-import tomli
 from packaging.version import Version as V
 from setuptools import Extension
 from setuptools import __version__ as setuptools_version
@@ -153,6 +152,7 @@ class build_DD_before_sdist(sdist):
 
 if __name__ == "__main__":
     setup(
+        name=package_name,
         version=versioneer.get_version(),
         zip_safe=False,  # https://mypy.readthedocs.io/en/latest/installed_packages.html
         cmdclass=versioneer.get_cmdclass(
