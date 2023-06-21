@@ -23,12 +23,9 @@ On the ITER cluster we handle the environment by using the `IMAS` module load.
 So instead, we install packages to the `USER_SITE` there, and do not use
 `pip`s `build-isolation`. See [IMAS-584](https://jira.iter.org/browse/IMAS-584)
 """
-import argparse
-import ast
 import importlib
 import importlib.util
 import logging
-import os
 import site
 import traceback
 
@@ -37,19 +34,15 @@ import sys
 import warnings
 
 # Import other stdlib packages
-from itertools import chain
 from pathlib import Path
-
-import pkg_resources
 
 # Use setuptools to build packages. Advised to import setuptools before distutils
 import setuptools
-import tomli
 from packaging.version import Version as V
-from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import setup
 from setuptools.command.build_ext import build_ext
+from setuptools.command.build_py import build_py
 from setuptools.command.sdist import sdist
 
 import versioneer
@@ -114,52 +107,29 @@ class BuildDDCommand(setuptools.Command):
         prepare_data_dictionaries()
 
 
-class build_DD_before_ext(build_ext):
-    """
-    Before running build_ext we try to build the DD.
-
-    Note: build_ext is run with either::
-
-        pip install -e imaspy
-        pip install imaspy
-
-    While build_py is only executed when doing a non-editable install (for generating
-    the .pyc files).
-    """
-
-    def run(self):
-        try:
-            prepare_data_dictionaries()
-        except:
-            traceback.print_exc()
-            print("Failed to build DD during setup, continuing without.")
-        super().run()
-
-
-class build_DD_before_sdist(sdist):
-    """
-    Before running sdist we try to build the DD. Complements the build_ext extension
-    above.
-    """
-
-    def run(self):
-        try:
-            prepare_data_dictionaries()
-        except:
-            traceback.print_exc()
-            print("Failed to build DD during setup, continuing without.")
-        super().run()
+# Inject prepare_data_dictionaries() into the following build steps. So far it covers
+# all installation cases:
+# - `pip install -e .`` (from git clone)
+# - `python -m build``
+# - Source tarball from git-archive:
+#   `git archive HEAD -v -o imaspy.tar.gz && pip install imaspy.tar.gz`
+cmd_class = {}
+for name, cls in [("build_ext", build_ext), ("build_py", build_py), ("sdist", sdist)]:
+    class build_DD_before(cls):
+        """Build DD before executing original distutils command"""
+        def run(self):
+            try:
+                prepare_data_dictionaries()
+            except Exception:
+                traceback.print_exc()
+                print("Failed to build DD during setup, continuing without.")
+            super().run()
+    cmd_class[name] = build_DD_before
 
 
 if __name__ == "__main__":
     setup(
         version=versioneer.get_version(),
         zip_safe=False,  # https://mypy.readthedocs.io/en/latest/installed_packages.html
-        cmdclass=versioneer.get_cmdclass(
-            {
-                "build_ext": build_DD_before_ext,
-                "sdist": build_DD_before_sdist,
-                "build_DD": BuildDDCommand,
-            }
-        ),
+        cmdclass=versioneer.get_cmdclass({"build_DD": BuildDDCommand, **cmd_class}),
     )
