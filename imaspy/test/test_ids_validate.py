@@ -68,7 +68,11 @@ def test_validate_time_coordinate_heterogeneous_core_profiles():
     cp = IDSFactory("3.38.1").core_profiles()
     cp.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
     cp.profiles_1d.resize(2)
+    with pytest.raises(ValidationError):
+        cp.validate()  # Unset cp.profiles_1d.time
     cp.profiles_1d[0].time = 1.0
+    with pytest.raises(ValidationError):
+        cp.validate()  # Unset cp.profiles_1d.time
     cp.profiles_1d[1].time = 2.0
     cp.validate()
 

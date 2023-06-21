@@ -14,6 +14,7 @@ from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
     IDS_TIME_MODE_HOMOGENEOUS as HOMOGENEOUS_TIME,
     IDS_TIME_MODE_HETEROGENEOUS as HETEROGENEOUS_TIME,
+    EMPTY_FLOAT,
 )
 from imaspy.ids_path import IDSPath
 
@@ -257,12 +258,20 @@ class IDSCoordinates:
             if captured:
                 continue  # Ignored error, continue to next dimension
 
-            if isinstance(other_element, np.ndarray) and coordinate.size:
-                # other_element may be a numpy array when coordinate = "path OR 1...1"
-                # and path is unset
-                raise CoordinateError(
-                    path, dim, shape[dim], coordinate.size, None, aos_indices
-                )
+            if isinstance(other_element, np.ndarray):
+                if coordinate.size:
+                    # other_element may be a numpy array when coordinate = "path OR
+                    # 1...1" and path is unset
+                    raise CoordinateError(
+                        path, dim, shape[dim], coordinate.size, None, aos_indices
+                    )
+                # Otherwise, this is a dynamic AoS with heterogeneous_time, verify that
+                # none of the values are EMPTY_FLOAT
+                if EMPTY_FLOAT in other_element:
+                    n, = np.where(other_element == EMPTY_FLOAT)
+                    raise ValidationError(
+                        f"Coordinate `{path}[{n[0]}]/time` is empty.", aos_indices
+                    )
 
             with _capture_goto_errors(path, dim, coordinate, aos_indices) as captured:
                 # other_element may (incorrectly) be a struct in older DD versions
