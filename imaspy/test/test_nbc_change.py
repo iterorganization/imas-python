@@ -99,7 +99,7 @@ def test_ids_convert_deepcopy():
 def test_pulse_schedule_aos_renamed_up(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
     in version 3.26.0."""
-    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.28.0")
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, dd_version="3.28.0")
     ids = IDSFactory("3.25.0").new("pulse_schedule")
     ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     ids.ec.antenna.resize(1)
@@ -119,7 +119,7 @@ def test_pulse_schedule_aos_renamed_up(backend, worker_id, tmp_path):
 def test_pulse_schedule_aos_renamed_autodetect_up(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
     in version 3.26.0."""
-    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.25.0")
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, dd_version="3.25.0")
     ids = dbentry.factory.new("pulse_schedule")
     ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     ids.ec.antenna.resize(1)
@@ -131,7 +131,7 @@ def test_pulse_schedule_aos_renamed_autodetect_up(backend, worker_id, tmp_path):
         assert mock_convert.call_count == 0
 
         # Now load back with a newer dbentry version, which does a conversion
-        dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, version="3.28.0")
+        dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.28.0")
         ids2 = dbentry2.get("pulse_schedule")
         assert mock_convert.call_count == 1
         assert ids2.ec.launcher[0].name.value == "test"
@@ -140,7 +140,7 @@ def test_pulse_schedule_aos_renamed_autodetect_up(backend, worker_id, tmp_path):
 def test_pulse_schedule_aos_renamed_down(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
     in version 3.26.0."""
-    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.25.0")
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, dd_version="3.25.0")
     ids = IDSFactory("3.28.0").new("pulse_schedule")
     ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     ids.ec.launcher.resize(1)
@@ -160,7 +160,7 @@ def test_pulse_schedule_aos_renamed_down(backend, worker_id, tmp_path):
 def test_pulse_schedule_aos_renamed_autodetect_down(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
     in version 3.26.0."""
-    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.28.0")
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, dd_version="3.28.0")
     ids = dbentry.factory.new("pulse_schedule")
     ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     ids.ec.launcher.resize(1)
@@ -172,7 +172,7 @@ def test_pulse_schedule_aos_renamed_autodetect_down(backend, worker_id, tmp_path
         assert mock_convert.call_count == 0
 
         # Now load back with a newer dbentry version, which does a conversion
-        dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, version="3.25.0")
+        dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.25.0")
         ids2 = dbentry2.get("pulse_schedule")
         assert mock_convert.call_count == 1
         assert ids2.ec.antenna[0].name.value == "test"
@@ -181,7 +181,7 @@ def test_pulse_schedule_aos_renamed_autodetect_down(backend, worker_id, tmp_path
 def test_pulse_schedule_aos_renamed_autofill_up(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
     in version 3.26.0."""
-    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.25.0")
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, dd_version="3.25.0")
     ids = IDSFactory("3.28.0").new("pulse_schedule")
     fill_with_random_data(ids)
     dbentry.put(ids)
@@ -221,7 +221,7 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
     TODO: we should also check newer IDSes, since this only checks variables that
     existed in 3.25.0. Doing all versions for all IDSes is too slow however.
     """
-    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, version="3.30.0")
+    dbentry = open_dbentry(backend, "w", worker_id, tmp_path, dd_version="3.30.0")
     factory = IDSFactory(version="3.25.0")
     if not factory.exists(ids_name):
         pytest.skip("IDS %s not defined for version 3.25.0" % (ids_name,))
@@ -230,7 +230,7 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
 
     dbentry.put(ids)
 
-    dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, version="3.25.0")
+    dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.25.0")
     ids2 = dbentry2.get(ids_name)
 
     # Some elements were removed between 3.25.0 and 3.30.0, so the conversion discards

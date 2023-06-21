@@ -121,7 +121,7 @@ def compare_children(st1, st2, deleted_paths=set()):
 
 
 def open_dbentry(
-    backend, mode, worker_id, tmp_path, version=None, xml_path=None
+    backend, mode, worker_id, tmp_path, dd_version=None, xml_path=None
 ) -> DBEntry:
     """Open a DBEntry, with a tmpdir in place of the user argument"""
     if worker_id == "master":
@@ -130,7 +130,7 @@ def open_dbentry(
         shot = int(worker_id[2:]) + 1
 
     dbentry = DBEntry(
-        backend, "test", shot, 0, str(tmp_path), version=version, xml_path=xml_path
+        backend, "test", shot, 0, str(tmp_path), dd_version=dd_version, xml_path=xml_path
     )
     options = f"-prefix {tmp_path}/" if backend == ASCII_BACKEND else None
     if mode == "w":

@@ -44,6 +44,10 @@ class IDSToplevel(IDSStructure):
         super().__init__(parent, structure_xml)
 
     @property
+    def _dd_version(self) -> str:
+        return self._version
+
+    @property
     def _time_mode(self) -> int:
         """Retrieve the time mode from `/ids_properties/homogeneous_time`"""
         return self.ids_properties.homogeneous_time
