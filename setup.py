@@ -126,9 +126,8 @@ for name, cls in build_overrides.items():
         def run(self):
             try:
                 prepare_data_dictionaries()
-            except Exception as exc:
+            except Exception:
                 traceback.print_exc()
-                print(exc)
                 print("Failed to build DD during setup, continuing without.")
             super().run()
 
