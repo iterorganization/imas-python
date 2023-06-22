@@ -5,14 +5,12 @@
 Packaging settings. Inspired by a minimal setup.py file, the Pandas cython build
 and the access-layer setup template.
 
-The reference method of installing is determined by the
-[Python Package Authority](https://packaging.python.org/tutorials/installing-packages/)
-of which a summary and advanced explanation is on the [IMASPy wiki](https://gitlab.com/imaspy-dev/imaspy/-/wikis/installing)
-
 The installable IMASPy package tries to follow in the following order:
 - The style guide for Python code [PEP8](https://www.python.org/dev/peps/pep-0008/)
-- The [PyPA guide on packaging projects](https://packaging.python.org/guides/distributing-packages-using-setuptools/#distributing-packages)
-- The [PyPA tool recommendations](https://packaging.python.org/guides/tool-recommendations/), specifically:
+- The [PyPA guide on packaging projects](
+  https://packaging.python.org/guides/distributing-packages-using-setuptools/#distributing-packages)
+- The [PyPA tool recommendations](
+  https://packaging.python.org/guides/tool-recommendations/), specifically:
   * Installing: [pip](https://pip.pypa.io/en/stable/)
   * Environment management: [venv](https://docs.python.org/3/library/venv.html)
   * Dependency management: [pip-tools](https://github.com/jazzband/pip-tools)
@@ -25,7 +23,6 @@ So instead, we install packages to the `USER_SITE` there, and do not use
 """
 import importlib
 import importlib.util
-import logging
 import site
 import traceback
 
@@ -84,7 +81,7 @@ spec = importlib.util.spec_from_file_location("dd_helpers", dd_helpers_file)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 sys.modules["imaspy.dd_helpers"] = module
-from imaspy.dd_helpers import prepare_data_dictionaries
+from imaspy.dd_helpers import prepare_data_dictionaries  # noqa
 
 # End: Load dd_helpers
 
@@ -107,7 +104,7 @@ class BuildDDCommand(setuptools.Command):
         prepare_data_dictionaries()
 
 
-# Inject prepare_data_dictionaries() into the following build steps. So far it covers
+# Inject prepare_data_dictionaries() into the setuptool's build steps. So far it covers
 # all installation cases:
 # - `pip install -e .`` (from git clone)
 # - `python -m build``
