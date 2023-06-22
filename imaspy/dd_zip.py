@@ -29,21 +29,25 @@ with the `python setup.py build_DD` command, which is also performed on install
 if you have access to the ITER data-dictionary git repo.
 Reinstalling imaspy thus also will give you access to the latest DD versions.
 """
+import difflib
 import logging
 import os
+import re
 import xml.etree.ElementTree as ET
-from packaging.version import Version as V
+from contextlib import contextmanager, nullcontext
 from functools import lru_cache
 from pathlib import Path
+from typing import Dict, Iterator, List, Tuple, Union
 from zipfile import ZipFile
-from typing import List
-from importlib_resources import files
+
+from importlib_resources import as_file, files
+from importlib_resources.abc import Traversable
+from packaging.version import InvalidVersion
+from packaging.version import Version as V
 
 import imaspy
 
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def _get_xdg_config_dir():
@@ -55,7 +59,7 @@ def _get_xdg_config_dir():
     return os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
 
 
-def _build_zipfile_locations() -> List[Path]:
+def _generate_zipfile_locations() -> Iterator[Union[Path, Traversable]]:
     """Build a list of potential data dictionary locations.
     We start with the path (if any) of the IMASPY_DDZIP env var.
     Then we look for IDSDef.zip in the current folder, in the
@@ -64,21 +68,18 @@ def _build_zipfile_locations() -> List[Path]:
     """
     zip_name = "IDSDef.zip"
 
-    zipfile_locations = [
-        os.environ.get("IMASPY_DDZIP"),
-        Path(".") / zip_name,
-        Path(_get_xdg_config_dir()) / "imaspy" / zip_name,
-        files(imaspy) / "assets" / zip_name,
-    ]
-    # Note that depending on the install method the last path may be inside a zip,
-    # as described here: https://importlib-resources.readthedocs.io/en/latest/using.html#file-system-or-zip-file
-    # in which case this approach will not work. Let's fix this problem when we run in to it
-    return zipfile_locations
+    environ = os.environ.get("IMASPY_DDZIP")
+    if environ:
+        yield Path(environ).resolve()
+
+    yield Path(zip_name).resolve()
+    yield Path(_get_xdg_config_dir()).resolve() / "imaspy" / zip_name
+    yield files(imaspy) / "assets" / zip_name
 
 
 # Note: DD etrees don't consume a lot of memory, so we'll keep max 32 in memory
 _DD_CACHE_SIZE = 32
-ZIPFILE_LOCATIONS = _build_zipfile_locations()
+ZIPFILE_LOCATIONS = list(_generate_zipfile_locations())
 
 
 @lru_cache(_DD_CACHE_SIZE)
@@ -124,69 +125,105 @@ def dd_etree(version=None, xml_path=None):
         logger.info("Parsing data dictionary from file: %s", xml_path)
         tree = ET.parse(xml_path)
     else:
+        xml = get_dd_xml(version)
         logger.info("Parsing data dictionary version %s", version)
-        tree = ET.ElementTree(ET.fromstring(get_dd_xml(version)))
+        tree = ET.ElementTree(ET.fromstring(xml))
     return tree
 
 
-def get_dd_xml(version):
-    """Given a version string, try to find {version}.xml in data-dictionary/IDSDef.zip
-    and return the unzipped bytes"""
+@contextmanager
+def _open_zipfile(path: Union[Path, Traversable]) -> Iterator[ZipFile]:
+    """Open a zipfile, given a Path or Traversable."""
+    if isinstance(path, Path):
+        ctx = nullcontext(path)
+    else:
+        ctx = as_file(path)
+    with ctx as file:
+        with ZipFile(file) as zipfile:
+            yield zipfile
 
-    print_supported_version_warning(version)
-    return safe_get(lambda dd_zip: dd_zip.read(fname(version)))
+
+@lru_cache
+def _read_dd_versions() -> Dict[str, Tuple[Union[Path, Traversable], str]]:
+    """Traverse all possible DD zip files and return a map of known versions.
+
+    Returns:
+        version_map: version -> contextmanager returning (zipfile path, filename)
+    """
+    versions = {}
+    xml_re = re.compile(r"^data-dictionary/([0-9.]+)\.xml$")
+    for path in ZIPFILE_LOCATIONS:
+        if not path.is_file():
+            continue
+        with _open_zipfile(path) as zipfile:
+            for fname in zipfile.namelist():
+                match = xml_re.match(fname)
+                if match:
+                    version = match.group(1)
+                    if version not in versions:
+                        versions[version] = (path, fname)
+    if not versions:
+        raise RuntimeError(
+            "Could not find any data dictionary definitions. "
+            f"Looked in: {', '.join(ZIPFILE_LOCATIONS)}."
+        )
+    return versions
+
+
+@lru_cache
+def dd_xml_versions() -> List[str]:
+    """Parse IDSDef.zip to find version numbers available"""
+
+    def sort_key(version):
+        try:
+            return V(version)
+        except InvalidVersion:
+            # Don't fail when a malformatted version is present in the DD zip
+            logger.error(
+                f"Could not convert DD XML version {version} to a Version.", exc_info=1
+            )
+            return V(0)
+
+    return sorted(_read_dd_versions(), key=sort_key)
+
+
+def get_dd_xml(version):
+    """Read XML file for the given data dictionary version."""
+    dd_versions = _read_dd_versions()
+    if version not in dd_versions:
+        suggestions = ""
+        close_matches = difflib.get_close_matches(version, dd_versions, n=1)
+        if close_matches:
+            suggestions = f" Did you mean {close_matches[0]!r}?"
+        raise ValueError(
+            f"Data dictionary version {version!r} cannot be found.{suggestions} "
+            f"Available versions are: {', '.join(reversed(dd_xml_versions()))}."
+        )
+    path, fname = dd_versions[version]
+    with _open_zipfile(path) as zipfile:
+        return zipfile.read(fname)
 
 
 def get_dd_xml_crc(version):
-    """Given a version string, try to find {version}.xml in data-dictionary/IDSDef.zip
-    and return its CRC checksum"""
-    print_supported_version_warning(version)
-    return safe_get(lambda dd_zip: dd_zip.getinfo(fname(version)).CRC)
-
-
-def fname(version):
-    return "data-dictionary/{version}.xml".format(version=version)
+    """Given a version string, return its CRC checksum"""
+    # Note, by this time get_dd_xml is already called, so we don't need to check if the
+    # version is known
+    path, fname = _read_dd_versions()[version]
+    with _open_zipfile(path) as zipfile:
+        return zipfile.getinfo(fname).CRC
 
 
 def print_supported_version_warning(version):
-    if V(version) < imaspy.OLDEST_SUPPORTED_VERSION:
-        logger.warning(
-            "Version %s is below lowest supported version of %s.\
-            Proceed at your own risk.",
-            version,
-            imaspy.OLDEST_SUPPORTED_VERSION,
-        )
-
-
-def safe_get(fun):
-    """Try to open an IDSDef.zip in one of the locations and perform
-    an operation on it."""
-    for file in ZIPFILE_LOCATIONS:
-        if file is not None and os.path.isfile(file):
-            with ZipFile(file, mode="r") as dd_zip:
-                try:
-                    return fun(dd_zip)
-                except KeyError:
-                    logger.debug("IMAS DD version not found in %s", file)
-    raise FileNotFoundError(
-        "IMAS DD zipfile IDSDef.zip not found, checked {!s}".format(ZIPFILE_LOCATIONS)
-    )
-
-
-def dd_xml_versions():
-    """Parse IDSDef.zip to find version numbers available"""
-    dd_prefix_len = len("data-dictionary/")
-    versions = set()
-    for file in ZIPFILE_LOCATIONS:
-        if file is not None and os.path.isfile(file):
-            with ZipFile(file, mode="r") as dd_zip:
-                for dd in dd_zip.namelist():
-                    versions.add(dd[dd_prefix_len:-4])
-    if len(versions) == 0:
-        raise FileNotFoundError(
-            "No DD versions found, checked {!s}".format(ZIPFILE_LOCATIONS)
-        )
-    return sorted(list(versions), key=V)
+    try:
+        if V(version) < imaspy.OLDEST_SUPPORTED_VERSION:
+            logger.warning(
+                "Version %s is below lowest supported version of %s.\
+                Proceed at your own risk.",
+                version,
+                imaspy.OLDEST_SUPPORTED_VERSION,
+            )
+    except InvalidVersion:
+        logging.warning("Ignoring version parsing error.", exc_info=1)
 
 
 def latest_dd_version():

@@ -13,5 +13,5 @@ def test_known_version():
 def test_known_failing_version():
     """Test if 0.0 is not part of the IDSDef.zip"""
 
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(ValueError):
         get_dd_xml("0.0")
