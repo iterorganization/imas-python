@@ -42,7 +42,14 @@ from setuptools.command.build_ext import build_ext
 from setuptools.command.build_py import build_py
 from setuptools.command.sdist import sdist
 
-import versioneer
+try:
+    from wheel.bdist_wheel import bdist_wheel
+except ImportError:
+    bdist_wheel = None
+
+# Ensure the current folder is on the import path:
+sys.path.append(str(Path(__file__).parent.resolve()))
+import versioneer  # noqa
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
@@ -56,10 +63,10 @@ if sys.version_info < (3, 8):
 
 
 # Check setuptools version before continuing for legacy builds
-if V(setuptools_version) < V("43"):
+if V(setuptools_version) < V("61"):
     raise RuntimeError(
         "Setuptools version outdated. Found"
-        f" {V(setuptools_version)} need at least {V('43')}"
+        f" {V(setuptools_version)} need at least {V('61')}"
     )
 
 # Workaround for https://github.com/pypa/pip/issues/7953
@@ -70,9 +77,6 @@ site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 # We need to know where we are for many things
 this_file = Path(__file__)
 this_dir = this_file.parent.resolve()
-
-package_name = "imaspy"
-
 
 # Start: Load dd_helpers
 dd_helpers_file = this_dir / "imaspy/dd_helpers.py"
@@ -111,18 +115,27 @@ class BuildDDCommand(setuptools.Command):
 # - Source tarball from git-archive:
 #   `git archive HEAD -v -o imaspy.tar.gz && pip install imaspy.tar.gz`
 cmd_class = {}
-for name, cls in [("build_ext", build_ext), ("build_py", build_py), ("sdist", sdist)]:
+build_overrides = {"build_ext": build_ext, "build_py": build_py, "sdist": sdist}
+if bdist_wheel:
+    build_overrides["bdist_wheel"] = bdist_wheel
+for name, cls in build_overrides.items():
+
     class build_DD_before(cls):
         """Build DD before executing original distutils command"""
+
         def run(self):
             try:
                 prepare_data_dictionaries()
-            except Exception:
+            except Exception as exc:
                 traceback.print_exc()
+                print(exc)
                 print("Failed to build DD during setup, continuing without.")
             super().run()
+
     cmd_class[name] = build_DD_before
 
+
+package_name = "imaspy"
 
 if __name__ == "__main__":
     setup(
