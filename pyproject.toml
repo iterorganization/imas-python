@@ -57,7 +57,7 @@ classifiers = [
 dynamic = ["version"]
 dependencies = [
     "numpy>=1.15.4",
-    "cached-property",
+    "cached-property; python_version < '3.8'",
     "tree-format",
     "scipy",
     "click",
