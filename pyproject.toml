@@ -1,7 +1,7 @@
 [build-system]
 # Minimum requirements for the build system to execute.
 # Keep this on a single line for the grep magic of build scripts to work
-requires = ["setuptools>=43", "wheel", "setuptools_scm[toml]>=3.4", "Cython>=0.28", "numpy", "gitpython", "packaging"]
+requires = ["setuptools>=43", "wheel", "Cython>=0.28", "numpy", "gitpython", "packaging", "tomli;python_version<'3.11'", "versioneer[toml]"]
 # needs saxon9he.jar in CLASSPATH
 
 build-backend = "setuptools.build_meta"
@@ -26,11 +26,15 @@ classifiers = [
     "Framework :: Matplotlib",
     "Framework :: Pytest",
     "Framework :: Sphinx",
-    "Framework :: IMAS",
+# Custom trove classifiers are not allowed, and newer versions of python setuptools will fail to build
+# when classifiers other than those listed on: https://pypi.org/classifiers/ are included
+#    "Framework :: IMAS",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Intended Audience :: System Administrators",
-    "License :: ITER License",
+# The license is prepended by private which makes it a valid trove classifier,
+# it will also prevent uploading to package indices such as PyPI
+    "Private :: License :: ITER License",
     "Natural Language :: English",
     "Operating System :: POSIX",
     "Operating System :: POSIX :: Linux",
@@ -92,10 +96,6 @@ homepage = "https://git.iter.org/projects/IMAS/repos/imaspy"
 where = ["."]
 include = ["imaspy*"]
 
-# See https://pypi.org/project/setuptools-scm/
-[tool.setuptools_scm]
-fallback_version="0.0.0"  # TODO: Check if we can use IMASPY_VERSION here to match with EasyBuild
-
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "--strict-markers"
@@ -104,3 +104,11 @@ markers = [
     "slow: Slow tests.",
 ]
 testpaths = "imaspy"
+
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "imaspy/_version.py"
+versionfile_build = "imaspy/_version.py"
+tag_prefix = ""
+parentdir_prefix = ""
