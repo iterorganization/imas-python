@@ -8,7 +8,7 @@ Provides the class for an IDS Primitive data type
 """
 
 import numbers
-from typing import Any, Tuple
+from typing import Any, Dict, Tuple
 from xml.etree.ElementTree import Element
 
 import numpy as np
@@ -104,6 +104,13 @@ class IDSPrimitive(IDSMixin):
         if self.__value is None:  # No value set
             return False
         return self.size > 0  # Default for ndarray and STR_1D types is size == 0
+
+    def __len__(self) -> int:
+        if self.metadata.ndim == 0:
+            raise TypeError(f"IDS data node of type {self.data_type} has no len()")
+        if self.__value is None:
+            return 0
+        return len(self.__value)
 
     @property
     def _default(self):
@@ -259,6 +266,13 @@ class IDSPrimitive(IDSMixin):
     def data_type(self):
         """Combine imaspy ids_type and ndims to UAL data_type"""
         return "{!s}_{!s}D".format(self.metadata.data_type.value, self.metadata.ndim)
+
+    def _validate(self, aos_indices: Dict[str, int]) -> None:
+        # Common validation logic
+        super()._validate(aos_indices)
+        # Validate coordinates
+        if self.has_value:
+            self.coordinates._validate(aos_indices)
 
 
 def create_leaf_container(parent, structure_xml, **kwargs):

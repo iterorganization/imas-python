@@ -4,18 +4,19 @@
 * :py:class:`IDSToplevel`
 """
 
-# Set up logging immediately
-
+import logging
 from typing import TYPE_CHECKING, Optional
 import tempfile
 import os
 
 from imaspy.al_exception import ALException
+from imaspy.exception import ValidationError
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     ASCII_SERIALIZER_PROTOCOL,
     DEFAULT_SERIALIZER_PROTOCOL,
     IDS_TIME_MODE_UNKNOWN,
+    IDS_TIME_MODES,
     needs_imas,
 )
 from imaspy.ids_structure import IDSStructure
@@ -23,6 +24,9 @@ from imaspy.ids_structure import IDSStructure
 if TYPE_CHECKING:
     from imaspy.db_entry import DBEntry
     from imaspy.ids_factory import IDSFactory
+
+
+logger = logging.getLogger(__name__)
 
 
 class IDSToplevel(IDSStructure):
@@ -146,6 +150,64 @@ class IDSToplevel(IDSStructure):
                     os.unlink(tmpfile)
         else:
             raise ValueError(f"Unrecognized serialization protocol: {protocol}")
+
+    def validate(self):
+        """Validate the contents of this IDS.
+
+        The following sanity checks are executed on this IDS:
+
+        - The IDS must have a valid time mode (``ids_properties.homogeneous_time``)
+        - For all non-empty quantities with coordinates:
+
+            - If coordinates have an exact size (e.g. coordinate1 = 1...3), the size in
+              that dimension must match this.
+            - If coordinates refer to other elements (e.g. coordinate1 = time), the size
+              in that dimension must be the same as the size of the referred quantity.
+
+              Note that time is a special coordinate:
+
+              - When using homogeneous time, the time coordinate is the /time node.
+              - When using heterogeneous time, the time coordinate is the one specified
+                by the coordinate. For dynamic Array of Structures, the time element is
+                a FLT_0D inside the AoS (see ``profiles_1d`` in the core_profiles IDS).
+                In such cases the time element must be set.
+              - When using independent time mode, no time-dependent quantities may be
+                set.
+
+            - If a "same_as" coordinate is specified (e.g. coordinate2_same_as = r), the
+              size in that dimension must be the same as the size in that dimension of
+              the referred quantity.
+
+        If any check fails, a ValidationError is raised that describes the problem.
+
+        Example:
+
+            >>> core_profiles = imaspy.IDSFactory().core_profiles()
+            >>> core_profiles.validate()  # Did not set homogeneous_time
+            [...]
+            imaspy.exception.ValidationError: Invalid value for ids_properties/homogeneous_time: IDSPrimitive("/core_profiles/ids_properties/homogeneous_time", -999999999)
+            >>> core_profiles.ids_properties.homogeneous_time = imaspy.ids_defs.IDS_TIME_MODE_HOMOGENEOUS
+            >>> core_profiles.validate()  # No error: IDS is valid
+            >>> core_profiles.profiles_1d.resize(1)
+            >>> core_profiles.validate()
+            [...]
+            imaspy.exception.CoordinateError: Dimension 0 of element profiles_1d has incorrect size 1. Expected size is 0 (size of coordinate time).
+            >>> core_profiles.time = [1]
+            >>> core_profiles.validate()  # No error: IDS is valid
+
+        """  # noqa: E501 (line too long)
+        time_mode = self._time_mode
+        if time_mode not in IDS_TIME_MODES:
+            raise ValidationError(
+                f"Invalid value for ids_properties/homogeneous_time: {time_mode.value}",
+                {},
+            )
+        try:
+            self._validate({})
+        except ValidationError as exc:
+            # hide recursive stack trace from user
+            logger.debug("Original stack-trace of ValidationError: ", exc_info=1)
+            raise exc.with_traceback(None) from None
 
     @needs_imas
     def get(self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None) -> None:
