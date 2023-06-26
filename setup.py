@@ -112,7 +112,9 @@ class BuildDDCommand(setuptools.Command):
 # all installation cases:
 # - `pip install -e .`` (from git clone)
 # - `python -m build``
-# - Source tarball from git-archive:
+# - Source tarball from git-archive. Note: version only picked up when doing git-archive
+#   from a tagged release, otherwise version will be "0+unknown" (expected versioneer
+#   behaviour).
 #   `git archive HEAD -v -o imaspy.tar.gz && pip install imaspy.tar.gz`
 cmd_class = {}
 build_overrides = {"build_ext": build_ext, "build_py": build_py, "sdist": sdist}
@@ -133,8 +135,6 @@ for name, cls in build_overrides.items():
 
     cmd_class[name] = build_DD_before
 
-
-package_name = "imaspy"
 
 if __name__ == "__main__":
     setup(
