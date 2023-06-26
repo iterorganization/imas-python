@@ -1,7 +1,7 @@
 import os
 
 import matplotlib
-import imas
+import imaspy
 
 # To avoid possible display issues when Matplotlib uses a non-GUI backend
 if "DISPLAY" not in os.environ:
@@ -12,17 +12,20 @@ else:
 import matplotlib.pyplot as plt
 
 shot, run, user, database = 134173, 106, "public", "ITER"
-input = imas.DBEntry(imas.imasdef.MDSPLUS_BACKEND, database, shot, run, user)
+input = imaspy.DBEntry(imaspy.ids_defs.MDSPLUS_BACKEND, database, shot, run, user)
 input.open()
 
 # Read Te profile and the associated normalised toroidal flux coordinate
+# partial_get-like functionality will be implemnted
+# with IMASPy lazy-loading https://jira.iter.org/browse/IMAS-4506
+cp = input.get("core_profiles")
 t_closest = 261
-te = input.partial_get("core_profiles", f"profiles_1d({t_closest})/electrons/temperature")
-rho = input.partial_get("core_profiles", f"profiles_1d({t_closest})/grid/rho_tor_norm")
+te = cp["profiles_1d"][t_closest]["electrons"]["temperature"]
+rho = cp["profiles_1d"][t_closest]["grid"]["rho_tor_norm"]
 
 # Plot the figure
 fig, ax = plt.subplots()
-ax.plot(rho, te)
+ax.plot(rho.value, te.value)
 ax.set_ylabel(r"$T_e$")
 ax.set_xlabel(r"$\rho_{tor, norm}$")
 ax.ticklabel_format(axis="y", scilimits=(-1, 1))
