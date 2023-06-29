@@ -5,14 +5,12 @@
 Packaging settings. Inspired by a minimal setup.py file, the Pandas cython build
 and the access-layer setup template.
 
-The reference method of installing is determined by the
-[Python Package Authority](https://packaging.python.org/tutorials/installing-packages/)
-of which a summary and advanced explanation is on the [IMASPy wiki](https://gitlab.com/imaspy-dev/imaspy/-/wikis/installing)
-
 The installable IMASPy package tries to follow in the following order:
 - The style guide for Python code [PEP8](https://www.python.org/dev/peps/pep-0008/)
-- The [PyPA guide on packaging projects](https://packaging.python.org/guides/distributing-packages-using-setuptools/#distributing-packages)
-- The [PyPA tool recommendations](https://packaging.python.org/guides/tool-recommendations/), specifically:
+- The [PyPA guide on packaging projects](
+  https://packaging.python.org/guides/distributing-packages-using-setuptools/#distributing-packages)
+- The [PyPA tool recommendations](
+  https://packaging.python.org/guides/tool-recommendations/), specifically:
   * Installing: [pip](https://pip.pypa.io/en/stable/)
   * Environment management: [venv](https://docs.python.org/3/library/venv.html)
   * Dependency management: [pip-tools](https://github.com/jazzband/pip-tools)
@@ -23,12 +21,8 @@ On the ITER cluster we handle the environment by using the `IMAS` module load.
 So instead, we install packages to the `USER_SITE` there, and do not use
 `pip`s `build-isolation`. See [IMAS-584](https://jira.iter.org/browse/IMAS-584)
 """
-import argparse
-import ast
 import importlib
 import importlib.util
-import logging
-import os
 import site
 import traceback
 
@@ -37,22 +31,25 @@ import sys
 import warnings
 
 # Import other stdlib packages
-from itertools import chain
 from pathlib import Path
-
-import pkg_resources
 
 # Use setuptools to build packages. Advised to import setuptools before distutils
 import setuptools
-import tomli
 from packaging.version import Version as V
-from setuptools import Extension
 from setuptools import __version__ as setuptools_version
 from setuptools import setup
 from setuptools.command.build_ext import build_ext
+from setuptools.command.build_py import build_py
 from setuptools.command.sdist import sdist
 
-import versioneer
+try:
+    from wheel.bdist_wheel import bdist_wheel
+except ImportError:
+    bdist_wheel = None
+
+# Ensure the current folder is on the import path:
+sys.path.append(str(Path(__file__).parent.resolve()))
+import versioneer  # noqa
 
 cannonical_python_command = "module load Python/3.8.6-GCCcore-10.2.0"
 
@@ -66,10 +63,10 @@ if sys.version_info < (3, 8):
 
 
 # Check setuptools version before continuing for legacy builds
-if V(setuptools_version) < V("43"):
+if V(setuptools_version) < V("61"):
     raise RuntimeError(
         "Setuptools version outdated. Found"
-        f" {V(setuptools_version)} need at least {V('43')}"
+        f" {V(setuptools_version)} need at least {V('61')}"
     )
 
 # Workaround for https://github.com/pypa/pip/issues/7953
@@ -81,9 +78,6 @@ site.ENABLE_USER_SITE = "--user" in sys.argv[1:]
 this_file = Path(__file__)
 this_dir = this_file.parent.resolve()
 
-package_name = "imaspy"
-
-
 # Start: Load dd_helpers
 dd_helpers_file = this_dir / "imaspy/dd_helpers.py"
 assert dd_helpers_file.is_file()
@@ -91,7 +85,7 @@ spec = importlib.util.spec_from_file_location("dd_helpers", dd_helpers_file)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 sys.modules["imaspy.dd_helpers"] = module
-from imaspy.dd_helpers import prepare_data_dictionaries
+from imaspy.dd_helpers import prepare_data_dictionaries  # noqa
 
 # End: Load dd_helpers
 
@@ -114,52 +108,37 @@ class BuildDDCommand(setuptools.Command):
         prepare_data_dictionaries()
 
 
-class build_DD_before_ext(build_ext):
-    """
-    Before running build_ext we try to build the DD.
+# Inject prepare_data_dictionaries() into the setuptool's build steps. So far it covers
+# all installation cases:
+# - `pip install -e .`` (from git clone)
+# - `python -m build``
+# - Source tarball from git-archive. Note: version only picked up when doing git-archive
+#   from a tagged release, otherwise version will be "0+unknown" (expected versioneer
+#   behaviour).
+#   `git archive HEAD -v -o imaspy.tar.gz && pip install imaspy.tar.gz`
+cmd_class = {}
+build_overrides = {"build_ext": build_ext, "build_py": build_py, "sdist": sdist}
+if bdist_wheel:
+    build_overrides["bdist_wheel"] = bdist_wheel
+for name, cls in build_overrides.items():
 
-    Note: build_ext is run with either::
+    class build_DD_before(cls):
+        """Build DD before executing original distutils command"""
 
-        pip install -e imaspy
-        pip install imaspy
+        def run(self):
+            try:
+                prepare_data_dictionaries()
+            except Exception:
+                traceback.print_exc()
+                print("Failed to build DD during setup, continuing without.")
+            super().run()
 
-    While build_py is only executed when doing a non-editable install (for generating
-    the .pyc files).
-    """
-
-    def run(self):
-        try:
-            prepare_data_dictionaries()
-        except:
-            traceback.print_exc()
-            print("Failed to build DD during setup, continuing without.")
-        super().run()
-
-
-class build_DD_before_sdist(sdist):
-    """
-    Before running sdist we try to build the DD. Complements the build_ext extension
-    above.
-    """
-
-    def run(self):
-        try:
-            prepare_data_dictionaries()
-        except:
-            traceback.print_exc()
-            print("Failed to build DD during setup, continuing without.")
-        super().run()
+    cmd_class[name] = build_DD_before
 
 
 if __name__ == "__main__":
     setup(
         version=versioneer.get_version(),
         zip_safe=False,  # https://mypy.readthedocs.io/en/latest/installed_packages.html
-        cmdclass=versioneer.get_cmdclass(
-            {
-                "build_ext": build_DD_before_ext,
-                "sdist": build_DD_before_sdist,
-                "build_DD": BuildDDCommand,
-            }
-        ),
+        cmdclass=versioneer.get_cmdclass({"build_DD": BuildDDCommand, **cmd_class}),
     )
