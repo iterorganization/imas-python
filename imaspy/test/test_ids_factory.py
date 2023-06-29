@@ -13,7 +13,7 @@ def test_ids_factory_with_invalid_version():
     with pytest.raises(Exception):
         IDSFactory(version="invalid")
     # This is a valid version string, but we don't have it available
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(ValueError):
         IDSFactory(version="0.1.2.3.4")
 
 
