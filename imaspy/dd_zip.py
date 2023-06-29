@@ -148,7 +148,7 @@ def _read_dd_versions() -> Dict[str, Tuple[Union[Path, Traversable], str]]:
     """Traverse all possible DD zip files and return a map of known versions.
 
     Returns:
-        version_map: version -> contextmanager returning (zipfile path, filename)
+        version_map: version -> (zipfile path, filename)
     """
     versions = {}
     xml_re = re.compile(r"^data-dictionary/([0-9.]+)\.xml$")
