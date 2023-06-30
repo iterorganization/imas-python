@@ -94,7 +94,7 @@ ENV/
 imaspy/version.py
 
 # Saxon symlink or downloaded file
-saxon9he.jar
+saxon*.jar
 
 # IMAS DD
 data-dictionary

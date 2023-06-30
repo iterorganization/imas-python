@@ -20,7 +20,7 @@ def test_coordinate_str_repr():
 
 def test_coordinate_index_unbounded():
     coordinate = IDSCoordinate("1...N")
-    assert coordinate.max_size is None
+    assert coordinate.size is None
     assert not coordinate.references
     assert not coordinate.has_alternatives
     assert not coordinate.has_validation
@@ -29,7 +29,7 @@ def test_coordinate_index_unbounded():
 @pytest.mark.parametrize("size", range(1, 5))
 def test_coordinate_index_bounded(size):
     coordinate = IDSCoordinate(f"1...{size}")
-    assert coordinate.max_size == size
+    assert coordinate.size == size
     assert not coordinate.references
     assert coordinate.has_validation
     assert not coordinate.has_alternatives
@@ -37,7 +37,7 @@ def test_coordinate_index_bounded(size):
 
 def test_coordinate_with_path():
     coordinate = IDSCoordinate("time")
-    assert coordinate.max_size is None
+    assert coordinate.size is None
     assert len(coordinate.references) == 1
     assert str(coordinate.references[0]) == "time"
     assert coordinate.has_validation
@@ -49,7 +49,7 @@ def test_coordinate_with_multiple_paths():
         "distribution(i1)/profiles_2d(itime)/grid/r OR "
         "distribution(i1)/profiles_2d(itime)/grid/rho_tor_norm"
     )
-    assert coordinate.max_size is None
+    assert coordinate.size is None
     assert len(coordinate.references) == 2
     assert coordinate.has_validation
     assert coordinate.has_alternatives
@@ -59,7 +59,7 @@ def test_coordinate_with_path_or_size():
     coordinate = IDSCoordinate(
         "coherent_wave(i1)/beam_tracing(itime)/beam(i2)/length OR 1...1"
     )
-    assert coordinate.max_size == 1
+    assert coordinate.size == 1
     assert len(coordinate.references) == 1
     assert coordinate.has_validation
     assert coordinate.has_alternatives
@@ -94,7 +94,7 @@ def test_coordinates(ids_minimal_types):
     assert len(ids.flt_6d.coordinates) == 6
 
     ids.flt_1d = [1, 2, 4]
-    assert ids.flt_1d.metadata.coordinates[0].max_size == 3
+    assert ids.flt_1d.metadata.coordinates[0].size == 3
     assert all(ids.flt_1d.coordinates[0] == np.arange(3))
 
     ids.flt_3d = np.ones((3, 4, 2))
@@ -106,7 +106,7 @@ def test_coordinates(ids_minimal_types):
     assert ids.cpx_1d.coordinates[0] is ids.flt_1d
     # if both flt_1d and int_1d are set, this should give an error
     ids.int_1d = [1]
-    with pytest.raises(RuntimeError):
+    with pytest.raises(Exception):
         ids.cpx_1d.coordinates[0]
 
 

@@ -41,7 +41,6 @@ class IDSFactory:
             version: DD version string, e.g. "3.38.1".
             xml_path: XML file containing data dictionary definition.
         """
-        self._dd_version = version
         self._xml_path = xml_path
         self._etree = dd_zip.dd_etree(version, xml_path)
         self._ids_elements = {

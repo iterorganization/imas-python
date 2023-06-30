@@ -19,7 +19,7 @@ def test_toplevel_init(ids):
 
 
 def test_structure_xml_noncopy(ids):
-    assert id(ids._structure_xml.getchildren()[0].attrib) == id(
+    assert id(list(ids._structure_xml)[0].attrib) == id(
         ids.ids_properties._structure_xml.attrib
     )
 

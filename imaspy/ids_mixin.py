@@ -3,20 +3,23 @@
 
 import copy
 import logging
+from typing import Dict
 from xml.etree.ElementTree import Element
 
 import scipy.interpolate
+from imaspy.ids_data_type import IDSDataType
 
 try:
     from functools import cached_property
 except ImportError:
     from cached_property import cached_property
 
+from imaspy.exception import ValidationError
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.setup_logging import root_logger as logger
 
 try:
-    from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
+    from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_INDEPENDENT
 except ImportError as ee:
     logger.critical("IMAS could not be imported. UAL not available! %s", ee)
 
@@ -54,8 +57,7 @@ class IDSMixin:
 
     @cached_property
     def _is_dynamic(self) -> bool:
-        """True iff this element has type=dynamic, or it has a parent with type=dynamic
-        """
+        """True if this element (or any parent) has type=dynamic"""
         return self.metadata.type.is_dynamic or self._dd_parent._is_dynamic
 
     @cached_property
@@ -77,7 +79,8 @@ class IDSMixin:
                         # instead we use the special index :
                         my_path = "{!s}/:".format(self._parent._path)
                         raise NotImplementedError(
-                            "Paths of unlinked struct array children are not implemented"
+                            "Paths of unlinked struct array children are not"
+                            " implemented"
                         ) from e
                 else:
                     my_path = self._parent._path + "/" + my_path
@@ -105,6 +108,8 @@ class IDSMixin:
     @cached_property
     def _version(self):
         """Return the data dictionary version of this in-memory structure."""
+        # As each Mixin (e.g. "data node") should have a parent, we just have to
+        # check its parent.
         if hasattr(self, "_parent"):
             return self._parent._version
 
@@ -170,3 +175,21 @@ class IDSMixin:
     def time_axis(self):
         """Return the time axis for this node (None if no time dependence)"""
         return self.coordinates.time_index
+
+    def _validate(self, aos_indices: Dict[str, int]) -> None:
+        """Actual implementation of validation logic.
+
+        See also:
+            :py:meth:`imaspy.ids_toplevel.IDSToplevel.validate`.
+
+        Args:
+            aos_indices: index_name -> index, e.g. {"i1": 1, "itime": 0}, for all parent
+                array of structures.
+        """
+        if self.metadata.type.is_dynamic and self.has_value:
+            if self._time_mode == IDS_TIME_MODE_INDEPENDENT:
+                raise ValidationError(
+                    f"Dynamic variable {self.metadata.path} is allocated, but time "
+                    "mode is IDS_TIME_MODE_INDEPENDENT.",
+                    aos_indices,
+                )

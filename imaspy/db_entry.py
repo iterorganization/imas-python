@@ -52,7 +52,7 @@ class DBEntry:
         user_name: Optional[str] = None,
         data_version: Optional[str] = None,
         *,
-        version: Optional[str] = None,
+        dd_version: Optional[str] = None,
         xml_path: Optional[str] = None,
     ) -> None:
         """Create a new IMAS database entry object.
@@ -77,8 +77,8 @@ class DBEntry:
             run: Run number of the database entry
             user_name: User name of the database, retrieved from environment when not
                 supplied.
-            data_version: Major version of the access layer, retrieved from environment
-                when not supplied.
+            data_version: Major version of the DD used by the the access layer,
+                retrieved from environment when not supplied.
 
         Keyword Args:
             dd_version: Data dictionary version to use.
@@ -96,9 +96,9 @@ class DBEntry:
         # TODO: allow using a different _ual_lowlevel module? See
         # imas_ual_env_parsing.build_UAL_package_name
         self._ull = importlib.import_module("imas._ual_lowlevel")
-        self._version = version
+        self._dd_version = dd_version
         self._xml_path = xml_path
-        self._ids_factory = IDSFactory(version, xml_path)
+        self._ids_factory = IDSFactory(dd_version, xml_path)
 
     @property
     def factory(self) -> IDSFactory:
@@ -106,7 +106,7 @@ class DBEntry:
         return self._ids_factory
 
     @property
-    def version(self) -> str:
+    def dd_version(self) -> str:
         """Get the DD version used by this DB entry"""
         return self._ids_factory.version
 
@@ -137,8 +137,8 @@ class DBEntry:
         # This does not cover the case of reading an idstoplevel and only then finding
         # out which version it is. But, I think that the model dir is not required if
         # there is an existing file.
-        if self._version or self._xml_path:
-            ids_path = mdsplus_model_dir(version=self._version, xml_file=self._xml_path)
+        if self._dd_version or self._xml_path:
+            ids_path = mdsplus_model_dir(version=self._dd_version, xml_file=self._xml_path)
         elif self._ids_factory._version:
             ids_path = mdsplus_model_dir(version=self._ids_factory._version)
         else:
@@ -158,7 +158,7 @@ class DBEntry:
         # to "3" (older we don't support, newer is not available and probably never will
         # with Access Layer 4.x). This needs to be revised for AL5 either way, since the
         # directory structures are changing.
-        version = self._version[0] if self._version else "3"
+        version = self._dd_version[0] if self._dd_version else "3"
         ensure_data_dir(str(self.user_name), self.db_name, version, self.run)
 
     def close(self, *, options=None, erase=False):
@@ -334,7 +334,7 @@ class DBEntry:
                 occurrence,
             )
         # Create a new IDSToplevel with the same version as stored in the backend
-        if destination and (not dd_version or dd_version == destination._version):
+        if destination and (not dd_version or dd_version == destination._dd_version):
             toplevel = destination
             destination = None
         elif not dd_version or dd_version == self._ids_factory._version:
@@ -428,6 +428,11 @@ class DBEntry:
         """Actual implementation of put() and put_slice()"""
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
+
+        # Automatic validation?
+        validate = os.environ.get("IMAS_AL_ENABLE_VALIDATION_AT_PUT")
+        if validate and validate != "0":
+            ids.validate()
 
         original_ids = None
         if not ids._parent or ids._parent._version != self._ids_factory._version:
