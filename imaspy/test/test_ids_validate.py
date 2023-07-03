@@ -15,17 +15,6 @@ from imaspy.ids_defs import (
 from imaspy.test.test_helpers import fill_consistent
 
 
-# Ugly hack to enable the tests for development builds after DD 3.38.1, which have
-# version 3.38.1-{commits since tag}-{commit hash}.
-# This relies on Python string comparisons and will work also when 3.38.2/3.39.0 is
-# released. However, by that point we should just require that as minimum version of the
-# test.
-requires_DD_after_3_38_1 = pytest.mark.skipif(
-    IDSFactory().version <= "3.38.1",
-    reason=f"DD newer than 3.38.1 required for test, version is {IDSFactory().version}"
-)
-
-
 @pytest.fixture(autouse=True)
 def raise_on_logged_warnings(caplog):
     """Catch warnings logged by validate() and fail the testcase if there are any."""
@@ -132,12 +121,11 @@ def test_fixed_size_coordinates_three():
             wall.validate()
 
 
-@requires_DD_after_3_38_1
 def test_validate_indirect_coordinates():
     """Test indirect coordinates like
     coordinate1=coordinate_system(process(i1)/coordinate_index)/coordinate(1)
     """
-    amns = IDSFactory().amns_data()
+    amns = IDSFactory("3.39.0").amns_data()
     amns.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     amns.process.resize(1)
     amns.process[0].charge_state.resize(1)
@@ -198,9 +186,8 @@ def test_validate_exclusive_references():
     distr.validate()
 
 
-@requires_DD_after_3_38_1
 def test_validate_reference_or_fixed_size():
-    waves = IDSFactory().waves()
+    waves = IDSFactory("3.39.0").waves()
     waves.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     waves.time = [1.0]
     waves.coherent_wave.resize(1)
@@ -258,7 +245,7 @@ def test_validate_coordinate_same_as():
         (None, False),
     ],
 )
-def test_validate_on_put(monkeypatch, env_value, should_validate):
+def test_validate_on_put(monkeypatch, env_value, should_validate, requires_imas):
     dbentry = DBEntry(MEMORY_BACKEND, "test", 1, 1)
     dbentry.create()
     ids = dbentry.factory.core_profiles()
@@ -292,10 +279,9 @@ def test_validate_ignore_nested_aos():
     equilibrium.validate()
 
 
-@requires_DD_after_3_38_1
-def test_validate_random_fill(ids_name):
+def test_validate_random_fill(ids_name, latest_factory):
     if ids_name == "amns_data":
         pytest.skip("Indirect coordinates in amns_data tested separately")
-    ids = IDSFactory().new(ids_name)
+    ids = latest_factory.new(ids_name)
     fill_consistent(ids)
     ids.validate()
