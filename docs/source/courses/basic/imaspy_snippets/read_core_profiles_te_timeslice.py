@@ -6,7 +6,7 @@ input = imaspy.DBEntry(imaspy.ids_defs.MDSPLUS_BACKEND, database, shot, run, use
 input.open()
 
 # Read Te profile and the associated normalised toroidal flux coordinate
-# partial_get-like functionality will be implemnted
+# partial_get-like functionality will be implemented
 # with IMASPy lazy-loading https://jira.iter.org/browse/IMAS-4506
 t_closest = 261
 pr = input.get("core_profiles")
