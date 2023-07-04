@@ -165,7 +165,7 @@ def _read_dd_versions() -> Dict[str, Tuple[Union[Path, Traversable], str]]:
     if not versions:
         raise RuntimeError(
             "Could not find any data dictionary definitions. "
-            f"Looked in: {', '.join(ZIPFILE_LOCATIONS)}."
+            f"Looked in: {', '.join(map(repr, ZIPFILE_LOCATIONS))}."
         )
     return versions
 
