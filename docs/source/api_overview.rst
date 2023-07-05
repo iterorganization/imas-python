@@ -235,15 +235,11 @@ environment variable ``IMAS_AL_ENABLE_VALIDATION_AT_PUT`` to ``1``. For example:
 Validate the time mode
 ----------------------
 
-The time mode of an IDS is stored in ``ids_properties.homogeneous_time``
-[#constant_IDS]_. This property must be filled with a valid time mode
+The time mode of an IDS is stored in ``ids_properties.homogeneous_time``.
+This property must be filled with a valid time mode
 (``IDS_TIME_MODE_HOMOGENEOUS``, ``IDS_TIME_MODE_HETEROGENEOUS`` or
 ``IDS_TIME_MODE_INDEPENDENT``). When the time mode is `independent`, all time-dependent
 quantities must be empty.
-
-.. [#constant_IDS] For constant IDSs (introduced in DD version 4.0.0), there is no
-    ``homogeneous_time`` ids property. The corresponding time mode checks are skipped
-    for these IDSs.
 
 
 Validate coordinates
