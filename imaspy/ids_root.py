@@ -9,7 +9,11 @@ instead.
 
 
 class IDSRoot:
-    """Root of IDS tree. Contains all top-level IDSs"""
+    """IDSRoot is removed in IMASPy v0.7.0.
+
+    See :class:`~imaspy.db_entry.DBEntry` for IDS I/O (put, get, etc.).
+    See :class:`~imaspy.ids_factory.IDSFactory` for creating empty IDSs.
+    """
 
     def __init__(self, *args, **kwargs):
         raise RuntimeError(

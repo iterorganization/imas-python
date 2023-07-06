@@ -1,6 +1,32 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
 """ Load IMASPy libs to provide constants
+
+Backend identifiers
+-------------------
+
+The following constants are identifiers for the different Access Layer backends. Please
+see the Access Layer documentation for more details on the different backends.
+
+.. data:: ASCII_BACKEND
+
+    Identifier for the ASCII backend.
+
+.. data:: MDSPLUS_BACKEND
+
+    Identifier for the MDS+ backend.
+
+.. data:: HDF5_BACKEND
+
+    Identifier for the HDF5 backend.
+
+.. data:: MEMORY_BACKEND
+
+    Identifier for the memory backend.
+
+.. data:: UDA_BACKEND
+
+    Identifier for the UDA backend.
 """
 
 import functools
