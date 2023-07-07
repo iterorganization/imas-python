@@ -71,15 +71,15 @@ example:
     dbentry.create()
 
 
-Conversion of IDSes between DD versions
----------------------------------------
+Conversion of IDSs between DD versions
+--------------------------------------
 
 IMASPy can convert IDSs between different versions of the data dictionary. This uses the
 "non-backwards compatible changes" metadata from the DD definitions. You can explicitly
 convert IDSs using :py:func:`imaspy.convert_ids`:
 
 .. code-block:: python
-    :caption: Convert an IDSs to a different DD version
+    :caption: Convert an IDS to a different DD version
 
     import imaspy
 
@@ -114,9 +114,9 @@ Background information
 
 Since IMASPy needs to have access to multiple DD versions it was chosen to
 bundle these with the code at build-time, in setup.py. If a git clone of the
-data-dictionary/ succeeds the setup tools automatically download saxon and
-generate :py:class:`IDSDef.xml` for each of the tagged versions in the DD git
-repository. These are then gathered into :py:class:`IDSDef.zip,` which is
+Data Dictionary succeeds, the setup tools automatically download saxon and
+generate ``IDSDef.xml`` for each of the tagged versions in the DD git
+repository. These are then gathered into ``IDSDef.zip``, which is
 distributed inside the IMASPy package.
 
 To update the set of data dictionaries new versions can be added to the zipfile.
