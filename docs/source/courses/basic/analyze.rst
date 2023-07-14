@@ -57,7 +57,12 @@ and/or coordinates inside the data structure though!
         .. literalinclude:: imaspy_snippets/read_equilibrium_time_array.py
 
 .. attention::
-    A nice box with info about dict-based access
+   IMASPy objects are not ducktyped with numpy's ufuncs, see
+   https://jira.iter.org/browse/IMAS-4680.
+   Whenever a pure numpy object is needed, use the ``.value`` attribute
+   on most IDS leaf nodes
+
+.. attention::
     IMASPy has two main ways of accessing IDSs. In the exercises above, we used
     the "attribute-like" access. This is the main way of navigating the IDS tree.
     However, IMASPy also provides a "dict-like" interface to access data, which
