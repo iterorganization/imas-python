@@ -8,10 +8,10 @@ input.open()
 # Read Te profile and the associated normalised toroidal flux coordinate
 # partial_get-like functionality will be implemented
 # with IMASPy lazy-loading https://jira.iter.org/browse/IMAS-4506
+cp = input.get("core_profiles")
 t_closest = 261
-pr = input.get("core_profiles")
-te = pr["profiles_1d"][t_closest]["electrons"]["temperature"]
-rho = pr["profiles_1d"][t_closest]["grid"]["rho_tor_norm"]
+te = cp.profiles_1d[t_closest].electrons.temperature
+rho = cp.profiles_1d[t_closest].grid.rho_tor_norm
 print("te =", te)
 print("rho =", rho)
 

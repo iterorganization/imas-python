@@ -19,7 +19,7 @@ input.open()
 # partial_get-like functionality will be implemnted
 # with IMASPy lazy-loading https://jira.iter.org/browse/IMAS-4506
 eq = input.get("equilibrium")
-time_array = eq["time"]
+time_array = eq.time
 
 # Find the index of the desired time slice in the time array
 t_closest, t_index = find_nearest(time_array, 253.0)

@@ -20,8 +20,8 @@ input.open()
 # with IMASPy lazy-loading https://jira.iter.org/browse/IMAS-4506
 cp = input.get("core_profiles")
 t_closest = 261
-te = cp["profiles_1d"][t_closest]["electrons"]["temperature"]
-rho = cp["profiles_1d"][t_closest]["grid"]["rho_tor_norm"]
+te = cp.profiles_1d[t_closest].electrons.temperature
+rho = cp.profiles_1d[t_closest].grid.rho_tor_norm
 
 # Plot the figure
 fig, ax = plt.subplots()
