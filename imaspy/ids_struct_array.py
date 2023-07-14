@@ -6,6 +6,7 @@ This contains references to :py:class:`IDSStructure`s
 * :py:class:`IDSStructArray`
 """
 
+from typing import Dict, Tuple
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_coordinates import IDSCoordinates
@@ -87,6 +88,10 @@ class IDSStructArray(IDSMixin):
     def __iter__(self):
         return iter(self.value)
 
+    @property
+    def shape(self) -> Tuple[int]:
+        return (len(self.value),)
+
     def append(self, elt):
         """Append elements to the end of the array of structures.
 
@@ -146,3 +151,25 @@ class IDSStructArray(IDSMixin):
     def has_value(self) -> bool:
         """True if this struct-array has nonzero size"""
         return len(self.value) > 0
+
+    def _validate(self, aos_indices: Dict[str, int]) -> None:
+        # Common validation logic
+        super()._validate(aos_indices)
+        # IDSStructArray specific: validate coordinates and child nodes
+        if not self.has_value:
+            return
+
+        self.coordinates._validate(aos_indices)
+
+        # Find out our aos index name
+        if "itime" in aos_indices:
+            name = f"i{len(aos_indices)}"
+        elif self.metadata.type.is_dynamic:
+            name = "itime"
+        else:
+            name = f"i{len(aos_indices)+1}"
+
+        new_indices = aos_indices.copy()
+        for i, child in enumerate(self):
+            new_indices[name] = i  # Set index of this child
+            child._validate(new_indices)

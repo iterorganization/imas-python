@@ -7,21 +7,24 @@ an installation of `the IMAS Access Layer <https://imas.iter.org/>`_. See
 (not) require the IMAS Access Layer available.
 
 
-Installing on the ITER cluster and EuroFusion gateway
------------------------------------------------------
+IMASPy modules on the ITER cluster and EuroFusion gateway
+---------------------------------------------------------
 
 There is a `module` available on the ITER and Eurofusion Gateway clusters, so
-you can run
+you can run:
 
 .. code-block:: bash
 
     module load IMASPy
 
-Additionally, if you wish to use the MDSPlus backend, you should load
+Additionally, if you wish to use the MDSPlus backend, you should load:
 
 .. code-block:: bash
 
     module load MDSplus-Java/7.96.17-GCCcore-10.2.0-Java-11
+
+If you're using a different cluster, please contact your system administrator to see
+if IMASPy is available (or can be made available) on the system.
 
 
 Local installation

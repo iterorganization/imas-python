@@ -13,7 +13,7 @@ def test_ids_factory_with_invalid_version():
     with pytest.raises(Exception):
         IDSFactory(version="invalid")
     # This is a valid version string, but we don't have it available
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(ValueError):
         IDSFactory(version="0.1.2.3.4")
 
 
@@ -27,6 +27,7 @@ def test_ids_factory_latest(monkeypatch: pytest.MonkeyPatch):
     dd_etree.cache_clear()
     factory = IDSFactory()
     assert factory._version == latest_dd_version()
+    dd_etree.cache_clear()
 
 
 def test_ids_factory_from_env(monkeypatch: pytest.MonkeyPatch):
@@ -35,3 +36,4 @@ def test_ids_factory_from_env(monkeypatch: pytest.MonkeyPatch):
     dd_etree.cache_clear()
     factory = IDSFactory()
     assert factory._version == version
+    dd_etree.cache_clear()
