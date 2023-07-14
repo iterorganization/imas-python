@@ -7,4 +7,7 @@ input.open()
 
 cp = input.get("core_profiles")
 for el in ["profiles_1d", "global_quantities", "code"]:
-    print(getattr(cp, el))
+    try:
+        print(getattr(cp, el))
+    except NameError:
+        print(f"Could not print {el}, internal IMAS error")
