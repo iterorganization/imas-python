@@ -63,6 +63,7 @@ if sys.version_info < (3, 8):
 
 
 # Check setuptools version before continuing for legacy builds
+# Version 61 is required for pyproject.toml support
 if V(setuptools_version) < V("61"):
     raise RuntimeError(
         "Setuptools version outdated. Found"

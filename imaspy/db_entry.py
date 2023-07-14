@@ -71,7 +71,8 @@ class DBEntry:
         IDSToplevel is for a different DD version, the data is converted automatically.
 
         Args:
-            backend_id: ID of the backend to use, e.g. HDF5_BACKEND.
+            backend_id: ID of the backend to use, e.g. HDF5_BACKEND. See :ref:`Backend
+                identifiers`.
             db_name: Database name, e.g. "ITER".
             shot: Shot number of the database entry
             run: Run number of the database entry
