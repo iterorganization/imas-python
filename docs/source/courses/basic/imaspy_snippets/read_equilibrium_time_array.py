@@ -16,7 +16,7 @@ input = imaspy.DBEntry(imaspy.ids_defs.MDSPLUS_BACKEND, database, shot, run, use
 input.open()
 
 # Read the time array from the equilibrium IDS
-# partial_get-like functionality will be implemnted
+# partial_get-like functionality will be implemented
 # with IMASPy lazy-loading https://jira.iter.org/browse/IMAS-4506
 eq = input.get("equilibrium")
 time_array = eq.time
