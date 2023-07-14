@@ -56,6 +56,16 @@ and/or coordinates inside the data structure though!
     .. tab:: IMASPy
         .. literalinclude:: imaspy_snippets/read_equilibrium_time_array.py
 
+.. attention::
+    A nice box with info about dict-based access
+    IMASPy has two main ways of accessing IDSs. In the exercises above, we used
+    the "attribute-like" access. This is the main way of navigating the IDS tree.
+    However, IMASPy also provides a "dict-like" interface to access data, which
+    might be more convenient in some cases. For example:
+
+    .. literalinclude:: imaspy_snippets/iterate_core_profiles.py
+
+
 Dealing with large IDSs
 '''''''''''''''''''''''
 If the data structure is too large and it order to save time and memory, one can
