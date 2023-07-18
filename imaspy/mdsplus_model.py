@@ -14,7 +14,7 @@ from pathlib import Path
 from subprocess import CalledProcessError, check_output
 from zlib import crc32
 
-from importlib_resources import files
+from importlib_resources import as_file, files
 
 import imaspy
 from imaspy.dd_helpers import get_saxon
@@ -244,22 +244,24 @@ def create_model_ids_xml(cache_dir_path, fname, version):
     """Use saxon to compile an ids.xml suitable for creating an mdsplus model."""
 
     try:
-        check_output(
-            [
-                "java",
-                "net.sf.saxon.Transform",
-                "-s:" + str(fname),
-                "-o:" + str(Path(cache_dir_path) / "ids.xml"),
-                "DD_GIT_DESCRIBE=" + str(version or fname),
-                # if this is expected as git describe it might break
-                # if we just pass a filename
-                "UAL_GIT_DESCRIBE=" + os.environ.get("UAL_VERSION", "0.0.0"),
-                "-xsl:" + str(files(imaspy) / "assets" / "IDSDef2MDSpreTree.xsl"),
-                # we have to be careful to have the same version of this file as in the access layer
-            ],
-            input=get_dd_xml(version) if version else None,
-            env={"CLASSPATH": get_saxon(), "PATH": os.environ["PATH"]},
-        )
+        # we have to be careful to have the same version of this file as in the access
+        # layer:
+        with as_file(files(imaspy) / "assets" / "IDSDef2MDSpreTree.xsl") as xslfile:
+            check_output(
+                [
+                    "java",
+                    "net.sf.saxon.Transform",
+                    "-s:" + str(fname),
+                    "-o:" + str(Path(cache_dir_path) / "ids.xml"),
+                    "DD_GIT_DESCRIBE=" + str(version or fname),
+                    # if this is expected as git describe it might break
+                    # if we just pass a filename
+                    "UAL_GIT_DESCRIBE=" + os.environ.get("UAL_VERSION", "0.0.0"),
+                    "-xsl:" + str(xslfile),
+                ],
+                input=get_dd_xml(version) if version else None,
+                env={"CLASSPATH": get_saxon(), "PATH": os.environ["PATH"]},
+            )
     except CalledProcessError as e:
         if fname:
             logger.error("Error making MDSPlus model IDS.xml for %s", fname)
