@@ -74,7 +74,7 @@ class IDSMetadata:
         self.data_type, self.ndim = IDSDataType.parse(attrib.get("data_type", None))
         self.path = IDSPath(attrib.get("path", ""))  # IDSToplevel has no path
         self.path_doc = attrib.get("path_doc", "")  # IDSToplevel has no path
-        self.type = IDSType(attrib.get("type" , None))
+        self.type = IDSType(attrib.get("type", None))
         self.timebasepath = attrib.get("timebasepath", "")
 
         # Parse coordinates
@@ -90,6 +90,14 @@ class IDSMetadata:
                 setattr(self, coor + "_same_as", coors_same_as[dim])
         self.coordinates = tuple(coors)
         self.coordinates_same_as = tuple(coors_same_as)
+
+        # Parse alternative coordinates
+        self.alternative_coordinate1 = tuple()
+        if "alternative_coordinate1" in attrib:
+            self.alternative_coordinate1 = tuple(
+                IDSPath(coor)
+                for coor in attrib["alternative_coordinate1"].split(";")
+            )
 
         # Store any remaining attributes from the DD XML
         for attr_name in attrib:

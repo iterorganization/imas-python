@@ -279,6 +279,67 @@ def test_validate_ignore_nested_aos():
     equilibrium.validate()
 
 
+@pytest.fixture
+def alternative_coordinates_cp(latest_factory):
+    """Test alternative coordinates introduced in DDv4 with IMAS-4725."""
+    cp = latest_factory.new("core_profiles")
+    cp.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
+    cp.profiles_1d.resize(1)
+    cp.profiles_1d[0].time = 1.0
+    cp.validate()
+    grid = cp.profiles_1d[0].grid
+    if not grid.rho_tor_norm.metadata.alternative_coordinate1:
+        pytest.skip("Alternative coordinates are introduced with DDv4")
+    return cp
+
+
+# Alternatives for core_profiles profiles_1d/grid/rho_tor_norm
+ALTERNATIVES = ["rho_tor_norm", "rho_tor", "psi", "volume", "area", "surface"]
+ALTERNATIVES += ["rho_pol_norm"]
+
+
+@pytest.fixture(params=ALTERNATIVES)
+def alternative(request):
+    return request.param
+
+
+def test_single_alternative_coordinate_filled(alternative_coordinates_cp, alternative):
+    alternative_coordinates_cp.profiles_1d[0].grid[alternative] = np.ones(3)
+    alternative_coordinates_cp.validate()
+
+
+def test_multiples_alternative_coordinates_filled(alternative_coordinates_cp):
+    grid = alternative_coordinates_cp.profiles_1d[0].grid
+    grid.rho_tor_norm = np.ones(3)
+    grid.rho_tor = np.ones(2)
+    with pytest.raises(ValidationError):
+        alternative_coordinates_cp.validate()  # sizes don't match
+    grid.rho_tor = np.ones(3)
+    alternative_coordinates_cp.validate()  # now they match again
+
+    # Add a third one
+    grid.volume = np.ones(5)
+    with pytest.raises(ValidationError):
+        alternative_coordinates_cp.validate()  # sizes don't match
+    grid.volume = np.ones(3)
+    alternative_coordinates_cp.validate()  # now they match again
+
+
+def test_validate_with_alternative_coordinates(alternative_coordinates_cp, alternative):
+    grid = alternative_coordinates_cp.profiles_1d[0].grid
+    alternative_coordinates_cp.profiles_1d[0].electrons.temperature = np.ones(4)
+    with pytest.raises(ValidationError):
+        alternative_coordinates_cp.validate()  # no coordinates allocated
+
+    # Set to wrong size:
+    grid[alternative] = np.ones(3)
+    with pytest.raises(ValidationError):
+        alternative_coordinates_cp.validate()
+    # Now set to correct size
+    grid[alternative] = np.ones(4)
+    alternative_coordinates_cp.validate()
+
+
 def test_validate_random_fill(ids_name, latest_factory):
     if ids_name == "amns_data":
         pytest.skip("Indirect coordinates in amns_data tested separately")
