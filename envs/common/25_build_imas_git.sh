@@ -55,7 +55,7 @@ cd lowlevel
 make -j`nproc`
 cd ..
 
-$PIP install numpy cython
+$PIP install numpy "cython < 3"
 
 cd pythoninterface
 make -j`nproc`
