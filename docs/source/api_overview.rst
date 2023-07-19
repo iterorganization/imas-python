@@ -285,6 +285,29 @@ size of your data must match the size of the coordinates:
         This is the only case in which values of the coordinates are verified, in all
         other cases only the sizes of coordinates are validated.
 
+    .. rubric:: Alternative coordinates
+
+    Version 4 of the Data Dictionary introduces alternative coordinates. An
+    example of this can be found in the ``core_profiles`` IDS in
+    ``profiles_1d(itime)/grid/rho_tor_norm``. Alternatives for this coordinate
+    are:
+    
+    -   ``profiles_1d(itime)/grid/rho_tor``
+    -   ``profiles_1d(itime)/grid/psi``
+    -   ``profiles_1d(itime)/grid/volume``
+    -   ``profiles_1d(itime)/grid/area``
+    -   ``profiles_1d(itime)/grid/surface``
+    -   ``profiles_1d(itime)/grid/rho_pol_norm``
+
+    Multiple alternative coordinates may be filled (for example, an IDS might
+    fill both the normalized and non-normalized toroidal flux coordinate). In
+    that case, the size must be the same.
+
+    When a quantity refers to this set of alternatives (for example
+    ``profiles_1d(itime)/electrons/temperature``), at least one of the
+    alternative coordinates must be set and its size match the size of the
+    quantity.
+
 3.  The Data Dictionary can indicate exclusive alternative coordinates, see for example
     :ref:`Alternative coordinates`. Validation works the same as explained in the
     previous point, except that exactly one of the alternative coordinate must be
