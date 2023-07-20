@@ -5,9 +5,7 @@ import imas
 # Find nearest value and index in an array
 def find_nearest(a, a0):
     "Element in nd array `a` closest to the scalar value `a0`"
-    idx = np.abs(a - a0).argmin()
-    a_closest = a.flat[idx]
-    return a_closest, idx
+    return a.flat[idx], np.abs(a - a0).argmin()
 
 
 # Open input datafile
