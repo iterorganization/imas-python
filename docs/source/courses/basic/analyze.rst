@@ -57,11 +57,13 @@ and/or coordinates inside the data structure though!
         .. literalinclude:: imaspy_snippets/read_equilibrium_time_array.py
 
 .. attention::
-   IMASPy objects generally behave the same way as numpy arrays. However, in
-   some cases functions are explicitly-written and need a pure numpy array. In
-   this case, the ``.value`` attribute can be used to obtain the underlying data
-   array. See https://jira.iter.org/browse/IMAS-4680 for the epic of this
-   behaviour.
+    IMASPy objects generally behave the same way as numpy arrays. However, in
+    some cases functions explicitly expect a pure numpy array. In this case, the
+    ``.value`` attribute can be used to obtain the underlying data array.
+
+    We are investigating options for improving the API (which may reduce, but
+    not eliminate, the need for ``.value``). Progress for this can be followed
+    on `IMAS-4680 <https://jira.iter.org/browse/IMAS-4680>`_.
 
 .. attention::
     IMASPy has two main ways of accessing IDSs. In the exercises above, we used
