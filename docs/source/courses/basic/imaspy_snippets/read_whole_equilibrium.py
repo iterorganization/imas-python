@@ -11,7 +11,7 @@ input.open()
 equilibrium = input.get("equilibrium")  # All time slices
 print(equilibrium.time)
 
-# 2. Read and print the electron temperature profile in the equilibrium IDS
+# 2. Read and print the electron temperature profile in the core_profiles IDS
 # at time slice t=253s
 core_profiles = input.get_slice(
     "core_profiles", 253, imaspy.ids_defs.PREVIOUS_INTERP,
