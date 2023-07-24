@@ -1,3 +1,4 @@
 include imaspy/assets/IDSDef.zip
 include imaspy/assets/IDSDef2MDSpreTree.xsl
 include imaspy/assets/ITER_134173_106_equilibrium.ids
+include imaspy/assets/ITER_134173_106_core_profiles.ids

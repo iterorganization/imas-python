@@ -17,6 +17,13 @@ eq = input.get_slice(
     occurrence=0,
 )
 
+cp = input.get_slice(
+    "core_profiles",
+    0,
+    imas.imasdef.PREVIOUS_INTERP,
+    occurrence=0,
+)
+
 # Close the datafile
 input.close()
 
@@ -30,6 +37,7 @@ output.create()
 
 # Save the IDS
 output.put(eq)
+output.put(cp)
 
 # Close the output datafile
 output.close()
