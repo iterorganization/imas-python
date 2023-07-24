@@ -2,7 +2,7 @@
 # You should have received the IMASPy LICENSE file with this project.
 import os
 from pathlib import PosixPath
-from importlib_resources import as_file, files
+from importlib_resources import files
 
 import imaspy
 import pytest
