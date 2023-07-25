@@ -30,7 +30,7 @@ def test_data():
 def test_data_is_sane(test_data):
     assert isinstance(test_data, imaspy.DBEntry)
     eq = test_data.get("equilibrium")
-    assert len(eq.time_slice) == 1
+    assert len(eq.time_slice) == 3
     ts = eq.time_slice[0]
     r = ts.boundary.outline.r
     z = ts.boundary.outline.z
