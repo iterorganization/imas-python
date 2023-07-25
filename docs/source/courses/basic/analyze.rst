@@ -12,7 +12,7 @@ Open an IMAS database entry
 IMAS explicitly separates the data on disk from the data in memory. To get
 started we load an existing IMAS data file from disk. The on-disk file
 is represented by an ``imas.DBEntry``, which we have to
-:meth:`~imaspy.ids_root.IDSRoot.open_env()` to get a reference to the data file we
+:meth:`~imaspy.ids_root.IDSRoot.open()` to get a reference to the data file we
 will manipulate. The connection to the data file is kept intact until we neatly
 :meth:`~imaspy.ids_root.IDSRoot.close()` the file. Note that the on-disk file
 will not be changed until an explicit ``.put()`` (e.g.
@@ -20,6 +20,21 @@ will not be changed until an explicit ``.put()`` (e.g.
 a `xarray Dataset <https://docs.xarray.dev/en/stable/getting-started-guide/quick-overview.html#datasets>`_.
 We load data in memory with the ``get`` and ``get_slice`` methods, after which we
 can use it as normal Python data.
+
+.. hint::
+    Use the ASCII data supplied with IMASPy for all exercises. It contains two
+    IDSs (``equilibrium`` and ``core_profiles``) filled  with data from three
+    times slices of ITER reference data. To point to a local file we use the
+    ``-prefix`` flag. Use the following boilerplate as start-off point for the
+    exercises.
+
+    .. code-block:: python
+
+        import imaspy
+        shot, run, user, database = 134173, 106, "public", "ITER"
+        input = imaspy.DBEntry(imaspy.ids_defs.ASCII_BACKEND, database, shot, run)
+        assets_path = files(imaspy) / "assets/"
+        input.open(options=f"-prefix {assets_path}/")
 
 .. tabs::
 
@@ -30,7 +45,7 @@ can use it as normal Python data.
         1. Read and print the ``time`` of the ``equilibrium`` IDS for the whole
            scenario
         2. Read and print the electron temperature profile (:math:`T_e`) in the
-           ``equilibrium`` IDS at time slice t=253s
+           ``equilibrium`` IDS at time slice t=433s
 
     .. tab:: AL4
         .. literalinclude:: al4_snippets/read_whole_equilibrium.py
@@ -38,11 +53,13 @@ can use it as normal Python data.
     .. tab:: IMASPy
         .. literalinclude:: imaspy_snippets/read_whole_equilibrium.py
 
-When dealing with unknown data, it can be dangerous to blindly load whole IDSs.
-For sure when dealing with larger data files, this might fill up the RAM of your
-machine quickly. To deal with this we use ``partial_get``, which allows us to load
-only a small part of the IDS into memory. One first needs to know some names
-and/or coordinates inside the data structure though!
+.. attention::
+   When dealing with unknown data, it can be dangerous to blindly load data. For
+   sure when dealing with larger data files, this might fill up the RAM of your
+   machine quickly. The ASCII files supplied with IMASPy are small specifically
+   for this purpose. IMASPy will allow to load a part of the data in the future
+   using lazy-loading, see
+   `IMAS-4506 <https://jira.iter.org/browse/IMAS-4506>`_.
 
 .. tabs::
     .. tab:: Exercise
@@ -74,19 +91,21 @@ and/or coordinates inside the data structure though!
     .. literalinclude:: imaspy_snippets/iterate_core_profiles.py
 
 
-Dealing with large IDSs
-'''''''''''''''''''''''
+Using multiple IDSs
+'''''''''''''''''''
 If the data structure is too large and it order to save time and memory, one can
-decide to read only the  :math:`T_e` profile of the ``core_profiles`` IDS at
-``t=253s``. As before, one has to know that it corresponds to ``index=261`` of
+decide to only load the :math:`T_e` profile of the ``core_profiles`` IDS at
+``t=433s``. As before, one has to know that it corresponds to ``index=1`` of
 the ``core_profiles.time`` array, which can be found with the method above. This
 assumes that the ``equilibrium`` and ``core_profiles`` IDSs are defined on the
-same time array, which is not necessarily the case
+same time array, which is not necessarily the case. Always check this when
+working with random data!
 
 .. tabs::
     .. tab:: Exercise
-        Use ``partial_get`` to get the ``core_profiles`` :math:`T_e` and
-        :math:`\rho_{tor, norm}` at ``index=261``
+        Only assign the data you need to python variables and print
+        ``core_profiles`` :math:`T_e` and :math:`\rho_{tor, norm}` at
+        ``index=1``
     .. tab:: AL4
         .. literalinclude:: al4_snippets/read_core_profiles_te_timeslice.py
 
