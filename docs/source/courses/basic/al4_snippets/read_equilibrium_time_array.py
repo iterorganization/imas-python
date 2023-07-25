@@ -23,7 +23,7 @@ equilibrium = input.get("equilibrium")  # All time slices
 time_array = equilibrium.time
 
 # Find the index of the desired time slice in the time array
-t_closest, t_index = find_nearest(time_array, 0)
+t_closest, t_index = find_nearest(time_array, 433)
 print("Time index = ", t_index)
 print("Time value = ", t_closest)
 

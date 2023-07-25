@@ -16,7 +16,7 @@ print(equilibrium.time)
 # 2. Read and print the electron temperature profile in the core_profiles IDS
 # at time slice t=253s
 core_profiles = input.get("core_profiles")
-print(core_profiles.profiles_1d[0].electrons.temperature)
+print(core_profiles.profiles_1d[1].electrons.temperature)
 
 # Close input datafile
 input.close()

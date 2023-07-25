@@ -19,7 +19,7 @@ assets_path = files(imaspy) / "assets/"
 input.open(options=f"-prefix {assets_path}/")
 
 # Read Te profile and the associated normalised toroidal flux coordinate
-t_closest = 0
+t_closest = 1
 cp = input.get("core_profiles")
 te = cp.profiles_1d[t_closest].electrons.temperature
 rho = cp.profiles_1d[t_closest].grid.rho_tor_norm

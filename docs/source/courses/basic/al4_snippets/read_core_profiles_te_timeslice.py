@@ -11,7 +11,7 @@ input.open(options=f"-prefix {assets_path}/")
 
 # Read Te profile and the associated normalised toroidal flux coordinate
 cp = input.get("core_profiles")
-t_closest = 0
+t_closest = 1
 te = cp.profiles_1d[t_closest].electrons.temperature
 rho = cp.profiles_1d[t_closest].grid.rho_tor_norm
 print("te =", te)
