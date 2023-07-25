@@ -34,7 +34,7 @@ from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
-from imaspy.ual_context import UalContext
+from imaspy.al_context import ALContext
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class DBEntry:
         self.run = run
         self.user_name = user_name or os.environ["USER"]
         self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
-        self._db_ctx: Optional[UalContext] = None
+        self._db_ctx: Optional[ALContext] = None
         # TODO: don't import all of IMAS, only load _ual_lowlevel, see
         # https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
         # TODO: allow using a different _ual_lowlevel module? See
@@ -127,7 +127,7 @@ class DBEntry:
         )
         if status != 0:
             raise RuntimeError(f"Error calling ual_begin_pulse_action(), {status=}")
-        self._db_ctx = UalContext(idx, self._ull)
+        self._db_ctx = ALContext(idx, self._ull)
         status = self._ull.ual_open_pulse(self._db_ctx.ctx, mode, options)
         if status != 0:
             raise RuntimeError(f"Error opening/creating database entry: {status=}")
@@ -509,7 +509,7 @@ class DBEntry:
 
 def _get_children(
     structure: IDSStructure,
-    ctx: UalContext,
+    ctx: ALContext,
     time_mode: int,
     ctx_path: str,
     nbc_map: Optional[NBCPathMap],
@@ -553,7 +553,7 @@ def _get_children(
                 element.value = data
 
 
-def _delete_children(structure: IDSStructure, ctx: UalContext, ctx_path: str) -> None:
+def _delete_children(structure: IDSStructure, ctx: ALContext, ctx_path: str) -> None:
     """Recursively delete all children of an IDSStructure"""
     for element in structure:
         name = element.metadata.name
@@ -566,7 +566,7 @@ def _delete_children(structure: IDSStructure, ctx: UalContext, ctx_path: str) ->
 
 def _put_children(
     structure: IDSStructure,
-    ctx: UalContext,
+    ctx: ALContext,
     time_mode: int,
     ctx_path: str,
     is_slice: bool,

@@ -20,17 +20,17 @@ INTERP_MODES = (
 )
 
 
-class UalContext:
-    """Helper class that wraps UAL contexts.
+class ALContext:
+    """Helper class that wraps Access Layer contexts.
 
     Provides:
 
     - Object oriented wrappers around AL lowlevel methods which require a context
-    - Context managers for creating and automatically ending UAL actions
+    - Context managers for creating and automatically ending AL actions
     """
 
     def __init__(self, ctx: int, ull: ModuleType) -> None:
-        """Construct a new UalContext object
+        """Construct a new ALContext object
 
         Args:
             ctx: Context identifier returned by the AL
@@ -40,8 +40,8 @@ class UalContext:
         self.ull = ull
 
     @contextmanager
-    def global_action(self, path: str, rwmode: int) -> Iterator["UalContext"]:
-        """Begin a new ual global action for use in a ``with`` context.
+    def global_action(self, path: str, rwmode: int) -> Iterator["ALContext"]:
+        """Begin a new global action for use in a ``with`` context.
 
         Args:
             path: access layer path for this global action: ``<idsname>[/<occurrence>]``
@@ -59,8 +59,8 @@ class UalContext:
     @contextmanager
     def slice_action(
         self, path: str, rwmode: int, time_requested: float, interpolation_method: int
-    ) -> Iterator["UalContext"]:
-        """Begin a new ual slice action for use in a ``with`` context.
+    ) -> Iterator["ALContext"]:
+        """Begin a new slice action for use in a ``with`` context.
 
         Args:
             path: access layer path for this global action: ``<idsname>[/<occurrence>]``
@@ -93,8 +93,8 @@ class UalContext:
     @contextmanager
     def arraystruct_action(
         self, path: str, timebase: str, size: int
-    ) -> Iterator[Tuple["UalContext", int]]:
-        """Begin a new ual arraystruct action for use in a ``with`` context.
+    ) -> Iterator[Tuple["ALContext", int]]:
+        """Begin a new arraystruct action for use in a ``with`` context.
 
         Args:
             path: relative access layer path within this context
@@ -116,14 +116,14 @@ class UalContext:
 
     def _begin_action(
         self, action: Callable, *args: Any
-    ) -> Union["UalContext", Tuple["UalContext", Any]]:
+    ) -> Union["ALContext", Tuple["ALContext", Any]]:
         """Helper method for creating new contexts."""
         status, ctx, *rest = action(self.ctx, *args)
         if status != 0:
             raise RuntimeError(f"Error calling {action.__name__}: {status=}")
         if rest:
-            return UalContext(ctx, self.ull), *rest
-        return UalContext(ctx, self.ull)
+            return ALContext(ctx, self.ull), *rest
+        return ALContext(ctx, self.ull)
 
     def iterate_over_arraystruct(self, step: int) -> None:
         """Call ual_iterate_over_arraystruct with this context."""
