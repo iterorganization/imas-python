@@ -21,10 +21,6 @@ from imaspy.test.test_helpers import (
     open_dbentry,
 )
 
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
-
 
 @pytest.fixture(autouse=True)
 def debug_log(caplog):
@@ -237,6 +233,7 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
     # the affected data. Pass as deleted_paths to compare_children
     deleted_paths = {
         "coils_non_axisymmetric": {"is_periodic", "coils_n"},
+        "ece": {"channel/harmonic/data"},
         "langmuir_probes": {
             "embedded/j_ion_parallel/data",
             "embedded/j_ion_parallel/validity_timed",
