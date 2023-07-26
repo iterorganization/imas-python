@@ -244,7 +244,7 @@ def convert_ids(
         version_map = DDVersionMap(ids_name, source_etree, target_etree, source_version)
 
     _copy_structure(toplevel, target_ids, deepcopy, source_is_new, version_map)
-
+    logger.info("Conversion of IDS %s finished.", ids_name)
     return target_ids
 
 
