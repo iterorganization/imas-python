@@ -190,6 +190,10 @@ class IDSPath:
                             raise ValueError(f"Invalid index {index} in path '{self}'.")
                         index = val
                     element = element[index - 1]  # path syntax uses 1-based indexing
+        if element is None:  # We point to from_element or a direct ancestor
+            element = from_element
+            for _ in range(len(from_path) - len(self)):
+                element = element._dd_parent
         return element
 
     def is_ancestor_of(self, other_path: "IDSPath") -> bool:
