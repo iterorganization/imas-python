@@ -130,12 +130,12 @@ class DDVersionMap:
             self.new_to_old[new_path] = (
                 old_path,
                 _get_tbp(old_item, old_paths),
-                _get_aos_and_ctxpath(old_path, old_paths)[1],
+                _get_ctxpath(old_path, old_paths),
             )
             self.old_to_new[old_path] = (
                 new_path,
                 _get_tbp(new_item, new_paths),
-                _get_aos_and_ctxpath(new_path, new_paths)[1],
+                _get_ctxpath(new_path, new_paths),
             )
 
         # Iterate through all NBC metadata and add entries
@@ -208,16 +208,16 @@ class DDVersionMap:
             rename_map.path[path] = None
 
 
-def _get_aos_and_ctxpath(path: str, paths: Dict[str, Element]) -> Tuple[str, str]:
+def _get_ctxpath(path: str, paths: Dict[str, Element]) -> str:
     """Get the path of the nearest parent AoS."""
     i_slash = path.rfind("/")
     while i_slash != -1:
         parent_path = path[:i_slash]
         parent_element = paths[parent_path]
         if parent_element.get("data_type") == "struct_array":
-            return (parent_path, path[i_slash + 1 :])
+            return path[i_slash + 1 :]
         i_slash = path.rfind("/", 0, i_slash)
-    return ("", path)  # no nearest parent AoS
+    return path  # no nearest parent AoS
 
 
 def _get_tbp(element: Element, paths: Dict[str, Element]):
@@ -229,14 +229,14 @@ def _get_tbp(element: Element, paths: Dict[str, Element]):
         # Find path of first ancestor that is an AoS
         path = element.get("path")
         assert path is not None
-        return _get_aos_and_ctxpath(path, paths)[0] + "/time"
+        return _get_ctxpath(path, paths) + "/time"
     # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#1524-1566
     return element.get("timebasepath", "")
 
 
 def dd_version_map_from_factories(
     ids_name: str, factory1: IDSFactory, factory2: IDSFactory
-) -> Tuple["DDVersionMap", bool]:
+) -> Tuple[DDVersionMap, bool]:
     """Build a DDVersionMap from two IDSFactories.
     """
     assert factory1._version
@@ -248,7 +248,7 @@ def dd_version_map_from_factories(
         # git-describe versions like 3.38.1-123-fe82191c are not valid Version
         # so strip everything including and after the first -
         factory1_version = Version(re.sub("-.*", "", factory1._version))
-        factory2_version = Version(re.sub("-.*", "", factory1._version))
+        factory2_version = Version(re.sub("-.*", "", factory2._version))
     old_version, old_factory, new_factory = min(
         (factory1_version, factory1, factory2),
         (factory2_version, factory2, factory1),

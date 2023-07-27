@@ -4,7 +4,7 @@
 import importlib
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from imaspy.ids_convert import DDVersionMapping, dd_version_map_from_factories
 from imaspy.ids_data_type import IDSDataType
@@ -526,6 +526,8 @@ def _get_children(
                 continue  # element does not exist in the on-disk DD version
             new_path = nbc_map.ctxpath[path]
             timebase = nbc_map.tbp[path]
+            if timebase and time_mode == IDS_TIME_MODE_HOMOGENEOUS:
+                timebase = "/time"
         else:
             new_path = f"{ctx_path}/{name}" if ctx_path else name
             if not isinstance(element, IDSStructure):
@@ -585,6 +587,8 @@ def _put_children(
                 continue  # element does not exist in the on-disk DD version
             new_path = nbc_map.ctxpath[path]
             timebase = nbc_map.tbp[path]
+            if timebase and time_mode == IDS_TIME_MODE_HOMOGENEOUS:
+                timebase = "/time"
         else:
             new_path = f"{ctx_path}/{name}" if ctx_path else name
             if not isinstance(element, IDSStructure):
