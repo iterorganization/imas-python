@@ -6,9 +6,10 @@
 import copy
 from functools import lru_cache
 import logging
+import re
 from xml.etree.ElementTree import Element, ElementTree
-from packaging.version import Version
-from typing import Dict, Optional, Set
+from packaging.version import Version, InvalidVersion
+from typing import Dict, Iterator, Optional, Set, Tuple
 
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_path import IDSPath
@@ -18,6 +19,29 @@ from imaspy.ids_toplevel import IDSToplevel
 
 
 logger = logging.getLogger(__name__)
+
+
+class DDVersionMapping:
+    def __init__(self) -> None:
+        # Dictionary mapping the ids path
+        # - When no changes have occurred (which is assumed to be the default case), the
+        #   path is not present in the dictionary.
+        # - When an element is renamed it maps the old to the new name (and vice versa).
+        # - When an element does not exist in the other version, it is mapped to None.
+        self.path: Dict[str, Optional[str]] = {}
+        # Map providing timebasepath for renamed elements
+        self.tbp: Dict[str, str] = {}
+        # Map providing path relative to the nearest AoS for renamed elements
+        self.ctxpath: Dict[str, str] = {}
+
+    def __setitem__(self, path: str, value: Tuple[Optional[str], str, str]) -> None:
+        self.path[path], self.tbp[path], self.ctxpath[path] = value
+
+    def __contains__(self, path: str) -> bool:
+        return path in self.path
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.path)
 
 
 @lru_cache(maxsize=128)
@@ -37,13 +61,8 @@ class DDVersionMap:
         self.new_version = new_version
         self.version_old = version_old
 
-        # Dictionaries providing the mapping
-        # - When no changes have occurred (which is assumed to be the default case), the
-        #   path is not present in the dictionary.
-        # - When an element is renamed it maps the old to the new name (and vice versa).
-        # - When an element does not exist in the other version, it is mapped to None.
-        self.old_to_new: Dict[str, Optional[str]] = {}  # Map of old_path -> new_path
-        self.new_to_old: Dict[str, Optional[str]] = {}  # Map of new_path -> old_path
+        self.old_to_new = DDVersionMapping()
+        self.new_to_old = DDVersionMapping()
 
         old_ids_object = old_version.find(f"IDS[@name='{ids_name}']")
         new_ids_object = new_version.find(f"IDS[@name='{ids_name}']")
@@ -73,8 +92,8 @@ class DDVersionMap:
                 old_item.get("data_type"),
                 new_item.get("data_type"),
             )
-            self.new_to_old[new_path] = None
-            self.old_to_new[old_path] = None
+            self.new_to_old.path[new_path] = None
+            self.old_to_new.path[old_path] = None
             return False
         return True
 
@@ -97,13 +116,27 @@ class DDVersionMap:
             i_slash = old_path.find("/")
             while i_slash != -1:
                 parent = old_path[:i_slash]
-                parent_rename = self.new_to_old.get(parent)
+                parent_rename = self.new_to_old.path.get(parent)
                 if parent_rename:
                     if new_paths[parent].get("data_type") in self.STRUCTURE_TYPES:
                         old_path = parent_rename + old_path[i_slash:]
                         i_slash = len(parent)
                 i_slash = old_path.find("/", i_slash + 1)
             return old_path
+
+        def add_rename(old_path: str, new_path: str):
+            old_item = old_paths[old_path]
+            new_item = new_paths[new_path]
+            self.new_to_old[new_path] = (
+                old_path,
+                _get_tbp(old_item, old_paths),
+                _get_aos_and_ctxpath(old_path, old_paths)[1],
+            )
+            self.old_to_new[old_path] = (
+                new_path,
+                _get_tbp(new_item, new_paths),
+                _get_aos_and_ctxpath(new_path, new_paths)[1],
+            )
 
         # Iterate through all NBC metadata and add entries
         for new_item in new.iterfind(".//field[@change_nbc_description]"):
@@ -126,16 +159,14 @@ class DDVersionMap:
                         self.version_old,
                     )
                 elif self._check_data_type(old_item, new_item):
-                    self.new_to_old[new_path] = old_path
-                    self.old_to_new[old_path] = new_path
+                    add_rename(old_path, new_path)
                     if old_item.get("data_type") in DDVersionMap.STRUCTURE_TYPES:
                         # Add entries for common sub-elements
                         for path in old_paths:
                             if path.startswith(old_path):
                                 npath = path.replace(old_path, new_path, 1)
                                 if npath in new_path_set:
-                                    self.new_to_old[npath] = path
-                                    self.old_to_new[path] = npath
+                                    add_rename(path, npath)
             else:  # Ignore unknown NBC changes
                 log_args = (nbc_description, new_path)
                 logger.error("Ignoring unsupported NBC change: %r for %r.", *log_args)
@@ -174,7 +205,58 @@ class DDVersionMap:
                 else:
                     skipped_paths.add(path)
         for path in skipped_paths:
-            rename_map[path] = None
+            rename_map.path[path] = None
+
+
+def _get_aos_and_ctxpath(path: str, paths: Dict[str, Element]) -> Tuple[str, str]:
+    """Get the path of the nearest parent AoS."""
+    i_slash = path.rfind("/")
+    while i_slash != -1:
+        parent_path = path[:i_slash]
+        parent_element = paths[parent_path]
+        if parent_element.get("data_type") == "struct_array":
+            return (parent_path, path[i_slash + 1 :])
+        i_slash = path.rfind("/", 0, i_slash)
+    return ("", path)  # no nearest parent AoS
+
+
+def _get_tbp(element: Element, paths: Dict[str, Element]):
+    """Calculate the timebasepath to use for the lowlevel."""
+    if element.get("data_type") == "struct_array":
+        # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#367-384
+        if element.get("type") != "dynamic":
+            return ""
+        # Find path of first ancestor that is an AoS
+        path = element.get("path")
+        assert path is not None
+        return _get_aos_and_ctxpath(path, paths)[0] + "/time"
+    # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#1524-1566
+    return element.get("timebasepath", "")
+
+
+def dd_version_map_from_factories(
+    ids_name: str, factory1: IDSFactory, factory2: IDSFactory
+) -> Tuple["DDVersionMap", bool]:
+    """Build a DDVersionMap from two IDSFactories.
+    """
+    assert factory1._version
+    assert factory2._version
+    try:
+        factory1_version = Version(factory1._version)
+        factory2_version = Version(factory2._version)
+    except InvalidVersion:
+        # git-describe versions like 3.38.1-123-fe82191c are not valid Version
+        # so strip everything including and after the first -
+        factory1_version = Version(re.sub("-.*", "", factory1._version))
+        factory2_version = Version(re.sub("-.*", "", factory1._version))
+    old_version, old_factory, new_factory = min(
+        (factory1_version, factory1, factory2),
+        (factory2_version, factory2, factory1),
+    )
+    return (
+        DDVersionMap(ids_name, old_factory._etree, new_factory._etree, old_version),
+        old_factory is factory1,
+    )
 
 
 def convert_ids(
@@ -272,11 +354,11 @@ def _copy_structure(
 
         path = str(item.metadata.path)
         if path in rename_map:
-            if rename_map[path] is None:
+            if rename_map.path[path] is None:
                 logger.info("Element %r does not exist in the target IDS.", path)
                 continue
             else:
-                target_item = IDSPath(rename_map[path]).goto(target)
+                target_item = IDSPath(rename_map.path[path]).goto(target)
         else:  # Must exist in the target if path is not recorded in the map
             target_item = target[item.metadata.name]
 
