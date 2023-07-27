@@ -30,5 +30,22 @@ or explore the data interactively. We will focus on the latter method here.
 Explore the structure and contents of an IDS
 --------------------------------------------
 
+.. tabs::
+    .. tab:: Exercise
+        Write some text here
+
+    .. tab:: AL4
+        .. literalinclude:: al4_snippets/explore_content.py
+
+    .. tab:: IMASPy
+        .. literalinclude:: imaspy_snippets/explore_content.py
+
+Interactive exploration
+
+.. image:: interactive_tab_core_profiles_toplevel.png
+
+
+
+
 Load an IDS and explore which data exists
 -----------------------------------------
