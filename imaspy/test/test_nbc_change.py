@@ -6,7 +6,6 @@ by writing them as the old and reading as new and vice-versa
 """
 
 import logging
-from unittest.mock import patch
 
 import numpy
 import pytest
@@ -247,6 +246,14 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
         },
     }.get(ids_name, [])
     compare_children(ids, ids2, deleted_paths=deleted_paths)
+
+    # Compare outcome of implicit conversion at put with explicit convert_ids
+    implicit_3_30 = dbentry.get(ids_name)
+    explicit_3_30 = convert_ids(ids, version="3.30.0")
+    compare_children(implicit_3_30, explicit_3_30)
+
+    # Compare outcome of explicit conversion back to 3.25.0
+    compare_children(ids2, convert_ids(explicit_3_30, "3.25.0"))
 
 
 def test_convert_min_to_max(ids_name):
