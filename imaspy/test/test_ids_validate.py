@@ -237,12 +237,12 @@ def test_validate_coordinate_same_as():
 @pytest.mark.parametrize(
     "env_value, should_validate",
     [
-        ("1", True),
-        ("yes", True),
-        ("asdf", True),
-        ("0", False),
-        ("", False),
-        (None, False),
+        ("1", False),
+        ("yes", False),
+        ("asdf", False),
+        ("0", True),
+        ("", True),
+        (None, True),
     ],
 )
 def test_validate_on_put(monkeypatch, env_value, should_validate, requires_imas):
@@ -255,9 +255,9 @@ def test_validate_on_put(monkeypatch, env_value, should_validate, requires_imas)
     validate_mock = Mock()
     monkeypatch.setattr("imaspy.ids_toplevel.IDSToplevel.validate", validate_mock)
     if env_value is None:
-        monkeypatch.delenv("IMAS_AL_ENABLE_VALIDATION_AT_PUT", raising=False)
+        monkeypatch.delenv("IMAS_AL_DISABLE_VALIDATE", raising=False)
     else:
-        monkeypatch.setenv("IMAS_AL_ENABLE_VALIDATION_AT_PUT", env_value)
+        monkeypatch.setenv("IMAS_AL_DISABLE_VALIDATE", env_value)
 
     dbentry.put(ids)
     assert validate_mock.call_count == 1 * should_validate

@@ -5,6 +5,7 @@
 # gets run with all four backends.
 # Same for ids_type, with all types
 from copy import deepcopy
+import os
 
 from packaging.version import Version
 import importlib_resources
@@ -19,6 +20,8 @@ try:
 except ImportError:
     imas = None
 _has_imas = imas is not None
+
+os.environ["IMAS_AL_DISABLE_VALIDATE"] = "1"
 
 
 def pytest_addoption(parser):

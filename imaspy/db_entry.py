@@ -431,8 +431,8 @@ class DBEntry:
             raise RuntimeError("Database entry is not opened, use open() first.")
 
         # Automatic validation?
-        validate = os.environ.get("IMAS_AL_ENABLE_VALIDATION_AT_PUT")
-        if validate and validate != "0":
+        disable_validate = os.environ.get("IMAS_AL_DISABLE_VALIDATE")
+        if not disable_validate or disable_validate == "0":
             ids.validate()
 
         original_ids = None
