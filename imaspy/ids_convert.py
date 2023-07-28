@@ -21,7 +21,9 @@ from imaspy.ids_toplevel import IDSToplevel
 logger = logging.getLogger(__name__)
 
 
-class DDVersionMapping:
+class NBCPathMap:
+    """Object mapping paths in one DD version to path, timebasepath and context path."""
+
     def __init__(self) -> None:
         # Dictionary mapping the ids path
         # - When no changes have occurred (which is assumed to be the default case), the
@@ -29,8 +31,10 @@ class DDVersionMapping:
         # - When an element is renamed it maps the old to the new name (and vice versa).
         # - When an element does not exist in the other version, it is mapped to None.
         self.path: Dict[str, Optional[str]] = {}
+
         # Map providing timebasepath for renamed elements
         self.tbp: Dict[str, str] = {}
+
         # Map providing path relative to the nearest AoS for renamed elements
         self.ctxpath: Dict[str, str] = {}
 
@@ -61,8 +65,8 @@ class DDVersionMap:
         self.new_version = new_version
         self.version_old = version_old
 
-        self.old_to_new = DDVersionMapping()
-        self.new_to_old = DDVersionMapping()
+        self.old_to_new = NBCPathMap()
+        self.new_to_old = NBCPathMap()
 
         old_ids_object = old_version.find(f"IDS[@name='{ids_name}']")
         new_ids_object = new_version.find(f"IDS[@name='{ids_name}']")
@@ -237,8 +241,7 @@ def _get_tbp(element: Element, paths: Dict[str, Element]):
 def dd_version_map_from_factories(
     ids_name: str, factory1: IDSFactory, factory2: IDSFactory
 ) -> Tuple[DDVersionMap, bool]:
-    """Build a DDVersionMap from two IDSFactories.
-    """
+    """Build a DDVersionMap from two IDSFactories."""
     assert factory1._version
     assert factory2._version
     try:

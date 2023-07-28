@@ -6,7 +6,7 @@ import logging
 import os
 from typing import Any, Optional
 
-from imaspy.ids_convert import DDVersionMapping, dd_version_map_from_factories
+from imaspy.ids_convert import NBCPathMap, dd_version_map_from_factories
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
     CHAR_DATA,
@@ -512,7 +512,7 @@ def _get_children(
     ctx: UalContext,
     time_mode: int,
     ctx_path: str,
-    nbc_map: Optional[DDVersionMapping],
+    nbc_map: Optional[NBCPathMap],
 ) -> None:
     """Recursively get all children of an IDSStructure"""
     for element in structure:
@@ -570,7 +570,7 @@ def _put_children(
     time_mode: int,
     ctx_path: str,
     is_slice: bool,
-    nbc_map: Optional[DDVersionMapping],
+    nbc_map: Optional[NBCPathMap],
 ) -> None:
     """Recursively put all children of an IDSStructure"""
     # Note: when putting a slice, we do not need to descend into IDSStructure and
