@@ -10,11 +10,17 @@ from imaspy.ids_convert import (
     dd_version_map_from_factories,
     _get_ctxpath,
     _get_tbp,
+    iter_parents,
 )
 from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
+
+
+def test_iter_parents():
+    assert list(iter_parents("a/b/c/d/e")) == ["a", "a/b", "a/b/c", "a/b/c/d"]
+    assert list(iter_parents("abc/def/g")) == ["abc", "abc/def"]
 
 
 def test_dd_version_map_from_factories_invalid_version():

@@ -21,6 +21,25 @@ from imaspy.ids_toplevel import IDSToplevel
 logger = logging.getLogger(__name__)
 
 
+def iter_parents(path: str) -> Iterator[str]:
+    """Iterate over parents of this path, starting with the highest-level parent.
+
+    Example:
+        >>> list(iter_parents("abc/def/ghi"))
+        ["abc", "abc/def"]
+
+    Args:
+        path: Path to get parents of.
+
+    Yields:
+        Parent paths of the provided path.
+    """
+    i_slash = path.find("/")
+    while i_slash != -1:
+        yield path[:i_slash]
+        i_slash = path.find("/", i_slash + 1)
+
+
 class NBCPathMap:
     """Object mapping paths in one DD version to path, timebasepath and context path."""
 
@@ -119,15 +138,13 @@ class DDVersionMap:
             else:
                 old_path = previous_name
             # Apply any parent AoS/structure rename
-            i_slash = old_path.find("/")
-            while i_slash != -1:
-                parent = old_path[:i_slash]
+            for parent in iter_parents(old_path):
                 parent_rename = self.new_to_old.path.get(parent)
                 if parent_rename:
                     if new_paths[parent].get("data_type") in self.STRUCTURE_TYPES:
                         old_path = parent_rename + old_path[i_slash:]
-                        i_slash = len(parent)
-                i_slash = old_path.find("/", i_slash + 1)
+                        # We currently only support a single parent structure rename!
+                        break
             return old_path
 
         def add_rename(old_path: str, new_path: str):
@@ -192,10 +209,8 @@ class DDVersionMap:
         # Find all structures which have a renamed sub-item
         structures_with_renames = set()
         for path in rename_map:
-            i_slash = path.find("/")
-            while i_slash != -1:
-                structures_with_renames.add(path[:i_slash])
-                i_slash = path.find("/", i_slash + 1)
+            for parent in iter_parents(path):
+                structures_with_renames.add(parent)
 
         skipped_paths = set()
         for path in sorted(missing_paths):
@@ -203,11 +218,9 @@ class DDVersionMap:
             # structure marked in the rename_map as None can be skipped completely.
             if path not in structures_with_renames:
                 # Only mark if there is no parent structure already skipped
-                i_slash = path.find("/")
-                while i_slash != -1:
-                    if path[:i_slash] in skipped_paths:
+                for parent in iter_parents(path):
+                    if parent in skipped_paths:
                         break
-                    i_slash = path.find("/", i_slash + 1)
                 else:
                     skipped_paths.add(path)
         for path in skipped_paths:
@@ -216,13 +229,9 @@ class DDVersionMap:
 
 def _get_ctxpath(path: str, paths: Dict[str, Element]) -> str:
     """Get the path of the nearest parent AoS."""
-    i_slash = path.rfind("/")
-    while i_slash != -1:
-        parent_path = path[:i_slash]
-        parent_element = paths[parent_path]
-        if parent_element.get("data_type") == "struct_array":
-            return path[i_slash + 1 :]
-        i_slash = path.rfind("/", 0, i_slash)
+    for parent_path in reversed(list(iter_parents(path))):
+        if paths[parent_path].get("data_type") == "struct_array":
+            return path[len(parent_path) + 1 :]
     return path  # no nearest parent AoS
 
 
