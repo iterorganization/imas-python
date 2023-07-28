@@ -6,7 +6,7 @@ Provides the class for an IDS Primitive data type
 
 * :py:class:`IDSPrimitive`
 """
-
+import re
 import numbers
 from typing import Any, Dict, Tuple
 from xml.etree.ElementTree import Element
@@ -260,7 +260,43 @@ class IDSPrimitive(IDSMixin):
         return my_depth
 
     def __repr__(self):
-        return f"{type(self).__name__}({self._path}, {self.value!r})"
+        abs_path = self._path  # Split this off here so that we can always decide
+        # to get the abs_path from somewhere else
+        assert abs_path.startswith("/"), (
+            "Absolute path does not begin with" " a '/'. Is this a valid IDS?"
+        )
+
+        split_on_slash = self._path.split("/")
+        ids_root = split_on_slash[1]
+        relative_path = "/".join(split_on_slash[2:])
+        relative_path = re.sub("/(\d+)", "[\\1]", relative_path)
+
+        my_repr = f"<{type(self).__name__}"
+        my_repr += f" (IDS:{ids_root}, {relative_path},"
+        my_repr += f" {self.data_type}"
+        my_repr += ")>"
+
+        # Numpy is handled slightly differently, as it needs an extra import
+        # Also, printing arrays is quite difficult, as we don't know the length
+        # nor preferred formatting per se. As we want to print the full
+        # thing that could _theoretically_ reproduce the array, we do
+        # some numpy magic here
+        potential_numpy_str = repr(self.value)
+        # This is either something that has array(), and implies a numpy array
+        # or just a number. Check for this, and be careful. This may never fail!
+        if potential_numpy_str.startswith("array(") and potential_numpy_str.endswith(
+            ")"
+        ):
+            # This is numpy-array style array. Easy!
+            potential_numpy_str = potential_numpy_str[6:-1]
+            # We should end up with something list-like, check this
+            assert potential_numpy_str.startswith("[")
+            potential_numpy_str = f"{potential_numpy_str}"
+
+        # Now append the value repr to our own native repr
+        value_repr = f"\n{_fullname(self.value)}({potential_numpy_str})"
+        my_repr += f" {value_repr}"
+        return my_repr
 
     @property
     def data_type(self):
@@ -273,6 +309,15 @@ class IDSPrimitive(IDSMixin):
         # Validate coordinates
         if self.has_value:
             self.coordinates._validate(aos_indices)
+
+
+def _fullname(o):
+    """Get the full name to a type, including module name etc."""
+    klass = o.__class__
+    module = klass.__module__
+    if module == "builtins":
+        return klass.__qualname__  # avoid outputs like 'builtins.str'
+    return module + "." + klass.__qualname__
 
 
 def create_leaf_container(parent, structure_xml, **kwargs):
