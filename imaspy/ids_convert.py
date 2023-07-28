@@ -57,6 +57,9 @@ class NBCPathMap:
         # Map providing path relative to the nearest AoS for renamed elements
         self.ctxpath: Dict[str, str] = {}
 
+        # Set listing which paths had a type change (and therefore a None entry in path)
+        self.type_change: Set[str] = set()
+
     def __setitem__(self, path: str, value: Tuple[Optional[str], str, str]) -> None:
         self.path[path], self.tbp[path], self.ctxpath[path] = value
 
@@ -110,7 +113,7 @@ class DDVersionMap:
             old_path = old_item.get("path")
             assert new_path is not None
             assert old_path is not None
-            logger.error(
+            logger.debug(
                 "Data type of %s changed from %s to %s. This change is not "
                 "supported by IMASPy: no conversion will be done.",
                 new_item.get("path"),
@@ -118,7 +121,9 @@ class DDVersionMap:
                 new_item.get("data_type"),
             )
             self.new_to_old.path[new_path] = None
+            self.new_to_old.type_change.add(new_path)
             self.old_to_new.path[old_path] = None
+            self.old_to_new.type_change.add(old_path)
             return False
         return True
 
@@ -369,7 +374,11 @@ def _copy_structure(
         path = str(item.metadata.path)
         if path in rename_map:
             if rename_map.path[path] is None:
-                logger.info("Element %r does not exist in the target IDS.", path)
+                if path in rename_map.type_change:
+                    msg = "Element %r changed type in the target IDS."
+                else:
+                    msg = "Element %r does not exist in the target IDS."
+                logger.info(msg + " Data is not copied.", path)
                 continue
             else:
                 target_item = IDSPath(rename_map.path[path]).goto(target)
