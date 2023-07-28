@@ -48,6 +48,8 @@ class NBCPathMap:
         return iter(self.path)
 
 
+# Expected typical use case is conversion between two versions only. With 74 IDSs
+# (DD 3.39.0) a cache of 128 items should be big enough.
 @lru_cache(maxsize=128)
 class DDVersionMap:
     RENAMED_DESCRIPTIONS = {"aos_renamed", "leaf_renamed", "structure_renamed"}
