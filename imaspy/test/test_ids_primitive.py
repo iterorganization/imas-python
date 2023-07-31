@@ -103,3 +103,18 @@ def test_visit_children(toplevel):
     assert nodes[9] is toplevel.wavevector[0].eigenmode[0]
     assert nodes[10] == 10
     assert nodes[11] == zero_to_two_pi
+
+
+def test_visit_children_leaf_only(toplevel):
+    eig = toplevel.wavevector[0].eigenmode[0]
+    nodes = []
+    toplevel.visit_children(
+        lambda x: nodes.append(x) if x.has_value else None, leaf_only=True
+    )
+    # Different than above, we should not have the in-between nodes now. but we should have all leaf nodes
+    assert len(nodes) == 5
+    assert nodes[0] == 2
+    assert nodes[1] == "0.0.1"
+    assert nodes[2] == "imaspy"
+    assert nodes[3] == 10
+    assert nodes[4] == zero_to_two_pi
