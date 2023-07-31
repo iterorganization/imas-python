@@ -301,7 +301,7 @@ size of your data must match the size of the coordinates:
 
     When a quantity refers to this set of alternatives (for example
     ``profiles_1d(itime)/electrons/temperature``), at least one of the
-    alternative coordinates must be set and its size match the size of the
+    alternative coordinates must be set and its size must match the size of the
     quantity.
 
 3.  The Data Dictionary can indicate exclusive alternative coordinates, see for example
