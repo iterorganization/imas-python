@@ -6,6 +6,7 @@ import logging
 import os
 from typing import Any, Optional
 
+from imaspy.exception import ValidationError
 from imaspy.ids_convert import convert_ids
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
@@ -139,7 +140,9 @@ class DBEntry:
         # out which version it is. But, I think that the model dir is not required if
         # there is an existing file.
         if self._dd_version or self._xml_path:
-            ids_path = mdsplus_model_dir(version=self._dd_version, xml_file=self._xml_path)
+            ids_path = mdsplus_model_dir(
+                version=self._dd_version, xml_file=self._xml_path
+            )
         elif self._ids_factory._version:
             ids_path = mdsplus_model_dir(version=self._ids_factory._version)
         else:
@@ -430,10 +433,18 @@ class DBEntry:
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
 
-        # Automatic validation?
+        # Automatic validation
         disable_validate = os.environ.get("IMAS_AL_DISABLE_VALIDATE")
         if not disable_validate or disable_validate == "0":
-            ids.validate()
+            try:
+                ids.validate()
+            except ValidationError:
+                logger.error(
+                    "IDS %s is not valid. You can disable automatic IDS validation by "
+                    "setting the environment variable IMAS_AL_DISABLE_VALIDATE=1.",
+                    ids.metadata.name,
+                )
+                raise
 
         original_ids = None
         if not ids._parent or ids._parent._version != self._ids_factory._version:
