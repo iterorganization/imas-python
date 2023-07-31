@@ -218,14 +218,10 @@ the problem. See the following example:
 >>> core_profiles.validate()
 imaspy.exception.ValidationError: Invalid value for ids_properties.homogeneous_time: -999999999
 
-IMASPy can also automatically validate an IDS every time you do a
+IMASPy also automatically validates an IDS every time you do a
 :py:meth:`~imaspy.db_entry.DBEntry.put` or
-:py:meth:`~imaspy.db_entry.DBEntry.put_slice`. To enable this feature, you must set the
-environment variable ``IMAS_AL_ENABLE_VALIDATION_AT_PUT`` to ``1``. For example:
-
->>> import os
->>> os.environ["IMAS_AL_ENABLE_VALIDATION_AT_PUT"] = "1"
->>> # From now on, ids.validate() is called every time you do a put(ids) or put_slice(ids)
+:py:meth:`~imaspy.db_entry.DBEntry.put_slice`. To disable this feature, you must set the
+environment variable ``IMAS_AL_DISABLE_VALIDATE`` to ``1``.
 
 .. seealso::
     
@@ -324,10 +320,6 @@ size of your data must match the size of the coordinates:
     ``ggd(itime)/neutral(i1)/velocity(i2)/radial``. When the diamagnetic velocity
     component is filled, the radial component must be filled as well, and have a
     matching size.
-
-.. todo::
-
-    Add point for alternative coordinates (IMAS-4725) once implemented.
 
 
 Resampling
