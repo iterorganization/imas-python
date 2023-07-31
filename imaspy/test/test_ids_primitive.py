@@ -41,3 +41,8 @@ def test_pretty_print(toplevel):
     assert pprint.pformat(toplevel.wavevector[0].eigenmode[0]).startswith(
         "<imaspy.ids_structure.IDSStructure"
     )
+    eig = toplevel.wavevector[0].eigenmode[0]
+    assert pprint.pformat(eig.time_norm).startswith("<IDSNumericArray")
+    assert pprint.pformat(eig.time_norm).endswith("\nnumpy.ndarray([], dtype=float64)")
+    assert pprint.pformat(eig.frequency_norm).startswith("<IDSPrimitive")
+    assert pprint.pformat(eig.frequency_norm).endswith("\nfloat(10.0)")
