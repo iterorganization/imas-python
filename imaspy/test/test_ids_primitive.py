@@ -4,8 +4,11 @@ from pathlib import Path
 import pytest
 import pprint
 
+import numpy as np
+
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.test.test_helpers import open_dbentry
+from imaspy.ids_primitive import *
 
 # As the IDSPrimitive class generally should not be used on its own. Instead we
 # take a very well defined toplevel, initialize it, and do our tests on the
@@ -25,6 +28,7 @@ def toplevel(fake_toplevel_xml: Path, worker_id: str, tmp_path: Path):
     top.wavevector[0].eigenmode.resize(1)
     eig = top.wavevector[0].eigenmode[0]
     eig.frequency_norm = 10
+    eig.poloidal_angle = np.linspace(0, 2, num=10) * np.pi
     top.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     dbentry.put(top)
 
@@ -46,3 +50,28 @@ def test_pretty_print(toplevel):
     assert pprint.pformat(eig.time_norm).endswith("\nnumpy.ndarray([], dtype=float64)")
     assert pprint.pformat(eig.frequency_norm).startswith("<IDSPrimitive")
     assert pprint.pformat(eig.frequency_norm).endswith("\nfloat(10.0)")
+
+
+def test_value_attribute(toplevel):
+    """Test if the value attribute acts as IMASPy expects"""
+    eig = toplevel.wavevector[0].eigenmode[0]
+    assert isinstance(eig.frequency_norm, IDSPrimitive)
+    assert hasattr(eig.frequency_norm, "value")
+
+    # We should have a Python Primitive now:
+    assert eig.frequency_norm.data_type == "FLT_0D"
+    assert isinstance(eig.frequency_norm.value, float)
+    assert eig.frequency_norm.value == 10
+
+    # For arrays, we should get numpy arrays of the right type
+    # This one should be not-filled, e.g. default
+    assert not eig.phi_potential_perturbed_norm.has_value
+    assert eig.phi_potential_perturbed_norm.data_type == "CPX_2D"
+    assert isinstance(eig.phi_potential_perturbed_norm.value, np.ndarray)
+    assert np.array_equal(eig.phi_potential_perturbed_norm.value, np.ndarray((0, 0)))
+
+    # Finally, check a filled array
+    assert eig.poloidal_angle.has_value
+    assert eig.poloidal_angle.data_type == "FLT_1D"
+    assert isinstance(eig.poloidal_angle.value, np.ndarray)
+    assert np.array_equal(eig.poloidal_angle.value, np.linspace(0, 2, num=10) * np.pi)
