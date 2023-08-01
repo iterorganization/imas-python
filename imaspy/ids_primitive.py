@@ -294,8 +294,7 @@ class IDSPrimitive(IDSMixin):
             potential_numpy_str = f"{potential_numpy_str}"
 
         # Now append the value repr to our own native repr
-        value_repr = f"\n{_fullname(self.value)}({potential_numpy_str})"
-        my_repr += f" {value_repr}"
+        my_repr += f" \n{_fullname(self.value)}({potential_numpy_str})"
         return my_repr
 
     @property
