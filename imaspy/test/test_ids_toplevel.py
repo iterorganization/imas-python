@@ -2,6 +2,7 @@
 constant-in-time DD
 """
 from pathlib import Path
+import pprint
 
 import pytest
 
@@ -37,3 +38,7 @@ def test_metadata_non_exist(ids):
 def test_metadata_attribute_not_exists(ids):
     with pytest.raises(AttributeError):
         ids.metadata.blergh
+
+
+def test_pretty_print(ids):
+    assert pprint.pformat(ids) == "<IDSToplevel (IDS:gyrokinetics)>"

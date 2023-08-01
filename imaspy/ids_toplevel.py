@@ -5,9 +5,10 @@
 """
 
 import logging
+import os
+import re
 from typing import TYPE_CHECKING, Optional
 import tempfile
-import os
 
 from imaspy.al_exception import ALException
 from imaspy.exception import ValidationError
@@ -283,3 +284,18 @@ class IDSToplevel(IDSStructure):
         raise NotImplementedError(
             "{!s}.partialGet(dataPath, occurrence=0)".format(self)
         )
+
+    def __repr__(self):
+        abs_path = self._path  # Split this off here so that we can always decide
+        # to get the abs_path from somewhere else
+        assert abs_path.startswith("/"), (
+            "Absolute path does not begin with" " a '/'. Is this a valid IDS?"
+        )
+
+        split_on_slash = self._path.split("/")
+        ids_root = split_on_slash[1]
+
+        my_repr = f"<{type(self).__name__}"
+        my_repr += f" (IDS:{ids_root})>"
+
+        return my_repr
