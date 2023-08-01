@@ -1,8 +1,14 @@
-import pytest
 from copy import deepcopy
+import pprint
+
+import pytest
 
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.ids_struct_array import IDSStructArray
+
+
+class fake_parent_factory:
+    _path = ""
 
 
 @pytest.fixture
@@ -10,7 +16,7 @@ def struct_array(fake_structure_xml):
     wavevector_xml = fake_structure_xml.find(".//*[@name='wavevector']")
     fake_structure_xml.remove(wavevector_xml)
     top = IDSToplevel(
-        object(),
+        fake_parent_factory,
         fake_structure_xml,
     )
     struct_array = IDSStructArray(top, wavevector_xml)
@@ -44,3 +50,10 @@ def test_resize(keep, target_len, struct_array):
             assert (
                 struct_array[ii] is not pre_values[ii]
             ), f"On element {ii} of {struct_array.value} vs {pre_struct_array.value}"
+
+
+def test_pretty_print(struct_array):
+    assert (
+        pprint.pformat(struct_array)
+        == "<IDSStructArray (IDS:gyrokinetics, wavevector with 3 items)>"
+    )

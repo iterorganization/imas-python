@@ -6,6 +6,7 @@ This contains references to :py:class:`IDSStructure`s
 * :py:class:`IDSStructArray`
 """
 
+import re
 from typing import Dict, Tuple
 from xml.etree.ElementTree import Element
 
@@ -117,6 +118,24 @@ class IDSStructArray(IDSMixin):
             e._convert_ids_types = True
             e._parent = self
             self.value.append(e)
+
+    def __repr__(self):
+        abs_path = self._path  # Split this off here so that we can always decide
+        # to get the abs_path from somewhere else
+        assert abs_path.startswith("/"), (
+            "Absolute path does not begin with" " a '/'. Is this a valid IDS?"
+        )
+
+        split_on_slash = self._path.split("/")
+        ids_root = split_on_slash[1]
+        relative_path = "/".join(split_on_slash[2:])
+        relative_path = re.sub("/(\d+)", "[\\1]", relative_path)
+
+        my_repr = f"<{type(self).__name__}"
+        my_repr += f" (IDS:{ids_root}, {relative_path} with {len(self)} items"
+        my_repr += ")>"
+
+        return my_repr
 
     def resize(self, nbelt, keep=False):
         """Resize an array of structures.
