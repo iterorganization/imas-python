@@ -16,6 +16,9 @@ from imaspy.ids_primitive import *
 # that is defined in ids_primitive.py though!
 
 
+zero_to_two_pi = np.linspace(0, 2, num=10) * np.pi
+
+
 @pytest.fixture
 def toplevel(fake_toplevel_xml: Path, worker_id: str, tmp_path: Path):
     """A toplevel where specific fields are filled"""
@@ -28,7 +31,7 @@ def toplevel(fake_toplevel_xml: Path, worker_id: str, tmp_path: Path):
     top.wavevector[0].eigenmode.resize(1)
     eig = top.wavevector[0].eigenmode[0]
     eig.frequency_norm = 10
-    eig.poloidal_angle = np.linspace(0, 2, num=10) * np.pi
+    eig.poloidal_angle = zero_to_two_pi
     top.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     dbentry.put(top)
 
@@ -74,4 +77,28 @@ def test_value_attribute(toplevel):
     assert eig.poloidal_angle.has_value
     assert eig.poloidal_angle.data_type == "FLT_1D"
     assert isinstance(eig.poloidal_angle.value, np.ndarray)
-    assert np.array_equal(eig.poloidal_angle.value, np.linspace(0, 2, num=10) * np.pi)
+    assert np.array_equal(eig.poloidal_angle.value, zero_to_two_pi)
+
+
+def test_visit_children(toplevel):
+    # This should visit every node. Lets test that, but check only
+    # filled fields explicitly
+    eig = toplevel.wavevector[0].eigenmode[0]
+    nodes = []
+    toplevel.visit_children(lambda x: nodes.append(x) if x.has_value else None)
+    # We know we filled only endpoints frequency_norm and poloidal_angle
+    # We expect the following "mandatory" fields to be touched, which we check
+    # the order visit_children visits
+    assert len(nodes) == 12
+    assert nodes[0] is toplevel
+    assert nodes[1] is toplevel.ids_properties
+    assert nodes[2] == 2
+    assert nodes[3] is toplevel.ids_properties.version_put
+    assert nodes[4] == "0.0.1"
+    assert nodes[5] == "imaspy"
+    assert nodes[6] is toplevel.wavevector
+    assert nodes[7] is toplevel.wavevector[0]
+    assert nodes[8] is toplevel.wavevector[0].eigenmode
+    assert nodes[9] is toplevel.wavevector[0].eigenmode[0]
+    assert nodes[10] == 10
+    assert nodes[11] == zero_to_two_pi
