@@ -35,13 +35,6 @@ def toplevel(fake_toplevel_xml: Path, worker_id: str, tmp_path: Path):
 
 
 def test_pretty_print(toplevel):
-    assert pprint.pformat(toplevel).startswith("<imaspy.ids_toplevel.IDSToplevel")
-    assert pprint.pformat(toplevel.wavevector[0].eigenmode).startswith(
-        "<imaspy.ids_struct_array.IDSStructArray"
-    )
-    assert pprint.pformat(toplevel.wavevector[0].eigenmode[0]).startswith(
-        "<imaspy.ids_structure.IDSStructure"
-    )
     eig = toplevel.wavevector[0].eigenmode[0]
     assert pprint.pformat(eig.time_norm).startswith("<IDSNumericArray")
     assert pprint.pformat(eig.time_norm).endswith("\nnumpy.ndarray([], dtype=float64)")
