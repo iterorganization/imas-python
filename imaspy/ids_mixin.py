@@ -22,6 +22,7 @@ try:
     from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_INDEPENDENT
 except ImportError as ee:
     logger.critical("IMAS could not be imported. UAL not available! %s", ee)
+from imaspy.util import visit_children
 
 logger.setLevel(logging.INFO)
 
@@ -94,17 +95,6 @@ class IDSMixin:
             # this is how it works for functools cached_property.
             # how is it for cached_property package?
 
-    def visit_children(self, fun, leaf_only=False):
-        """walk all children of this structure in order and execute fun on them"""
-        # you will have fun
-        if hasattr(self, "__iter__"):
-            if not leaf_only:
-                fun(self)
-            for child in self:
-                child.visit_children(fun, leaf_only)
-        else:  # it must be a child then?
-            fun(self)
-
     @cached_property
     def _version(self):
         """Return the data dictionary version of this in-memory structure."""
@@ -159,7 +149,7 @@ class IDSMixin:
         else:
             el = self
 
-        el.visit_children(visitor)
+        visit_children(el, visitor)
 
         if isinstance(el, IDSToplevel):
             el.time = new_time

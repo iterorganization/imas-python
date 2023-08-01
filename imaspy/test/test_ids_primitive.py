@@ -8,6 +8,7 @@ import numpy as np
 
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.test.test_helpers import open_dbentry
+from imaspy.util import visit_children
 from imaspy.ids_primitive import *
 
 # As the IDSPrimitive class generally should not be used on its own. Instead we
@@ -85,7 +86,7 @@ def test_visit_children(toplevel):
     # filled fields explicitly
     eig = toplevel.wavevector[0].eigenmode[0]
     nodes = []
-    toplevel.visit_children(lambda x: nodes.append(x) if x.has_value else None)
+    visit_children(toplevel, lambda x: nodes.append(x) if x.has_value else None)
     # We know we filled only endpoints frequency_norm and poloidal_angle
     # We expect the following "mandatory" fields to be touched, which we check
     # the order visit_children visits
