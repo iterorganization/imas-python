@@ -1,9 +1,11 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
 #
-# Set up pytest so that any mention of 'backend' as a test argument
-# gets run with all four backends.
-# Same for ids_type, with all types
+# Set up pytest:
+# - Backend parametrization (and corresponding command line options)
+# - IDS name parametrization (and corresponding command line options)
+# - Fixtures that are useful across test modules
+
 from copy import deepcopy
 import os
 from pathlib import Path
@@ -82,14 +84,12 @@ def requires_imas():
 def pytest_generate_tests(metafunc):
     if "ids_name" in metafunc.fixturenames:
         if metafunc.config.getoption("ids"):
-            metafunc.parametrize(
-                "ids_name",
-                [
-                    item
-                    for arg in metafunc.config.getoption("ids")
-                    for item in arg[0].split(",")
-                ],
-            )
+            ids_names = [
+                item
+                for arg in metafunc.config.getoption("ids")
+                for item in arg[0].split(",")
+            ]
+            metafunc.parametrize("ids_name", ids_names)
         elif metafunc.config.getoption("mini"):
             metafunc.parametrize("ids_name", ["pulse_schedule"])
         else:
