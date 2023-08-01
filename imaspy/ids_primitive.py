@@ -312,11 +312,11 @@ class IDSPrimitive(IDSMixin):
 
 def _fullname(o):
     """Get the full name to a type, including module name etc."""
-    klass = o.__class__
-    module = klass.__module__
+    class_ = o.__class__
+    module = class_.__module__
     if module == "builtins":
-        return klass.__qualname__  # avoid outputs like 'builtins.str'
-    return module + "." + klass.__qualname__
+        return class_.__qualname__  # avoid outputs like 'builtins.str'
+    return module + "." + class_.__qualname__
 
 
 def create_leaf_container(parent, structure_xml, **kwargs):
