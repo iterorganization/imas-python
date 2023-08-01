@@ -1,8 +1,9 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
 from pathlib import Path
-import pytest
 import pprint
+
+import pytest
 
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.test.test_helpers import open_dbentry
