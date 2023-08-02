@@ -79,15 +79,19 @@ class IDSFactory:
         """Iterate over the IDS names defined by the loaded Data Dictionary"""
         return iter(self._ids_elements)
 
-    def new(self, ids_name: str) -> IDSToplevel:
+    def new(self, ids_name: str, *, _lazy: bool = False) -> IDSToplevel:
         """Create a new IDSToplevel element for the provided IDS name
 
         Args:
             ids_name: Name of the IDS toplevel to create, e.g. "core_profiles".
+
+        Keyword args:
+            _lazy: Internal usage only! Create an IDS Toplevel suitable for lazy loading
+                when set to True.
         """
         if ids_name not in self._ids_elements:
             raise ValueError(f"IDS {ids_name} not found in the Data Dictionary.")
-        return IDSToplevel(self, self._ids_elements[ids_name])
+        return IDSToplevel(self, self._ids_elements[ids_name], _lazy)
 
     def exists(self, ids_name: str) -> bool:
         """Check if an IDS type with the given name exists."""

@@ -91,6 +91,11 @@ class IDSMixin:
         return my_path
 
     @cached_property
+    def _lazy(self):
+        """Whether this IDSMixin is part of a lazy-loaded IDSToplevel"""
+        return self._parent._lazy
+
+    @cached_property
     def _version(self):
         """Return the data dictionary version of this in-memory structure."""
         # As each Mixin (e.g. "data node") should have a parent, we just have to

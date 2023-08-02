@@ -43,15 +43,15 @@ class IDSToplevel(IDSStructure):
 
     _path = ""  # Path to ourselves without the IDS name and slashes
 
-    def __init__(self, parent: "IDSFactory", structure_xml):
+    def __init__(self, parent: "IDSFactory", structure_xml, lazy=False):
         """Save backend_version and backend_xml and build translation layer.
 
         Args:
             parent: Parent of ``self``, an instance of :py:class:`IDSFactory`.
-            name: Name of this structure. Usually from the ``name`` attribute of
-                the IDS toplevel definition.
             structure_xml: XML structure that defines this IDS toplevel.
+            lazy: Whether this toplevel is used for a lazy-loaded get() or get_slice()
         """
+        self._lazy = lazy
         super().__init__(parent, structure_xml)
 
     @property

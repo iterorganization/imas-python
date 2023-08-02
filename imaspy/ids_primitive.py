@@ -7,15 +7,32 @@ Provides the class for an IDS Primitive data type
 * :py:class:`IDSPrimitive`
 """
 import numbers
+from functools import wraps
 from typing import Any, Dict, Tuple
 from xml.etree.ElementTree import Element
 
 import numpy as np
+from imaspy.al_context import LazyData
 
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import hli_utils
 from imaspy.ids_mixin import IDSMixin
+
+
+def _needs_value(func):
+    """Decorator to mark that this method requires the __value loaded.
+
+    When lazy loading, this will automatically load the requested data.
+    """
+
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if self._lazy and not self._lazy_loaded:
+            self._load()
+        return func(self, *args, **kwargs)
+
+    return wrapper
 
 
 class IDSPrimitive(IDSMixin):
@@ -63,11 +80,13 @@ class IDSPrimitive(IDSMixin):
             )
 
         self.__value = value
+        self._lazy_loaded = False
         self._var_type = var_type
         self._backend_type = None
         self._backend_ndims = None
 
     @property
+    @_needs_value
     def shape(self) -> Tuple[int, ...]:
         """Get the shape of the contained data.
 
@@ -81,6 +100,7 @@ class IDSPrimitive(IDSMixin):
         return np.shape(self.__value)
 
     @property
+    @_needs_value
     def size(self) -> int:
         """Get the size of stored data (number of elements stored).
 
@@ -98,12 +118,14 @@ class IDSPrimitive(IDSMixin):
         return self.__value.size
 
     @property
+    @_needs_value
     def has_value(self) -> bool:
         """True if a value is defined here that is not the default"""
         if self.__value is None:  # No value set
             return False
         return self.size > 0  # Default for ndarray and STR_1D types is size == 0
 
+    @_needs_value
     def __len__(self) -> int:
         if self.metadata.ndim == 0:
             raise TypeError(f"IDS data node of type {self.data_type} has no len()")
@@ -121,13 +143,31 @@ class IDSPrimitive(IDSMixin):
         return np.full((0,) * self.metadata.ndim, default_value)
 
     def __iter__(self):
+        # FIXME: this can't be right
         return iter([])
 
     def __repr__(self):
         value_repr = f"{self.value.__class__.__qualname__}({self.value!r})"
         return f"{self._build_repr_start()}, {self.data_type})>\n{value_repr}"
 
+    def _load(self):
+        """Perform actual loading of the data.
+
+        Only call this method when this is a lazy-loaded IDS and the value has not yet
+        been loaded.
+        """
+        assert self._lazy and not self._lazy_loaded
+        assert isinstance(self.__value, LazyData)
+        data = self.__value.get()
+        self.__value = None if data is None else self.cast_value(data)
+        if isinstance(self.__value, np.ndarray):
+            # Convert the numpy array to a read-only view
+            self.__value = self.__value.view()
+            self.__value.flags.writeable = False
+        self._lazy_loaded = True
+
     @property
+    @_needs_value
     def value(self):
         """Return the value of this IDSPrimitive if it is set,
         otherwise return the default"""
@@ -141,6 +181,11 @@ class IDSPrimitive(IDSMixin):
 
     @value.setter
     def value(self, setter_value):
+        if self._lazy:
+            if not isinstance(setter_value, LazyData):
+                raise ValueError("Lazy-loaded IDSs are read-only.")
+            self.__value = setter_value
+            return
         if self.metadata.ndim == 0 and setter_value == self.metadata.data_type.default:
             # Unset 0D types when setting them to their magic default value
             self.__value = None
