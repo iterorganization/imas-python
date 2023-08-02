@@ -452,6 +452,8 @@ class DBEntry:
         """Actual implementation of put() and put_slice()"""
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
+        if ids._lazy:
+            raise ValueError("Lazy loaded IDSs cannot be used in put or put_slice.")
 
         # Automatic validation
         disable_validate = os.environ.get("IMAS_AL_DISABLE_VALIDATE")

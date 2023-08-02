@@ -31,6 +31,7 @@ It provides:
    intro
    api_overview
    metadata
+   lazy_loading
    mdsplus
 
 

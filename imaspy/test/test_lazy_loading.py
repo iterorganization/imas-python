@@ -106,3 +106,19 @@ def test_lazy_load_readonly(requires_imas):
         lazy_ids.time.resize(3)
     with pytest.raises(ValueError):
         lazy_ids.time.value[0] = 10
+
+
+def test_lazy_load_no_put(requires_imas):
+    dbentry = DBEntry(MEMORY_BACKEND, "ITER", 1, 1)
+    dbentry.create()
+
+    ids = dbentry.factory.core_profiles()
+    ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
+    dbentry.put(ids)
+
+    lazy_ids = dbentry.get("core_profiles", lazy=True)
+
+    with pytest.raises(ValueError):
+        dbentry.put(lazy_ids)
+    with pytest.raises(ValueError):
+        dbentry.put_slice(lazy_ids)
