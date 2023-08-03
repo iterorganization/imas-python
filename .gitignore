@@ -106,3 +106,6 @@ imaspy/assets/IDSDef.zip
 
 # IDS files
 *.ids
+
+# ASV folder
+/.asv
