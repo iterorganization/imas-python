@@ -136,10 +136,6 @@ class IDSStructure(IDSMixin):
     def __repr__(self):
         abs_path = self._path  # Split this off here so that we can always decide
         # to get the abs_path from somewhere else
-        assert abs_path.startswith("/"), (
-            "Absolute path does not begin with" " a '/'. Is this a valid IDS?"
-        )
-
         split_on_slash = self._path.split("/")
         ids_root = split_on_slash[1]
         relative_path = "/".join(split_on_slash[2:])

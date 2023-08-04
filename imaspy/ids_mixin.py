@@ -60,9 +60,34 @@ class IDSMixin:
         """True if this element (or any parent) has type=dynamic"""
         return self.metadata.type.is_dynamic or self._dd_parent._is_dynamic
 
-    @cached_property
+    @property
     def _path(self):
-        """Build absolute path from node to root _in backend coordinates_"""
+        # Test if we are a part of a tree
+        my_path = self._relative_path
+        if hasattr(self, "_parent"):
+            # We have a parent, but do we have a sane toplevel?
+            try:
+                top = self._toplevel
+            except AttributeError as e:
+                # We cannot find a toplevel. Just assume whatever we have found
+                # with _relative_path is our full path without IDS
+                return my_path.lstrip("/")
+                # TODO: Check if we want to support this case, otherwise return next Erro
+                # raise NotImplementedError(
+                #     f"No valid toplevel found for '{my_path}'. Cannot reconstruct path"
+                # ) from e
+            else:
+                # You have a sane toplevel, so you can strip it
+                return my_path[len(top._absolute_path) :]
+        else:
+            # I do not have a parent, so I am probably a root node.
+            # Relative to myself I'm just myself!
+            return my_path.lstrip("/")
+
+    @property
+    def _relative_path(self):
+        """Build relative path from the toplevel to the node"""
+        # This includes the toplevel name with a slash at the start
         my_path = self.metadata.name
         if hasattr(self, "_parent"):
             # We have a parent, so we are not a root node. Check our parent
@@ -76,25 +101,28 @@ class IDSMixin:
                     # handle the case where the value is indexable. We assume
                     # the parents path can always be determined.
                     try:
-                        my_path = "{!s}[{!s}]".format(
-                            self._parent._path, self._parent.value.index(self)
+                        return "{!s}[{!s}]".format(
+                            self._parent._relative_path, self._parent.value.index(self)
                         )
                     except ValueError as e:
                         # this happens when we ask the path of a struct_array
                         # child that is mangled so much that the parent node of
                         # the parent is no longer indexable. In that case,
                         # raise a sane error
-                        my_path = f"{self._parent._path}[?]/{my_path}"
+                        my_path = f"{self._parent._relative_path}[?]/{my_path}"
                         raise NotImplementedError(
                             f"Link to parent of {my_path} broken. Cannot reconstruct index"
                         ) from e
-            else:
+            elif hasattr(self._parent, "_relative_path"):
                 # If we do not have a "value" attribute, we are for sure not an
                 # array, and constructing a path is simple
-                my_path = self._parent._path + "/" + my_path
-        # If we do not have a parent, we are a root node, and we can
-        # just return ourselves. We don't need an else for that.
-        return my_path
+                return self._parent._relative_path + "/" + my_path
+            else:
+                # We have a parent, but not a sane path. Return ourselves
+                return f"{my_path}"
+        else:
+            # If we do not have a parent, we are a root node. Prepend a slash.
+            return f"/{my_path}"
 
     def reset_path(self):
         if "_path" in self.__dict__:
