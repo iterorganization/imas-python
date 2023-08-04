@@ -13,9 +13,9 @@ from imaspy.ids_toplevel import IDSToplevel
 class fake_parent_factory:
     _path = ""
 
+
 class fake_array_parent:
     _path = "/fake/parent"
-    _array_type = True
 
 
 @pytest.fixture
@@ -39,29 +39,47 @@ def test_toplevel(fake_filled_toplevel):
     assert top.wavevector._toplevel == top
     assert top.wavevector[0].radial_component_norm._toplevel == top
 
+
 def test_path(fake_filled_toplevel):
     top = fake_filled_toplevel
     assert top.wavevector._path == "/gyrokinetics/wavevector"
-    assert top.ids_properties.creation_date._path == "/gyrokinetics/ids_properties/creation_date"
+    assert (
+        top.ids_properties.creation_date._path
+        == "/gyrokinetics/ids_properties/creation_date"
+    )
+    assert top.wavevector._path == "/gyrokinetics/wavevector"
     assert top.wavevector[0]._path == "/gyrokinetics/wavevector[0]"
-    assert top.wavevector[0].radial_component_norm._path == "/gyrokinetics/wavevector[0]/radial_component_norm"
+    assert (
+        top.wavevector[0].radial_component_norm._path
+        == "/gyrokinetics/wavevector[0]/radial_component_norm"
+    )
+
 
 def test_parentless_path(fake_filled_toplevel):
     top = fake_filled_toplevel
     delattr(fake_filled_toplevel.wavevector, "_parent")
     assert top.wavevector._path == "wavevector"
     assert top.wavevector[0]._path == "wavevector[0]"
-    assert top.wavevector[0].radial_component_norm._path == "wavevector[0]/radial_component_norm"
+    assert (
+        top.wavevector[0].radial_component_norm._path
+        == "wavevector[0]/radial_component_norm"
+    )
+
 
 def test_unlinked_struct(fake_filled_toplevel):
     top = fake_filled_toplevel
     struct = top.wavevector[0]
-    assert isinstance(struct,  IDSStructure)
+    assert isinstance(struct, IDSStructure)
     struct._parent = fake_array_parent
     struct._parent.value = []
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(NotImplementedError) as excinfo:
         # In this case, the user has managed to mangle the IMASPy structure so
         # much, that a parent got unlinked with the parent structures.
         # Best-effort is to raise a better error than normally.
         # TODO: Investigate if we want (to support) this case
         struct.eigenmode._path
+
+    assert (
+        str(excinfo.value)
+        == "Link to parent of /fake/parent[?]/wavevector broken. Cannot reconstruct index"
+    )

@@ -46,9 +46,6 @@ class IDSStructArray(IDSMixin):
 
         self._convert_ids_types = False
 
-        # signal that this is an array-type addressing
-        self._array_type = True
-
         # Initialize with an 0-length list
         self.value = []
 
