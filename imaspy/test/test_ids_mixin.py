@@ -29,5 +29,7 @@ def test_time_mode(mixin):
     assert mixin._time_mode == -999999999
 
 
-def test_toplevel(mixin):
-    assert mixin._toplevel == "gyrokinetics"
+def test_toplevel(fake_filled_toplevel):
+    top = fake_filled_toplevel
+    assert top.wavevector._toplevel == top
+    assert top.wavevector[0].radial_component_norm._toplevel == top

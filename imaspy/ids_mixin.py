@@ -177,7 +177,7 @@ class IDSMixin:
         return self.coordinates.time_index
 
     @cached_property
-    def _toplevel(self) -> str:
+    def _toplevel(self) -> "IDSToplevel":
         """Return the name of the toplevel this node belongs to"""
         return self._parent._toplevel
 

@@ -306,6 +306,6 @@ class IDSToplevel(IDSStructure):
         return my_repr
 
     @cached_property
-    def _toplevel(self) -> str:
+    def _toplevel(self) -> "IDSToplevel":
         """Return the name of the toplevel"""
-        return self.metadata.name
+        return self
