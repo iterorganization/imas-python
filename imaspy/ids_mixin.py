@@ -70,7 +70,7 @@ class IDSMixin:
                 if self._parent._array_type:
                     try:
                         my_path = "{!s}[{!s}]".format(
-                            self._parent._path, self._parent.value.index(self) + 1
+                            self._parent._path, self._parent.value.index(self)
                         )
                     except ValueError as e:
                         # this happens when we ask the path of a struct_array child

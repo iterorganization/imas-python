@@ -38,4 +38,5 @@ def test_path(fake_filled_toplevel):
     top = fake_filled_toplevel
     assert top.wavevector._path == "/gyrokinetics/wavevector"
     assert top.ids_properties.creation_date._path == "/gyrokinetics/ids_properties/creation_date"
-    assert top.wavevector[0].radial_component_norm._path == "/gyrokinetics/wavevector[1]/radial_component_norm"
+    assert top.wavevector[0]._path == "/gyrokinetics/wavevector[0]"
+    assert top.wavevector[0].radial_component_norm._path == "/gyrokinetics/wavevector[0]/radial_component_norm"
