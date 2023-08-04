@@ -6,6 +6,7 @@ import logging
 import os
 from typing import Any, Optional
 
+from imaspy.exception import ValidationError
 from imaspy.ids_convert import NBCPathMap, dd_version_map_from_factories
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
@@ -429,10 +430,18 @@ class DBEntry:
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
 
-        # Automatic validation?
-        validate = os.environ.get("IMAS_AL_ENABLE_VALIDATION_AT_PUT")
-        if validate and validate != "0":
-            ids.validate()
+        # Automatic validation
+        disable_validate = os.environ.get("IMAS_AL_DISABLE_VALIDATE")
+        if not disable_validate or disable_validate == "0":
+            try:
+                ids.validate()
+            except ValidationError:
+                logger.error(
+                    "IDS %s is not valid. You can disable automatic IDS validation by "
+                    "setting the environment variable IMAS_AL_DISABLE_VALIDATE=1.",
+                    ids.metadata.name,
+                )
+                raise
 
         ids_name = ids.metadata.name
         # Create a version conversion map, if needed
