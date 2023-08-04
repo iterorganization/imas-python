@@ -176,6 +176,11 @@ class IDSMixin:
         """Return the time axis for this node (None if no time dependence)"""
         return self.coordinates.time_index
 
+    @cached_property
+    def _toplevel(self) -> str:
+        """Return the name of the toplevel this node belongs to"""
+        return self._parent._toplevel
+
     def _validate(self, aos_indices: Dict[str, int]) -> None:
         """Actual implementation of validation logic.
 

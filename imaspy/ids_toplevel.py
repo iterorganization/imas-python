@@ -10,6 +10,11 @@ import re
 from typing import TYPE_CHECKING, Optional
 import tempfile
 
+try:
+    from functools import cached_property
+except ImportError:
+    from cached_property import cached_property
+
 from imaspy.al_exception import ALException
 from imaspy.exception import ValidationError
 from imaspy.ids_defs import (
@@ -299,3 +304,8 @@ class IDSToplevel(IDSStructure):
         my_repr += f" (IDS:{ids_root})>"
 
         return my_repr
+
+    @cached_property
+    def _toplevel(self) -> str:
+        """Return the name of the toplevel"""
+        return self.metadata.name
