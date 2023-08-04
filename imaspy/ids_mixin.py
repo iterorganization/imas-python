@@ -69,7 +69,7 @@ class IDSMixin:
             try:
                 if self._parent._array_type:
                     try:
-                        my_path = "{!s}/{!s}".format(
+                        my_path = "{!s}[{!s}]".format(
                             self._parent._path, self._parent.value.index(self) + 1
                         )
                     except ValueError as e:
