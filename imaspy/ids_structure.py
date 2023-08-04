@@ -134,15 +134,7 @@ class IDSStructure(IDSMixin):
         return getattr(self, keyname)
 
     def __repr__(self):
-        abs_path = self._path  # Split this off here so that we can always decide
-        # to get the abs_path from somewhere else
-        split_on_slash = self._path.split("/")
-        ids_root = split_on_slash[1]
-        relative_path = "/".join(split_on_slash[2:])
-        relative_path = re.sub("/(\d+)", "[\\1]", relative_path)
-
-        my_repr = f"<{type(self).__name__}"
-        my_repr += f" (IDS:{ids_root}, {relative_path}"
+        my_repr = self._build_repr_start()
         my_repr += ")>"
         return my_repr
 

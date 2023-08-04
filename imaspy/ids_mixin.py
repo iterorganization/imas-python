@@ -149,6 +149,38 @@ class IDSMixin:
         if hasattr(self, "_parent"):
             return self._parent._version
 
+    def _build_repr_start(self):
+        my_repr = f"<{type(self).__name__}"
+        my_repr += f" (IDS:{self._toplevel._absolute_path.lstrip('/')},"
+        my_repr += f" {self._path}"
+        return my_repr
+
+    def __repr__(self):
+        my_repr = self._build_repr_start()
+        my_repr += f", {self.data_type}"
+        my_repr += ")>"
+
+        # Numpy is handled slightly differently, as it needs an extra import
+        # Also, printing arrays is quite difficult, as we don't know the length
+        # nor preferred formatting per se. As we want to print the full
+        # thing that could _theoretically_ reproduce the array, we do
+        # some numpy magic here
+        potential_numpy_str = repr(self.value)
+        # This is either something that has array(), and implies a numpy array
+        # or just a number. Check for this, and be careful. This may never fail!
+        if potential_numpy_str.startswith("array(") and potential_numpy_str.endswith(
+            ")"
+        ):
+            # This is numpy-array style array. Easy!
+            potential_numpy_str = potential_numpy_str[6:-1]
+            # We should end up with something list-like, check this
+            assert potential_numpy_str.startswith("[")
+            potential_numpy_str = f"{potential_numpy_str}"
+
+        # Now append the value repr to our own native repr
+        my_repr += f" \n{_fullname(self.value)}({potential_numpy_str})"
+        return my_repr
+
     def resample(
         self, old_time, new_time, homogeneousTime=None, inplace=False, **kwargs
     ):
@@ -234,3 +266,12 @@ class IDSMixin:
                     "mode is IDS_TIME_MODE_INDEPENDENT.",
                     aos_indices,
                 )
+
+
+def _fullname(o):
+    """Get the full name to a type, including module name etc."""
+    class_ = o.__class__
+    module = class_.__module__
+    if module == "builtins":
+        return class_.__qualname__  # avoid outputs like 'builtins.str'
+    return module + "." + class_.__qualname__

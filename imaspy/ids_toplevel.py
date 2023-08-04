@@ -297,15 +297,8 @@ class IDSToplevel(IDSStructure):
         )
 
     def __repr__(self):
-        abs_path = self._path  # Split this off here so that we can always decide
-        # to get the abs_path from somewhere else
-
-        split_on_slash = self._path.split("/")
-        ids_root = split_on_slash[1]
-
         my_repr = f"<{type(self).__name__}"
-        my_repr += f" (IDS:{ids_root})>"
-
+        my_repr += f" (IDS:{self._toplevel._absolute_path.lstrip('/')})>"
         return my_repr
 
     @cached_property
