@@ -167,10 +167,6 @@ class IDSPrimitive(IDSMixin):
             return self.value == ref
 
     def cast_value(self, value):
-        # Cast list-likes to arrays
-        if isinstance(value, (list, tuple)):
-            value = np.array(value)
-
         # Cast values to their IDS-python types
         if self.metadata.ndim == 0:
             if self.metadata.data_type is IDSDataType.STR:
@@ -185,22 +181,17 @@ class IDSPrimitive(IDSMixin):
                 raise ValueError(f"Invalid data_type: {self.metadata.data_type}")
         else:  # ndim >= 1
             if self.metadata.data_type is IDSDataType.FLT:
-                value = np.array(value, dtype=np.float64)
+                value = np.array(value, dtype=np.float64, copy=False)
             elif self.metadata.data_type is IDSDataType.CPX:
-                value = np.array(value, dtype=np.complex128)
+                value = np.array(value, dtype=np.complex128, copy=False)
             elif self.metadata.data_type is IDSDataType.INT:
-                value = np.array(value, dtype=np.int32)
+                value = np.array(value, dtype=np.int32, copy=False)
             elif self.metadata.data_type is IDSDataType.STR:
                 # make sure that all the strings are decoded
-                if isinstance(value, np.ndarray):
-                    value = list(
-                        [
-                            str(val, encoding="UTF-8")
-                            if isinstance(val, bytes)
-                            else val
-                            for val in value
-                        ]
-                    )
+                value = [
+                    str(val, encoding="UTF-8") if isinstance(val, bytes) else val
+                    for val in value
+                ]
             else:
                 raise ValueError(f"Invalid data_type: {self.metadata.data_type}")
         return value
