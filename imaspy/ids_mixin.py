@@ -64,32 +64,7 @@ class IDSMixin:
     def _path(self):
         """Build relative path from the toplevel to the node"""
         # This includes the toplevel name with a slash at the start
-        my_path = self.metadata.name
-        if hasattr(self._parent, "value"):
-            # All array-like elements have a "value" where we need some
-            # specific path handling
-
-            if hasattr(self._parent.value, "index"):
-                # For our well-defined IMASPy object, we just need to
-                # handle the case where the value is indexable. We assume
-                # the parents path can always be determined.
-                try:
-                    my_path = "{!s}[{!s}]".format(
-                        self._parent._path, self._parent.value.index(self)
-                    )
-                except ValueError as e:
-                    # this happens when we ask the path of a struct_array
-                    # child that is mangled so much that the parent node of
-                    # the parent is no longer indexable. In that case,
-                    # raise a sane error
-                    my_path = f"{self._parent._path}[?]/{my_path}"
-                    raise NotImplementedError(
-                        f"Link to parent of {my_path} broken. Cannot reconstruct index"
-                    ) from e
-        elif hasattr(self._parent, "_path"):
-            # If we do not have a "value" attribute, we are for sure not an
-            # array, and constructing a path is simple
-            my_path = self._parent._path + "/" + my_path
+        my_path = self._parent._path + "/" + self.metadata.name
         # As we build the _path in reverse, e.g. from the leaf node recursively
         # upwards, we need to strip the leading slash and ids name. This should
         # only be at the last recursive call though!
