@@ -47,9 +47,9 @@ def random_data(ids_type, ndims):
             raise NotImplementedError(
                 "Strings of dimension 2 or higher " "are not supported"
             )
-        return np.random.randint(0, 2**31 - 1, size=randdims(ndims))
+        return np.random.randint(0, 2**31 - 1, size=randdims(ndims), dtype=np.int32)
     elif ids_type == "INT":
-        return np.random.randint(0, 2**31 - 1, size=randdims(ndims))
+        return np.random.randint(0, 2**31 - 1, size=randdims(ndims), dtype=np.int32)
     elif ids_type == "FLT":
         return np.random.random_sample(size=randdims(ndims))
     elif ids_type == "CPX":
@@ -151,7 +151,9 @@ def maybe_set_random_value(primitive: IDSPrimitive, leave_empty=0.2) -> None:
     if primitive.metadata.data_type is IDSDataType.STR:
         primitive.value = [random_string() for i in range(shape[0])]
     elif primitive.metadata.data_type is IDSDataType.INT:
-        primitive.value = np.random.randint(-(2**31), 2**31 - 1, size=shape)
+        primitive.value = np.random.randint(
+            -2**31, 2**31 - 1, size=shape, dtype=np.int32
+        )
     elif primitive.metadata.data_type is IDSDataType.FLT:
         primitive.value = np.random.random_sample(size=shape)
     elif primitive.metadata.data_type is IDSDataType.CPX:
@@ -261,6 +263,7 @@ def unset_coordinate(coordinate):
                 if ele_coor is coordinate:
                     element.value = []
                     return
+
     parent.visit_children(callback)
 
 
@@ -305,7 +308,13 @@ def open_dbentry(
         shot = int(worker_id[2:]) + 1
 
     dbentry = DBEntry(
-        backend, "test", shot, 0, str(tmp_path), dd_version=dd_version, xml_path=xml_path
+        backend,
+        "test",
+        shot,
+        0,
+        str(tmp_path),
+        dd_version=dd_version,
+        xml_path=xml_path,
     )
     options = f"-prefix {tmp_path}/" if backend == ASCII_BACKEND else None
     if mode == "w":
