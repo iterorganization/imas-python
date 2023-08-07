@@ -50,17 +50,3 @@ def test_path(fake_filled_toplevel):
         top.wavevector[0].radial_component_norm._path
         == "wavevector[0]/radial_component_norm"
     )
-
-
-def test_unlinked_struct(fake_filled_toplevel):
-    top = fake_filled_toplevel
-    struct = top.wavevector[0]
-    assert isinstance(struct, IDSStructure)
-    struct._parent = fake_array_parent
-    struct._parent.value = []
-    # with pytest.raises(NotImplementedError) as excinfo:
-    # In this case, the user has managed to mangle the IMASPy structure so
-    # much, that a parent got unlinked with the parent structures.
-    # Best-effort is to raise a better error than normally.
-    # TODO: Investigate if we want (to support) this case
-    assert struct.eigenmode._path == "eigenmode"

@@ -65,19 +65,8 @@ class IDSMixin:
         # Test if we are a part of a tree
         my_path = self._relative_path
         # We have a parent, but do we have a sane toplevel?
-        try:
-            top = self._toplevel
-        except AttributeError as e:
-            # We cannot find a toplevel. Just assume whatever we have found
-            # with _relative_path is our full path without IDS
-            return my_path.lstrip("/")
-            # TODO: Check if we want to support this case, otherwise return next Erro
-            # raise NotImplementedError(
-            #     f"No valid toplevel found for '{my_path}'. Cannot reconstruct path"
-            # ) from e
-        else:
-            # You have a sane toplevel, so you can strip it
-            return my_path[len(top._relative_path) + 1 :]
+        top = self._toplevel
+        return my_path[len(top._relative_path) + 1 :]
 
     @property
     def _relative_path(self):
