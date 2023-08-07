@@ -42,7 +42,7 @@ class IDSToplevel(IDSStructure):
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
 
-    _path = ""
+    _path = ""  # Path to ourselves without the IDS name and slashes
 
     def __init__(self, parent: "IDSFactory", structure_xml):
         """Save backend_version and backend_xml and build translation layer.
@@ -299,5 +299,6 @@ class IDSToplevel(IDSStructure):
 
     @cached_property
     def _toplevel(self) -> "IDSToplevel":
-        """Return the name of the toplevel"""
+        """Return ourselves"""
+        # Used to cut off recursive call
         return self

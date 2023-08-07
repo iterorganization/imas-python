@@ -61,8 +61,13 @@ class IDSMixin:
         return self.metadata.type.is_dynamic or self._dd_parent._is_dynamic
 
     @property
-    def _path(self):
-        """Build relative path from the toplevel to the node"""
+    def _path(self) -> str:
+        """Build relative path from the toplevel to the node
+
+        Examples:
+            - `ids.ids_properties.creation_data` is `ids_properties/creation_date`
+            - `gyrokinetics.wavevector[0].radial_component_norm` is `wavevector[0]/radial_component_norm
+        """
         from imaspy.ids_struct_array import IDSStructArray
 
         my_path = self.metadata.name
@@ -113,7 +118,18 @@ class IDSMixin:
         if hasattr(self, "_parent"):
             return self._parent._version
 
-    def _build_repr_start(self):
+    def _build_repr_start(self) -> str:
+        """Build the start of the string derived classes need for their repr.
+
+        All derived classes need to represent the IDS they are part of,
+        and thus have a common string to start with. We collect that common logic here
+
+        Examples:
+            - `gyrokinetics.wavevector[0].eigenmode[0].time_norm` is
+                `<IDSNumericArray (IDS:gyrokinetics, wavevector[0]/eigenmode[0]/time_norm`
+            - `wavevector[0].eigenmode[0].frequency_norm` is
+                `<IDSPrimitive (IDS:gyrokinetics, wavevector[0]/eigenmode[0]/frequency_norm`
+        """
         my_repr = f"<{type(self).__name__}"
         my_repr += f" (IDS:{self._toplevel.metadata.name},"
         my_repr += f" {self._path}"
@@ -210,7 +226,7 @@ class IDSMixin:
 
     @cached_property
     def _toplevel(self) -> "IDSToplevel":
-        """Return the name of the toplevel this node belongs to"""
+        """Return the toplevel instance this node belongs to"""
         return self._parent._toplevel
 
     def _validate(self, aos_indices: Dict[str, int]) -> None:
@@ -232,8 +248,13 @@ class IDSMixin:
                 )
 
 
-def _fullname(o):
-    """Get the full name to a type, including module name etc."""
+def _fullname(o) -> str:
+    """Get the full name to a type, including module name etc.
+
+    Examples:
+        - _fullname(np.array([1,2,3]) -> numpy.ndarray
+        - fullname([1,2,3]) -> list
+    """
     class_ = o.__class__
     module = class_.__module__
     if module == "builtins":
