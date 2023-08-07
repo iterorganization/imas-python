@@ -188,7 +188,6 @@ class IDSPrimitive(IDSMixin):
 
         elif self.metadata.ndim == 0:
             type_ = self.metadata.data_type.python_type
-            assert type_ is not None, f"Invalid data_type: {self.metadata.data_type}"
             if isinstance(value, np.ndarray) and value.ndim == 0:
                 value = value.item()  # Unpack 0D numpy arrays
             if not isinstance(value, type_):
@@ -197,10 +196,8 @@ class IDSPrimitive(IDSMixin):
 
         else:  # ndim >= 1
             dtype = self.metadata.data_type.numpy_dtype
-            assert dtype is not None, f"Invalid data_type: {self.metadata.data_type}"
-            if not isinstance(value, np.ndarray):
-                logger.warning(logmsg, type(value), self)
-            elif value.dtype != dtype:
+            value = np.asanyarray(value)
+            if value.dtype != dtype:
                 logger.warning(logmsg, value.dtype, self)
             value = np.array(value, dtype=dtype, copy=False)
             if value.ndim != self.metadata.ndim:
