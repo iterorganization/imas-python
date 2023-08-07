@@ -42,6 +42,8 @@ class IDSToplevel(IDSStructure):
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
 
+    _path = ""
+
     def __init__(self, parent: "IDSFactory", structure_xml):
         """Save backend_version and backend_xml and build translation layer.
 
@@ -290,13 +292,9 @@ class IDSToplevel(IDSStructure):
             "{!s}.partialGet(dataPath, occurrence=0)".format(self)
         )
 
-    @property
-    def _path(self):
-        return f"{self.metadata.name}"
-
     def __repr__(self):
         my_repr = f"<{type(self).__name__}"
-        my_repr += f" (IDS:{self._toplevel._path.lstrip('/')})>"
+        my_repr += f" (IDS:{self.metadata.name})>"
         return my_repr
 
     @cached_property

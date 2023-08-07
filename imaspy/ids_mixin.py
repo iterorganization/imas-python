@@ -63,16 +63,30 @@ class IDSMixin:
     @property
     def _path(self):
         """Build relative path from the toplevel to the node"""
-        # This includes the toplevel name with a slash at the start
-        my_path = self._parent._path + "/" + self.metadata.name
-        # As we build the _path in reverse, e.g. from the leaf node recursively
-        # upwards, we need to strip the leading slash and ids name. This should
-        # only be at the last recursive call though!
-        top = self._toplevel
-        if my_path.startswith(top._path):
-            return my_path[len(top._path) + 1 :]
+        from imaspy.ids_struct_array import IDSStructArray
+
+        my_path = self.metadata.name
+        if self._parent._path == "":
+            # This is a toplevel
+            my_path = my_path.lstrip("/")
+        elif isinstance(self._parent, IDSStructArray):
+            try:
+                my_path = "{!s}[{!s}]".format(
+                    self._parent._path, self._parent.value.index(self)
+                )
+            except ValueError as e:
+                # This happens when we ask the path of a struct_array
+                # child that is mangled so much that the parent node of
+                # the parent is no longer indexable. In that case,
+                # raise a sane error to be easily debuggable
+                my_path = f"{self._parent._path}[?]/{my_path}"
+                raise NotImplementedError(
+                    f"Link to parent of {my_path} broken. Cannot reconstruct index"
+                ) from e
         else:
-            return my_path
+            # If we are not an IDSStructArray, we have no indexable children.
+            my_path = self._parent._path + "/" + my_path
+        return my_path
 
     def reset_path(self):
         if "_path" in self.__dict__:
@@ -101,7 +115,7 @@ class IDSMixin:
 
     def _build_repr_start(self):
         my_repr = f"<{type(self).__name__}"
-        my_repr += f" (IDS:{self._toplevel._path},"
+        my_repr += f" (IDS:{self._toplevel.metadata.name},"
         my_repr += f" {self._path}"
         return my_repr
 
