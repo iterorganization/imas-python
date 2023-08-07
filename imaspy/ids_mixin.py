@@ -93,12 +93,6 @@ class IDSMixin:
             my_path = self._parent._path + "/" + my_path
         return my_path
 
-    def reset_path(self):
-        if "_path" in self.__dict__:
-            del self.__dict__["_path"]  # Delete the cached_property cache
-            # this is how it works for functools cached_property.
-            # how is it for cached_property package?
-
     def visit_children(self, fun, leaf_only=False):
         """walk all children of this structure in order and execute fun on them"""
         # you will have fun
