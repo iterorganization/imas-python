@@ -11,7 +11,7 @@ from imaspy.ids_toplevel import IDSToplevel
 
 
 class fake_parent_factory:
-    _path = ""
+    pass
 
 
 class fake_array_parent:
