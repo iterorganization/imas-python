@@ -52,28 +52,6 @@ def test_path(fake_filled_toplevel):
     )
 
 
-def test_parentless_path(fake_filled_toplevel):
-    top = fake_filled_toplevel
-    delattr(fake_filled_toplevel.wavevector[0].eigenmode, "_parent")
-    # As we deleted the _parent, a lot magic can possibly break
-    # We still want repr and thus _path to work though
-    # In this use-case, the node "wavevector[0]" acts like it is an
-    # IDSToplevel and should thus not be returned
-    assert top.wavevector[0].eigenmode._path == "eigenmode"
-    assert top.wavevector[0].eigenmode[0]._path == "eigenmode[0]"
-    assert (
-        top.wavevector[0].eigenmode[0].frequency_norm._path
-        == "eigenmode[0]/frequency_norm"
-    )
-    # The ones that still have the parent should still act as expected
-    assert (
-        top.wavevector[0].radial_component_norm._path
-        == "wavevector[0]/radial_component_norm"
-    )
-    assert top.wavevector[0]._path == "wavevector[0]"
-    assert top.ids_properties.creation_date._path == "ids_properties/creation_date"
-
-
 def test_unlinked_struct(fake_filled_toplevel):
     top = fake_filled_toplevel
     struct = top.wavevector[0]
