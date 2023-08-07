@@ -21,6 +21,7 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_INDEPENDENT,
 )
 from imaspy.ids_factory import IDSFactory
+from imaspy.db_entry import DBEntry
 from imaspy.test.test_helpers import open_dbentry
 
 try:
@@ -146,7 +147,7 @@ def fake_structure_xml(fake_toplevel_xml):
 
 
 @pytest.fixture
-def fake_filled_toplevel(fake_toplevel_xml: Path, worker_id: str, tmp_path: Path):
+def fake_filled_toplevel(fake_toplevel_xml: Path, worker_id: str, tmp_path: Path) -> DBEntry:
     """A very specifically filled smallish toplevel"""
     dbentry = open_dbentry(
         MEMORY_BACKEND, "w", worker_id, tmp_path, xml_path=fake_toplevel_xml
