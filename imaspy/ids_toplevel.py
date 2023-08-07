@@ -290,9 +290,13 @@ class IDSToplevel(IDSStructure):
             "{!s}.partialGet(dataPath, occurrence=0)".format(self)
         )
 
+    @property
+    def _path(self):
+        return f"{self.metadata.name}"
+
     def __repr__(self):
         my_repr = f"<{type(self).__name__}"
-        my_repr += f" (IDS:{self._toplevel._relative_path.lstrip('/')})>"
+        my_repr += f" (IDS:{self._toplevel._path.lstrip('/')})>"
         return my_repr
 
     @cached_property

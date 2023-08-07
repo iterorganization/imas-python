@@ -62,14 +62,6 @@ class IDSMixin:
 
     @property
     def _path(self):
-        # Test if we are a part of a tree
-        my_path = self._relative_path
-        # We have a parent, but do we have a sane toplevel?
-        top = self._toplevel
-        return my_path[len(top._relative_path) + 1 :]
-
-    @property
-    def _relative_path(self):
         """Build relative path from the toplevel to the node"""
         # This includes the toplevel name with a slash at the start
         my_path = self.metadata.name
@@ -82,25 +74,30 @@ class IDSMixin:
                 # handle the case where the value is indexable. We assume
                 # the parents path can always be determined.
                 try:
-                    return "{!s}[{!s}]".format(
-                        self._parent._relative_path, self._parent.value.index(self)
+                    my_path = "{!s}[{!s}]".format(
+                        self._parent._path, self._parent.value.index(self)
                     )
                 except ValueError as e:
                     # this happens when we ask the path of a struct_array
                     # child that is mangled so much that the parent node of
                     # the parent is no longer indexable. In that case,
                     # raise a sane error
-                    my_path = f"{self._parent._relative_path}[?]/{my_path}"
+                    my_path = f"{self._parent._path}[?]/{my_path}"
                     raise NotImplementedError(
                         f"Link to parent of {my_path} broken. Cannot reconstruct index"
                     ) from e
-        elif hasattr(self._parent, "_relative_path"):
+        elif hasattr(self._parent, "_path"):
             # If we do not have a "value" attribute, we are for sure not an
             # array, and constructing a path is simple
-            return self._parent._relative_path + "/" + my_path
+            my_path = self._parent._path + "/" + my_path
+        # As we build the _path in reverse, e.g. from the leaf node recursively
+        # upwards, we need to strip the leading slash and ids name. This should
+        # only be at the last recursive call though!
+        top = self._toplevel
+        if my_path.startswith(top._path):
+            return my_path[len(top._path) + 1 :]
         else:
-            # We have a parent, but not a sane path. Return ourselves
-            return f"{my_path}"
+            return my_path
 
     def reset_path(self):
         if "_path" in self.__dict__:
@@ -129,7 +126,7 @@ class IDSMixin:
 
     def _build_repr_start(self):
         my_repr = f"<{type(self).__name__}"
-        my_repr += f" (IDS:{self._toplevel._relative_path},"
+        my_repr += f" (IDS:{self._toplevel._path},"
         my_repr += f" {self._path}"
         return my_repr
 
