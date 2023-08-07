@@ -12,10 +12,10 @@ def minimal(ids_minimal_types):
 
 # The test_assign_* tests are testing IDSPrimitive.cast_value
 sample_values = {
-    "STR": ["0D string", ["list", "of", "strings"]],
-    "INT": [1, *(numpy.ones((2,) * i, dtype=numpy.int32) for i in range(1, 4))],
-    "FLT": [1.0, *(numpy.ones((2,) * i, dtype=numpy.float64) for i in range(1, 7))],
-    "CPX": [
+    "str": ["0D string", ["list", "of", "strings"]],
+    "int": [1, *(numpy.ones((2,) * i, dtype=numpy.int32) for i in range(1, 4))],
+    "flt": [1.0, *(numpy.ones((2,) * i, dtype=numpy.float64) for i in range(1, 7))],
+    "cpx": [
         1.0 + 1.0j,
         *(numpy.ones((2,) * i, dtype=numpy.complex128) * (1 + 1j) for i in range(1, 7)),
     ],
@@ -34,8 +34,8 @@ def test_assign_str_0d(minimal, caplog):
         for ndim, value in enumerate(values):
             caplog.clear()
             minimal.str_0d = value
-            # All values except sample_values["STR"][0] should log a warning
-            assert len(caplog.records) == 0 if name == "STR" and ndim == 0 else 1
+            # All values except sample_values["str"][0] should log a warning
+            assert len(caplog.records) == 0 if name == "str" and ndim == 0 else 1
 
 
 def test_assign_str_1d(minimal, caplog):
@@ -50,8 +50,8 @@ def test_assign_str_1d(minimal, caplog):
         for ndim, value in enumerate(values):
             caplog.clear()
             minimal.str_1d = value
-            # All values except sample_values["STR"][1] should log a warning
-            assert len(caplog.records) == (0 if name == "STR" and ndim == 1 else 1)
+            # All values except sample_values["str"][1] should log a warning
+            assert len(caplog.records) == (0 if name == "str" and ndim == 1 else 1)
 
 
 # Prevent the expected numpy ComplexWarnings from cluttering pytest output
@@ -62,18 +62,25 @@ def test_assign_numeric_types(minimal, caplog, typ, max_dim):
         name = f"{typ}_{dim}d"
 
         for other_typ, values in sample_values.items():
-            can_assign = typ == other_typ.lower()
-            can_assign = can_assign or (typ == "cpx" and other_typ != "STR")
-            can_assign = can_assign or (typ == "int" and other_typ == "FLT")
-            can_assign = can_assign or (typ == "flt" and other_typ == "INT")
+            can_assign = (
+                other_typ == typ
+                or (other_typ != "str" and typ == "cpx")  # Store float/int in complex
+                or (other_typ == "flt" and typ == "int")  # Store float in int
+                or (other_typ == "int" and typ == "flt")  # Store int in float
+            )
             for other_ndim, value in enumerate(values):
+                # We attempt to store other_typ (uppercase) with dimension other_ndim in
+                # a variable of type typ (lowercase) and dimension dim
                 if dim == other_ndim and can_assign:
                     caplog.clear()
                     minimal[name].value = value
                     assert len(caplog.records) == (0 if typ == other_typ.lower() else 1)
-                elif dim == other_ndim >= 1 and other_typ == "CPX":
+                elif dim == other_ndim >= 1 and other_typ == "cpx":
+                    # Numpy allows casting of complex to float or int, but warns:
                     with pytest.warns(numpy.ComplexWarning):
+                        caplog.clear()
                         minimal[name].value = value
+                        assert len(caplog.records) == 1
                 else:
                     with pytest.raises(Exception) as excinfo:
                         minimal[name].value = value
