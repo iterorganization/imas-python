@@ -71,12 +71,6 @@ class IDSToplevel(IDSStructure):
         """Return the default serializer protocol."""
         return DEFAULT_SERIALIZER_PROTOCOL
 
-    @property
-    def _absolute_path(self):
-        """Build path from node to root in access-layer style"""
-        # Per definition, these should always be root nodes. A path is simple!
-        return f"/{self.metadata.name}"
-
     @needs_imas
     def serialize(self, protocol=None):
         """Serialize this IDS to a data buffer.
@@ -298,7 +292,7 @@ class IDSToplevel(IDSStructure):
 
     def __repr__(self):
         my_repr = f"<{type(self).__name__}"
-        my_repr += f" (IDS:{self._toplevel._absolute_path.lstrip('/')})>"
+        my_repr += f" (IDS:{self._toplevel._relative_path.lstrip('/')})>"
         return my_repr
 
     @cached_property

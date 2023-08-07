@@ -78,7 +78,7 @@ class IDSMixin:
                 # ) from e
             else:
                 # You have a sane toplevel, so you can strip it
-                return my_path[len(top._absolute_path) :]
+                return my_path[len(top._relative_path) + 1 :]
         else:
             # I do not have a parent, so I am probably a root node.
             # Relative to myself I'm just myself!
@@ -151,7 +151,7 @@ class IDSMixin:
 
     def _build_repr_start(self):
         my_repr = f"<{type(self).__name__}"
-        my_repr += f" (IDS:{self._toplevel._absolute_path.lstrip('/')},"
+        my_repr += f" (IDS:{self._toplevel._relative_path},"
         my_repr += f" {self._path}"
         return my_repr
 
