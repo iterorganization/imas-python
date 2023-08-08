@@ -60,7 +60,8 @@ def fill_slice(core_profiles, t):
         profiles_1d.neutral[i].density = np.zeros(N_GRID)
 
 
-class IncrementalPut:
+class IncrementalConfig:
+    # Configuration shared by IncrementalGet and IncrementalPut
     hlis = ["imas", "imaspy"]
     # Backends (only use persistent ones, MEMORY_BACKEND will fail some tests)
     backends = [
@@ -71,8 +72,10 @@ class IncrementalPut:
     params = [hlis, backends]
     param_names = ["HLI", "Backend ID"]
 
-    N_slices = 1024
+    N_slices = 128
 
+
+class IncrementalPut(IncrementalConfig):
     def setup(self, hli, backend):
         path = str(Path.cwd() / f"DB-{hli}-{backend}")
         self.dbentry = DBEntry[hli](backend, "benchmark", 1, 1, path)
@@ -93,19 +96,7 @@ class IncrementalPut:
             self.dbentry.put_slice(self.core_profiles)
 
 
-class IncrementalGet:
-    hlis = ["imas", "imaspy"]
-    # Backends (only use persistent ones, MEMORY_BACKEND will fail some tests)
-    backends = [
-        imaspy.ids_defs.HDF5_BACKEND,
-        # imaspy.ids_defs.MDSPLUS_BACKEND,
-    ]
-
-    params = [hlis, backends]
-    param_names = ["HLI", "Backend ID"]
-
-    N_slices = 1024
-
+class IncrementalGet(IncrementalConfig):
     def setup_cache(self):
         hli = "imas"  # HLI used for pre-generating the data
         for backend in self.backends:
