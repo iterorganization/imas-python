@@ -116,11 +116,7 @@ class IDSStructArray(IDSMixin):
             self.value.append(e)
 
     def __repr__(self):
-        my_repr = self._build_repr_start()
-        my_repr += f" with {len(self)} items"
-        my_repr += ")>"
-
-        return my_repr
+        return f"{self._build_repr_start()} with {len(self)} items)>"
 
     def resize(self, nbelt, keep=False):
         """Resize an array of structures.
