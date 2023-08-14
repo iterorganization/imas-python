@@ -6,7 +6,6 @@ Provides the class for an IDS Primitive data type
 
 * :py:class:`IDSPrimitive`
 """
-import re
 import numbers
 from typing import Any, Dict, Tuple
 from xml.etree.ElementTree import Element

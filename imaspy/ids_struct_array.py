@@ -6,7 +6,6 @@ This contains references to :py:class:`IDSStructure`s
 * :py:class:`IDSStructArray`
 """
 
-import re
 from typing import Dict, Tuple
 from xml.etree.ElementTree import Element
 

@@ -11,7 +11,6 @@ except ImportError:
     from cached_property import cached_property
 
 import logging
-import re
 from typing import Dict
 from xml.etree.ElementTree import Element
 
