@@ -70,27 +70,23 @@ class IDSMixin:
         """
         from imaspy.ids_struct_array import IDSStructArray
 
+        parent_path = self._parent._path
         my_path = self.metadata.name
-        if self._parent._path == "":
-            # This is a toplevel
-            my_path = my_path.lstrip("/")
-        elif isinstance(self._parent, IDSStructArray):
-            try:
-                my_path = "{!s}[{!s}]".format(
-                    self._parent._path, self._parent.value.index(self)
-                )
-            except ValueError as e:
+        if isinstance(self._parent, IDSStructArray):
+            if self in self._parent.value:
+                index = self._parent.value.index(self)
+            else:
                 # This happens when we ask the path of a struct_array
-                # child that is mangled so much that the parent node of
-                # the parent is no longer indexable. In that case,
-                # raise a sane error to be easily debuggable
-                my_path = f"{self._parent._path}[?]/{my_path}"
-                raise NotImplementedError(
-                    f"Link to parent of {my_path} broken. Cannot reconstruct index"
-                ) from e
-        else:
+                # child that does not have a proper parent anymore
+                # E.g. a resize
+                logger.warning(
+                    "Link to parent of %s broken. Cannot reconstruct index", my_path
+                )
+                index = "?"
+            my_path = f"{parent_path}[{index}]"
+        elif parent_path != "":
             # If we are not an IDSStructArray, we have no indexable children.
-            my_path = self._parent._path + "/" + my_path
+            my_path = parent_path + "/" + my_path
         return my_path
 
     def visit_children(self, fun, leaf_only=False):

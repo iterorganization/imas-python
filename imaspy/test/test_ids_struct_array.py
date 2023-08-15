@@ -1,4 +1,5 @@
 from copy import deepcopy
+import logging
 import pprint
 
 import pytest
@@ -46,3 +47,22 @@ def test_pretty_print(struct_array):
         pprint.pformat(struct_array)
         == "<IDSStructArray (IDS:gyrokinetics, wavevector with 3 items)>"
     )
+
+
+def test_path_non_indexable_parent(caplog, fake_filled_toplevel):
+    top = fake_filled_toplevel
+    top.wavevector.resize(1)
+    wv = top.wavevector[0]
+    with caplog.at_level(logging.WARNING):
+        assert wv._path == "wavevector[0]"
+        for record in caplog.records:
+            assert record.levelname != "WARNING"
+
+    # Remove the referenced profiles_1d from its parent
+    top.wavevector.resize(0)
+
+    # Check if singular warning is raised
+    with caplog.at_level(logging.WARNING):
+        assert wv._path == "wavevector[?]"
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelname == "WARNING"
