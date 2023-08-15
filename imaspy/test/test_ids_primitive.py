@@ -18,3 +18,8 @@ def test_pretty_print(fake_filled_toplevel):
     assert pprint.pformat(eig.time_norm).endswith("\nnumpy.ndarray([], dtype=float64)")
     assert pprint.pformat(eig.frequency_norm).startswith("<IDSPrimitive")
     assert pprint.pformat(eig.frequency_norm).endswith("\nfloat(10.0)")
+    fake_filled_toplevel.ids_properties.comment = "A filled comment"
+    assert (
+        pprint.pformat(fake_filled_toplevel.ids_properties.comment)
+        == "<IDSPrimitive (IDS:gyrokinetics, ids_properties/comment, STR_0D)>\nstr('A filled comment')"
+    )

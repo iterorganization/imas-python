@@ -124,30 +124,8 @@ class IDSPrimitive(IDSMixin):
         return iter([])
 
     def __repr__(self):
-        my_repr = self._build_repr_start()
-        my_repr += f", {self.data_type}"
-        my_repr += ")>"
-
-        # Numpy is handled slightly differently, as it needs an extra import
-        # Also, printing arrays is quite difficult, as we don't know the length
-        # nor preferred formatting per se. As we want to print the full
-        # thing that could _theoretically_ reproduce the array, we do
-        # some numpy magic here
-        potential_numpy_str = repr(self.value)
-        # This is either something that has array(), and implies a numpy array
-        # or just a number. Check for this, and be careful. This may never fail!
-        if potential_numpy_str.startswith("array(") and potential_numpy_str.endswith(
-            ")"
-        ):
-            # This is numpy-array style array. Easy!
-            potential_numpy_str = potential_numpy_str[6:-1]
-            # We should end up with something list-like, check this
-            assert potential_numpy_str.startswith("[")
-            potential_numpy_str = f"{potential_numpy_str}"
-
-        # Now append the value repr to our own native repr
-        my_repr += f" \n{_fullname(self.value)}({potential_numpy_str})"
-        return my_repr
+        value_repr = f"{self.value.__class__.__qualname__}({self.value!r})"
+        return f"{self._build_repr_start()}, {self.data_type})>\n{value_repr}"
 
     @property
     def value(self):
@@ -355,6 +333,13 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
         resize the underlying data
         """
         self.value.resize(new_shape)
+
+    def __repr__(self):
+        # Specify that this is a numpy array, instead of a Python array As we
+        # know .value is a numpy array, we can remove "array" part of the
+        # numpy-native repr
+        value_repr = f"{_fullname(self.value)}{repr(self.value)[5:]}"
+        return f"{self._build_repr_start()}, {self.data_type})>\n{value_repr}"
 
 
 def _fullname(o) -> str:
