@@ -198,7 +198,7 @@ class IDSToplevel(IDSStructure):
             >>> core_profiles.profiles_1d.resize(1)
             >>> core_profiles.validate()
             [...]
-            imaspy.exception.CoordinateError: Dimension 0 of element profiles_1d has incorrect size 1. Expected size is 0 (size of coordinate time).
+            imaspy.exception.CoordinateError: Dimension 1 of element profiles_1d has incorrect size 1. Expected size is 0 (size of coordinate time).
             >>> core_profiles.time = [1]
             >>> core_profiles.validate()  # No error: IDS is valid
 

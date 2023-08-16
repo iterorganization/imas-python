@@ -112,6 +112,19 @@ class IDSCoordinate:
         """IDSCoordinate objects are immutable, we can be used e.g. as dict key."""
         return hash(self._coordinate_spec)
 
+    def format_refs(self, element: "IDSMixin") -> str:
+        """Return a comma-separated list of paths representing self.references.
+
+        Useful when constructing error messages to users.
+        """
+        ref_paths = []
+        for ref in self.references:
+            try:
+                ref_paths.append(ref.goto(element)._path)
+            except (ValueError, AttributeError, LookupError):
+                ref_paths.append(str(ref))
+        return ", ".join(f"`{ref}`" for ref in ref_paths)
+
 
 def _goto(path: IDSPath, element: "IDSMixin") -> "IDSPrimitive":
     """Wrapper around IDSPath.goto to raise more meaningful errors."""
@@ -201,11 +214,11 @@ class IDSCoordinates:
             # Check if the lengths of all nonzero alternatives agree
             if len(set(map(len, nonzero_alternatives))) != 1:
                 sizes = "\n".join(
-                    f"    `{alt.metadata.path_doc}` has size {len(alt)}"
+                    f"    `{alt._path}` has size {len(alt)}"
                     for alt in nonzero_alternatives
                 )
                 raise CoordinateLookupError(
-                    f"Dimension {key} of element `{self._mixin.metadata.path_doc}` has "
+                    f"Dimension {key + 1} of element `{self._mixin._path}` has "
                     "multiple alternative coordinates set, but they don't have "
                     f"matching sizes:\n{sizes}"
                 )
@@ -222,18 +235,20 @@ class IDSCoordinates:
                 # alternatively we can be an index
                 return np.arange(self._mixin.shape[key])
             raise CoordinateLookupError(
-                f"Dimension {key} of element `{self._mixin.metadata.path_doc}` must "
-                f"have exactly one of its coordinates ({coordinate.references}) set, "
-                "but none are set."
+                f"Dimension {key + 1} of element `{self._mixin._path}` must "
+                f"have exactly one of its coordinates "
+                f"({coordinate.format_refs(self._mixin)}) set, but none are set."
             )
+
         if sum(ref_is_defined) == 1:
             for i in range(len(refs)):
                 if ref_is_defined[i]:
                     return refs[i]
+
         raise CoordinateLookupError(
-            f"Dimension {key} of element `{self._mixin.metadata.path_doc}` must have "
-            f"exactly one of its coordinates ({coordinate.references}) set, but "
-            "multiple are set."
+            f"Dimension {key + 1} of element `{self._mixin._path}` must have "
+            f"exactly one of its coordinates ({coordinate.format_refs(self._mixin)}) "
+            "set, but multiple are set."
         )
 
     @property
@@ -325,7 +340,7 @@ class IDSCoordinates:
         IDSPath.goto().
         """
         did_capture = []
-        path = self._mixin.metadata.path_doc
+        path = self._mixin._path
         try:
             yield did_capture
         except CoordinateLookupError as exc:
@@ -333,8 +348,8 @@ class IDSCoordinates:
         except IndexError as exc:
             # Can happen in IDSPath.goto when an invalid index is encountered.
             raise ValidationError(
-                f"Dimension {dim} of element `{path}` has an invalid index "
-                f"provided for coordinate `{coordinate.references}`."
+                f"Dimension {dim + 1} of element `{path}` has an invalid index "
+                f"provided for coordinate(s) {coordinate.format_refs(self._mixin)}."
             ) from exc
         except Exception as exc:
             # Ignore all other exceptions and log them

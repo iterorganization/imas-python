@@ -41,6 +41,6 @@ class CoordinateError(ValidationError):
         if coor_path is not None:
             coor_path_text = f" (size of coordinate `{coor_path}`)"
         super().__init__(
-            f"Dimension {dimension} of element `{element_path}` has incorrect size"
+            f"Dimension {dimension + 1} of element `{element_path}` has incorrect size"
             f" {size}. Expected size is {expected_size}{coor_path_text}."
         )
