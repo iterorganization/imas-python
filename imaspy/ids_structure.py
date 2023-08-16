@@ -168,9 +168,9 @@ class IDSStructure(IDSMixin):
         else:
             super().__setattr__(key, value)
 
-    def _validate(self, aos_indices: Dict[str, int]) -> None:
+    def _validate(self) -> None:
         # Common validation logic
-        super()._validate(aos_indices)
+        super()._validate()
         # IDSStructure specific: validate child nodes
         for child in self:
-            child._validate(aos_indices)
+            child._validate()

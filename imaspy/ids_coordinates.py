@@ -248,7 +248,7 @@ class IDSCoordinates:
                 return i
         return None
 
-    def _validate(self, aos_indices: Dict[str, int]):
+    def _validate(self):
         """Coordinate validation checks.
 
         See also:
@@ -256,7 +256,7 @@ class IDSCoordinates:
         """
         shape = self._mixin.shape
         metadata = self._mixin.metadata
-        path = metadata.path_doc
+        path = self._mixin._path
 
         # Validate coordinate
         for dim in range(metadata.ndim):
@@ -273,13 +273,11 @@ class IDSCoordinates:
                     # test_validate_reference_or_fixed_size) we continue checking the
                     # references below.
                     # If only size is specified, the dimension is not the correct size:
-                    raise CoordinateError(
-                        path, dim, shape[dim], coordinate.size, None, aos_indices
-                    )
+                    raise CoordinateError(path, dim, shape[dim], coordinate.size, None)
 
             # Validate references
             assert coordinate.references
-            with self._capture_goto_errors(dim, coordinate, aos_indices) as captured:
+            with self._capture_goto_errors(dim, coordinate) as captured:
                 other_element = self[dim]
             if captured:
                 continue  # Ignored error, continue to next dimension
@@ -288,27 +286,21 @@ class IDSCoordinates:
                 if coordinate.size:
                     # other_element may be a numpy array when coordinate = "path OR
                     # 1...1" and path is unset
-                    raise CoordinateError(
-                        path, dim, shape[dim], coordinate.size, None, aos_indices
-                    )
+                    raise CoordinateError(path, dim, shape[dim], coordinate.size, None)
                 # Otherwise, this is a dynamic AoS with heterogeneous_time, verify that
                 # none of the values are EMPTY_FLOAT
                 if EMPTY_FLOAT in other_element:
                     (n,) = np.where(other_element == EMPTY_FLOAT)
-                    raise ValidationError(
-                        f"Coordinate `{path}[{n[0]}]/time` is empty.", aos_indices
-                    )
+                    raise ValidationError(f"Coordinate `{path}[{n[0]}]/time` is empty.")
 
-            with self._capture_goto_errors(dim, coordinate, aos_indices) as captured:
+            with self._capture_goto_errors(dim, coordinate) as captured:
                 # other_element may (incorrectly) be a struct in older DD versions
                 expected_size = other_element.shape[0]
             if captured:
                 continue  # Ignored error, continue to next dimension
             if shape[dim] != expected_size:
-                other_path = other_element.metadata.path_doc
-                raise CoordinateError(
-                    path, dim, shape[dim], expected_size, other_path, aos_indices
-                )
+                other_path = other_element._path
+                raise CoordinateError(path, dim, shape[dim], expected_size, other_path)
 
         # Validate coordinate_same_as
         for dim in range(metadata.ndim):
@@ -317,20 +309,18 @@ class IDSCoordinates:
                 continue  # Nothing to validate
 
             assert len(same_as.references) == 1
-            with self._capture_goto_errors(dim, coordinate, aos_indices) as captured:
+            with self._capture_goto_errors(dim, coordinate) as captured:
                 other_element = same_as.references[0].goto(self._mixin)
             if captured:
                 continue  # Ignored error, continue to next dimension
 
             expected_size = other_element.shape[dim]
             if shape[dim] != expected_size:
-                other_path = other_element.metadata.path_doc
-                raise CoordinateError(
-                    path, dim, shape[dim], expected_size, other_path, aos_indices
-                )
+                other_path = other_element._path
+                raise CoordinateError(path, dim, shape[dim], expected_size, other_path)
 
     @contextmanager
-    def _capture_goto_errors(self, dim, coordinate, aos_indices):
+    def _capture_goto_errors(self, dim, coordinate):
         """Helper method for _validate to capture errors encountered during
         IDSPath.goto().
         """
@@ -339,13 +329,12 @@ class IDSCoordinates:
         try:
             yield did_capture
         except CoordinateLookupError as exc:
-            raise ValidationError(exc.args[0], aos_indices)
+            raise ValidationError(exc.args[0])
         except IndexError as exc:
             # Can happen in IDSPath.goto when an invalid index is encountered.
             raise ValidationError(
                 f"Dimension {dim} of element `{path}` has an invalid index "
-                f"provided for coordinate `{coordinate.references}`.",
-                aos_indices,
+                f"provided for coordinate `{coordinate.references}`."
             ) from exc
         except Exception as exc:
             # Ignore all other exceptions and log them
