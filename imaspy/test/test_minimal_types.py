@@ -23,7 +23,7 @@ sample_values = {
 
 
 def test_assign_str_0d(minimal, caplog):
-    caplog.set_level("WARNING", "imaspy")
+    caplog.set_level("INFO", "imaspy")
 
     # Test auto-encoding
     minimal.str_0d = b"123"
@@ -39,7 +39,7 @@ def test_assign_str_0d(minimal, caplog):
 
 
 def test_assign_str_1d(minimal, caplog):
-    caplog.set_level("WARNING", "imaspy")
+    caplog.set_level("INFO", "imaspy")
 
     # Test auto-encoding
     minimal.str_1d = [b"123", "456"]
@@ -58,6 +58,7 @@ def test_assign_str_1d(minimal, caplog):
 @pytest.mark.filterwarnings("ignore::numpy.ComplexWarning")
 @pytest.mark.parametrize("typ, max_dim", [("flt", 6), ("cpx", 6), ("int", 3)])
 def test_assign_numeric_types(minimal, caplog, typ, max_dim):
+    caplog.set_level("INFO", "imaspy")
     for dim in range(max_dim + 1):
         name = f"{typ}_{dim}d"
 

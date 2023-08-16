@@ -175,15 +175,15 @@ class IDSPrimitive(IDSMixin):
         if self.metadata.data_type is IDSDataType.STR:  # strings are special
             if self.metadata.ndim == 0:
                 if not isinstance(value, str):
-                    logger.warning(logmsg, type(value), self)
+                    logger.info(logmsg, type(value), self)
                 value = _cast_str(value)
             else:  # STR_1D -> List[str]
                 if isinstance(value, (tuple, list, np.ndarray)):
                     if not all(isinstance(val, str) for val in value):
-                        logger.warning(logmsg, value, self)
+                        logger.info(logmsg, value, self)
                     value = list(map(_cast_str, value))
                 else:
-                    logger.warning(logmsg, type(value), self)
+                    logger.info(logmsg, type(value), self)
                     value = [_cast_str(value)]
 
         elif self.metadata.ndim == 0:
@@ -191,14 +191,14 @@ class IDSPrimitive(IDSMixin):
             if isinstance(value, np.ndarray) and value.ndim == 0:
                 value = value.item()  # Unpack 0D numpy arrays
             if not isinstance(value, type_):
-                logger.warning(logmsg, type(value), self)
+                logger.info(logmsg, type(value), self)
             value = type_(value)
 
         else:  # ndim >= 1
             dtype = self.metadata.data_type.numpy_dtype
             value = np.asanyarray(value)
             if value.dtype != dtype:
-                logger.warning(logmsg, value.dtype, self)
+                logger.info(logmsg, value.dtype, self)
             value = np.array(value, dtype=dtype, copy=False)
             if value.ndim != self.metadata.ndim:
                 raise ValueError(
