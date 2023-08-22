@@ -218,14 +218,10 @@ the problem. See the following example:
 >>> core_profiles.validate()
 imaspy.exception.ValidationError: Invalid value for ids_properties.homogeneous_time: -999999999
 
-IMASPy can also automatically validate an IDS every time you do a
+IMASPy also automatically validates an IDS every time you do a
 :py:meth:`~imaspy.db_entry.DBEntry.put` or
-:py:meth:`~imaspy.db_entry.DBEntry.put_slice`. To enable this feature, you must set the
-environment variable ``IMAS_AL_ENABLE_VALIDATION_AT_PUT`` to ``1``. For example:
-
->>> import os
->>> os.environ["IMAS_AL_ENABLE_VALIDATION_AT_PUT"] = "1"
->>> # From now on, ids.validate() is called every time you do a put(ids) or put_slice(ids)
+:py:meth:`~imaspy.db_entry.DBEntry.put_slice`. To disable this feature, you must set the
+environment variable ``IMAS_AL_DISABLE_VALIDATE`` to ``1``.
 
 .. seealso::
     
@@ -285,6 +281,29 @@ size of your data must match the size of the coordinates:
         This is the only case in which values of the coordinates are verified, in all
         other cases only the sizes of coordinates are validated.
 
+    .. rubric:: Alternative coordinates
+
+    Version 4 of the Data Dictionary introduces alternative coordinates. An
+    example of this can be found in the ``core_profiles`` IDS in
+    ``profiles_1d(itime)/grid/rho_tor_norm``. Alternatives for this coordinate
+    are:
+    
+    -   ``profiles_1d(itime)/grid/rho_tor``
+    -   ``profiles_1d(itime)/grid/psi``
+    -   ``profiles_1d(itime)/grid/volume``
+    -   ``profiles_1d(itime)/grid/area``
+    -   ``profiles_1d(itime)/grid/surface``
+    -   ``profiles_1d(itime)/grid/rho_pol_norm``
+
+    Multiple alternative coordinates may be filled (for example, an IDS might
+    fill both the normalized and non-normalized toroidal flux coordinate). In
+    that case, the size must be the same.
+
+    When a quantity refers to this set of alternatives (for example
+    ``profiles_1d(itime)/electrons/temperature``), at least one of the
+    alternative coordinates must be set and its size must match the size of the
+    quantity.
+
 3.  The Data Dictionary can indicate exclusive alternative coordinates, see for example
     :ref:`Alternative coordinates`. Validation works the same as explained in the
     previous point, except that exactly one of the alternative coordinate must be
@@ -301,10 +320,6 @@ size of your data must match the size of the coordinates:
     ``ggd(itime)/neutral(i1)/velocity(i2)/radial``. When the diamagnetic velocity
     component is filled, the radial component must be filled as well, and have a
     matching size.
-
-.. todo::
-
-    Add point for alternative coordinates (IMAS-4725) once implemented.
 
 
 Resampling

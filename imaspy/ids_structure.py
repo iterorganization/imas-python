@@ -132,6 +132,9 @@ class IDSStructure(IDSMixin):
         keyname = str(key)
         return getattr(self, keyname)
 
+    def __repr__(self):
+        return f"{self._build_repr_start()})>"
+
     def __setitem__(self, key, value):
         keyname = str(key)
         self.__setattr__(keyname, value)

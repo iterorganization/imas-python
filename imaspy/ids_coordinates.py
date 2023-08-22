@@ -185,7 +185,33 @@ class IDSCoordinates:
                     # TODO: move this to IDSPath?
                     data = [_goto(coordinate_path, ele).value for ele in self._mixin]
                     return np.array(data)
-            return _goto(coordinate_path, self._mixin)
+            coordinate_node = _goto(coordinate_path, self._mixin)
+            if not coordinate_node.metadata.alternative_coordinate1:
+                return coordinate_node
+
+            # This coordinate has alternatives, check which are set
+            nonzero_alternatives = [coordinate_node] if len(coordinate_node) > 0 else []
+            for alternative_path in coordinate_node.metadata.alternative_coordinate1:
+                alternative_node = alternative_path.goto(coordinate_node)
+                if len(alternative_node) > 0:
+                    nonzero_alternatives.append(alternative_node)
+            if not nonzero_alternatives:
+                # None of the coordinates are set, return the primary coordinate
+                return coordinate_node
+            # Check if the lengths of all nonzero alternatives agree
+            if len(set(map(len, nonzero_alternatives))) != 1:
+                sizes = "\n".join(
+                    f"    `{alt.metadata.path_doc}` has size {len(alt)}"
+                    for alt in nonzero_alternatives
+                )
+                raise CoordinateLookupError(
+                    f"Dimension {key} of element `{self._mixin.metadata.path_doc}` has "
+                    "multiple alternative coordinates set, but they don't have "
+                    f"matching sizes:\n{sizes}"
+                )
+            if len(nonzero_alternatives) > 1:
+                logger.info("Multiple alternative coordinates are set, using the first")
+            return nonzero_alternatives[0]
 
         # Handle alternative coordinates, currently (DD 3.38.1) the `coordinate in
         # structure` logic is not applicable for these cases:

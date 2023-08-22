@@ -5,6 +5,7 @@ import pytest
 import pprint
 
 import numpy as np
+import pytest
 
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.test.test_helpers import open_dbentry
@@ -19,46 +20,29 @@ from imaspy.ids_primitive import *
 
 zero_to_two_pi = np.linspace(0, 2, num=10) * np.pi
 
-
-@pytest.fixture
-def toplevel(fake_toplevel_xml: Path, worker_id: str, tmp_path: Path):
-    """A toplevel where specific fields are filled"""
-    dbentry = open_dbentry(
-        MEMORY_BACKEND, "w", worker_id, tmp_path, xml_path=fake_toplevel_xml
+def test_pretty_print(fake_filled_toplevel):
+    eig = fake_filled_toplevel.wavevector[0].eigenmode[0]
+    assert pprint.pformat(fake_filled_toplevel).startswith("<IDSToplevel")
+    assert pprint.pformat(fake_filled_toplevel.wavevector[0].eigenmode).startswith(
+        "<IDSStructArray ("
     )
-    # Take a small toplevel and partially fill it with very specific fields
-    top = dbentry.factory.new("gyrokinetics")
-    top.wavevector.resize(1)
-    top.wavevector[0].eigenmode.resize(1)
-    eig = top.wavevector[0].eigenmode[0]
-    eig.frequency_norm = 10
-    eig.poloidal_angle = zero_to_two_pi
-    top.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
-    dbentry.put(top)
-
-    yield dbentry.get("gyrokinetics")
-
-    dbentry.close()
-
-
-def test_pretty_print(toplevel):
-    assert pprint.pformat(toplevel).startswith("<imaspy.ids_toplevel.IDSToplevel")
-    assert pprint.pformat(toplevel.wavevector[0].eigenmode).startswith(
-        "<imaspy.ids_struct_array.IDSStructArray"
+    assert pprint.pformat(fake_filled_toplevel.wavevector[0].eigenmode[0]).startswith(
+        "<IDSStructure ("
     )
-    assert pprint.pformat(toplevel.wavevector[0].eigenmode[0]).startswith(
-        "<imaspy.ids_structure.IDSStructure"
-    )
-    eig = toplevel.wavevector[0].eigenmode[0]
     assert pprint.pformat(eig.time_norm).startswith("<IDSNumericArray")
     assert pprint.pformat(eig.time_norm).endswith("\nnumpy.ndarray([], dtype=float64)")
     assert pprint.pformat(eig.frequency_norm).startswith("<IDSPrimitive")
     assert pprint.pformat(eig.frequency_norm).endswith("\nfloat(10.0)")
+    fake_filled_toplevel.ids_properties.comment = "A filled comment"
+    assert (
+        pprint.pformat(fake_filled_toplevel.ids_properties.comment)
+        == "<IDSPrimitive (IDS:gyrokinetics, ids_properties/comment, STR_0D)>\nstr('A filled comment')"
+    )
 
 
-def test_value_attribute(toplevel):
+def test_value_attribute(fake_filled_toplevel):
     """Test if the value attribute acts as IMASPy expects"""
-    eig = toplevel.wavevector[0].eigenmode[0]
+    eig = fake_filled_toplevel.wavevector[0].eigenmode[0]
     assert isinstance(eig.frequency_norm, IDSPrimitive)
     assert hasattr(eig.frequency_norm, "value")
 
@@ -81,12 +65,12 @@ def test_value_attribute(toplevel):
     assert np.array_equal(eig.poloidal_angle.value, zero_to_two_pi)
 
 
-def test_visit_children(toplevel):
+def test_visit_children(fake_filled_toplevel):
     # This should visit every node. Lets test that, but check only
     # filled fields explicitly
-    eig = toplevel.wavevector[0].eigenmode[0]
+    eig = fake_filled_toplevel.wavevector[0].eigenmode[0]
     nodes = []
-    visit_children(toplevel, lambda x: nodes.append(x) if x.has_value else None)
+    visit_children(fake_filled_toplevel, lambda x: nodes.append(x) if x.has_value else None)
     # We know we filled only endpoints frequency_norm and poloidal_angle
     # We expect the following "mandatory" fields to be touched, which we check
     # the order visit_children visits
@@ -105,11 +89,11 @@ def test_visit_children(toplevel):
     assert nodes[11] == zero_to_two_pi
 
 
-def test_visit_children_leaf_only(toplevel):
-    eig = toplevel.wavevector[0].eigenmode[0]
+def test_visit_children_leaf_only(fake_filled_toplevel):
+    eig = fake_filled_toplevel.wavevector[0].eigenmode[0]
     nodes = []
     visit_children(
-        toplevel, lambda x: nodes.append(x) if x.has_value else None, leaf_only=True
+        fake_filled_toplevel, lambda x: nodes.append(x) if x.has_value else None, leaf_only=True
     )
     # Different than above, we should not have the in-between nodes now. but we should have all leaf nodes
     assert len(nodes) == 5

@@ -27,7 +27,6 @@ class IDSFactory:
     # IDSToplevels expect these on their parent
     # TODO: see if we can eliminate them
     depth = 0
-    _path = ""
 
     def __init__(
         self, version: Optional[str] = None, xml_path: Optional[str] = None

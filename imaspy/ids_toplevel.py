@@ -5,9 +5,14 @@
 """
 
 import logging
+import os
 from typing import TYPE_CHECKING, Optional
 import tempfile
-import os
+
+try:
+    from functools import cached_property
+except ImportError:
+    from cached_property import cached_property
 
 from imaspy.al_exception import ALException
 from imaspy.exception import ValidationError
@@ -35,6 +40,8 @@ class IDSToplevel(IDSStructure):
     At minimum, one should fill ids_properties/homogeneous_time
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
+
+    _path = ""  # Path to ourselves without the IDS name and slashes
 
     def __init__(self, parent: "IDSFactory", structure_xml):
         """Save backend_version and backend_xml and build translation layer.
@@ -283,3 +290,14 @@ class IDSToplevel(IDSStructure):
         raise NotImplementedError(
             "{!s}.partialGet(dataPath, occurrence=0)".format(self)
         )
+
+    def __repr__(self):
+        my_repr = f"<{type(self).__name__}"
+        my_repr += f" (IDS:{self.metadata.name})>"
+        return my_repr
+
+    @cached_property
+    def _toplevel(self) -> "IDSToplevel":
+        """Return ourselves"""
+        # Used to cut off recursive call
+        return self

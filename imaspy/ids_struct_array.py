@@ -45,9 +45,6 @@ class IDSStructArray(IDSMixin):
 
         self._convert_ids_types = False
 
-        # signal that this is an array-type addressing
-        self._array_type = True
-
         # Initialize with an 0-length list
         self.value = []
 
@@ -117,6 +114,9 @@ class IDSStructArray(IDSMixin):
             e._convert_ids_types = True
             e._parent = self
             self.value.append(e)
+
+    def __repr__(self):
+        return f"{self._build_repr_start()} with {len(self)} items)>"
 
     def resize(self, nbelt, keep=False):
         """Resize an array of structures.
