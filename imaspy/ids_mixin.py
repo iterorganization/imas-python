@@ -60,39 +60,34 @@ class IDSMixin:
         """True if this element (or any parent) has type=dynamic"""
         return self.metadata.type.is_dynamic or self._dd_parent._is_dynamic
 
-    @cached_property
-    def _path(self):
-        """Build absolute path from node to root _in backend coordinates_"""
-        my_path = self.metadata.name
-        if hasattr(self, "_parent"):
-            # these exceptions may be slow. (But cached, so not so bad?)
-            try:
-                if self._parent._array_type:
-                    try:
-                        my_path = "{!s}/{!s}".format(
-                            self._parent._path, self._parent.value.index(self) + 1
-                        )
-                    except ValueError as e:
-                        # this happens when we ask the path of a struct_array child
-                        # which is 'in waiting'. It is not in its parents value
-                        # list yet, so we are here. There is no proper path to mention.
-                        # instead we use the special index :
-                        my_path = "{!s}/:".format(self._parent._path)
-                        raise NotImplementedError(
-                            "Paths of unlinked struct array children are not"
-                            " implemented"
-                        ) from e
-                else:
-                    my_path = self._parent._path + "/" + my_path
-            except AttributeError:
-                my_path = self._parent._path + "/" + my_path
-        return my_path
+    @property
+    def _path(self) -> str:
+        """Build relative path from the toplevel to the node
 
-    def reset_path(self):
-        if "_path" in self.__dict__:
-            del self.__dict__["_path"]  # Delete the cached_property cache
-            # this is how it works for functools cached_property.
-            # how is it for cached_property package?
+        Examples:
+            - `ids.ids_properties.creation_data` is `ids_properties/creation_date`
+            - `gyrokinetics.wavevector[0].radial_component_norm` is `wavevector[0]/radial_component_norm
+        """
+        from imaspy.ids_struct_array import IDSStructArray
+
+        parent_path = self._parent._path
+        my_path = self.metadata.name
+        if isinstance(self._parent, IDSStructArray):
+            if self in self._parent.value:
+                index = self._parent.value.index(self)
+            else:
+                # This happens when we ask the path of a struct_array
+                # child that does not have a proper parent anymore
+                # E.g. a resize
+                logger.warning(
+                    "Link to parent of %s broken. Cannot reconstruct index", my_path
+                )
+                index = "?"
+            my_path = f"{parent_path}[{index}]"
+        elif parent_path != "":
+            # If we are not an IDSStructArray, we have no indexable children.
+            my_path = parent_path + "/" + my_path
+        return my_path
 
     def visit_children(self, fun, leaf_only=False):
         """walk all children of this structure in order and execute fun on them"""
@@ -112,6 +107,23 @@ class IDSMixin:
         # check its parent.
         if hasattr(self, "_parent"):
             return self._parent._version
+
+    def _build_repr_start(self) -> str:
+        """Build the start of the string derived classes need for their repr.
+
+        All derived classes need to represent the IDS they are part of,
+        and thus have a common string to start with. We collect that common logic here
+
+        Examples:
+            - `gyrokinetics.wavevector[0].eigenmode[0].time_norm` is
+                `<IDSNumericArray (IDS:gyrokinetics, wavevector[0]/eigenmode[0]/time_norm`
+            - `wavevector[0].eigenmode[0].frequency_norm` is
+                `<IDSPrimitive (IDS:gyrokinetics, wavevector[0]/eigenmode[0]/frequency_norm`
+        """
+        my_repr = f"<{type(self).__name__}"
+        my_repr += f" (IDS:{self._toplevel.metadata.name},"
+        my_repr += f" {self._path}"
+        return my_repr
 
     def resample(
         self, old_time, new_time, homogeneousTime=None, inplace=False, **kwargs
@@ -175,6 +187,11 @@ class IDSMixin:
     def time_axis(self):
         """Return the time axis for this node (None if no time dependence)"""
         return self.coordinates.time_index
+
+    @cached_property
+    def _toplevel(self) -> "IDSToplevel":
+        """Return the toplevel instance this node belongs to"""
+        return self._parent._toplevel
 
     def _validate(self, aos_indices: Dict[str, int]) -> None:
         """Actual implementation of validation logic.

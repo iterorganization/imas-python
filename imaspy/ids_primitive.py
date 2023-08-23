@@ -6,7 +6,6 @@ Provides the class for an IDS Primitive data type
 
 * :py:class:`IDSPrimitive`
 """
-
 import logging
 import numbers
 from typing import Any, Dict, Tuple
@@ -127,6 +126,10 @@ class IDSPrimitive(IDSMixin):
 
     def __iter__(self):
         return iter([])
+
+    def __repr__(self):
+        value_repr = f"{self.value.__class__.__qualname__}({self.value!r})"
+        return f"{self._build_repr_start()}, {self.data_type})>\n{value_repr}"
 
     @property
     def value(self):
@@ -261,9 +264,6 @@ class IDSPrimitive(IDSMixin):
             my_depth += self._parent.depth
         return my_depth
 
-    def __repr__(self):
-        return '%s("%s", %r)' % (type(self).__name__, self._path, self.value)
-
     @property
     def data_type(self):
         """Combine imaspy ids_type and ndims to UAL data_type"""
@@ -343,3 +343,24 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
         resize the underlying data
         """
         self.value.resize(new_shape)
+
+    def __repr__(self):
+        # Specify that this is a numpy array, instead of a Python array As we
+        # know .value is a numpy array, we can remove "array" part of the
+        # numpy-native repr
+        value_repr = f"{_fullname(self.value)}{repr(self.value)[5:]}"
+        return f"{self._build_repr_start()}, {self.data_type})>\n{value_repr}"
+
+
+def _fullname(o) -> str:
+    """Get the full name to a type, including module name etc.
+
+    Examples:
+        - _fullname(np.array([1,2,3]) -> numpy.ndarray
+        - fullname([1,2,3]) -> list
+    """
+    class_ = o.__class__
+    module = class_.__module__
+    if module == "builtins":
+        return class_.__qualname__  # avoid outputs like 'builtins.str'
+    return module + "." + class_.__qualname__

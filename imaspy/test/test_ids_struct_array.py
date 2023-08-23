@@ -1,19 +1,15 @@
-import pytest
 from copy import deepcopy
+import logging
+import pprint
 
-from imaspy.ids_toplevel import IDSToplevel
+import pytest
+
 from imaspy.ids_struct_array import IDSStructArray
 
 
 @pytest.fixture
-def struct_array(fake_structure_xml):
-    wavevector_xml = fake_structure_xml.find(".//*[@name='wavevector']")
-    fake_structure_xml.remove(wavevector_xml)
-    top = IDSToplevel(
-        object(),
-        fake_structure_xml,
-    )
-    struct_array = IDSStructArray(top, wavevector_xml)
+def struct_array(fake_filled_toplevel) -> IDSStructArray:
+    struct_array = fake_filled_toplevel.wavevector
     struct_array.resize(3)
     assert len(struct_array.value) == 3
     return struct_array
@@ -44,3 +40,29 @@ def test_resize(keep, target_len, struct_array):
             assert (
                 struct_array[ii] is not pre_values[ii]
             ), f"On element {ii} of {struct_array.value} vs {pre_struct_array.value}"
+
+
+def test_pretty_print(struct_array):
+    assert (
+        pprint.pformat(struct_array)
+        == "<IDSStructArray (IDS:gyrokinetics, wavevector with 3 items)>"
+    )
+
+
+def test_path_non_indexable_parent(caplog, fake_filled_toplevel):
+    top = fake_filled_toplevel
+    top.wavevector.resize(1)
+    wv = top.wavevector[0]
+    with caplog.at_level(logging.WARNING):
+        assert wv._path == "wavevector[0]"
+        for record in caplog.records:
+            assert record.levelname != "WARNING"
+
+    # Remove the referenced profiles_1d from its parent
+    top.wavevector.resize(0)
+
+    # Check if singular warning is raised
+    with caplog.at_level(logging.WARNING):
+        assert wv._path == "wavevector[?]"
+        assert len(caplog.records) == 1
+        assert caplog.records[0].levelname == "WARNING"
