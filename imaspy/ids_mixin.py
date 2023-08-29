@@ -21,7 +21,7 @@ from imaspy.setup_logging import root_logger as logger
 try:
     from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_INDEPENDENT
 except ImportError as ee:
-    logger.critical("IMAS could not be imported. UAL not available! %s", ee)
+    logger.critical("IMAS could not be imported. AL not available! %s", ee)
 
 logger.setLevel(logging.INFO)
 

@@ -23,7 +23,7 @@ set -xeuf -o pipefail # Set default script debugging flags
 # just re-use those componants and steal the exports
 export IMAS_VERSION=`git -C data-dictionary tag | sort -V | tail -n 1`
 pushd access-layer
-export UAL_VERSION=`git tag | sort -V | tail -n 1`
+export AL_VERSION=`git tag | sort -V | tail -n 1`
 
 export IMAS_PREFIX=`pwd`
 export LIBRARY_PATH=`pwd`/lowlevel:${LIBRARY_PATH:=}

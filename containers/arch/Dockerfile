@@ -62,7 +62,7 @@ FROM build AS access_layer
 ADD access-layer/ /root/access-layer
 COPY --from=data_dictionary /root/data-dictionary/ /root/access-layer/xml/
 
-ENV UAL_VERSION=4.8.5
+ENV AL_VERSION=4.8.5
 ENV IMAS_UDA=no \
     IMAS_HDF5=yes \
     IMAS_MATLAB=no \
@@ -72,7 +72,7 @@ ENV IMAS_UDA=no \
 ENV CLASSPATH=/usr/java/classes/jTraverser.jar
 # 4.8.5 and up
 RUN cd /root/access-layer && \
-    git checkout "$UAL_VERSION" && \
+    git checkout "$AL_VERSION" && \
     make -j`nproc`
 
 FROM access_layer AS python_hli

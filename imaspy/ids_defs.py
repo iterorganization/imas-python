@@ -74,7 +74,7 @@ try:
 
     HAS_IMAS = True
 except ImportError as ee:
-    logger.critical("IMAS could not be imported. UAL not available! %s", ee)
+    logger.critical("IMAS could not be imported. AL not available! %s", ee)
     HAS_IMAS = False
 
     # Preset some constants which are used elsewhere
@@ -89,7 +89,7 @@ except ImportError as ee:
     INTEGER_DATA = LINEAR_INTERP = MDSPLUS_BACKEND = MEMORY_BACKEND = None
     NODE_TYPE_STRUCTURE = OPEN_PULSE = PREVIOUS_INTERP = READ_OP = None
     UDA_BACKEND = UNDEFINED_INTERP = UNDEFINED_TIME = WRITE_OP = None
-    # These constants are also useful when not working with the UAL
+    # These constants are also useful when not working with the AL
     EMPTY_FLOAT = -9e40
     EMPTY_INT = -999_999_999
     EMPTY_COMPLEX = complex(EMPTY_FLOAT, EMPTY_FLOAT)

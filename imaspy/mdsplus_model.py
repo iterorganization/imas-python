@@ -256,7 +256,7 @@ def create_model_ids_xml(cache_dir_path, fname, version):
                     "DD_GIT_DESCRIBE=" + str(version or fname),
                     # if this is expected as git describe it might break
                     # if we just pass a filename
-                    "UAL_GIT_DESCRIBE=" + os.environ.get("UAL_VERSION", "0.0.0"),
+                    "AL_GIT_DESCRIBE=" + os.environ.get("AL_VERSION", "0.0.0"),
                     "-xsl:" + str(xslfile),
                 ],
                 input=get_dd_xml(version) if version else None,

@@ -1,4 +1,4 @@
-"""Compare the access patterns of the lowlevel UAL API between IMASPy and the HLI.
+"""Compare the access patterns of the lowlevel AL API between IMASPy and the HLI.
 """
 
 from functools import wraps
@@ -14,13 +14,13 @@ from imaspy.test.test_helpers import fill_with_random_data
 from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS
 
 
-class UALWrapper:
-    def __init__(self, ual_module):
-        self._ual = ual_module
+class ALWrapper:
+    def __init__(self, al_module):
+        self._al = al_module
         self._log = []
 
     def __getattr__(self, name):
-        value = getattr(self._ual, name)
+        value = getattr(self._al, name)
         if callable(value):
 
             @wraps(value)
@@ -32,22 +32,22 @@ class UALWrapper:
         return value
 
 
-# Monkeypatch _ual_lowlevel
-wrapper = UALWrapper(sys.modules["imas._ual_lowlevel"])
-imas._ual_lowlevel = wrapper
+# Monkeypatch _al_lowlevel
+wrapper = ALWrapper(sys.modules["imas._al_lowlevel"])
+imas._al_lowlevel = wrapper
 for item in sys.modules:
-    if item.startswith("imas") and item.endswith("._ual_lowlevel"):
+    if item.startswith("imas") and item.endswith("._al_lowlevel"):
         sys.modules[item] = wrapper
 # And the imported locals in all imas modules
 for item in sys.modules:
     if item.startswith("imas"):
-        for alias in "_ual_lowlevel", "ull":
+        for alias in "_al_lowlevel", "ll":
             if hasattr(sys.modules[item], alias):
                 setattr(sys.modules[item], alias, wrapper)
 
 
 def compare_ids_put(imaspy_ids, hli_ids):
-    imas._ual_lowlevel._log.clear()
+    imas._al_lowlevel._log.clear()
     # Start with hli IDS
     dbentry = imas.DBEntry(imaspy.ids_defs.MEMORY_BACKEND, "ITER", 1, 1, "test")
     dbentry.create()
@@ -57,8 +57,8 @@ def compare_ids_put(imaspy_ids, hli_ids):
         print("Caught error while putting hli ids:", exc)
         traceback.print_exc()
     dbentry.close()
-    hli_log = imas._ual_lowlevel._log
-    imas._ual_lowlevel._log = []
+    hli_log = imas._al_lowlevel._log
+    imas._al_lowlevel._log = []
     # And then the imaspy IDS
     dbentry = imaspy.DBEntry(imaspy.ids_defs.MEMORY_BACKEND, "ITER", 1, 1, "test")
     dbentry.create()
@@ -68,8 +68,8 @@ def compare_ids_put(imaspy_ids, hli_ids):
         print("Caught error while putting imaspy ids:", exc)
         traceback.print_exc()
     dbentry.close()
-    imaspy_log = imas._ual_lowlevel._log
-    imas._ual_lowlevel._log = []
+    imaspy_log = imas._al_lowlevel._log
+    imas._al_lowlevel._log = []
     hli_log_text = "\n".join("\t".join(item) for item in hli_log)
     imaspy_log_text = "\n".join("\t".join(item) for item in imaspy_log)
     Path("/tmp/hli.log").write_text(hli_log_text)
@@ -86,14 +86,14 @@ def compare_ids_get(imaspy_ids):
     dbentry = imas.DBEntry(imaspy.ids_defs.MEMORY_BACKEND, "ITER", 1, 1, "test")
     dbentry.open()
     # Start with hli IDS
-    imas._ual_lowlevel._log.clear()
+    imas._al_lowlevel._log.clear()
     dbentry.get(imaspy_ids.metadata.name)
-    hli_log = imas._ual_lowlevel._log
-    imas._ual_lowlevel._log = []
+    hli_log = imas._al_lowlevel._log
+    imas._al_lowlevel._log = []
     # And then the imaspy IDS
     idbentry.get(imaspy_ids.metadata.name)
-    imaspy_log = imas._ual_lowlevel._log
-    imas._ual_lowlevel._log = []
+    imaspy_log = imas._al_lowlevel._log
+    imas._al_lowlevel._log = []
     # Cleanup
     dbentry.close()
     idbentry.close()

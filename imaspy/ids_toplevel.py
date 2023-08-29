@@ -218,10 +218,10 @@ class IDSToplevel(IDSStructure):
 
     @needs_imas
     def get(self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None) -> None:
-        """Get data from UAL backend storage format and overwrite data in node
+        """Get data from AL backend storage format and overwrite data in node
 
-        Tries to dynamically build all needed information for the UAL. As this
-        is the root node, it is simple to construct UAL paths and contexts at
+        Tries to dynamically build all needed information for the AL. As this
+        is the root node, it is simple to construct AL paths and contexts at
         this level. Should have an open database.
         """
         if db_entry is None:
@@ -269,10 +269,10 @@ class IDSToplevel(IDSStructure):
     def deleteData(
         self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None
     ) -> None:
-        """Delete UAL backend storage data
+        """Delete AL backend storage data
 
-        Tries to dynamically build all needed information for the UAL. As this
-        is the root node, it is simple to construct UAL paths and contexts at
+        Tries to dynamically build all needed information for the AL. As this
+        is the root node, it is simple to construct AL paths and contexts at
         this level. Should have an open database.
         """
         if db_entry is None:

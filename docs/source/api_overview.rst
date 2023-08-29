@@ -159,8 +159,8 @@ occurs the conversion can easily be done in multiple steps.
 Time slicing
 ============
 
-The lowlevel API provides `ual_write_slice_data` to write only a slice (in the
-last dimension, time) to the backend, as well as `ual_begin_slice_action`. After
+The lowlevel API provides `al_write_slice_data` to write only a slice (in the
+last dimension, time) to the backend, as well as `al_begin_slice_action`. After
 that normal `get()` can be used. We have implemented time slicing support, with
 two main entry points on :py:class:`IDSToplevel`:
 

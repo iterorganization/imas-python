@@ -39,7 +39,7 @@ if [ ! -L xml ]; then
     ln -s ../data-dictionary/ xml
 fi
 
-export UAL_VERSION=`git tag | sort -V | tail -n 1`
+export AL_VERSION=`git tag | sort -V | tail -n 1`
 export IMAS_UDA=no \
     IMAS_HDF5=yes \
     IMAS_MATLAB=no \

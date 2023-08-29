@@ -37,7 +37,7 @@ class IDSDataType(Enum):
             "FLT": EMPTY_FLOAT,
             "CPX": EMPTY_COMPLEX,
         }.get(value, None)
-        self.ual_type = {
+        self.al_type = {
             "STR": CHAR_DATA,
             "INT": INTEGER_DATA,
             "FLT": DOUBLE_DATA,

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:yaslt="http://www.mod-xslt2.com/ns/1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:xs="http://www.w3.org/2001/XMLSchema" version="2.0" extension-element-prefixes="yaslt" xmlns:fn="http://www.w3.org/2005/02/xpath-functions" xmlns:local="http://www.example.com/functions/local" exclude-result-prefixes="local xs">
   <xsl:param name="DD_GIT_DESCRIBE" as="xs:string" required="yes"/>
-  <xsl:param name="UAL_GIT_DESCRIBE" as="xs:string" required="yes"/>
+  <xsl:param name="AL_GIT_DESCRIBE" as="xs:string" required="yes"/>
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
   <!-- This script transforms the IDSDef.xml file into an XML file which will be used to build the MDS+ tree-->
   <!-- It contains the full data structure and describes it in terms of MDS+ terminology (node, member) and types (TEXT,NUMERIC,SIGNAL)-->
@@ -25,7 +25,7 @@
       <member NAME="REF_INFO" USAGE="NUMERIC"/>
       <node NAME="VERSION">
         <member NAME="DATA_DICT" USAGE="TEXT"><data>"<xsl:value-of select="$DD_GIT_DESCRIBE"/>"</data></member>
-        <member NAME="ACC_LAYER" USAGE="TEXT"><data>"<xsl:value-of select="$UAL_GIT_DESCRIBE"/>"</data></member>
+        <member NAME="ACC_LAYER" USAGE="TEXT"><data>"<xsl:value-of select="$AL_GIT_DESCRIBE"/>"</data></member>
         <member NAME="BACK_MAJOR" USAGE="NUMERIC"></member>
         <member NAME="BACK_MINOR" USAGE="NUMERIC"></member>
       </node>

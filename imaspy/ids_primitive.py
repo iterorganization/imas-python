@@ -264,7 +264,7 @@ class IDSPrimitive(IDSMixin):
 
     @property
     def data_type(self):
-        """Combine imaspy ids_type and ndims to UAL data_type"""
+        """Combine imaspy ids_type and ndims to AL data_type"""
         return "{!s}_{!s}D".format(self.metadata.data_type.value, self.metadata.ndim)
 
     def _validate(self, aos_indices: Dict[str, int]) -> None:

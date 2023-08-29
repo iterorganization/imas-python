@@ -188,7 +188,7 @@ def open_from_file(file, version=None, xml_path=None):
     ids = imaspy.ids_root.IDSRoot(
         int(shot), int(run), version=version, xml_path=xml_path,
     )  # use the latest version by default
-    ids.open_ual_store(file.parent, tree_name, "3", backend, mode="r")
+    ids.open_al_store(file.parent, tree_name, "3", backend, mode="r")
 
     # Fake time mode homogeneous so we can actually read the file.
     # TODO: work around that!
