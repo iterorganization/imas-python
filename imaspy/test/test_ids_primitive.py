@@ -66,14 +66,28 @@ def test_value_attribute(fake_filled_toplevel):
 
 
 def test_visit_children(fake_filled_toplevel):
-    # This should visit every node. Lets test that, but check only
+    # This should visit leaf nodes only. Lets test that, but check only
     # filled fields explicitly
     eig = fake_filled_toplevel.wavevector[0].eigenmode[0]
     nodes = []
     visit_children(fake_filled_toplevel, lambda x: nodes.append(x) if x.has_value else None)
+    assert len(nodes) == 3
+    assert nodes[0] == 2
+    assert nodes[1] == 10
+    assert nodes[2] == zero_to_two_pi
+
+
+def test_visit_children_internal_nodes(fake_filled_toplevel):
+    eig = fake_filled_toplevel.wavevector[0].eigenmode[0]
+    nodes = []
+    visit_children(
+        fake_filled_toplevel, lambda x: nodes.append(x) if x.has_value else None, leaf_only=False
+    )
+    # We now visit the internal nodes too.
+
     # We know we filled only endpoints frequency_norm and poloidal_angle
     # We expect the following "mandatory" fields to be touched, which we check
-    # the order visit_children visits
+    # in the order visit_children visits
     assert len(nodes) == 9
     assert nodes[0] is fake_filled_toplevel
     assert nodes[1] is fake_filled_toplevel.ids_properties
@@ -84,16 +98,3 @@ def test_visit_children(fake_filled_toplevel):
     assert nodes[6] is fake_filled_toplevel.wavevector[0].eigenmode[0]
     assert nodes[7] == 10
     assert nodes[8] == zero_to_two_pi
-
-
-def test_visit_children_leaf_only(fake_filled_toplevel):
-    eig = fake_filled_toplevel.wavevector[0].eigenmode[0]
-    nodes = []
-    visit_children(
-        fake_filled_toplevel, lambda x: nodes.append(x) if x.has_value else None, leaf_only=True
-    )
-    # Different than above, we should not have the in-between nodes now. but we should have all leaf nodes
-    assert len(nodes) == 3
-    assert nodes[0] == 2
-    assert nodes[1] == 10
-    assert nodes[2] == zero_to_two_pi
