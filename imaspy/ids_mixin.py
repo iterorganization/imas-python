@@ -161,7 +161,7 @@ class IDSMixin:
         else:
             el = self
 
-        visit_children(el, visitor)
+        visit_children(visitor, el)
 
         if isinstance(el, IDSToplevel):
             el.time = new_time

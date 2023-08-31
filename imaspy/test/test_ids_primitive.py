@@ -20,6 +20,7 @@ from imaspy.ids_primitive import *
 
 zero_to_two_pi = np.linspace(0, 2, num=10) * np.pi
 
+
 def test_pretty_print(fake_filled_toplevel):
     eig = fake_filled_toplevel.wavevector[0].eigenmode[0]
     assert pprint.pformat(fake_filled_toplevel).startswith("<IDSToplevel")
@@ -68,9 +69,13 @@ def test_value_attribute(fake_filled_toplevel):
 def test_visit_children(fake_filled_toplevel):
     # This should visit leaf nodes only. Lets test that, but check only
     # filled fields explicitly
-    eig = fake_filled_toplevel.wavevector[0].eigenmode[0]
     nodes = []
-    visit_children(fake_filled_toplevel, lambda x: nodes.append(x) if x.has_value else None)
+
+    def append_if_has_value(xx):
+        if xx.has_value:
+            nodes.append(xx)
+
+    visit_children(append_if_has_value, fake_filled_toplevel)
     assert len(nodes) == 3
     assert nodes[0] == 2
     assert nodes[1] == 10
@@ -78,11 +83,13 @@ def test_visit_children(fake_filled_toplevel):
 
 
 def test_visit_children_internal_nodes(fake_filled_toplevel):
-    eig = fake_filled_toplevel.wavevector[0].eigenmode[0]
     nodes = []
-    visit_children(
-        fake_filled_toplevel, lambda x: nodes.append(x) if x.has_value else None, leaf_only=False
-    )
+
+    def append_if_has_value(xx):
+        if xx.has_value:
+            nodes.append(xx)
+
+    visit_children(append_if_has_value, fake_filled_toplevel, leaf_only=False)
     # We now visit the internal nodes too.
 
     # We know we filled only endpoints frequency_norm and poloidal_angle
