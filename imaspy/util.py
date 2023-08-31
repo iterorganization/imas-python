@@ -2,7 +2,7 @@
 # You should have received the IMASPy LICENSE file with this project.
 
 
-def visit_children(node, fun, leaf_only=False):
+def visit_children(node, fun, leaf_only=True):
     """walk all children of this structure in order and execute fun on them"""
     from imaspy.ids_primitive import IDSPrimitive
 
