@@ -5,6 +5,7 @@ import importlib
 import logging
 import os
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 from imaspy.exception import ValidationError
 from imaspy.ids_convert import NBCPathMap, dd_version_map_from_factories
@@ -43,8 +44,15 @@ logger = logging.getLogger(__name__)
 class DBEntry:
     """Represents an IMAS database entry, which is a collection of stored IDSs."""
 
+    _OPEN_MODES = {
+        "r": OPEN_PULSE,
+        "a": FORCE_OPEN_PULSE,
+        "w": FORCE_CREATE_PULSE,
+        "x": CREATE_PULSE,
+    }
+
     @needs_imas
-    def __init__(
+    def __legacy_init(
         self,
         backend_id: int,
         db_name: str,
@@ -52,9 +60,30 @@ class DBEntry:
         run: int,
         user_name: Optional[str] = None,
         data_version: Optional[str] = None,
-        *,
+    ):
+        self._legacy_init = True
+        self.backend_id = backend_id
+        self.db_name = db_name
+        self.shot = shot
+        self.run = run
+        if user_name is not None:
+            self.user_name = user_name
+        else:
+            self.user_name = os.environ["USER"]
+        if data_version is not None:
+            self.data_version = data_version
+        else:
+            self.data_version = os.environ["IMAS_VERSION"]
+
+    @needs_imas
+    def __init__(
+        self,
+        uri: Optional[str] = None,
+        mode: Optional[str] = None,
+        *args,
         dd_version: Optional[str] = None,
         xml_path: Optional[str] = None,
+        **kwargs,
     ) -> None:
         """Create a new IMAS database entry object.
 
@@ -86,21 +115,54 @@ class DBEntry:
             dd_version: Data dictionary version to use.
             xml_path: Data dictionary definition XML file to use.
         """
-        self.backend_id = backend_id
-        self.db_name = db_name
-        self.shot = shot
-        self.run = run
-        self.user_name = user_name or os.environ["USER"]
-        self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
+        self._ll = importlib.import_module("imas._al_lowlevel")
         self._db_ctx: Optional[ALContext] = None
+        if args or kwargs:
+            # uri and mode may be set as positional arguments in which case they
+            # represent backend_id and db_name, though backend_id and/or db_name may
+            # also be provided as kwargs
+            if mode is not None:
+                args = (uri, mode) + args
+            elif uri is not None:
+                args = (uri,) + args
+            self.__legacy_init(*args, **kwargs)
+            options = kwargs.get('options', '')
+            self.uri = self._build_legacy_uri(options)
+        else:
+            self._legacy_init = False
+            if not uri:
+                raise ValueError("No URI provided.")
+            self.uri = uri
+            if mode not in self._OPEN_MODES:
+                modes = set(self._OPEN_MODES)
+                raise ValueError(f"Unknown mode {mode!r}, was expecting any of {modes}")
+            self.open(self._OPEN_MODES[mode])
         # TODO: don't import all of IMAS, only load _al_lowlevel, see
         # https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
         # TODO: allow using a different _al_lowlevel module? See
         # imas_al_env_parsing.build_AL_package_name
-        self._ll = importlib.import_module("imas._al_lowlevel")
         self._dd_version = dd_version
         self._xml_path = xml_path
         self._ids_factory = IDSFactory(dd_version, xml_path)
+
+    def _build_legacy_uri(self, options):
+        if not self._legacy_init:
+            raise RuntimeError(
+                "DBEntry was not constructed with legacy parameters, and no"
+                " URI provided to 'open()' or 'create()'"
+            )
+        status, uri = self._ll.al_build_uri_from_legacy_parameters(
+            self.backend_id,
+            self.shot,
+            self.run,
+            self.user_name,
+            self.db_name,
+            self.data_version,
+            options,
+        )
+        if status != 0:
+            raise RuntimeError("Error calling al_build_uri_from_legacy_parameters()")
+        return uri
 
     @property
     def factory(self) -> IDSFactory:
@@ -116,20 +178,13 @@ class DBEntry:
         """Internal method implementing open()/create()."""
         if self._db_ctx is not None:
             self.close()
-        if self.backend_id == MDSPLUS_BACKEND:
+        if urlparse(self.uri).path.lower() == 'mdsplus':
             self._setup_mdsplus()
-        status, idx = self._ll.al_begin_pulse_action(
-            self.backend_id,
-            self.shot,
-            self.run,
-            self.user_name,
-            self.db_name,
-            self.data_version,
+        status, ctx = self._ll.al_begin_dataentry_action(
+            self.uri,
+            mode,
         )
-        if status != 0:
-            raise RuntimeError(f"Error calling al_begin_pulse_action(), {status=}")
-        self._db_ctx = ALContext(idx, self._ll)
-        status = self._ll.al_open_pulse(self._db_ctx.ctx, mode, options)
+        self._db_ctx = ALContext(ctx, self._ll)
         if status != 0:
             raise RuntimeError(f"Error opening/creating database entry: {status=}")
 
@@ -162,8 +217,9 @@ class DBEntry:
         # to "3" (older we don't support, newer is not available and probably never will
         # with Access Layer 4.x). This needs to be revised for AL5 either way, since the
         # directory structures are changing.
-        version = self._dd_version[0] if self._dd_version else "3"
-        ensure_data_dir(str(self.user_name), self.db_name, version, self.run)
+
+        # version = self._dd_version[0] if self._dd_version else "3"
+        # ensure_data_dir(str(self.user_name), self.db_name, version, self.run)
 
     def close(self, *, options=None, erase=False):
         """Close this Database Entry.
@@ -176,7 +232,7 @@ class DBEntry:
             return
 
         mode = ERASE_PULSE if erase else CLOSE_PULSE
-        status = self._ll.al_close_pulse(self._db_ctx.ctx, mode, options)
+        status = self._ll.al_close_pulse(self._db_ctx.ctx, mode)
         if status != 0:
             raise RuntimeError(f"Error closing database entry: {status=}")
 
