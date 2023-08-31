@@ -17,12 +17,12 @@ except ImportError:
 from imaspy.exception import ValidationError
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.setup_logging import root_logger as logger
+from imaspy.util import visit_children
 
 try:
     from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_INDEPENDENT
 except ImportError as ee:
     logger.critical("IMAS could not be imported. UAL not available! %s", ee)
-from imaspy.util import visit_children
 
 logger.setLevel(logging.INFO)
 
