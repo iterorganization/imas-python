@@ -118,10 +118,10 @@ extensions = [
     # 'IPython.sphinxext.ipythoGn_console_highlighting',  # numpy
     # 'IPython.sphinxext.ipython_directive',  # numpy
     "sphinx.ext.mathjax",  # Render math as images
-    "sphinx_rtd_theme",  # Theme
     "recommonmark",  # For markdown support, does not support 'full' CommonMark syntax (yet)!
     "sphinx_autodoc_typehints",  # Auto-parse type hints. Napoleon BEFORE typehints
     "sphinxcontrib.mermaid",  # Draw graphs using Mermaid.js
+    "sphinx_immaterial", # Sphinx immaterial theme
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -168,7 +168,7 @@ today_fmt = "%Y-%m-%d"
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_immaterial"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
