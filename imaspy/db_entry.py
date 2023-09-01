@@ -259,7 +259,7 @@ class DBEntry:
         """  # noqa
         self._al_open_pulse(FORCE_CREATE_PULSE if force else CREATE_PULSE, options)
 
-    def open(self, *, options=None, force=False) -> None:
+    def open(self, mode=OPEN_PULSE, *, options=None, force=False) -> None:
         """Open an existing database entry.
 
         Keyword Args:
@@ -274,7 +274,7 @@ class DBEntry:
                 imas_entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 1234)
                 imas_entry.open()
         """  # noqa
-        self._al_open_pulse(FORCE_OPEN_PULSE if force else OPEN_PULSE, options)
+        self._al_open_pulse(FORCE_OPEN_PULSE if force else mode, options)
 
     def get(
         self,

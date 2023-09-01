@@ -6,6 +6,7 @@
 
 import logging
 import os
+from pathlib import Path 
 from typing import TYPE_CHECKING, Optional
 import tempfile
 
@@ -112,17 +113,18 @@ class IDSToplevel(IDSStructure):
             from imaspy.db_entry import DBEntry
 
             tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
-            tmpfile = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
-            dbentry = DBEntry(ASCII_BACKEND, "serialize", 1, 1, "serialize")
-            dbentry.create(options=f"-fullpath {tmpfile}")
+            filepath = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
+            filename=Path(filepath).name
+            uri = f"imas:ascii?path={tmpdir};filename={filename}"
+            dbentry = DBEntry(uri, 'w')
             dbentry.put(self)
 
             try:
                 # read contents of tmpfile
-                with open(tmpfile, "rb") as f:
+                with open(filepath, "rb") as f:
                     data = f.read()
             finally:
-                os.unlink(tmpfile)  # remove tmpfile from disk
+                os.unlink(filepath)  # remove tmpfile from disk
             return bytes([ASCII_SERIALIZER_PROTOCOL]) + data
         raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 
@@ -142,19 +144,20 @@ class IDSToplevel(IDSStructure):
             from imaspy.db_entry import DBEntry
 
             tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
-            tmpfile = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
+            filepath = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
             # write data into tmpfile
             try:
-                with open(tmpfile, "wb") as f:
+                with open(filepath, "wb") as f:
                     f.write(data[1:])
                 # Temporarily open an ASCII backend for deserialization from tmpfile
-                dbentry = DBEntry(ASCII_BACKEND, "serialize", 1, 1, "serialize")
-                dbentry.open(options=f"-fullpath {tmpfile}")
+                filename=Path(filepath).name
+                uri = f"imas:ascii?path={tmpdir};filename={filename}"
+                dbentry = DBEntry(uri, 'w')
                 dbentry.get(self.metadata.name, destination=self)
             finally:
                 # tmpfile may not exist depending if an error occurs in above code
-                if os.path.exists(tmpfile):
-                    os.unlink(tmpfile)
+                if os.path.exists(filepath):
+                    os.unlink(filepath)
         else:
             raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 
