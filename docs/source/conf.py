@@ -171,9 +171,57 @@ today_fmt = "%Y-%m-%d"
 html_theme = "sphinx_immaterial"
 
 # Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-# html_theme_options = {"logo_only": True}
+# further.  For a list of options available for each theme, see
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+# and
+# https://sphinx-immaterial.readthedocs.io/en/latest/customization.html#confval-html_theme_options
+html_theme_options = {
+    "repo_url": "https://git.iter.org/projects/IMAS/repos/imaspy",
+    "repo_name": "IMASPy",
+    "icon": {
+        "repo": "fontawesome/brands/bitbucket",
+    },
+    "features": [
+        # "navigation.expand",
+        # "navigation.tabs",
+        "navigation.sections",
+        "navigation.instant",
+        # "header.autohide",
+        "navigation.top",
+        # "navigation.tracking",
+        # "search.highlight",
+        # "search.share",
+        # "toc.integrate",
+        "toc.follow",
+        "toc.sticky",
+        # "content.tabs.link",
+        "announce.dismiss",
+    ],
+    # "toc_title_is_page_title": True,
+    # "globaltoc_collapse": True,
+    "palette": [
+        {
+            "media": "(prefers-color-scheme: light)",
+            "scheme": "default",
+            "primary": "indigo",
+            "accent": "green",
+            "toggle": {
+                "icon": "material/lightbulb-outline",
+                "name": "Switch to dark mode",
+            },
+        },
+        {
+            "media": "(prefers-color-scheme: dark)",
+            "scheme": "slate",
+            "primary": "light-blue",
+            "accent": "lime",
+            "toggle": {
+                "icon": "material/lightbulb",
+                "name": "Switch to light mode",
+            },
+        },
+    ],
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
