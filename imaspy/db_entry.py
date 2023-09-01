@@ -126,7 +126,7 @@ class DBEntry:
             elif uri is not None:
                 args = (uri,) + args
             self.__legacy_init(*args, **kwargs)
-            options = kwargs.get('options', '')
+            options = kwargs.get("options", "")
             self.uri = self._build_legacy_uri(options)
         else:
             self._legacy_init = False
@@ -178,12 +178,9 @@ class DBEntry:
         """Internal method implementing open()/create()."""
         if self._db_ctx is not None:
             self.close()
-        if urlparse(self.uri).path.lower() == 'mdsplus':
+        if urlparse(self.uri).path.lower() == "mdsplus":
             self._setup_mdsplus()
-        status, ctx = self._ll.al_begin_dataentry_action(
-            self.uri,
-            mode,
-        )
+        status, ctx = self._ll.al_begin_dataentry_action(self.uri, mode)
         self._db_ctx = ALContext(ctx, self._ll)
         if status != 0:
             raise RuntimeError(f"Error opening/creating database entry: {status=}")
