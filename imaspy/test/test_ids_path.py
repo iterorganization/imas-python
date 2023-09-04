@@ -153,3 +153,6 @@ def test_path_goto(fake_toplevel_xml):
     # But it's not allowed to use a non INT_0D as indirect index
     with pytest.raises(ValueError):
         IDSPath("wavevector(ids_properties/comment)").goto(ids)
+
+    # Test that we can goto the same path
+    assert IDSPath("wavevector").goto(ids.wavevector[1]) is ids.wavevector[1]

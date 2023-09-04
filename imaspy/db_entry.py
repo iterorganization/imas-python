@@ -6,7 +6,8 @@ import logging
 import os
 from typing import Any, Optional
 
-from imaspy.ids_convert import convert_ids
+from imaspy.exception import ValidationError
+from imaspy.ids_convert import NBCPathMap, dd_version_map_from_factories
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
     CHAR_DATA,
@@ -34,7 +35,7 @@ from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
-from imaspy.ual_context import UalContext
+from imaspy.al_context import ALContext
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +92,7 @@ class DBEntry:
         self.run = run
         self.user_name = user_name or os.environ["USER"]
         self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
-        self._db_ctx: Optional[UalContext] = None
+        self._db_ctx: Optional[ALContext] = None
         # TODO: don't import all of IMAS, only load _ual_lowlevel, see
         # https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
         # TODO: allow using a different _ual_lowlevel module? See
@@ -127,7 +128,7 @@ class DBEntry:
         )
         if status != 0:
             raise RuntimeError(f"Error calling ual_begin_pulse_action(), {status=}")
-        self._db_ctx = UalContext(idx, self._ull)
+        self._db_ctx = ALContext(idx, self._ull)
         status = self._ull.ual_open_pulse(self._db_ctx.ctx, mode, options)
         if status != 0:
             raise RuntimeError(f"Error opening/creating database entry: {status=}")
@@ -139,7 +140,9 @@ class DBEntry:
         # out which version it is. But, I think that the model dir is not required if
         # there is an existing file.
         if self._dd_version or self._xml_path:
-            ids_path = mdsplus_model_dir(version=self._dd_version, xml_file=self._xml_path)
+            ids_path = mdsplus_model_dir(
+                version=self._dd_version, xml_file=self._xml_path
+            )
         elif self._ids_factory._version:
             ids_path = mdsplus_model_dir(version=self._ids_factory._version)
         else:
@@ -334,14 +337,16 @@ class DBEntry:
                 ids_name,
                 occurrence,
             )
-        # Create a new IDSToplevel with the same version as stored in the backend
-        if destination and (not dd_version or dd_version == destination._dd_version):
-            toplevel = destination
-            destination = None
-        elif not dd_version or dd_version == self._ids_factory._version:
-            toplevel = self._ids_factory.new(ids_name)
-        else:
-            toplevel = IDSFactory(version=dd_version).new(ids_name)
+        # Ensure we have a destination
+        if not destination:
+            destination = self._ids_factory.new(ids_name)
+        # Create a version conversion map, if needed
+        nbc_map = None
+        if dd_version and dd_version != destination._dd_version:
+            ddmap, source_is_older = dd_version_map_from_factories(
+                ids_name, IDSFactory(version=dd_version), self._ids_factory
+            )
+            nbc_map = ddmap.new_to_old if source_is_older else ddmap.old_to_new
 
         # Now fill the IDSToplevel
         if time_requested is None:  # get
@@ -351,14 +356,9 @@ class DBEntry:
                 ll_path, READ_OP, time_requested, interpolation_method
             )
         with manager as read_ctx:
-            _get_children(toplevel, read_ctx, time_mode, "")
+            _get_children(destination, read_ctx, time_mode, "", nbc_map)
 
-        if dd_version and dd_version != self._ids_factory._version:
-            if destination is not None:
-                return convert_ids(toplevel, version=None, target=destination)
-            return convert_ids(toplevel, version=None, factory=self._ids_factory)
-        assert destination is None
-        return toplevel
+        return destination
 
     def put(self, ids: IDSToplevel, occurrence: int = 0) -> None:
         """Write the contents of an IDS into this Database Entry.
@@ -430,15 +430,27 @@ class DBEntry:
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
 
-        # Automatic validation?
-        validate = os.environ.get("IMAS_AL_ENABLE_VALIDATION_AT_PUT")
-        if validate and validate != "0":
-            ids.validate()
+        # Automatic validation
+        disable_validate = os.environ.get("IMAS_AL_DISABLE_VALIDATE")
+        if not disable_validate or disable_validate == "0":
+            try:
+                ids.validate()
+            except ValidationError:
+                logger.error(
+                    "IDS %s is not valid. You can disable automatic IDS validation by "
+                    "setting the environment variable IMAS_AL_DISABLE_VALIDATE=1.",
+                    ids.metadata.name,
+                )
+                raise
 
-        original_ids = None
-        if not ids._parent or ids._parent._version != self._ids_factory._version:
-            original_ids = ids
-            ids = convert_ids(ids, version=None, factory=self._ids_factory)
+        ids_name = ids.metadata.name
+        # Create a version conversion map, if needed
+        nbc_map = None
+        if ids._version != self._ids_factory._version:
+            ddmap, source_is_older = dd_version_map_from_factories(
+                ids_name, ids._parent, self._ids_factory
+            )
+            nbc_map = ddmap.old_to_new if source_is_older else ddmap.new_to_old
 
         # Verify homogeneous_time is set
         time_mode = ids.ids_properties.homogeneous_time
@@ -448,18 +460,15 @@ class DBEntry:
         if is_slice and time_mode == IDS_TIME_MODE_INDEPENDENT:
             raise RuntimeError("Cannot use put_slice with IDS_TIME_MODE_INDEPENDENT.")
 
-        ll_path = ids.metadata.name
+        ll_path = ids_name
         if occurrence != 0:
             ll_path += f"/{occurrence}"
 
-        # Set version_put properties on the original and converted IDS
-        for i in (original_ids, ids):
-            # version_put was added in DD 3.22
-            if i and hasattr(i.ids_properties, "version_put"):
-                version_put = i.ids_properties.version_put
-                version_put.data_dictionary = ids._version
-                # TODO! AL version
-                version_put.access_layer_language = "imaspy"
+        # Set version_put properties (version_put was added in DD 3.22)
+        if hasattr(ids.ids_properties, "version_put"):
+            ids.ids_properties.version_put.data_dictionary = self._ids_factory._version
+            # TODO! AL version
+            ids.ids_properties.version_put.access_layer_language = "imaspy"
 
         if is_slice:
             with self._db_ctx.global_action(ll_path, READ_OP) as read_ctx:
@@ -477,7 +486,9 @@ class DBEntry:
         if not is_slice:
             # put() must first delete any existing data
             with self._db_ctx.global_action(ll_path, WRITE_OP) as write_ctx:
-                _delete_children(ids, write_ctx, "")
+                # New IDS to ensure all fields in "our" DD version are deleted
+                # If ids is in another version, we might not erase all fields
+                _delete_children(self._ids_factory.new(ids_name), write_ctx, "")
 
         if is_slice:
             manager = self._db_ctx.slice_action(
@@ -486,7 +497,7 @@ class DBEntry:
         else:
             manager = self._db_ctx.global_action(ll_path, WRITE_OP)
         with manager as write_ctx:
-            _put_children(ids, write_ctx, time_mode, "", is_slice)
+            _put_children(ids, write_ctx, time_mode, "", is_slice, nbc_map)
 
     def delete_data(self, ids_name: str, occurrence: int = 0) -> None:
         """Delete the provided IDS occurrence from this IMAS database entry.
@@ -506,7 +517,11 @@ class DBEntry:
 
 
 def _get_children(
-    structure: IDSStructure, ctx: UalContext, time_mode: int, ctx_path: str
+    structure: IDSStructure,
+    ctx: ALContext,
+    time_mode: int,
+    ctx_path: str,
+    nbc_map: Optional[NBCPathMap],
 ) -> None:
     """Recursively get all children of an IDSStructure"""
     for element in structure:
@@ -514,31 +529,40 @@ def _get_children(
             continue  # skip dynamic (time-dependent) nodes
 
         name = element.metadata.name
-        new_path = f"{ctx_path}/{name}" if ctx_path else name
+        path = str(element.metadata.path)
+        if nbc_map and path in nbc_map:
+            if nbc_map.path[path] is None:
+                continue  # element does not exist in the on-disk DD version
+            new_path = nbc_map.ctxpath[path]
+            timebase = nbc_map.tbp[path]
+            if timebase and time_mode == IDS_TIME_MODE_HOMOGENEOUS:
+                timebase = "/time"
+        else:
+            new_path = f"{ctx_path}/{name}" if ctx_path else name
+            if not isinstance(element, IDSStructure):
+                timebase = _get_timebasepath(element, time_mode, new_path)
 
         if isinstance(element, IDSStructArray):
-            timebase = _get_timebasepath(element, time_mode, new_path)
             with ctx.arraystruct_action(new_path, timebase, 0) as (new_ctx, size):
                 element.resize(size)
                 for item in element:
-                    _get_children(item, new_ctx, time_mode, "")
+                    _get_children(item, new_ctx, time_mode, "", nbc_map)
                     new_ctx.iterate_over_arraystruct(1)
 
         elif isinstance(element, IDSStructure):
-            _get_children(element, ctx, time_mode, new_path)
+            _get_children(element, ctx, time_mode, new_path, nbc_map)
 
         else:  # Data elements
             data_type = element.metadata.data_type
             ndim = element.metadata.ndim
             if data_type is IDSDataType.STR:
                 ndim += 1  # STR_0D is a 1D CHARACTER type...
-            timebase = _get_timebasepath(element, time_mode, new_path)
             data = ctx.read_data(new_path, timebase, data_type.ual_type, ndim)
             if data is not None:
                 element.value = data
 
 
-def _delete_children(structure: IDSStructure, ctx: UalContext, ctx_path: str) -> None:
+def _delete_children(structure: IDSStructure, ctx: ALContext, ctx_path: str) -> None:
     """Recursively delete all children of an IDSStructure"""
     for element in structure:
         name = element.metadata.name
@@ -551,10 +575,11 @@ def _delete_children(structure: IDSStructure, ctx: UalContext, ctx_path: str) ->
 
 def _put_children(
     structure: IDSStructure,
-    ctx: UalContext,
+    ctx: ALContext,
     time_mode: int,
     ctx_path: str,
     is_slice: bool,
+    nbc_map: Optional[NBCPathMap],
 ) -> None:
     """Recursively put all children of an IDSStructure"""
     # Note: when putting a slice, we do not need to descend into IDSStructure and
@@ -565,23 +590,32 @@ def _put_children(
             continue  # skip dynamic data when in time independent mode
 
         name = element.metadata.name
-        new_path = f"{ctx_path}/{name}" if ctx_path else name
+        path = str(element.metadata.path)
+        if nbc_map and path in nbc_map:
+            if nbc_map.path[path] is None:
+                continue  # element does not exist in the on-disk DD version
+            new_path = nbc_map.ctxpath[path]
+            timebase = nbc_map.tbp[path]
+            if timebase and time_mode == IDS_TIME_MODE_HOMOGENEOUS:
+                timebase = "/time"
+        else:
+            new_path = f"{ctx_path}/{name}" if ctx_path else name
+            if not isinstance(element, IDSStructure):
+                timebase = _get_timebasepath(element, time_mode, new_path)
 
         if isinstance(element, IDSStructArray):
-            timebase = _get_timebasepath(element, time_mode, new_path)
             size = len(element)
             with ctx.arraystruct_action(new_path, timebase, size) as (new_ctx, _):
                 for item in element:
-                    _put_children(item, new_ctx, time_mode, "", is_slice)
+                    _put_children(item, new_ctx, time_mode, "", is_slice, nbc_map)
                     new_ctx.iterate_over_arraystruct(1)
 
         elif isinstance(element, IDSStructure):
-            _put_children(element, ctx, time_mode, new_path, is_slice)
+            _put_children(element, ctx, time_mode, new_path, is_slice, nbc_map)
 
         else:  # Data elements
             if is_slice and not element.metadata.type.is_dynamic:
                 continue  # put_slice only stores dynamic data
-            timebase = _get_timebasepath(element, time_mode, new_path)
             if element.has_value:
                 ctx.write_data(new_path, timebase, element.value)
 

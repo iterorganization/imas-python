@@ -6,7 +6,6 @@ by writing them as the old and reading as new and vice-versa
 """
 
 import logging
-from unittest.mock import patch
 
 import numpy
 import pytest
@@ -20,10 +19,6 @@ from imaspy.test.test_helpers import (
     fill_with_random_data,
     open_dbentry,
 )
-
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
 
 
 @pytest.fixture(autouse=True)
@@ -105,15 +100,12 @@ def test_pulse_schedule_aos_renamed_up(backend, worker_id, tmp_path):
     ids.ec.antenna.resize(1)
     ids.ec.antenna[0].name = "test"
 
-    with patch("imaspy.db_entry.convert_ids", side_effect=convert_ids) as mock_convert:
-        # Test automatic conversion up
-        dbentry.put(ids)
-        assert mock_convert.call_count == 1
+    # Test automatic conversion up
+    dbentry.put(ids)
 
-        # Now load back and ensure no conversion is done
-        ids2 = dbentry.get("pulse_schedule")
-        assert mock_convert.call_count == 1
-        assert ids2.ec.launcher[0].name.value == "test"
+    # Now load back and ensure no conversion is done
+    ids2 = dbentry.get("pulse_schedule")
+    assert ids2.ec.launcher[0].name.value == "test"
 
 
 def test_pulse_schedule_aos_renamed_autodetect_up(backend, worker_id, tmp_path):
@@ -125,16 +117,13 @@ def test_pulse_schedule_aos_renamed_autodetect_up(backend, worker_id, tmp_path):
     ids.ec.antenna.resize(1)
     ids.ec.antenna[0].name = "test"
 
-    with patch("imaspy.db_entry.convert_ids", side_effect=convert_ids) as mock_convert:
-        # No conversion required
-        dbentry.put(ids)
-        assert mock_convert.call_count == 0
+    # No conversion required
+    dbentry.put(ids)
 
-        # Now load back with a newer dbentry version, which does a conversion
-        dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.28.0")
-        ids2 = dbentry2.get("pulse_schedule")
-        assert mock_convert.call_count == 1
-        assert ids2.ec.launcher[0].name.value == "test"
+    # Now load back with a newer dbentry version, which does a conversion
+    dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.28.0")
+    ids2 = dbentry2.get("pulse_schedule")
+    assert ids2.ec.launcher[0].name.value == "test"
 
 
 def test_pulse_schedule_aos_renamed_down(backend, worker_id, tmp_path):
@@ -146,15 +135,12 @@ def test_pulse_schedule_aos_renamed_down(backend, worker_id, tmp_path):
     ids.ec.launcher.resize(1)
     ids.ec.launcher[0].name = "test"
 
-    with patch("imaspy.db_entry.convert_ids", side_effect=convert_ids) as mock_convert:
-        # Test automatic conversion down
-        dbentry.put(ids)
-        assert mock_convert.call_count == 1
+    # Test automatic conversion down
+    dbentry.put(ids)
 
-        # Now load back and ensure no conversion is done
-        ids2 = dbentry.get("pulse_schedule")
-        assert mock_convert.call_count == 1
-        assert ids2.ec.antenna[0].name.value == "test"
+    # Now load back and ensure no conversion is done
+    ids2 = dbentry.get("pulse_schedule")
+    assert ids2.ec.antenna[0].name.value == "test"
 
 
 def test_pulse_schedule_aos_renamed_autodetect_down(backend, worker_id, tmp_path):
@@ -166,16 +152,13 @@ def test_pulse_schedule_aos_renamed_autodetect_down(backend, worker_id, tmp_path
     ids.ec.launcher.resize(1)
     ids.ec.launcher[0].name = "test"
 
-    with patch("imaspy.db_entry.convert_ids", side_effect=convert_ids) as mock_convert:
-        # No conversion required
-        dbentry.put(ids)
-        assert mock_convert.call_count == 0
+    # No conversion required
+    dbentry.put(ids)
 
-        # Now load back with a newer dbentry version, which does a conversion
-        dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.25.0")
-        ids2 = dbentry2.get("pulse_schedule")
-        assert mock_convert.call_count == 1
-        assert ids2.ec.antenna[0].name.value == "test"
+    # Now load back with a newer dbentry version, which does a conversion
+    dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.25.0")
+    ids2 = dbentry2.get("pulse_schedule")
+    assert ids2.ec.antenna[0].name.value == "test"
 
 
 def test_pulse_schedule_aos_renamed_autofill_up(backend, worker_id, tmp_path):
@@ -237,6 +220,7 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
     # the affected data. Pass as deleted_paths to compare_children
     deleted_paths = {
         "coils_non_axisymmetric": {"is_periodic", "coils_n"},
+        "ece": {"channel/harmonic/data"},
         "langmuir_probes": {
             "embedded/j_ion_parallel/data",
             "embedded/j_ion_parallel/validity_timed",
@@ -262,6 +246,14 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
         },
     }.get(ids_name, [])
     compare_children(ids, ids2, deleted_paths=deleted_paths)
+
+    # Compare outcome of implicit conversion at put with explicit convert_ids
+    implicit_3_30 = dbentry.get(ids_name)
+    explicit_3_30 = convert_ids(ids, version="3.30.0")
+    compare_children(implicit_3_30, explicit_3_30)
+
+    # Compare outcome of explicit conversion back to 3.25.0
+    compare_children(ids2, convert_ids(explicit_3_30, "3.25.0"))
 
 
 def test_convert_min_to_max(ids_name):
