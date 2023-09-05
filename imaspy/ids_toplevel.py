@@ -48,8 +48,6 @@ class IDSToplevel(IDSStructure):
 
         Args:
             parent: Parent of ``self``, an instance of :py:class:`IDSFactory`.
-            name: Name of this structure. Usually from the ``name`` attribute of
-                the IDS toplevel definition.
             structure_xml: XML structure that defines this IDS toplevel.
         """
         super().__init__(parent, structure_xml)

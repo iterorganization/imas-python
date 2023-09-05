@@ -17,6 +17,7 @@ except ImportError:
 from imaspy.exception import ValidationError
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.setup_logging import root_logger as logger
+from imaspy.util import visit_children
 
 try:
     from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_INDEPENDENT
@@ -89,17 +90,6 @@ class IDSMixin:
             my_path = parent_path + "/" + my_path
         return my_path
 
-    def visit_children(self, fun, leaf_only=False):
-        """walk all children of this structure in order and execute fun on them"""
-        # you will have fun
-        if hasattr(self, "__iter__"):
-            if not leaf_only:
-                fun(self)
-            for child in self:
-                child.visit_children(fun, leaf_only)
-        else:  # it must be a child then?
-            fun(self)
-
     @cached_property
     def _version(self):
         """Return the data dictionary version of this in-memory structure."""
@@ -171,7 +161,7 @@ class IDSMixin:
         else:
             el = self
 
-        el.visit_children(visitor)
+        visit_children(visitor, el)
 
         if isinstance(el, IDSToplevel):
             el.time = new_time

@@ -16,6 +16,7 @@ from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
+from imaspy.util import visit_children
 
 root_logger = logging.getLogger("imaspy")
 logger = root_logger
@@ -264,7 +265,7 @@ def unset_coordinate(coordinate):
                     element.value = []
                     return
 
-    parent.visit_children(callback)
+    visit_children(parent, callback)
 
 
 def compare_children(st1, st2, deleted_paths=set()):

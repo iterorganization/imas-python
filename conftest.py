@@ -11,6 +11,7 @@ from pathlib import Path
 from packaging.version import Version
 import importlib_resources
 import pytest
+import numpy as np
 
 from imaspy.dd_zip import dd_etree, latest_dd_version
 from imaspy.ids_defs import (
@@ -157,6 +158,7 @@ def fake_filled_toplevel(
     top.wavevector[0].eigenmode.resize(1)
     eig = top.wavevector[0].eigenmode[0]
     eig.frequency_norm = 10
+    eig.poloidal_angle = np.linspace(0, 2, num=10) * np.pi
     top.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
 
     yield top
