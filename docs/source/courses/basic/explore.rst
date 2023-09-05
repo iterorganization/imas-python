@@ -4,8 +4,10 @@ Explore with IMASPy
 In this part of the training, we will learn how to use Python to explore data
 saved in IDSs.
 
+
 Explore which IDSs are available
 --------------------------------
+
 Most codes will touch multiple IDSs inside a single IMAS data entry. For example
 a heating code using a magnetic equilibrium from the ``equilibrium`` IDS with a
 heating profile from the ``core_sources`` IDS. To find out how to write your
@@ -17,15 +19,14 @@ or explore the data interactively. We will focus on the latter method here.
 
 .. tabs::
     .. tab:: Exercise
-        For the example scenario ``shot = 134173``, ``run = 106``,
-        ``user = "public"``, ``database = "ITER"`` print all possible IDS
-        names.
+        Find out the names of the available IDSs.
 
     .. tab:: AL4
         .. literalinclude:: al4_snippets/print_idss.py
 
     .. tab:: IMASPy
         .. literalinclude:: imaspy_snippets/print_idss.py
+
 
 Explore the structure and contents of an IDS
 --------------------------------------------
@@ -43,8 +44,6 @@ Explore the structure and contents of an IDS
 Interactive exploration
 
 .. image:: interactive_tab_core_profiles_toplevel.png
-
-
 
 
 Load an IDS and explore which data exists
