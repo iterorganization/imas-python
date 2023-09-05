@@ -222,6 +222,11 @@ html_theme_options = {
     ],
 }
 
+object_description_options = [
+    (".*", dict(include_fields_in_toc=False)),
+    (".*parameter", dict(include_in_toc=False)),
+]
+
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
 
