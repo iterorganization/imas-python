@@ -1,6 +1,13 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
 
+import numpy
+import rich
+import rich.columns
+import rich.tree
+
+from imaspy.ids_data_type import IDSDataType
+
 
 def visit_children(func, node, leaf_only=True):
     """Apply a function to node and its children
@@ -40,3 +47,42 @@ def visit_children(func, node, leaf_only=True):
             func(node)
         for child in node:
             visit_children(func, child, leaf_only)
+
+
+def print_tree(structure, hide_empty_nodes=True):
+    with numpy.printoptions(threshold=5, linewidth=1024, precision=4):
+        rich.print(make_tree(structure, hide_empty_nodes))
+
+
+def make_tree(structure, hide_empty_nodes=True, *, tree=None):
+    # FIXME: move imports to top of file after merging PR #127
+    from imaspy.ids_primitive import IDSPrimitive
+    from imaspy.ids_structure import IDSStructure
+    from imaspy.ids_struct_array import IDSStructArray
+
+    if tree is None:
+        tree = rich.tree.Tree(structure.metadata.name)
+
+    if not isinstance(structure, (IDSStructure, IDSStructArray)):
+        raise TypeError()
+
+    for child in structure:
+        if hide_empty_nodes and not child.has_value:
+            continue
+
+        if isinstance(child, IDSPrimitive):
+            if not child.has_value:
+                value = "[bright_black]-"
+            else:
+                value = rich.pretty.Pretty(child.value)
+            txt = f"[yellow]{child.metadata.name}[/]:"
+            group = rich.columns.Columns([txt, value])
+            tree.add(group)
+        else:
+            ntree = tree
+            if isinstance(child, IDSStructure):
+                txt = f"[magenta]{child._path}[/]"
+                ntree = tree.add(txt)
+            make_tree(child, hide_empty_nodes, tree=ntree)
+
+    return tree
