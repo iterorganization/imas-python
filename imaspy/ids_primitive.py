@@ -124,8 +124,12 @@ class IDSPrimitive(IDSMixin):
         return iter([])
 
     def __repr__(self):
-        value_repr = f"{self.value.__class__.__qualname__}({self.value!r})"
-        return f"{self._build_repr_start()}, {self.data_type})>\n{value_repr}"
+        empty = value_repr = ""
+        if self.has_value:
+            value_repr = f"\n{self.value.__class__.__qualname__}({self.value!r})"
+        else:
+            empty = "empty "
+        return f"{self._build_repr_start()}, {empty}{self.data_type})>{value_repr}"
 
     @property
     def value(self):
@@ -330,8 +334,12 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
         # Specify that this is a numpy array, instead of a Python array As we
         # know .value is a numpy array, we can remove "array" part of the
         # numpy-native repr
-        value_repr = f"{_fullname(self.value)}{repr(self.value)[5:]}"
-        return f"{self._build_repr_start()}, {self.data_type})>\n{value_repr}"
+        empty = value_repr = ""
+        if self.has_value:
+            value_repr = f"\n{_fullname(self.value)}{repr(self.value)[5:]}"
+        else:
+            empty = "empty "
+        return f"{self._build_repr_start()}, {empty}{self.data_type})>{value_repr}"
 
 
 def _fullname(o) -> str:
