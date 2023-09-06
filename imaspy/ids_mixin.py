@@ -37,6 +37,9 @@ class IDSMixin:
         self._parent = parent
         self._structure_xml = structure_xml
         self.metadata = IDSMetadata(structure_xml=self._structure_xml)
+        dd_doc = getattr(self.metadata, "documentation", None)
+        if dd_doc:
+            self.__doc__ = dd_doc
 
     @property
     def _time_mode(self) -> int:
