@@ -12,7 +12,7 @@ cp.ids_properties.comment = "Synthetic IDS created for the IMASPy course"
 cp.ids_properties.creation_date = datetime.date.today().isoformat()
 
 # Set a time array
-cp.time[:] = [1.0, 2.5, 4.0]
+cp.time = np.array([1.0, 2.5, 4.0])
 
 # Main coordinate
 rho_tor_norm = np.linspace(0, 1, num=64)
