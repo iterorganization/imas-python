@@ -255,14 +255,6 @@ class IDSPrimitive(IDSMixin):
         return False
 
     @property
-    def depth(self):
-        """Calculate the depth of the leaf node"""
-        my_depth = 0
-        if hasattr(self, "_parent"):
-            my_depth += self._parent.depth
-        return my_depth
-
-    @property
     def data_type(self):
         """Combine imaspy ids_type and ndims to UAL data_type"""
         return "{!s}_{!s}D".format(self.metadata.data_type.value, self.metadata.ndim)

@@ -117,14 +117,6 @@ class IDSStructure(IDSMixin):
         """Iterate over this structure's children"""
         return iter(map(self.__getitem__, self._children))
 
-    @cached_property
-    def depth(self):
-        """Calculate the depth of the leaf node"""
-        my_depth = 0
-        if hasattr(self, "_parent"):
-            my_depth += 1 + self._parent.depth
-        return my_depth
-
     def __str__(self):
         return '%s("%s")' % (type(self).__name__, self.metadata.name)
 
