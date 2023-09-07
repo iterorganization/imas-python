@@ -16,23 +16,31 @@ logger = logging.getLogger(__name__)
 
 
 # TODO: these tools should be updated for AL5 to accept URIs instead of file paths
+_click_path = click.Path(exists=True, dir_okay=False, path_type=Path)
+
+
+def _as_paths(paths):
+    """Workaround for click 7.x which doesn't convert paths to Path objects."""
+    for path in paths:
+        if isinstance(path, bytes):
+            path = path.decode("UTF-8")
+        if not isinstance(path, Path):
+            path = Path(path)
+        yield path
 
 
 @click.command("ids_info")
 @click.option("-n", "--name")
 @click.option("--version")
 @click.option("--xml_path")
-@click.argument("paths", nargs=-1, type=click.Path(dir_okay=False, path_type=Path))
+@click.argument("paths", nargs=-1, type=_click_path)
 def info(name, version, xml_path, paths):
     """Print info about IDSes provided by path."""
-    for file in paths:
-        if not file.exists():
-            logger.error("File %s not found", file)
-        else:
-            ids = open_from_file(file, version=version, xml_path=xml_path)
+    for file in _as_paths(paths):
+        ids = open_from_file(file, version=version, xml_path=xml_path)
 
-            print(ids.metadata.name)
-            imaspy.util.print_tree(ids.ids_properties, hide_empty_nodes=False)
+        print(ids.metadata.name)
+        imaspy.util.print_tree(ids.ids_properties, hide_empty_nodes=False)
 
 
 @click.command("ids_convert")
@@ -112,11 +120,11 @@ def nonempty_children(el):
 
 
 @click.command("ids_print")
-@click.argument("paths", nargs=-1, type=click.Path(dir_okay=False, path_type=Path))
+@click.argument("paths", nargs=-1, type=_click_path)
 @click.option("--all", "-a", help="Show all values (including empty/default).")
 def tree(paths, all):
     """Pretty-print a tree of non-default variables."""
-    for path in paths:
+    for path in _as_paths(paths):
         ids = open_from_file(path)
 
         try:
