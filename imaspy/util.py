@@ -17,6 +17,8 @@ import scipy.interpolate
 
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_primitive import IDSPrimitive
+from imaspy.ids_structure import IDSStructure
+from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_toplevel import IDSToplevel
 
 logger = logging.getLogger(__name__)
@@ -113,16 +115,27 @@ def resample(node, old_time, new_time, homogeneousTime=None, inplace=False, **kw
 
 
 def print_tree(structure, hide_empty_nodes=True):
+    """Print the full tree of an IDS or IDS structure.
+
+    Args:
+        structure: IDS structure to print
+        hide_empty_nodes: Show or hide nodes without value.
+    """
     with numpy.printoptions(threshold=5, linewidth=1024, precision=4):
         rich.print(make_tree(structure, hide_empty_nodes))
 
 
 def make_tree(structure, hide_empty_nodes=True, *, tree=None):
-    # FIXME: move imports to top of file after merging PR #127
-    from imaspy.ids_primitive import IDSPrimitive
-    from imaspy.ids_structure import IDSStructure
-    from imaspy.ids_struct_array import IDSStructArray
+    """Build the ``rich.tree.Tree`` for display in :py:meth:`print_tree`.
 
+    Args:
+        structure: IDS structure to add to the tree
+        hide_empty_nodes: Show or hide nodes without value.
+
+    Keyword Args:
+        tree: If provided, child items will be added to this Tree object. Otherwise a
+            new Tree is constructed.
+    """
     if tree is None:
         tree = Tree(structure.metadata.name)
 
@@ -156,12 +169,6 @@ def inspect(ids_node, hide_empty_nodes=False):
 
     Inspired by `rich.inspect`, but customized to accomadate IDS specifics.
     """
-    # FIXME: move imports to top of file after merging PR #127
-    from imaspy.ids_primitive import IDSPrimitive
-    from imaspy.ids_structure import IDSStructure
-    from imaspy.ids_struct_array import IDSStructArray
-    from imaspy.ids_toplevel import IDSToplevel
-
     # Title
     if isinstance(ids_node, IDSToplevel):
         title = f"IDS: [green]{ids_node.metadata.name}"
