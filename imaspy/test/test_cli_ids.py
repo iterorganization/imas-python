@@ -21,15 +21,7 @@ def filled_ascii_datastore(tmp_path, ids_minimal_types, worker_id, requires_imas
 
 
 @pytest.mark.cli
-@pytest.mark.xfail(reason="IMAS-4533")
-def test_ids_info_function(filled_ascii_datastore):
-    tmp_path, filename, ids_minimal_types, _ = filled_ascii_datastore
-
-    info([f"{tmp_path / filename}", f"--xml_path={ids_minimal_types}"])
-
-
-@pytest.mark.cli
-@pytest.mark.xfail(reason="IMAS-4533")
+# @pytest.mark.xfail(reason="IMAS-4533")
 def test_ids_info(filled_ascii_datastore):
     tmp_path, filename, ids_minimal_types, _ = filled_ascii_datastore
 
@@ -43,11 +35,9 @@ def test_ids_info(filled_ascii_datastore):
         ],
     )
     assert result.exit_code == 0
-    assert result.output == "Hello world!\n"
 
 
 @pytest.mark.cli
-@pytest.mark.xfail(reason="IMAS-4533")
 def test_open_from_file(filled_ascii_datastore):
     tmp_path, filename, ids_minimal_types, _ = filled_ascii_datastore
 

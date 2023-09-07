@@ -6,7 +6,6 @@ import logging
 import os.path
 from pathlib import Path
 
-import rich
 import click
 
 import imaspy.util
@@ -113,46 +112,17 @@ def nonempty_children(el):
 
 
 @click.command("ids_print")
-def tree():
+@click.argument("paths", nargs=-1, type=click.Path(dir_okay=False, path_type=Path))
+@click.option("--all", "-a", help="Show all values (including empty/default).")
+def tree(paths, all):
     """Pretty-print a tree of non-default variables."""
-    parser = _default_parser()
-    parser.add_argument(
-        "-s",
-        "--structure",
-        action="store_true",
-        help="show structure only, don't print values",
-    )
-    parser.add_argument(
-        "-a",
-        "--all",
-        action="store_true",
-        help="show all values (including empty/default)",
-    )
-    args = parser.parse_args()
+    for path in paths:
+        ids = open_from_file(path)
 
-    print_f = format_node_value
-    if args.all:
-        children_f = all_children
-    else:
-        children_f = nonempty_children
-
-    if args.structure:
-        print_f = format_node
-        children_f = all_children
-
-    for file in args.file:
-        if not os.path.isfile(file):
-            logger.error("File %s not found", file)
-        else:
-            ids = open_from_file(file)
-
-            if args.name and ids.metadata.name != args.name:
-                ids = ids[args.name]
-
-            try:
-                print(format_tree(ids, format_node=print_f, get_children=children_f))
-            except BrokenPipeError:
-                pass
+        try:
+            imaspy.util.print_tree(ids, not all)
+        except BrokenPipeError:
+            pass
 
 
 ENDINGS = {
