@@ -6,15 +6,16 @@ import logging
 import os.path
 from pathlib import Path
 
-from tree_format import format_tree
 import click
 
-import imaspy
-from imaspy.setup_logging import root_logger as logger
+import imaspy.util
 from imaspy.dd_zip import latest_dd_version
-from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS, MDSPLUS_BACKEND
+from imaspy.ids_defs import ASCII_BACKEND, MDSPLUS_BACKEND
 
-logger.setLevel(logging.WARNING)
+logger = logging.getLogger(__name__)
+
+
+# TODO: these tools should be updated for AL5 to accept URIs instead of file paths
 
 
 @click.command("ids_info")
@@ -30,18 +31,8 @@ def info(name, version, xml_path, paths):
         else:
             ids = open_from_file(file, version=version, xml_path=xml_path)
 
-            if name and ids.metadata.name != name:
-                ids = ids[name]
-
             print(ids.metadata.name)
-
-            print(
-                format_tree(
-                    ids.ids_properties,
-                    format_node=format_node_value,
-                    get_children=all_children,
-                )
-            )
+            imaspy.util.print_tree(ids.ids_properties, hide_empty_nodes=False)
 
 
 @click.command("ids_convert")
@@ -121,46 +112,17 @@ def nonempty_children(el):
 
 
 @click.command("ids_print")
-def tree():
+@click.argument("paths", nargs=-1, type=click.Path(dir_okay=False, path_type=Path))
+@click.option("--all", "-a", help="Show all values (including empty/default).")
+def tree(paths, all):
     """Pretty-print a tree of non-default variables."""
-    parser = _default_parser()
-    parser.add_argument(
-        "-s",
-        "--structure",
-        action="store_true",
-        help="show structure only, don't print values",
-    )
-    parser.add_argument(
-        "-a",
-        "--all",
-        action="store_true",
-        help="show all values (including empty/default)",
-    )
-    args = parser.parse_args()
+    for path in paths:
+        ids = open_from_file(path)
 
-    print_f = format_node_value
-    if args.all:
-        children_f = all_children
-    else:
-        children_f = nonempty_children
-
-    if args.structure:
-        print_f = format_node
-        children_f = all_children
-
-    for file in args.file:
-        if not os.path.isfile(file):
-            logger.error("File %s not found", file)
-        else:
-            ids = open_from_file(file)
-
-            if args.name and ids.metadata.name != args.name:
-                ids = ids[args.name]
-
-            try:
-                print(format_tree(ids, format_node=print_f, get_children=children_f))
-            except BrokenPipeError:
-                pass
+        try:
+            imaspy.util.print_tree(ids, not all)
+        except BrokenPipeError:
+            pass
 
 
 ENDINGS = {
@@ -177,24 +139,19 @@ def open_from_file(file, version=None, xml_path=None):
     backend = ENDINGS[file.suffix]
     if backend == ASCII_BACKEND:
         try:
-            tree_name, shot, run, ids_name = file.stem.split("_", maxsplit=3)
+            db_name, shot, run, ids_name = file.stem.split("_", maxsplit=3)
         except IndexError as ee:
             raise ValueError("Could not parse ASCII backend filename %s" % file) from ee
     elif backend == MDSPLUS_BACKEND:
-        raise ValueError("Could not parse ASCII backend filename %s" % file)
+        raise ValueError("Could not parse MDSplus backend filename %s" % file)
     else:
         raise ValueError("Could not identify backend from filename %s" % file)
 
-    ids = imaspy.ids_root.IDSRoot(
-        int(shot), int(run), version=version, xml_path=xml_path,
-    )  # use the latest version by default
-    ids.open_ual_store(file.parent, tree_name, "3", backend, mode="r")
-
-    # Fake time mode homogeneous so we can actually read the file.
-    # TODO: work around that!
-    ids[ids_name].ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    ids[ids_name].get()
-    return ids[ids_name]
+    entry = imaspy.DBEntry(
+        backend, db_name, int(shot), int(run), dd_version=version, xml_path=xml_path
+    )
+    entry.open(options=f"-prefix {file.parent}/")  # ASCII backend to direct to path
+    return entry.get(ids_name)
 
 
 def _default_parser():

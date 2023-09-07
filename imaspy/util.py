@@ -4,6 +4,15 @@
 import copy
 import logging
 
+import numpy
+import rich
+from rich.console import Group
+from rich.columns import Columns
+from rich.panel import Panel
+from rich.pretty import Pretty
+from rich.table import Table
+from rich.text import Text
+from rich.tree import Tree
 import scipy.interpolate
 
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
@@ -101,3 +110,117 @@ def resample(node, old_time, new_time, homogeneousTime=None, inplace=False, **kw
         )
 
     return el
+
+
+def print_tree(structure, hide_empty_nodes=True):
+    with numpy.printoptions(threshold=5, linewidth=1024, precision=4):
+        rich.print(make_tree(structure, hide_empty_nodes))
+
+
+def make_tree(structure, hide_empty_nodes=True, *, tree=None):
+    # FIXME: move imports to top of file after merging PR #127
+    from imaspy.ids_primitive import IDSPrimitive
+    from imaspy.ids_structure import IDSStructure
+    from imaspy.ids_struct_array import IDSStructArray
+
+    if tree is None:
+        tree = Tree(structure.metadata.name)
+
+    if not isinstance(structure, (IDSStructure, IDSStructArray)):
+        raise TypeError()
+
+    for child in structure:
+        if hide_empty_nodes and not child.has_value:
+            continue
+
+        if isinstance(child, IDSPrimitive):
+            if not child.has_value:
+                value = "[bright_black]-"
+            else:
+                value = Pretty(child.value)
+            txt = f"[yellow]{child.metadata.name}[/]:"
+            group = Columns([txt, value])
+            tree.add(group)
+        else:
+            ntree = tree
+            if isinstance(child, IDSStructure):
+                txt = f"[magenta]{child._path}[/]"
+                ntree = tree.add(txt)
+            make_tree(child, hide_empty_nodes, tree=ntree)
+
+    return tree
+
+
+def inspect(ids_node, hide_empty_nodes=False):
+    """Inspect and print an IDS node.
+
+    Inspired by `rich.inspect`, but customized to accomadate IDS specifics.
+    """
+    # FIXME: move imports to top of file after merging PR #127
+    from imaspy.ids_primitive import IDSPrimitive
+    from imaspy.ids_structure import IDSStructure
+    from imaspy.ids_struct_array import IDSStructArray
+    from imaspy.ids_toplevel import IDSToplevel
+
+    # Title
+    if isinstance(ids_node, IDSToplevel):
+        title = f"IDS: [green]{ids_node.metadata.name}"
+    elif isinstance(ids_node, IDSStructure):
+        title = f"IDS structure: [green]{ids_node._path}"
+    elif isinstance(ids_node, IDSStructArray):
+        title = f"IDS array of structures: [green]{ids_node._path}"
+    else:
+        title = f"IDS value: [green]{ids_node._path}"
+    if ids_node._version:
+        title += f" [/](DD version [bold cyan]{ids_node._version}[/])"
+
+    renderables = []
+    # Documentation
+    renderables.append(Text(ids_node.metadata.documentation, style="inspect.help"))
+
+    # Value
+    if isinstance(ids_node, (IDSStructArray, IDSPrimitive)):
+        val = Pretty(ids_node.value, indent_guides=True, max_length=10, max_string=60)
+        value_text = Text.assemble(("value", "inspect.attr"), (" =", "inspect.equals"))
+        cols = Columns([value_text, val])
+        renderables.append(Panel(cols, border_style="inspect.value.border"))
+
+    attrs = set(name for name in dir(ids_node) if not name.startswith("_"))
+    child_nodes = set()
+    if isinstance(ids_node, IDSStructure):
+        child_nodes = set(ids_node._children)
+    attrs -= child_nodes
+    attrs -= {"value"}
+
+    # Properties
+    if attrs:
+        attrs_table = Table.grid(padding=(0, 1), expand=False)
+        attrs_table.add_column(justify="right")
+
+        for attr in sorted(attrs):
+            try:
+                value = getattr(ids_node, attr)
+            except Exception:
+                continue
+            if callable(value):
+                continue
+
+            key_text = Text.assemble((attr, "inspect.attr"), (" =", "inspect.equals"))
+            attrs_table.add_row(key_text, Pretty(value))
+
+        renderables.append(Panel(attrs_table, title="Attributes"))
+
+    if child_nodes:
+        child_table = Table.grid(padding=(0, 1), expand=False)
+        child_table.add_column(justify="right")
+
+        for child in sorted(child_nodes):
+            value = getattr(ids_node, child)
+            if not value.has_value and hide_empty_nodes:
+                continue
+            key_text = Text.assemble((child, "inspect.attr"), (" =", "inspect.equals"))
+            child_table.add_row(key_text, Pretty(value))
+
+        renderables.append(Panel(child_table, title="Child nodes"))
+
+    rich.print(Panel.fit(Group(*renderables), title=title, border_style="scope.border"))
