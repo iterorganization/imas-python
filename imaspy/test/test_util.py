@@ -19,3 +19,9 @@ def test_print_tree():
     fill_consistent(cp)
     imaspy.util.print_tree(cp)  # Full IDS tree
     imaspy.util.print_tree(cp.ids_properties)  # Sub-tree
+
+
+def test_find_paths():
+    cp = imaspy.IDSFactory("3.39.0").new("core_profiles")
+    matches = imaspy.util.find_paths(cp, "(^|/)time$")
+    assert matches == ['profiles_1d/time', 'profiles_2d/time', 'time']

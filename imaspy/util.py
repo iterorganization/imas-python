@@ -3,6 +3,8 @@
 
 import copy
 import logging
+import re
+from typing import List
 
 import numpy
 import rich
@@ -16,6 +18,7 @@ from rich.tree import Tree
 import scipy.interpolate
 
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
+from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
@@ -122,10 +125,10 @@ def print_tree(structure, hide_empty_nodes=True):
         hide_empty_nodes: Show or hide nodes without value.
     """
     with numpy.printoptions(threshold=5, linewidth=1024, precision=4):
-        rich.print(make_tree(structure, hide_empty_nodes))
+        rich.print(_make_tree(structure, hide_empty_nodes))
 
 
-def make_tree(structure, hide_empty_nodes=True, *, tree=None):
+def _make_tree(structure, hide_empty_nodes=True, *, tree=None):
     """Build the ``rich.tree.Tree`` for display in :py:meth:`print_tree`.
 
     Args:
@@ -159,7 +162,7 @@ def make_tree(structure, hide_empty_nodes=True, *, tree=None):
             if isinstance(child, IDSStructure):
                 txt = f"[magenta]{child._path}[/]"
                 ntree = tree.add(txt)
-            make_tree(child, hide_empty_nodes, tree=ntree)
+            _make_tree(child, hide_empty_nodes, tree=ntree)
 
     return tree
 
@@ -233,3 +236,34 @@ def inspect(ids_node, hide_empty_nodes=False):
         renderables.append(Panel(child_table, title="Child nodes", style="cyan"))
 
     rich.print(Panel.fit(Group(*renderables), title=title, border_style="scope.border"))
+
+
+def find_paths(node: IDSMixin, query: str) -> List[str]:
+    """Find all paths in the provided DD node (including children) that match the query.
+
+    Matching is checked with :external:py:func:`re.search`.
+
+    Args:
+        node: An IDS node (e.g. an IDS or sub-structure) to search in.
+        query: Regular Expression. See the Python doumentation for :external:py:mod:`re`
+            for more details.
+
+    Returns:
+        A list of matching paths.
+
+    Example:
+        >>> factory = imaspy.IDSFactory()
+        >>> core_profiles = factory.new("core_profiles")
+        >>> imaspy.util.find_paths(core_profiles, "(^|/)time$")
+        ['profiles_1d/time', 'profiles_2d/time', 'time']
+    """
+    dd_element = node._structure_xml
+    pattern = re.compile(query)
+    matching_paths = []
+
+    for element in dd_element.iter():
+        path = element.get("path", "")
+        if pattern.search(path) is not None:
+            matching_paths.append(path)
+
+    return matching_paths
