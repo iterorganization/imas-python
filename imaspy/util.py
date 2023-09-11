@@ -189,8 +189,10 @@ def inspect(ids_node, hide_empty_nodes=False):
     if isinstance(ids_node, (IDSStructArray, IDSPrimitive)):
         val = Pretty(ids_node.value, indent_guides=True, max_length=10, max_string=60)
         value_text = Text.assemble(("value", "inspect.attr"), (" =", "inspect.equals"))
-        cols = Columns([value_text, val])
-        renderables.append(Panel(cols, border_style="inspect.value.border"))
+        table = Table.grid(padding=(0, 1), expand=False)
+        table.add_column(justify="right")
+        table.add_row(value_text, val)
+        renderables.append(Panel(table, border_style="inspect.value.border"))
 
     attrs = set(name for name in dir(ids_node) if not name.startswith("_"))
     child_nodes = set()
@@ -228,6 +230,6 @@ def inspect(ids_node, hide_empty_nodes=False):
             key_text = Text.assemble((child, "inspect.attr"), (" =", "inspect.equals"))
             child_table.add_row(key_text, Pretty(value))
 
-        renderables.append(Panel(child_table, title="Child nodes"))
+        renderables.append(Panel(child_table, title="Child nodes", style="cyan"))
 
     rich.print(Panel.fit(Group(*renderables), title=title, border_style="scope.border"))
