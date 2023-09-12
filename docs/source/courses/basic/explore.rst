@@ -21,6 +21,15 @@ or explore the data interactively. We will focus on the latter method here.
     .. tab:: Exercise
         Find out the names of the available IDSs.
 
+        .. hint::
+            :collapsible:
+
+            The module ``imas.ids_names`` contains information on the available IDSs in
+            AL4.
+
+            In IMASPy, you can use :py:class:`~imaspy.ids_factory.IDSFactory` to figure
+            out which IDSs are avaible.
+
     .. tab:: AL4
         .. literalinclude:: al4_snippets/print_idss.py
 
@@ -31,20 +40,106 @@ or explore the data interactively. We will focus on the latter method here.
 Explore the structure and contents of an IDS
 --------------------------------------------
 
-.. tabs::
-    .. tab:: Exercise
-        Write some text here
+IMASPy has several features and utilities for exploring an IDS. These are best used in
+an interactive Python console, such as the default python console or the `IPython
+<https://ipython.org/>`_ console.
 
-    .. tab:: AL4
-        .. literalinclude:: al4_snippets/explore_content.py
 
-    .. tab:: IMASPy
-        .. literalinclude:: imaspy_snippets/explore_content.py
+Tab completion
+''''''''''''''
 
-Interactive exploration
+As with most Python objects, you can use :kbd:`Tab` completion on IMASPy objects.
 
-.. image:: interactive_tab_core_profiles_toplevel.png
+.. note::
+    In the python console, you need to press :kbd:`Tab` twice to show suggestions.
+
+- :py:class:`~imaspy.ids_factory.IDSFactory` has tab completion for IDS names:
+
+  .. code-block:: pycon
+
+    >>> factory = imaspy.IDSFactory()
+    >>> factory.core_
+    factory.core_instant_changes(  factory.core_sources(
+    factory.core_profiles(         factory.core_transport(
+
+- :py:class:`~imaspy.ids_toplevel.IDSToplevel` and
+  :py:class:`~imaspy.ids_structure.IDSStructure` have tab completion for child nodes:
+
+  .. image:: interactive_tab_core_profiles_toplevel.png
+
+
+Inspecting IMASPy objects
+'''''''''''''''''''''''''
+
+:kbd:`Tab` completion is nice when you already know more or less what attribute you are
+looking for. For a more comprehensive overview of any IMASPy node, you can use
+:py:meth:`imaspy.util.inspect` to show:
+
+1.  The path to the node (relative to the IDS it is contained in).
+2.  The Data Dictionary version
+3.  The documentation metadata from the Data Dictionary
+4.  The `value` of the node (when applicable)
+5.  Attributes of the node
+6.  An overview of child nodes (when applicable)
+
+.. hint::
+
+    The output of :py:meth:`imaspy.util.inspect` is colored when your terminal supports
+    it. You may use the environment variable ``NO_COLOR`` to disable colored output or
+    ``FORCE_COLOR`` to force colored output. See
+    `<https://rich.readthedocs.io/en/stable/console.html#environment-variables>`_.
+
+    The exact colors your terminal shows are configurable and therefore may deviate from
+    the colors in below screenshots.
+
+.. rubric:: Examples
+
+.. image:: imaspy_inspect.png
+
+
+Printing an IDS tree
+''''''''''''''''''''
+
+Another useful utility function in IMASPy is :py:meth:`imaspy.util.print_tree`. This
+will print a complete tree structure of all non-empty quantities in the provided node.
+As an argument you can give a complete IDS, or any structure in the IDS such as
+``ids_properties``:
+
+.. image:: print_tree_ids_properties.png
+
+.. caution::
+
+    Depending on the size of the IDS (structure) you print, this may generate a lot of
+    output. For interactive exploration of large IDSs we recommend to use
+    :py:meth:`imaspy.util.inspect` (optionally with the parameter ``hide_empty_nodes``
+    set to :code:`True`) and only use :py:meth:`imaspy.util.print_tree` for smaller
+    sub-structures.
 
 
 Load an IDS and explore which data exists
 -----------------------------------------
+
+.. tabs::
+
+    .. tab:: Exercise
+
+        Load some IDSs and interactively explore their contents. You can use any of the
+        below suggestions (some require access to the Public ITER database), or use any
+        you have around.
+
+        Suggested data entries:
+
+        - :ref:`Training data entry <Open an IMAS database entry>`, IDSs
+          ``core_profiles`` or ``equilibrium``.
+        - ITER machine description database, IDS ``pf_active``
+
+          .. code-block:: python
+
+            backend = HDF5_BACKEND
+            db_name, shot, run, user = "ITER_MD", 111001, 202, "public"
+        - ITER machine description database, IDS ``ec_launchers``
+
+          .. code-block:: python
+
+            backend = HDF5_BACKEND
+            db_name, shot, run, user = "ITER_MD", 120000, 204, "public"
