@@ -140,7 +140,7 @@ def _make_tree(structure, hide_empty_nodes=True, *, tree=None):
             new Tree is constructed.
     """
     if tree is None:
-        tree = Tree(structure.metadata.name)
+        tree = Tree(f"[magenta]{structure.metadata.name}")
 
     if not isinstance(structure, (IDSStructure, IDSStructArray)):
         raise TypeError()
