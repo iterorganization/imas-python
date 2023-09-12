@@ -108,7 +108,7 @@ class IDSMetadata:
         self._init_done = True
 
     def __repr__(self) -> str:
-        return f"<IDSMetadata for '{self.path}'>"
+        return f"<IDSMetadata for '{self.name}'>"
 
     def __setattr__(self, name: str, value: Any):
         if hasattr(self, "_init_done"):
