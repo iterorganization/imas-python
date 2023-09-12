@@ -6,6 +6,7 @@ Provides the class for an IDS Primitive data type
 
 * :py:class:`IDSPrimitive`
 """
+import logging
 import numbers
 from functools import wraps
 from typing import Any, Dict, Tuple
@@ -18,6 +19,9 @@ from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import hli_utils
 from imaspy.ids_mixin import IDSMixin
+
+
+logger = logging.getLogger(__name__)
 
 
 def _needs_value(func):
@@ -135,12 +139,12 @@ class IDSPrimitive(IDSMixin):
 
     @property
     def _default(self):
-        default_value = self.metadata.data_type.default
+        data_type = self.metadata.data_type
         if self.metadata.ndim == 0:
-            return default_value
-        if self.metadata.data_type is IDSDataType.STR:
+            return data_type.default
+        if data_type is IDSDataType.STR:
             return []
-        return np.full((0,) * self.metadata.ndim, default_value)
+        return np.empty((0,) * self.metadata.ndim, dtype=data_type.numpy_dtype)
 
     def __iter__(self):
         # FIXME: this can't be right
@@ -186,10 +190,6 @@ class IDSPrimitive(IDSMixin):
                 raise ValueError("Lazy-loaded IDSs are read-only.")
             self.__value = setter_value
             return
-        if self.metadata.ndim == 0 and setter_value == self.metadata.data_type.default:
-            # Unset 0D types when setting them to their magic default value
-            self.__value = None
-            return
         if isinstance(setter_value, type(self)):
             # No need to cast, just overwrite contained value
             if (
@@ -202,6 +202,9 @@ class IDSPrimitive(IDSMixin):
                 self.__value = self.cast_value(setter_value.value)
         else:
             self.__value = self.cast_value(setter_value)
+        if self.metadata.ndim == 0 and self.__value == self.metadata.data_type.default:
+            # Unset 0D types when setting them to their magic default value
+            self.__value = None
 
     def __eq__(self, other):
         if isinstance(other, IDSPrimitive):
@@ -215,42 +218,41 @@ class IDSPrimitive(IDSMixin):
             return self.value == ref
 
     def cast_value(self, value):
-        # Cast list-likes to arrays
-        if isinstance(value, (list, tuple)):
-            value = np.array(value)
-
         # Cast values to their IDS-python types
-        if self.metadata.ndim == 0:
-            if self.metadata.data_type is IDSDataType.STR:
-                value = str(value)
-            elif self.metadata.data_type is IDSDataType.INT:
-                value = int(value)
-            elif self.metadata.data_type is IDSDataType.FLT:
-                value = float(value)
-            elif self.metadata.data_type is IDSDataType.CPX:
-                value = complex(value)
-            else:
-                raise ValueError(f"Invalid data_type: {self.metadata.data_type}")
+        logmsg = "Assigning incorrect type '%s' to %r, attempting automatic conversion."
+        if self.metadata.data_type is IDSDataType.STR:  # strings are special
+            if self.metadata.ndim == 0:
+                if not isinstance(value, str):
+                    logger.info(logmsg, type(value), self)
+                value = _cast_str(value)
+            else:  # STR_1D -> List[str]
+                if isinstance(value, (tuple, list, np.ndarray)):
+                    if not all(isinstance(val, str) for val in value):
+                        logger.info(logmsg, value, self)
+                    value = list(map(_cast_str, value))
+                else:
+                    logger.info(logmsg, type(value), self)
+                    value = [_cast_str(value)]
+
+        elif self.metadata.ndim == 0:
+            type_ = self.metadata.data_type.python_type
+            if isinstance(value, np.ndarray) and value.ndim == 0:
+                value = value.item()  # Unpack 0D numpy arrays
+            if not isinstance(value, type_):
+                logger.info(logmsg, type(value), self)
+            value = type_(value)
+
         else:  # ndim >= 1
-            if self.metadata.data_type is IDSDataType.FLT:
-                value = np.array(value, dtype=np.float64)
-            elif self.metadata.data_type is IDSDataType.CPX:
-                value = np.array(value, dtype=np.complex128)
-            elif self.metadata.data_type is IDSDataType.INT:
-                value = np.array(value, dtype=np.int32)
-            elif self.metadata.data_type is IDSDataType.STR:
-                # make sure that all the strings are decoded
-                if isinstance(value, np.ndarray):
-                    value = list(
-                        [
-                            str(val, encoding="UTF-8")
-                            if isinstance(val, bytes)
-                            else val
-                            for val in value
-                        ]
-                    )
-            else:
-                raise ValueError(f"Invalid data_type: {self.metadata.data_type}")
+            dtype = self.metadata.data_type.numpy_dtype
+            value = np.asanyarray(value)
+            if value.dtype != dtype:
+                logger.info(logmsg, value.dtype, self)
+            value = np.array(value, dtype=dtype, copy=False)
+            if value.ndim != self.metadata.ndim:
+                raise ValueError(
+                    f"Trying to assign a {value.ndim}D value to {self!r}."
+                )
+
         return value
 
     @staticmethod
@@ -312,12 +314,20 @@ class IDSPrimitive(IDSMixin):
         """Combine imaspy ids_type and ndims to UAL data_type"""
         return "{!s}_{!s}D".format(self.metadata.data_type.value, self.metadata.ndim)
 
-    def _validate(self, aos_indices: Dict[str, int]) -> None:
+    def _validate(self) -> None:
         # Common validation logic
-        super()._validate(aos_indices)
+        super()._validate()
         # Validate coordinates
         if self.has_value:
-            self.coordinates._validate(aos_indices)
+            self.coordinates._validate()
+
+
+def _cast_str(value):
+    """Cast a value to a string.
+
+    If value is a bytes object, decode it using UTF-8. Otherwise return str(value).
+    """
+    return value.decode("UTF-8") if isinstance(value, bytes) else str(value)
 
 
 def create_leaf_container(parent, structure_xml, **kwargs):

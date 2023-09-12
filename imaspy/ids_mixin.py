@@ -188,7 +188,7 @@ class IDSMixin:
         """Return the toplevel instance this node belongs to"""
         return self._parent._toplevel
 
-    def _validate(self, aos_indices: Dict[str, int]) -> None:
+    def _validate(self) -> None:
         """Actual implementation of validation logic.
 
         See also:
@@ -202,6 +202,5 @@ class IDSMixin:
             if self._time_mode == IDS_TIME_MODE_INDEPENDENT:
                 raise ValidationError(
                     f"Dynamic variable {self.metadata.path} is allocated, but time "
-                    "mode is IDS_TIME_MODE_INDEPENDENT.",
-                    aos_indices,
+                    "mode is IDS_TIME_MODE_INDEPENDENT."
                 )
