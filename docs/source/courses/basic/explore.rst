@@ -116,6 +116,23 @@ As an argument you can give a complete IDS, or any structure in the IDS such as
     sub-structures.
 
 
+Find paths in an IDS
+''''''''''''''''''''
+
+In IMASPy you can also search for paths inside an IDS:
+:py:meth:`imaspy.util.find_paths`. This can be useful when you know what quantity you
+are looking for, but aren't sure exactly in which (sub)structure of the IDS it is
+located.
+
+:py:meth:`imaspy.util.find_paths` accepts any Python regular expression (see
+:external:py:mod:`re`) as input. This allows for anything from basic to advanced
+searches.
+
+.. rubric:: Examples
+
+.. literalinclude:: imaspy_snippets/find_paths.py
+
+
 Load an IDS and explore which data exists
 -----------------------------------------
 
@@ -131,13 +148,13 @@ Load an IDS and explore which data exists
 
         - :ref:`Training data entry <Open an IMAS database entry>`, IDSs
           ``core_profiles`` or ``equilibrium``.
-        - ITER machine description database, IDS ``pf_active``
+        - ITER machine description database, IDS ``pf_active``:
 
           .. code-block:: python
 
             backend = HDF5_BACKEND
             db_name, shot, run, user = "ITER_MD", 111001, 202, "public"
-        - ITER machine description database, IDS ``ec_launchers``
+        - ITER machine description database, IDS ``ec_launchers``:
 
           .. code-block:: python
 
