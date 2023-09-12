@@ -31,7 +31,7 @@ def test_pretty_print(fake_filled_toplevel):
         "<IDSStructure ("
     )
     assert pprint.pformat(eig.time_norm).startswith("<IDSNumericArray")
-    assert pprint.pformat(eig.time_norm).endswith("\nnumpy.ndarray([], dtype=float64)")
+    assert pprint.pformat(eig.time_norm).endswith("empty FLT_1D)>")
     assert pprint.pformat(eig.frequency_norm).startswith("<IDSPrimitive")
     assert pprint.pformat(eig.frequency_norm).endswith("\nfloat(10.0)")
     fake_filled_toplevel.ids_properties.comment = "A filled comment"

@@ -153,6 +153,17 @@ class IDSCoordinates:
     def __init__(self, mixin: "IDSMixin") -> None:
         self._mixin = mixin
 
+    def __repr__(self) -> str:
+        mixin_path = self._mixin._path
+        coordinates = []
+        for i in range(len(self)):
+            coor_str = f"\n  {i}: '{self._mixin.metadata.coordinates[i]}'"
+            same_as = self._mixin.metadata.coordinates_same_as[i]
+            if same_as.references:
+                coor_str += f" (same as '{same_as}')"
+            coordinates.append(coor_str)
+        return f"<IDSCoordinates of '{mixin_path}'>{''.join(coordinates)}"
+
     def __len__(self) -> int:
         """Number of coordinates is equal to the dimension of the bound IDSMixin."""
         return self._mixin.metadata.ndim

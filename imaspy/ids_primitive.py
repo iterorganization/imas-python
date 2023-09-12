@@ -128,8 +128,12 @@ class IDSPrimitive(IDSMixin):
         return iter([])
 
     def __repr__(self):
-        value_repr = f"{self.value.__class__.__qualname__}({self.value!r})"
-        return f"{self._build_repr_start()}, {self.data_type})>\n{value_repr}"
+        empty = value_repr = ""
+        if self.has_value:
+            value_repr = f"\n{self.value.__class__.__qualname__}({self.value!r})"
+        else:
+            empty = "empty "
+        return f"{self._build_repr_start()}, {empty}{self.data_type})>{value_repr}"
 
     @property
     def value(self):
@@ -257,14 +261,6 @@ class IDSPrimitive(IDSMixin):
         return False
 
     @property
-    def depth(self):
-        """Calculate the depth of the leaf node"""
-        my_depth = 0
-        if hasattr(self, "_parent"):
-            my_depth += self._parent.depth
-        return my_depth
-
-    @property
     def data_type(self):
         """Combine imaspy ids_type and ndims to UAL data_type"""
         return "{!s}_{!s}D".format(self.metadata.data_type.value, self.metadata.ndim)
@@ -348,8 +344,12 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
         # Specify that this is a numpy array, instead of a Python array As we
         # know .value is a numpy array, we can remove "array" part of the
         # numpy-native repr
-        value_repr = f"{_fullname(self.value)}{repr(self.value)[5:]}"
-        return f"{self._build_repr_start()}, {self.data_type})>\n{value_repr}"
+        empty = value_repr = ""
+        if self.has_value:
+            value_repr = f"\n{_fullname(self.value)}{repr(self.value)[5:]}"
+        else:
+            empty = "empty "
+        return f"{self._build_repr_start()}, {empty}{self.data_type})>{value_repr}"
 
 
 def _fullname(o) -> str:

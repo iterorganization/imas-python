@@ -24,10 +24,6 @@ class IDSFactory:
     <imaspy.ids_toplevel.IDSToplevel object at 0x7f6afa03ccd0>
     """
 
-    # IDSToplevels expect these on their parent
-    # TODO: see if we can eliminate them
-    depth = 0
-
     def __init__(
         self, version: Optional[str] = None, xml_path: Optional[str] = None
     ) -> None:
