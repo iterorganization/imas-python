@@ -269,12 +269,12 @@ class IDSPrimitive(IDSMixin):
         """Combine imaspy ids_type and ndims to UAL data_type"""
         return "{!s}_{!s}D".format(self.metadata.data_type.value, self.metadata.ndim)
 
-    def _validate(self, aos_indices: Dict[str, int]) -> None:
+    def _validate(self) -> None:
         # Common validation logic
-        super()._validate(aos_indices)
+        super()._validate()
         # Validate coordinates
         if self.has_value:
-            self.coordinates._validate(aos_indices)
+            self.coordinates._validate()
 
 
 def _cast_str(value):

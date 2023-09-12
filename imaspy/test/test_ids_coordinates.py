@@ -81,6 +81,30 @@ def test_coordinate_immutable():
         coordinate.has_validation = True
 
 
+def test_format_refs():
+    core_profiles = IDSFactory(version="3.38.1").new("core_profiles")
+    core_profiles.profiles_1d.resize(2)
+    p1d = core_profiles.profiles_1d[1]
+    refs = p1d.magnetic_shear.metadata.coordinate1.format_refs(p1d)
+    assert refs == "`profiles_1d[1]/grid/rho_tor_norm`"
+
+    distributions = IDSFactory(version="3.38.1").new("distributions")
+    distributions.distribution.resize(2)
+    distributions.distribution[1].profiles_2d.resize(5)
+    p2d = distributions.distribution[1].profiles_2d[2]
+    refs1 = p2d.density.metadata.coordinate1.format_refs(p2d)
+    assert refs1 == (
+        "`distribution[1]/profiles_2d[2]/grid/r`, "
+        "`distribution[1]/profiles_2d[2]/grid/rho_tor_norm`"
+    )
+    refs2 = p2d.density.metadata.coordinate2.format_refs(p2d)
+    assert refs2 == (
+        "`distribution[1]/profiles_2d[2]/grid/z`, "
+        "`distribution[1]/profiles_2d[2]/grid/theta_geometric`, "
+        "`distribution[1]/profiles_2d[2]/grid/theta_straight`"
+    )
+
+
 def test_coordinates(ids_minimal_types):
     root = IDSFactory(xml_path=ids_minimal_types)
     ids = root.new("minimal")
