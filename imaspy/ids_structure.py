@@ -117,14 +117,6 @@ class IDSStructure(IDSMixin):
         """Iterate over this structure's children"""
         return iter(map(self.__getitem__, self._children))
 
-    @cached_property
-    def depth(self):
-        """Calculate the depth of the leaf node"""
-        my_depth = 0
-        if hasattr(self, "_parent"):
-            my_depth += 1 + self._parent.depth
-        return my_depth
-
     def __str__(self):
         return '%s("%s")' % (type(self).__name__, self.metadata.name)
 
@@ -168,9 +160,9 @@ class IDSStructure(IDSMixin):
         else:
             super().__setattr__(key, value)
 
-    def _validate(self, aos_indices: Dict[str, int]) -> None:
+    def _validate(self) -> None:
         # Common validation logic
-        super()._validate(aos_indices)
+        super()._validate()
         # IDSStructure specific: validate child nodes
         for child in self:
-            child._validate(aos_indices)
+            child._validate()

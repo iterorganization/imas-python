@@ -196,7 +196,7 @@ class IDSToplevel(IDSStructure):
             >>> core_profiles.profiles_1d.resize(1)
             >>> core_profiles.validate()
             [...]
-            imaspy.exception.CoordinateError: Dimension 0 of element profiles_1d has incorrect size 1. Expected size is 0 (size of coordinate time).
+            imaspy.exception.CoordinateError: Dimension 1 of element profiles_1d has incorrect size 1. Expected size is 0 (size of coordinate time).
             >>> core_profiles.time = [1]
             >>> core_profiles.validate()  # No error: IDS is valid
 
@@ -204,11 +204,10 @@ class IDSToplevel(IDSStructure):
         time_mode = self._time_mode
         if time_mode not in IDS_TIME_MODES:
             raise ValidationError(
-                f"Invalid value for ids_properties/homogeneous_time: {time_mode.value}",
-                {},
+                f"Invalid value for ids_properties/homogeneous_time: {time_mode.value}"
             )
         try:
-            self._validate({})
+            self._validate()
         except ValidationError as exc:
             # hide recursive stack trace from user
             logger.debug("Original stack-trace of ValidationError: ", exc_info=1)

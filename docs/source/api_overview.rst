@@ -369,7 +369,8 @@ For example, a proposal implementation included in 0.4.0 can be used as such
 
     assert nbi.unit[0].energy.data.time_axis == 0
 
-    nbi.unit[0].energy.data.resample(
+    imaspy.util.resample(
+        nbi.unit[0].energy.data,
         nbi.time,
         [0.5, 1.5],
         nbi.ids_properties.homogeneous_time,
@@ -394,7 +395,8 @@ Or as such (explicit in-memory copy + interpolation, producing a new data leaf/c
 
     assert nbi.unit[0].energy.data.time_axis == 0
 
-    new_data = nbi.unit[0].energy.data.resample(
+    new_data = imaspy.util.resample(
+        nbi.unit[0].energy.data.resample,
         nbi.time,
         [0.5, 1.5],
         nbi.ids_properties.homogeneous_time,

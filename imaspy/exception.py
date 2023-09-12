@@ -3,7 +3,6 @@
 
 
 import logging
-from typing import Dict
 import re
 
 
@@ -21,49 +20,27 @@ class CoordinateLookupError(Exception):
 class ValidationError(Exception):
     """Error raised by IDSToplevel.validate() to indicate the IDS is not valid."""
 
-    def __init__(self, msg: str, aos_indices: Dict[str, int]) -> None:
-        """Create a new ValidationError
-
-        ValidationError automatically converts path indices contained in the message to
-        their Python equivalent.
-
-        Args:
-            msg: Error description
-            aos_indices: Mapping of AoS indices to values
-
-        Example:
-
-            >>> aos_indices = {'itime': 2, 'i1': 4}
-            >>> ValidationError("Path: `profiles_1d(itime)/ion(i1)/label`", aos_indices)
-            ValidationError('Path: `profiles_1d[2].ion[4].label`')
-        """
-        self._msg = msg
-        try:
-            msg = _endswith_index_re.sub("", msg)  # Remove index at the end of the path
-            msg = _index_replacement_re.sub(r"[{\1}]", msg).format_map(aos_indices)
-            msg = msg.replace('/', '.')  # Replace / in paths by .
-        except Exception:
-            # Log but ignore errors
-            logger.error(
-                "Error while formatting message %s with aos_indices %s",
-                msg,
-                aos_indices,
-                exc_info=1,
-            )
-        super().__init__(msg)
+    pass
 
 
 class CoordinateError(ValidationError):
     """Error raised by ids.validate() to indicate a coordinate check has failed."""
 
-    def __init__(
-        self, element_path, dimension, size, expected_size, other_path, aos_indices
-    ):
-        other_path_text = ""
-        if other_path is not None:
-            other_path_text = f" (size of coordinate `{other_path}`)"
+    def __init__(self, element_path, dimension, size, expected_size, coor_path):
+        """Create a new CoordinateError
+
+        Args:
+            element_path: path of the element with incorrect size
+            dimension: (0-based) dimension with incorrect size
+            size: size of element in the given dimension
+            expected_size: size of the coordinate for the specified dimension
+            coor_path: path of the coordinate, may be None when a coordinate is of fixed
+                size (e.g. ``1...3``)
+        """
+        coor_path_text = ""
+        if coor_path is not None:
+            coor_path_text = f" (size of coordinate `{coor_path}`)"
         super().__init__(
-            f"Dimension {dimension} of element `{element_path}` has incorrect size"
-            f" {size}. Expected size is {expected_size}{other_path_text}.",
-            aos_indices,
+            f"Dimension {dimension + 1} of element `{element_path}` has incorrect size"
+            f" {size}. Expected size is {expected_size}{coor_path_text}."
         )

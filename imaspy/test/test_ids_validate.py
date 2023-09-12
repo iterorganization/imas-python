@@ -43,7 +43,7 @@ def test_validate_time_mode():
 def test_validate_time_coordinate_homogeneous():
     cp = IDSFactory("3.38.1").core_profiles()
     cp.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    cp.time = [1.0, 2.0]
+    cp.time = np.array([1.0, 2.0])
     cp.profiles_1d.resize(2)
     cp.validate()
 
@@ -167,7 +167,7 @@ def test_validate_indirect_coordinates():
 def test_validate_exclusive_references():
     distr = IDSFactory("3.38.1").distributions()
     distr.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    distr.time = [1.0]
+    distr.time = np.array([1.0])
     distr.distribution.resize(1)
     distr.distribution[0].profiles_2d.resize(1)
     distr.distribution[0].profiles_2d[0].density = np.ones((2, 3))
@@ -182,14 +182,14 @@ def test_validate_exclusive_references():
     with pytest.raises(ValidationError):
         distr.validate()  # either grid/r or grid/rho_tor_norm can be defined
 
-    distr.distribution[0].profiles_2d[0].grid.r = []
+    distr.distribution[0].profiles_2d[0].grid.r = np.array([])
     distr.validate()
 
 
 def test_validate_reference_or_fixed_size():
     waves = IDSFactory("3.39.0").waves()
     waves.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    waves.time = [1.0]
+    waves.time = np.array([1.0])
     waves.coherent_wave.resize(1)
     waves.coherent_wave[0].beam_tracing.resize(1)
     waves.coherent_wave[0].beam_tracing[0].beam.resize(1)
@@ -197,19 +197,19 @@ def test_validate_reference_or_fixed_size():
 
     beam = waves.coherent_wave[0].beam_tracing[0].beam[0]
     # n_tor coordinate1=beam.length OR 1...1
-    beam.wave_vector.n_tor = [1]
+    beam.wave_vector.n_tor = np.array([1], dtype=np.int32)
     waves.validate()
-    beam.wave_vector.n_tor = [1, 2]
+    beam.wave_vector.n_tor = np.array([1, 2], dtype=np.int32)
     with pytest.raises(ValidationError):
         waves.validate()  # beam.length has length 0
-    beam.length = [0.4, 0.5]
+    beam.length = np.array([0.4, 0.5])
     waves.validate()
 
 
 def test_validate_coordinate_same_as():
     ml = IDSFactory("3.38.1").mhd_linear()
     ml.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    ml.time = [1.0]
+    ml.time = np.array([1.0])
     ml.time_slice.resize(1)
     ml.validate()
 
@@ -250,7 +250,7 @@ def test_validate_on_put(monkeypatch, env_value, should_validate, requires_imas)
     dbentry.create()
     ids = dbentry.factory.core_profiles()
     ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    ids.time = [1]
+    ids.time = np.array([1.0])
 
     validate_mock = Mock()
     monkeypatch.setattr("imaspy.ids_toplevel.IDSToplevel.validate", validate_mock)
@@ -269,7 +269,7 @@ def test_validate_ignore_nested_aos():
     # Ignore coordinates inside an AoS outside our tree, see IMAS-4675
     equilibrium = IDSFactory("3.38.1").equilibrium()
     equilibrium.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    equilibrium.time = [1]
+    equilibrium.time = np.array([1.0])
     equilibrium.time_slice.resize(1)
     equilibrium.validate()
     equilibrium.time_slice[0].ggd.resize(1)

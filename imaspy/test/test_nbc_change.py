@@ -70,25 +70,19 @@ def test_nbc_change_leaf_renamed():
     assert numpy.array_equal(rp3.channel[0].position.r.value, data)
 
 
-@pytest.mark.xfail(
-    reason="IDSNumericArray always copies values (IMAS-4735)",
-    raises=AssertionError,
-    strict=True,
-)
 def test_ids_convert_deepcopy():
     time = numpy.linspace(0, 1, 10)
 
     cp = IDSFactory("3.28.0").new("core_profiles")
     cp.time = time
     assert cp.time.value is time
-    return  # TODO: remove this when assert on previous line succeeds
 
     cp2 = convert_ids(cp, "3.28.0")  # Converting to the same version should also work
     assert cp2.time.value is time
 
     cp3 = convert_ids(cp, "3.28.0", deepcopy=True)
     assert cp3.time.value is not time
-    assert numpy.array_equals(cp3.time.value, time)
+    assert numpy.array_equal(cp3.time.value, time)
 
 
 def test_pulse_schedule_aos_renamed_up(backend, worker_id, tmp_path):
