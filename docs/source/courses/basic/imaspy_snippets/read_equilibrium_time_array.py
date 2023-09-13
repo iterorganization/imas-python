@@ -1,5 +1,3 @@
-from importlib_resources import files
-
 import numpy as np
 import imaspy
 
@@ -11,14 +9,12 @@ def find_nearest(a, a0):
     return a.value[idx], idx
 
 
-# Open input datafile
-shot, run, user, database = 134173, 106, "public", "ITER"
-input = imaspy.DBEntry(imaspy.ids_defs.ASCII_BACKEND, database, shot, run)
-assets_path = files(imaspy) / "assets/"
-input.open(options=f"-prefix {assets_path}/")
+# Open input data entry
+entry = imaspy.training.get_training_db_entry()
+assert isinstance(entry, imaspy.DBEntry)
 
 # Read the time array from the equilibrium IDS
-eq = input.get("equilibrium")
+eq = entry.get("equilibrium")
 time_array = eq.time
 
 # Find the index of the desired time slice in the time array
@@ -26,5 +22,5 @@ t_closest, t_index = find_nearest(time_array, 433)
 print("Time index = ", t_index)
 print("Time value = ", t_closest)
 
-# Close input datafile
-input.close()
+# Close input data entry
+entry.close()

@@ -7,34 +7,34 @@ Loading IMAS data
 For this part of the training we will learn to open an IMAS database entry, and
 plot some basic data in it using `matplotlib <https://matplotlib.org/>`_.
 
+
 Open an IMAS database entry
 '''''''''''''''''''''''''''
+
 IMAS explicitly separates the data on disk from the data in memory. To get
 started we load an existing IMAS data file from disk. The on-disk file
-is represented by an ``imas.DBEntry``, which we have to
-:meth:`~imaspy.ids_root.IDSRoot.open()` to get a reference to the data file we
+is represented by an :class:`imaspy.DBEntry`, which we have to
+:meth:`~imaspy.db_entry.DBEntry.open()` to get a reference to the data file we
 will manipulate. The connection to the data file is kept intact until we neatly
-:meth:`~imaspy.ids_root.IDSRoot.close()` the file. Note that the on-disk file
-will not be changed until an explicit ``.put()`` (e.g.
-:meth:`~imaspy.ids_toplevel.IDSToplevel.put()`) is called. This is similar to e.g.
-a `xarray Dataset <https://docs.xarray.dev/en/stable/getting-started-guide/quick-overview.html#datasets>`_.
-We load data in memory with the ``get`` and ``get_slice`` methods, after which we
-can use it as normal Python data.
+:meth:`~imaspy.db_entry.DBEntry.close()` the file. Note that the on-disk file
+will not be changed until an explicit :meth:`~imaspy.db_entry.DBEntry.put()` or
+:meth:`~imaspy.db_entry.DBEntry.put_slice()` is called.
+We load data in memory with the :meth:`~imaspy.db_entry.DBEntry.get()` and
+:meth:`~imaspy.db_entry.DBEntry.get_slice()` methods, after which we
+can use the data.
 
 .. hint::
     Use the ASCII data supplied with IMASPy for all exercises. It contains two
     IDSs (``equilibrium`` and ``core_profiles``) filled  with data from three
-    times slices of ITER reference data. To point to a local file we use the
-    ``-prefix`` flag. Use the following boilerplate as start-off point for the
-    exercises.
+    time slices of ITER reference data. Two convenience methods are available in the
+    :mod:`imaspy.training` module to open the DBEntry for this training data.
 
-    .. code-block:: python
-
-        import imaspy
-        shot, run, user, database = 134173, 106, "public", "ITER"
-        input = imaspy.DBEntry(imaspy.ids_defs.ASCII_BACKEND, database, shot, run)
-        assets_path = files(imaspy) / "assets/"
-        input.open(options=f"-prefix {assets_path}/")
+    1. :meth:`imaspy.training.get_training_db_entry()` returns an opened
+       ``imaspy.DBEntry`` object. Use this method if you want to use the IMASPy
+       interface.
+    2. :meth:`imaspy.training.get_training_imas_db_entry()` returns an opened
+       ``imas.DBEntry`` object. Use this method if you want to use the Python Access
+       Layer interface.
 
 .. tabs::
 
@@ -93,6 +93,7 @@ can use it as normal Python data.
 
 Using multiple IDSs
 '''''''''''''''''''
+
 If the data structure is too large and it order to save time and memory, one can
 decide to only load the :math:`T_e` profile of the ``core_profiles`` IDS at
 ``t=433s``. As before, one has to know that it corresponds to ``index=1`` of

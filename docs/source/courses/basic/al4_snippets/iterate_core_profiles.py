@@ -1,15 +1,11 @@
-from importlib_resources import files
-
 import imas
-import imaspy
+import imaspy.training
 
-# Open input datafile
-shot, run, user, database = 134173, 106, "public", "ITER"
-input = imas.DBEntry(imas.imasdef.ASCII_BACKEND, database, shot, run)
-assets_path = files(imaspy) / "assets/"
-input.open(options=f"-prefix {assets_path}/")
+# Open input data entry
+entry = imaspy.training.get_training_imas_db_entry()
+assert isinstance(entry, imas.DBEntry)
 
-cp = input.get("core_profiles")
+cp = entry.get("core_profiles")
 for el in ["profiles_1d", "global_quantities", "code"]:
     try:
         print(getattr(cp, el))

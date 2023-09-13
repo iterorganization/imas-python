@@ -1,6 +1,5 @@
 from pathlib import Path
 import runpy
-import os
 
 import pytest
 
@@ -11,10 +10,8 @@ for course in ["basic"]:
     course_snippets.extend((courses / course).glob("*snippets/*.py"))
 
 
-@pytest.mark.skipif(
-    "IMAS_HOME" not in os.environ,
-    reason="IMAS_HOME must be set for tests that use the public IMAS database",
-)  # /work/imas on SDCC
 @pytest.mark.parametrize("snippets", course_snippets)
-def test_script_execution(snippets):
+def test_script_execution(snippets, monkeypatch):
+    # Prevent showing plots in a GUI
+    monkeypatch.delenv("DISPLAY", raising=False)
     runpy.run_path(str(snippets))
