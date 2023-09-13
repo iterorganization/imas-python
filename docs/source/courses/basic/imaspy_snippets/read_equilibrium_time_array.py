@@ -1,5 +1,5 @@
 import numpy as np
-import imaspy
+import imaspy.training
 
 
 # Find nearest value and index in an array
