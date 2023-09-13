@@ -5,6 +5,7 @@
 """
 
 from importlib_resources import files
+from unittest.mock import patch
 
 import imaspy
 import imas
@@ -20,7 +21,8 @@ def _initialize_training_db(DBEntry_cls):
     output_entry.create()
     for ids_name in ["core_profiles", "equilibrium"]:
         ids = entry.get(ids_name)
-        output_entry.put(ids)
+        with patch.dict('os.environ', {"IMAS_AL_DISABLE_VALIDATE": "1"}):
+            output_entry.put(ids)
     entry.close()
     return output_entry
 
