@@ -6,13 +6,12 @@ This contains references to :py:class:`IDSStructure`s
 * :py:class:`IDSStructArray`
 """
 
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 from xml.etree.ElementTree import Element
 
 from imaspy.al_context import LazyALContext
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_structure import IDSStructure
 from imaspy.setup_logging import root_logger as logger
 
 
@@ -44,8 +43,6 @@ class IDSStructArray(IDSMixin):
         super().__init__(parent, structure_xml)
         self.coordinates = IDSCoordinates(self)
 
-        self._convert_ids_types = False
-
         # Initialize with an 0-length list
         self.value = []
 
@@ -54,8 +51,6 @@ class IDSStructArray(IDSMixin):
         self._lazy_loaded = False  # Marks if we already loaded our size
         self._lazy_context: Optional[LazyALContext] = None
         self._lazy_paths = ("", "")  # path, timebasepath
-
-        self._convert_ids_types = True
 
     def _set_lazy_context(self, ctx: LazyALContext, path: str, timebase: str) -> None:
         """Called by DBEntry during a lazy get/get_slice.
@@ -94,6 +89,7 @@ class IDSStructArray(IDSMixin):
             if item is not None:
                 # Create and (lazily) load the requested item
                 from imaspy.db_entry import _get_children
+                from imaspy.ids_structure import IDSStructure
 
                 element = self.value[item] = IDSStructure(self, self._structure_xml)
                 nbc_map = self._lazy_context.nbc_map
@@ -102,6 +98,8 @@ class IDSStructArray(IDSMixin):
     @property
     def _element_structure(self):
         """Prepare an element structure JIT"""
+        from imaspy.ids_structure import IDSStructure
+
         struct = IDSStructure(self, self._structure_xml)
         return struct
 
@@ -125,11 +123,6 @@ class IDSStructArray(IDSMixin):
         if self._lazy:
             raise ValueError("Lazy-loaded IDSs are read-only.")
         list_idx = int(item)
-        if hasattr(self, "_convert_ids_types") and self._convert_ids_types:
-            # Convert IDS type on set time. Never try this for hidden attributes!
-            if list_idx in self.value:
-                struct = self.value[list_idx]
-                struct.value = value
         self.value[list_idx] = value
 
     def __len__(self) -> int:
@@ -167,7 +160,6 @@ class IDSStructArray(IDSMixin):
                         elt,
                     )
                 )
-            e._convert_ids_types = True
             e._parent = self
             self.value.append(e)
 
@@ -196,8 +188,6 @@ class IDSStructArray(IDSMixin):
             new_els = []
             for _ in range(nbelt - cur):
                 new_el = self._element_structure
-                new_el._parent = self
-                new_el._convert_ids_types = True
                 new_els.append(new_el)
             self.append(new_els)
         elif nbelt < cur:

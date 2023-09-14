@@ -11,13 +11,42 @@ except ImportError:
     from cached_property import cached_property
 
 import logging
-from typing import Dict
 from xml.etree.ElementTree import Element
 
-from imaspy.setup_logging import root_logger as logger
 from imaspy.ids_metadata import IDSDataType
 from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_primitive import create_leaf_container
+from imaspy.ids_primitive import (
+    IDSComplex0D,
+    IDSFloat0D,
+    IDSInt0D,
+    IDSNumericArray,
+    IDSString1D,
+    IDSString0D,
+)
+from imaspy.ids_struct_array import IDSStructArray
+
+logger = logging.getLogger(__name__)
+
+
+def create_node(parent: "IDSStructure", structure_xml: Element):
+    data_type, ndim = IDSDataType.parse(structure_xml.get("data_type"))
+    if data_type is IDSDataType.STRUCTURE:
+        return IDSStructure(parent, structure_xml)
+    if data_type is IDSDataType.STRUCT_ARRAY:
+        return IDSStructArray(parent, structure_xml)
+    if data_type is IDSDataType.STR:
+        if ndim == 0:
+            return IDSString0D(parent, structure_xml)
+        else:
+            return IDSString1D(parent, structure_xml)
+    if ndim == 0:
+        if data_type is IDSDataType.FLT:
+            return IDSFloat0D(parent, structure_xml)
+        if data_type is IDSDataType.INT:
+            return IDSInt0D(parent, structure_xml)
+        if data_type is IDSDataType.CPX:
+            return IDSComplex0D(parent, structure_xml)
+    return IDSNumericArray(parent, structure_xml)
 
 
 class IDSStructure(IDSMixin):
@@ -29,7 +58,6 @@ class IDSStructure(IDSMixin):
     IDSStructArrays
     """
 
-    _MAX_OCCURRENCES = None
     _convert_ids_types = False
 
     def __init__(self, parent: IDSMixin, structure_xml: Element):
@@ -48,44 +76,23 @@ class IDSStructure(IDSMixin):
         """
         # To ease setting values at this stage, do not try to cast values
         # to canonical forms
-        # Since __setattr__ looks for _convert_ids_types we set it through __dict__
-        self.__dict__["_convert_ids_types"] = False
         super().__init__(parent, structure_xml=structure_xml)
 
         self._children = []  # Store the children as a list of strings.
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
 
-        if logger.level <= logging.DEBUG:
+        if logger.isEnabledFor(logging.TRACE):
             log_string = " " * self.depth + " - % -38s initialization"
 
         for child in structure_xml:
             my_name = child.get("name")
-            if logger.level <= logging.TRACE:
+            if logger.isEnabledFor(logging.TRACE):
                 logger.trace(log_string, my_name)
             self._children.append(my_name)
             # Decide what to do based on the data_type attribute
-            my_data_type = child.get("data_type")
-            if my_data_type == "structure":
-                child_hli = IDSStructure(self, child)
-                setattr(self, my_name, child_hli)
-            elif my_data_type == "struct_array":
-                from imaspy.ids_struct_array import IDSStructArray
-
-                child_hli = IDSStructArray(self, child)
-                setattr(self, my_name, child_hli)
-            else:
-                # If it is not a structure or struct_array, it is probably a
-                # leaf node. Just naively try to generate one
-                setattr(
-                    self,
-                    my_name,
-                    create_leaf_container(
-                        parent=self,
-                        structure_xml=child,
-                        var_type=child.get("type"),
-                    ),
-                )
+            child_node = create_node(self, child)
+            setattr(self, my_name, child_node)
         # After initialization, always try to convert setting attributes on this structure
         self._convert_ids_types = True
 
