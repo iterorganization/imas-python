@@ -22,18 +22,18 @@ eq_in = entry.get("equilibrium")  # , lazy=True)
 input_times = eq_in.time.value
 
 # Create output data entry
-output_entry = imaspy.DBEntry(imaspy.ids_defs.MEMORY_BACKEND, "imaspy-course", 2, 1)
+output_entry = imaspy.DBEntry(
+    imaspy.ids_defs.MEMORY_BACKEND, "imaspy-course", 2, 1)
 output_entry.create()
 
 # FIXME: workaround for a bug in the MEMORY BACKEND: doing get_slice after a get leads
 # to a SEGFAULT...
-# - Check if the problem is also present when using lazy loading on line 12
-# - If not, we can remove this re-opening. Otherwise: raise a JIRA ticket for the memory
-#   backend and refer to it to explain why we're opening the entry again.
+# When using lazy loading, the SEGFAULT does not occur, so this can be removed when the
+# lazy loading PR is merged
 entry = imaspy.training.get_training_db_entry()
 assert isinstance(entry, imaspy.DBEntry)
 
-
+# Loop over each time slice
 for time in input_times:
     eq = entry.get_slice("equilibrium", time, imaspy.ids_defs.CLOSEST_INTERP)
 
