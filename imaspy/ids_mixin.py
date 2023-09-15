@@ -2,7 +2,7 @@
 # You should have received the IMASPy LICENSE file with this project.
 
 import logging
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 from xml.etree.ElementTree import Element
 
 try:

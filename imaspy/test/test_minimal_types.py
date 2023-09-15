@@ -60,8 +60,8 @@ def test_assign_str_1d(minimal, caplog):
                 assert len(caplog.records) > 0
 
 
-# Prevent the expected np ComplexWarnings from cluttering pytest output
-@pytest.mark.filterwarnings("ignore::np.ComplexWarning")
+# Prevent the expected numpy ComplexWarnings from cluttering pytest output
+@pytest.mark.filterwarnings("ignore::numpy.ComplexWarning")
 @pytest.mark.parametrize("typ, max_dim", [("flt", 6), ("cpx", 6), ("int", 3)])
 def test_assign_numeric_types(minimal, caplog, typ, max_dim):
     caplog.set_level("INFO", "imaspy")
