@@ -6,6 +6,7 @@ This contains references to :py:class:`IDSStructure`s
 * :py:class:`IDSStructArray`
 """
 
+from copy import deepcopy
 from typing import Optional, Tuple
 from xml.etree.ElementTree import Element
 
@@ -51,6 +52,14 @@ class IDSStructArray(IDSMixin):
         self._lazy_loaded = False  # Marks if we already loaded our size
         self._lazy_context: Optional[LazyALContext] = None
         self._lazy_paths = ("", "")  # path, timebasepath
+
+    def __deepcopy__(self, memo):
+        copy = self.__class__(self._parent, self._structure_xml)
+        for value in self.value:
+            value_copy = deepcopy(value, memo)
+            value_copy._parent = copy
+            copy.value.append(value_copy)
+        return copy
 
     def _set_lazy_context(self, ctx: LazyALContext, path: str, timebase: str) -> None:
         """Called by DBEntry during a lazy get/get_slice.

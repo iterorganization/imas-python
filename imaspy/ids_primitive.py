@@ -93,13 +93,6 @@ class IDSPrimitive(IDSMixin):
         self.__value = None
         self._lazy_loaded = False
 
-    def __copy__(self):
-        # shallow copy
-        copy = self.__class__(self._parent, self._structure_xml)
-        copy.__value = self.__value
-        copy._lazy_loaded = self._lazy_loaded
-        return copy
-
     def __deepcopy__(self, memo):
         # note: if parent needs updating it is handled by the deepcopy of our parent
         # TODO: implement the statement on the previous line O_O

@@ -54,6 +54,11 @@ class IDSToplevel(IDSStructure):
         self._lazy = lazy
         super().__init__(parent, structure_xml)
 
+    def __deepcopy__(self, memo):
+        copy = super().__deepcopy__(memo)
+        copy._lazy = self._lazy
+        return copy
+
     @property
     def _dd_version(self) -> str:
         return self._version

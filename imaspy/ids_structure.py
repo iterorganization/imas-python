@@ -10,6 +10,7 @@ try:
 except ImportError:
     from cached_property import cached_property
 
+from copy import deepcopy
 import logging
 from xml.etree.ElementTree import Element
 
@@ -96,6 +97,13 @@ class IDSStructure(IDSMixin):
         # After initialization, always try to convert setting attributes on this structure
         self._convert_ids_types = True
 
+    def __deepcopy__(self, memo):
+        copy = self.__class__(self._parent, self._structure_xml)
+        for child in self._children:
+            child_copy = deepcopy(getattr(self, child))
+            setattr(copy, child, child_copy)
+        return copy
+
     @property
     def _dd_parent(self) -> IDSMixin:
         if self.metadata.data_type is IDSDataType.STRUCT_ARRAY:
@@ -156,14 +164,32 @@ class IDSStructure(IDSMixin):
                     "generating new structure from scratch {name}".format(name=key)
                 )
 
-                # attr = create_leaf_container(key, no_data_type_I_guess, parent=self)
-            if isinstance(attr, IDSStructure) and not isinstance(value, IDSStructure):
-                raise TypeError(
-                    "Trying to set structure field {!s} with non-structure.".format(key)
-                )
-
-            attr.value = value
-            # super().__setattr__(key, attr)
+            if isinstance(attr, IDSStructure):
+                if not isinstance(value, IDSStructure):
+                    raise TypeError(
+                        f"Trying to set structure field {key} with non-structure."
+                    )
+                if value.metadata.path != attr.metadata.path:
+                    raise ValueError(
+                        f"Trying to set structure field {attr.metadata.path} "
+                        f"with a non-matching structure {value.metadata.path}."
+                    )
+                super().__setattr__(key, value)
+                value._parent = self
+            elif isinstance(attr, IDSStructArray):
+                if not isinstance(value, IDSStructArray):
+                    raise TypeError(
+                        f"Trying to set struct array field {key} with non-struct-array."
+                    )
+                if value.metadata.path != attr.metadata.path:
+                    raise ValueError(
+                        f"Trying to set struct array field {attr.metadata.path} "
+                        f"with a non-matching struct array {value.metadata.path}."
+                    )
+                super().__setattr__(key, value)
+                value._parent = self
+            else:
+                attr.value = value
         else:
             super().__setattr__(key, value)
 
