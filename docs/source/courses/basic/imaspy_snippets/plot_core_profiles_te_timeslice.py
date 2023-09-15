@@ -19,7 +19,7 @@ assert isinstance(entry, imaspy.DBEntry)
 cp = entry.get("core_profiles")
 t_closest = 1
 te = cp.profiles_1d[t_closest].electrons.temperature
-rho = cp.profiles_1d[t_closest].grid.rho_tor_norm
+rho = te.coordinates[0]
 
 # Plot the figure
 fig, ax = plt.subplots()
