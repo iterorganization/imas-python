@@ -1,8 +1,11 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
-import numpy
+from numbers import Number, Complex, Real, Integral
+
+import numpy as np
 import pytest
 
 from imaspy.ids_factory import IDSFactory
+from imaspy.ids_data_type import IDSDataType
 
 
 @pytest.fixture
@@ -13,11 +16,11 @@ def minimal(ids_minimal_types):
 # The test_assign_* tests are testing IDSPrimitive.cast_value
 sample_values = {
     "str": ["0D string", ["list", "of", "strings"]],
-    "int": [1, *(numpy.ones((2,) * i, dtype=numpy.int32) for i in range(1, 4))],
-    "flt": [1.1, *(numpy.ones((2,) * i, dtype=numpy.float64) for i in range(1, 7))],
+    "int": [1, *(np.ones((2,) * i, dtype=np.int32) for i in range(1, 4))],
+    "flt": [1.1, *(np.ones((2,) * i, dtype=np.float64) for i in range(1, 7))],
     "cpx": [
         1.1 + 1.1j,
-        *(numpy.ones((2,) * i, dtype=numpy.complex128) * (1 + 1j) for i in range(1, 7)),
+        *(np.ones((2,) * i, dtype=np.complex128) * (1 + 1j) for i in range(1, 7)),
     ],
 }
 
@@ -57,8 +60,8 @@ def test_assign_str_1d(minimal, caplog):
                 assert len(caplog.records) > 0
 
 
-# Prevent the expected numpy ComplexWarnings from cluttering pytest output
-@pytest.mark.filterwarnings("ignore::numpy.ComplexWarning")
+# Prevent the expected np ComplexWarnings from cluttering pytest output
+@pytest.mark.filterwarnings("ignore::np.ComplexWarning")
 @pytest.mark.parametrize("typ, max_dim", [("flt", 6), ("cpx", 6), ("int", 3)])
 def test_assign_numeric_types(minimal, caplog, typ, max_dim):
     caplog.set_level("INFO", "imaspy")
@@ -83,8 +86,8 @@ def test_assign_numeric_types(minimal, caplog, typ, max_dim):
                     else:
                         len(caplog.records) == 1
                 elif dim == other_ndim >= 1 and other_typ == "cpx":
-                    # Numpy allows casting of complex to float or int, but warns:
-                    with pytest.warns(numpy.ComplexWarning):
+                    # np allows casting of complex to float or int, but warns:
+                    with pytest.warns(np.ComplexWarning):
                         caplog.clear()
                         minimal[name].value = value
                         assert len(caplog.records) == 1
@@ -176,12 +179,237 @@ def test_ids_primitive_properties_numeric_arrays(minimal, typ, max_dim):
         assert minimal[tp].size == 0
 
         new_size = (2,) * dim
-        minimal[tp].value = numpy.ones(new_size)
+        minimal[tp].value = np.ones(new_size)
         assert minimal[tp].has_value
         assert minimal[tp].shape == new_size
         assert minimal[tp].size == 2**dim
 
-        minimal[tp] = numpy.empty((0,) * dim)
+        minimal[tp] = np.empty((0,) * dim)
         assert not minimal[tp].has_value
         assert minimal[tp].shape == (0,) * dim
         assert minimal[tp].size == 0
+
+
+def test_ducktype_str0d(minimal):
+    node = minimal.str_0d
+    node.value = "Test"
+    assert str(node) == "Test"
+    assert len(node) == 4
+    # Iteration
+    assert list(node) == ["T", "e", "s", "t"]
+    # A small selection of string manipulation functions
+    assert node.upper() == "TEST"
+    assert node.lower() == "test"
+    assert node.split("e") == ["T", "st"]
+    assert node.isprintable()
+    assert node.replace("es", "eapo") == "Teapot"
+    # Indexing and slicing
+    assert node[:3] == "Tes"
+    assert node[1:2] == node[1] == "e"
+    # Arithmic
+    assert node + "!" == "Test!"
+    assert node * 2 == 2 * node == "TestTest"
+    # In place operation and __eq__
+    minimal.str_0d += "X"
+    assert node == node.value == "TestX"
+    # Check we haven't accidentally replaced `node` with an actual string
+    assert node is minimal.str_0d
+
+
+def test_ducktype_str1d(minimal):
+    node = minimal.str_1d
+    assert len(node) == 0
+    # List operations and functions
+    node.append(1)
+    assert node == ["1"]
+    assert node.pop() == "1"
+    assert bool(node) is False
+    node[0:] = ["a", "b"]
+    assert node == ["a", "b"]
+    node.extend("cdefgh")
+    assert node == list("abcdefgh")
+    # Indexing and slicing
+    assert node[:3] == ["a", "b", "c"]
+    assert node[4] == "e"
+    node[5] = "X"
+    assert node == list("abcdeXgh")
+    # More functions
+    assert node.count("X") == node.count("a") == 1
+    assert len(node) == 8
+    node.clear()
+    assert node == []
+    node.value = [1, 2]
+    node.reverse()
+    assert node == ["2", "1"]
+    node.sort()
+    assert node == ["1", "2"]
+    # Iteration
+    assert tuple(node) == ("1", "2")
+    # Arithmic
+    assert node + ["3"] == list("123")
+    assert node * 2 == 2 * node == list("1212")
+    # Check we haven't accidentally replaced `node` with an actual list
+    assert node is minimal.str_1d
+
+
+def test_ducktype_int0d(minimal):
+    node = minimal.int_0d
+    node.value = 1
+    assert node == 1
+    assert int(node) == 1
+    assert float(node) == 1.0
+    assert complex(node) == 1.0 + 0.0j
+    assert isinstance(node, Number)
+    assert isinstance(node, Integral)
+    # int functions/properties
+    assert node.real == 1.0
+    assert node.imag == 0.0
+    assert node.bit_length() == 1
+    assert node.to_bytes(1, "little") == b"\x01"
+    # Arithmic
+    minimal.int_0d += 3
+    assert node == 4
+    assert +node == 4
+    assert -node == -4
+    assert bool(node) is True
+    assert 2 * node == node * 2 == node + node == node + 4 == 4 + node == 8
+    assert node - node == 0
+    minimal.int_0d -= node
+    assert node == 0
+    assert bool(node) is False
+    node.value = 2
+    assert 3**node == 9
+    assert node**3 == 8
+    assert node / 3 == 2 / 3
+    assert node // 3 == 0
+    assert node % 3 == 2
+    assert node << 1 == 4
+    assert node >> 1 == 1
+    assert 1 < node <= 2
+    assert 2 <= node < 2.01
+    node.value = 7
+    assert divmod(node, 2) == (3, 1)
+    assert divmod(10, node) == (1, 3)
+    # Check we haven't accidentally replaced `node` with an actual int
+    assert node is minimal.int_0d
+
+
+def test_ducktype_flt0d(minimal):
+    node = minimal.flt_0d
+    node.value = np.pi
+    assert node == np.pi
+    assert int(node) == 3
+    assert float(node) == np.pi
+    assert complex(node) == np.pi + 0.0j
+    assert isinstance(node, Number)
+    assert isinstance(node, Real)
+    # float functions/properties
+    assert node.real == np.pi
+    assert node.imag == 0.0
+    assert node.conjugate() == np.pi
+    assert not node.is_integer()
+    # Arithmic
+    assert +node == np.pi
+    assert -node == -np.pi
+    assert bool(node) is True
+    twopi = 2 * np.pi
+    assert 2 * node == node * 2 == node + node == node + np.pi == np.pi + node == twopi
+    assert node - node == 0.0
+    minimal.flt_0d -= node
+    assert node == 0
+    assert bool(node) is False
+    node.value = 2
+    assert isinstance(node.value, float)
+    assert 3**node == 9
+    assert node**3 == 8
+    assert node / 3 == 2 / 3
+    assert node // 3 == 0
+    assert node % 3 == 2
+    assert 1 < node <= 2
+    assert 2 <= node < 2.01
+    node.value = 7
+    assert divmod(node, 2) == (3, 1)
+    assert divmod(10, node) == (1, 3)
+    # Check we haven't accidentally replaced `node` with an actual float
+    assert node is minimal.flt_0d
+
+
+def test_ducktype_cpx0d(minimal):
+    node = minimal.cpx_0d
+    node.value = 1.0 - 1.5j
+    assert node == 1.0 - 1.5j
+    assert complex(node) == 1.0 - 1.5j
+    assert isinstance(node, Number)
+    assert isinstance(node, Complex)
+    # complex functions/properties
+    assert node.real == 1.0
+    assert node.imag == -1.5
+    assert node.conjugate() == 1.0 + 1.5j
+    # Arithmic
+    assert +node == 1.0 - 1.5j
+    assert -node == -1.0 + 1.5j
+    assert bool(node) is True
+    assert 2 * node == node * 2 == node + node == 2.0 - 3.0j
+    assert node + 1.0 == 1.0 + node == 2.0 - 1.5j
+    assert node - node == 0
+    minimal.cpx_0d -= node
+    assert node == 0
+    assert bool(node) is False
+    node.value = 2.0 + 1j
+    assert 3**node == 3 ** (2.0 + 1j)
+    assert node**3 == (2.0 + 1j) ** 3
+    assert node / 3 == 2 / 3 + 1j / 3
+    # Check we haven't accidentally replaced `node` with an actual complex
+    assert node is minimal.cpx_0d
+
+
+ducktype_params = []
+for dtype in (IDSDataType.INT, IDSDataType.FLT, IDSDataType.CPX):
+    for ndim in range(1, 4 if dtype is IDSDataType.INT else 7):
+        value = np.ones((2,) * ndim, dtype=dtype.numpy_dtype)
+        ducktype_params.append((f"{dtype.value}_{ndim}D", value))
+
+
+@pytest.mark.parametrize("tp, val", ducktype_params)
+def test_ducktype_ndarray(minimal, tp, val):
+    node = minimal[tp.lower()]
+    node.value = val
+    # Numpy array properties
+    assert node.shape == val.shape
+    assert len(node) == len(val)
+    assert node.ndim == val.ndim == node.metadata.ndim
+    # Comparisons
+    assert np.all(node == 1)
+    assert not np.any(node != 1)
+    assert np.all(0 < node)
+    assert np.all(node <= 1)
+    assert np.all(1 <= node)
+    assert np.all(node < 2)
+    # Some array functions
+    assert node.all()
+    assert node.min() == node.max() == node.mean() == 1.0
+    assert node.std() == 0.0
+    # Indexing
+    assert np.array_equal(node[1], val[1])
+    assert np.array_equal(node[:1], val[:1])
+    # Arithmic
+    assert np.array_equal([1, 1] @ node, node @ [1, 1])
+    assert np.array_equal([1, 1] @ node, [1, 1] @ val)
+    assert np.array_equal(1 + node, node + 1)
+    assert np.array_equal(node + 1, val + 1)
+    assert np.array_equal(2 * node, node * 2)
+    assert np.array_equal(2 * node, node + node)
+    assert np.array_equal(2 * node, 2 * val)
+    assert np.array_equal(node / 2, val / 2)
+    assert np.array_equal(node * node, node ** 2)
+    assert np.array_equal(node ** 2, val ** 2)
+    if not tp.startswith("CPX"):
+        assert np.array_equal(node // 2, val // 2)
+    # Assignment
+    node[(1,) * node.ndim] = 0
+    assert node[(1,) * node.ndim] == 0
+    # In place operation
+    minimal[tp.lower()] += 2
+    assert node[(0,) * node.ndim] == 3
+    # Check we haven't accidentally replaced `node` with an actual numpy array
+    assert node is minimal[tp.lower()]

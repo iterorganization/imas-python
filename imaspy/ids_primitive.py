@@ -257,6 +257,12 @@ class IDSPrimitive(IDSMixin):
     __abs__ = _unary_wrapper(operator.abs, "abs")
     __invert__ = _unary_wrapper(operator.invert, "invert")
 
+    def __getitem__(self, index):
+        return self.value[index]
+
+    def __setitem__(self, index, value):
+        self.value[index] = value
+
     def __getattr__(self, name):
         # Forward this getattr call to our actual value
         if not name.startswith("_"):
@@ -304,6 +310,12 @@ class IDSString0D(IDSPrimitive):
 
     _cast_value = _cast_str
 
+    def __str__(self):
+        return self.value
+
+    def __len__(self):  # override as it is the only 0D quantity with a length
+        return len(self.value)
+
 
 class IDSString1D(IDSPrimitive):
     """IDSPrimitive specialization for STR_1D."""
@@ -313,7 +325,7 @@ class IDSString1D(IDSPrimitive):
         return getattr(self.value, name)
 
     def append(self, value):
-        self.value.append(_cast_str(value))
+        self.value.append(_cast_str(self, value))
 
     def extend(self, value):
         self.value.extend(_cast_str(self, val) for val in value)
@@ -322,7 +334,7 @@ class IDSString1D(IDSPrimitive):
         if isinstance(index, slice):
             value = (_cast_str(self, val) for val in value)
         else:
-            value = _cast_str(value)
+            value = _cast_str(self, value)
         self.value[index] = value
 
     def _cast_value(self, value):
