@@ -160,3 +160,15 @@ Load an IDS and explore which data exists
 
             backend = HDF5_BACKEND
             db_name, shot, run, user = "ITER_MD", 120000, 204, "public"
+
+    .. tab:: Training data
+
+        .. literalinclude:: imaspy_snippets/explore_training_data.py
+
+    .. tab:: PF data
+
+        .. literalinclude:: imaspy_snippets/explore_public_pf_active.py
+
+    .. tab:: EC data
+
+        .. literalinclude:: imaspy_snippets/explore_public_ec_launchers.py
