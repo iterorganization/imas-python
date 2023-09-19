@@ -17,16 +17,16 @@ Our strategy for doing this will be:
 Check which time slices exist
 -----------------------------
 
-.. tabs::
+.. md-tab-set::
 
-    .. tab:: Exercise
+    .. md-tab-item:: Exercise
 
         Load the time array from the ``equilibrium`` IDS in the training data entry.
 
         .. hint::
             You can use :ref:`lazy loading` to avoid loading all data in memory.
     
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
 
         .. literalinclude:: imaspy_snippets/transform_grid.py
             :start-at: # Open input data entry
@@ -36,14 +36,14 @@ Check which time slices exist
 Load a time slice
 -----------------
 
-.. tabs::
+.. md-tab-set::
 
-    .. tab:: Exercise
+    .. md-tab-item:: Exercise
 
         Loop over each available time in the IDS and load the time slice inside the
         loop.
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
 
         .. literalinclude:: imaspy_snippets/transform_grid.py
             :start-at: # Loop over each time slice
@@ -78,13 +78,13 @@ We will apply the transformation of the data as follows:
 Store a time slice
 ------------------
 
-.. tabs::
+.. md-tab-set::
 
-    .. tab:: Exercise
+    .. md-tab-item:: Exercise
 
         Store the time slice after the transformation.
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
 
         .. literalinclude:: imaspy_snippets/transform_grid.py
             :start-at: # Create output data entry
@@ -100,15 +100,15 @@ Store a time slice
 Plotting data before and after the transformation
 -------------------------------------------------
 
-.. tabs::
+.. md-tab-set::
 
-    .. tab:: Exercise
+    .. md-tab-item:: Exercise
 
         Plot one of the data fields in the :math:`R, Z` plane (original data) and in the
         :math:`\rho,\theta` plane (transformed data) to verify that the transformation
         is correct.
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
 
         .. literalinclude:: imaspy_snippets/transform_grid.py
             :start-at: # Create a plot

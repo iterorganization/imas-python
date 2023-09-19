@@ -15,15 +15,19 @@ method of an :py:class:`~imaspy.ids_factory.IDSFactory`.
     to how new IDSs are constructed in the Access Layer.
 
 
-.. tabs::
-    .. tab:: Exercise
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
         Create an empty ``core_profiles`` IDS.
 
-    .. tab:: AL4
+    .. md-tab-item:: AL4
+
         .. literalinclude:: al4_snippets/create_core_profiles.py
             :end-before: # Set properties
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
+
         .. literalinclude:: imaspy_snippets/create_core_profiles.py
             :end-before: # Set properties
 
@@ -46,16 +50,20 @@ populate the following fields:
 - For each ``profiles_1d`` we generate an electron temperature array and store it in
   ``profiles_1d[index].electrons.temperature``.
 
-.. tabs::
-    .. tab:: Exercise
+.. md-tab-set::
+    
+    .. md-tab-item:: Exercise
+
         Fill the ``core_profiles`` IDS with the fields as described above.
 
-    .. tab:: AL4
+    .. md-tab-item:: AL4
+
         .. literalinclude:: al4_snippets/create_core_profiles.py
             :start-at: # Set properties
             :end-before: # Validate the IDS for consistency
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
+
         .. literalinclude:: imaspy_snippets/create_core_profiles.py
             :start-at: # Set properties
             :end-before: # Validate the IDS for consistency
@@ -69,11 +77,13 @@ validation>`. When the IDS passes validation, you know that all filled quantitie
 consistent with their coordinates (because, what is the data worth if its coordinates
 are not provided?).
 
-.. tabs::
-    .. tab:: Exercise
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
         Validate the just-filled IDS.
 
-    .. tab:: AL4
+    .. md-tab-item:: AL4
 
         IDS validation is an Access Layer 5 feature, and cannot be done in Al4.
 
@@ -81,7 +91,8 @@ are not provided?).
             :start-at: # Validate the IDS for consistency
             :end-before: # Fill in the missing rho_tor_norm coordinate
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
+
         .. literalinclude:: imaspy_snippets/create_core_profiles.py
             :start-at: # Validate the IDS for consistency
             :end-before: # Fill in the missing rho_tor_norm coordinate
@@ -96,16 +107,20 @@ You should find that the IDS validation fails. Why?
     ``Dimension 1 of element `profiles_1d[0].electrons.temperature` has incorrect size
     64. Expected size is 0 (size of coordinate `profiles_1d[0].grid.rho_tor_norm`).``
 
-.. tabs::
-    .. tab:: Exercise
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
         Fix the coordinate consistency error.
 
-    .. tab:: AL4
+    .. md-tab-item:: AL4
+
         .. literalinclude:: al4_snippets/create_core_profiles.py
             :start-at: # Fill in the missing rho_tor_norm coordinate
             :end-before: # Create a new data entry for storing the IDS
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
+
         .. literalinclude:: imaspy_snippets/create_core_profiles.py
             :start-at: # Fill in the missing rho_tor_norm coordinate
             :end-before: # Create a new data entry for storing the IDS
@@ -125,8 +140,10 @@ need to :py:meth:`~imaspy.db_entry.DBEntry.create` the data entry on-disk before
     performance or features, it is available in all builds of the Access Layer. For
     production usage, it is recommended to use the HDF5 or MDSplus backends.
 
-.. tabs::
-    .. tab:: Exercise
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
         Store the IDS to disk.
 
         The recommended parameters for this exercise are::
@@ -145,11 +162,13 @@ need to :py:meth:`~imaspy.db_entry.DBEntry.create` the data entry on-disk before
 
             The signature of :meth:`~imaspy.db_entry.DBEntry()` is: ``DBEntry(backend, database, shot, run)``
 
-    .. tab:: AL4
+    .. md-tab-item:: AL4
+
         .. literalinclude:: al4_snippets/create_core_profiles.py
             :start-at: # Create a new data entry for storing the IDS
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
+
         .. literalinclude:: imaspy_snippets/create_core_profiles.py
             :start-at: # Create a new data entry for storing the IDS
 
@@ -163,12 +182,16 @@ Congratulations for completing this section of the course. You have:
 - Ensured consistency of coordinates in the IDS
 - Stored the newly created IDS to disk
 
-.. tabs::
-    .. tab:: Summary
+.. md-tab-set::
+
+    .. md-tab-item:: Summary
+
         Click on the tabs to see the complete source, combining all exercises.
 
-    .. tab:: AL4
+    .. md-tab-item:: AL4
+
         .. literalinclude:: al4_snippets/create_core_profiles.py
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
+
         .. literalinclude:: imaspy_snippets/create_core_profiles.py

@@ -17,8 +17,10 @@ the `Data Dictionary
 <https://portal.iter.org/departments/POP/CM/IMDesign/Data%20Model/CI>`_
 or explore the data interactively. We will focus on the latter method here.
 
-.. tabs::
-    .. tab:: Exercise
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
         Find out the names of the available IDSs.
 
         .. hint::
@@ -30,10 +32,12 @@ or explore the data interactively. We will focus on the latter method here.
             In IMASPy, you can use :py:class:`~imaspy.ids_factory.IDSFactory` to figure
             out which IDSs are avaible.
 
-    .. tab:: AL4
+    .. md-tab-item:: AL4
+
         .. literalinclude:: al4_snippets/print_idss.py
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
+        
         .. literalinclude:: imaspy_snippets/print_idss.py
 
 
@@ -136,9 +140,9 @@ searches.
 Load an IDS and explore which data exists
 -----------------------------------------
 
-.. tabs::
+.. md-tab-set::
 
-    .. tab:: Exercise
+    .. md-tab-item:: Exercise
 
         Load some IDSs and interactively explore their contents. You can use any of the
         below suggestions (some require access to the Public ITER database), or use any
@@ -161,14 +165,14 @@ Load an IDS and explore which data exists
             backend = HDF5_BACKEND
             db_name, shot, run, user = "ITER_MD", 120000, 204, "public"
 
-    .. tab:: Training data
+    .. md-tab-item:: Training data
 
         .. literalinclude:: imaspy_snippets/explore_training_data.py
 
-    .. tab:: PF data
+    .. md-tab-item:: PF data
 
         .. literalinclude:: imaspy_snippets/explore_public_pf_active.py
 
-    .. tab:: EC data
+    .. md-tab-item:: EC data
 
         .. literalinclude:: imaspy_snippets/explore_public_ec_launchers.py

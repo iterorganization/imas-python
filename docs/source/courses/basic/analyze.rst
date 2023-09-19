@@ -36,9 +36,10 @@ can use the data.
        ``imas.DBEntry`` object. Use this method if you want to use the Python Access
        Layer interface.
 
-.. tabs::
+.. md-tab-set::
 
-    .. tab:: Exercise
+    .. md-tab-item:: Exercise
+
         Open the training database entry: ``entry = imaspy.training.get_training_db_entry()``
 
         1. Load the ``equilibrium`` IDS into memory using the ``get`` function
@@ -49,10 +50,12 @@ can use the data.
         5. Read and print the 1D electron temperature profile (:math:`T_e`) from the
            ``core_profiles`` IDS at time slice :math:`t\approx 433\mathrm{s}`
 
-    .. tab:: AL4
+    .. md-tab-item:: AL4
+
         .. literalinclude:: al4_snippets/read_whole_equilibrium.py
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
+
         .. literalinclude:: imaspy_snippets/read_whole_equilibrium.py
 
 .. caution::
@@ -63,8 +66,10 @@ can use the data.
    using lazy-loading, see
    `IMAS-4506 <https://jira.iter.org/browse/IMAS-4506>`_.
 
-.. tabs::
-    .. tab:: Exercise
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
         Write a function that finds the closest time slice index to :math:`t=433\mathrm{s}`
         inside the ``equilibrium`` IDS. Use the ``equilibrium.time`` property
 
@@ -77,10 +82,12 @@ can use the data.
             Now the index of the closest time slice can be found with
             ``np.argmin``
 
-    .. tab:: AL4
+    .. md-tab-item:: AL4
+
         .. literalinclude:: al4_snippets/read_equilibrium_time_array.py
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
+
         .. literalinclude:: imaspy_snippets/read_equilibrium_time_array.py
 
 .. attention::
@@ -108,8 +115,10 @@ can decide to only load the ``core_profiles`` IDS at :math:`t=433\mathrm{s}`.
 This can be accomplished with the aforementioned :meth:`~imaspy.db_entry.DBEntry.get_slice()`
 method.
 
-.. tabs::
-    .. tab:: Exercise
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
         Use the :meth:`~imaspy.db_entry.DBEntry.get_slice()` method to obtain the electron density
         :math:`n_e` at :math:`t\approx 433\mathrm{s}`.
         
@@ -119,10 +128,12 @@ method.
             :meth:`~imaspy.db_entry.DBEntry.get_slice()` requires an ``interpolation_method`` as one
             of its arguments, here you can use ``imas.imasdef.CLOSEST_INTERP``
 
-    .. tab:: AL4
+    .. md-tab-item:: AL4
+
         .. literalinclude:: al4_snippets/read_core_profiles_ne_timeslice.py
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
+
         .. literalinclude:: imaspy_snippets/read_core_profiles_ne_timeslice.py
 
 
@@ -133,17 +144,23 @@ method.
 
 Now we can plot the :math:`n_e` profile obtained above:
 
-.. tabs::
-    .. tab:: Exercise
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
         Using ``matplotlib``, create a plot of :math:`n_e` on the y-axis and
         :math:`\rho_{tor, norm}` on the x-axis at :math:`t=433\mathrm{s}`
-    .. tab:: AL4
+
+    .. md-tab-item:: AL4
+
         .. literalinclude:: al4_snippets/plot_core_profiles_ne_timeslice.py
 
-    .. tab:: IMASPy
+    .. md-tab-item:: IMASPy
+
         .. literalinclude:: imaspy_snippets/plot_core_profiles_ne_timeslice.py
 
-    .. tab:: Plot
+    .. md-tab-item:: Plot
+        
         .. figure:: core_profiles_ne_timeslice.png
             :scale: 100%
             :alt: matplotlib plot of electron temperature vs normalized toroidal flux coordinate
