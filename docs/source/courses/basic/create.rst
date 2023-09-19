@@ -132,13 +132,18 @@ need to :py:meth:`~imaspy.db_entry.DBEntry.create` the data entry on-disk before
         The recommended parameters for this exercise are::
 
             backend = imaspy.ids_defs.ASCII_BACKEND
+            database = "imaspy-course"
             shot = 1
             run = 1
-            database = "imaspy-course"
 
         After a successful ``put`` you should see a file
         ``imaspy-course_1_1_core_profiles.ids`` in your working directory with the
         contents of the IDS.
+
+        .. hint::
+            :collapsible:
+
+            The signature of :meth:`~imaspy.db_entry.DBEntry()` is: ``DBEntry(backend, database, shot, run)``
 
     .. tab:: AL4
         .. literalinclude:: al4_snippets/create_core_profiles.py
