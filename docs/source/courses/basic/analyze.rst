@@ -101,43 +101,51 @@ can use the data.
     .. literalinclude:: imaspy_snippets/iterate_core_profiles.py
 
 
-Using multiple IDSs
-'''''''''''''''''''
-
-If the data structure is too large and it order to save time and memory, one can
-decide to only load the :math:`T_e` profile of the ``core_profiles`` IDS at
-``t=433s``. As before, one has to know that it corresponds to ``index=1`` of
-the ``core_profiles.time`` array, which can be found with the method above. This
-assumes that the ``equilibrium`` and ``core_profiles`` IDSs are defined on the
-same time array, which is not necessarily the case. Always check this when
-working with random data!
+Retreiving part of an IDS
+'''''''''''''''''''''''''
+If the data structure is too large (i.e. larger than the available memory), one
+can decide to only load the ``core_profiles`` IDS at :math:`t=433\mathrm{s}`.
+This can be accomplished with the aforementioned :meth:`~imaspy.db_entry.DBEntry.get_slice()`
+method.
 
 .. tabs::
     .. tab:: Exercise
-        Only assign the data you need to python variables and print
-        ``core_profiles`` :math:`T_e` and :math:`\rho_{tor, norm}` at
-        ``index=1``
+        Use the :meth:`~imaspy.db_entry.DBEntry.get_slice()` method to obtain the electron density
+        :math:`n_e` at :math:`t\approx 433\mathrm{s}`.
+        
+        .. hint::
+            :collapsible:
+
+            :meth:`~imaspy.db_entry.DBEntry.get_slice()` requires an ``interpolation_method`` as one
+            of its arguments, here you can use ``imas.imasdef.CLOSEST_INTERP``
+
     .. tab:: AL4
-        .. literalinclude:: al4_snippets/read_core_profiles_te_timeslice.py
+        .. literalinclude:: al4_snippets/read_core_profiles_ne_timeslice.py
 
     .. tab:: IMASPy
-        .. literalinclude:: imaspy_snippets/read_core_profiles_te_timeslice.py
+        .. literalinclude:: imaspy_snippets/read_core_profiles_ne_timeslice.py
 
 
-Now we can plot the :math:`T_e` profile obtained above:
+.. attention::
+    When working with multiple IDSs such as ``equilibrium`` and ``core_profiles`` the
+    time arrays are not necessarily aligned. Always check this when working with random data!
+
+
+Now we can plot the :math:`n_e` profile obtained above:
 
 .. tabs::
     .. tab:: Exercise
-        Using ``matplotlib``, create a plot of :math:`T_e` on the y-axis and
-        :math:`\rho_{tor, norm}` on the x-axis.
+        Using ``matplotlib``, create a plot of :math:`n_e` on the y-axis and
+        :math:`\rho_{tor, norm}` on the x-axis at :math:`t=433\mathrm{s}`
     .. tab:: AL4
-        .. literalinclude:: al4_snippets/plot_core_profiles_te_timeslice.py
+        .. literalinclude:: al4_snippets/plot_core_profiles_ne_timeslice.py
 
     .. tab:: IMASPy
-        .. literalinclude:: imaspy_snippets/plot_core_profiles_te_timeslice.py
+        .. literalinclude:: imaspy_snippets/plot_core_profiles_ne_timeslice.py
 
-.. figure:: core_profiles_te_timeslice.png
-    :scale: 100%
-    :alt: matplotlib plot of electron temperature vs normalized toroidal flux coordinate
+    .. tab:: Plot
+        .. figure:: core_profiles_ne_timeslice.png
+            :scale: 100%
+            :alt: matplotlib plot of electron temperature vs normalized toroidal flux coordinate
 
-    A plot of :math:`T_e` vs :math:`\rho_{tor, norm}`
+            A plot of :math:`n_e` vs :math:`\rho_{tor, norm}`

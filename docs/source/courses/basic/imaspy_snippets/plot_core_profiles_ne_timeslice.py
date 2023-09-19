@@ -1,6 +1,7 @@
 import os
 
 import matplotlib
+import imas
 import imaspy.training
 
 # To avoid possible display issues when Matplotlib uses a non-GUI backend
@@ -15,16 +16,21 @@ import matplotlib.pyplot as plt
 entry = imaspy.training.get_training_db_entry()
 assert isinstance(entry, imaspy.DBEntry)
 
-# Read Te profile and the associated normalised toroidal flux coordinate
-cp = entry.get("core_profiles")
-t_closest = 1
-te = cp.profiles_1d[t_closest].electrons.temperature
-rho = te.coordinates[0]
+# Read n_e profile and the associated normalised toroidal flux coordinate at
+t = 443 # seconds
+
+cp = entry.get_slice("core_profiles", t, imas.imasdef.CLOSEST_INTERP)
+
+# profiles_1d should only contain the requested slice
+assert len(cp.profiles_1d) == 1
+
+ne = cp.profiles_1d[0].electrons.density
+rho = cp.profiles_1d[0].grid.rho_tor_norm
 
 # Plot the figure
 fig, ax = plt.subplots()
-ax.plot(rho.value, te.value)
-ax.set_ylabel(r"$T_e$")
+ax.plot(rho.value, ne.value)
+ax.set_ylabel(r"$n_e$")
 ax.set_xlabel(r"$\rho_{tor, norm}$")
 ax.ticklabel_format(axis="y", scilimits=(-1, 1))
 plt.show()
