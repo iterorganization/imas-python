@@ -29,7 +29,7 @@ rho = cp.profiles_1d[0].grid.rho_tor_norm
 
 # Plot the figure
 fig, ax = plt.subplots()
-ax.plot(rho.value, ne.value)
+ax.plot(rho, ne)
 ax.set_ylabel(r"$n_e$")
 ax.set_xlabel(r"$\rho_{tor, norm}$")
 ax.ticklabel_format(axis="y", scilimits=(-1, 1))

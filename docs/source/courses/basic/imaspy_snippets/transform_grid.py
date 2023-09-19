@@ -83,7 +83,7 @@ for time in input_times:
     output_entry.put_slice(eq)
 
 # Create a plot to verify the transformation is correct
-fig, (ax1, ax2, ax3) = plt.subplots(1, 3, layout="tight")
+fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
 
 vmin, vmax = np.min(data), np.max(data)
 contour_levels = np.linspace(vmin, vmax, 32)
@@ -109,5 +109,6 @@ ax3.set_ylabel(r"$\theta$ [rad]")
 
 fig.suptitle(r"$\psi$ in ($r,z$) and ($\rho,\theta$) coordinates.")
 fig.colorbar(mesh, ax=ax3)
+fig.tight_layout()
 
 plt.show()
