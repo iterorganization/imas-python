@@ -39,13 +39,15 @@ can use the data.
 .. tabs::
 
     .. tab:: Exercise
-        For the example scenario ``shot = 134173``, ``run = 106``,
-        ``user = "public"``, ``database = "ITER"``
+        Open the training database entry: ``entry = imaspy.training.get_training_db_entry()``
 
-        1. Read and print the ``time`` of the ``equilibrium`` IDS for the whole
-           scenario
-        2. Read and print the electron temperature profile (:math:`T_e`) in the
-           ``equilibrium`` IDS at time slice t=433s
+        1. Load the ``equilibrium`` IDS into memory using the ``get`` function
+        2. Read and print the ``time`` array of the ``equilibrium`` IDS
+        3. Load the ``core_profiles`` IDS into memory
+        4. Explore the ``core_profiles.profiles_1d`` property and try to match :math:`t\approx 433\mathrm{s}`
+           to one of the slices
+        5. Read and print the 1D electron temperature profile (:math:`T_e`) from the
+           ``core_profiles`` IDS at time slice :math:`t\approx 433\mathrm{s}`
 
     .. tab:: AL4
         .. literalinclude:: al4_snippets/read_whole_equilibrium.py
@@ -53,9 +55,9 @@ can use the data.
     .. tab:: IMASPy
         .. literalinclude:: imaspy_snippets/read_whole_equilibrium.py
 
-.. attention::
-   When dealing with unknown data, it can be dangerous to blindly load data. For
-   sure when dealing with larger data files, this might fill up the RAM of your
+.. caution::
+   When dealing with unknown data, it can be dangerous to blindly load data.
+   Especially when dealing with larger data files, this might fill up the RAM of your
    machine quickly. The ASCII files supplied with IMASPy are small specifically
    for this purpose. IMASPy will allow to load a part of the data in the future
    using lazy-loading, see
