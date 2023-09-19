@@ -65,9 +65,17 @@ can use the data.
 
 .. tabs::
     .. tab:: Exercise
-        Read the time array of the ``equilibrium`` IDS to get the time trace of
-        a given scenario. This is how e.g, one can find the index corresponding
-        a specific time slice.
+        Write a function that finds the closest time slice index to :math:`t=433\mathrm{s}`
+        inside the ``equilibrium`` IDS. Use the ``equilibrium.time`` property
+
+        .. hint::
+            :collapsible:
+
+            Create an array of the differences between the ``equilibrium.time``
+            array and your search term (:math:`t=433\mathrm{s}`)
+
+            Now the index of the closest time slice can be found with
+            ``np.argmin``
 
     .. tab:: AL4
         .. literalinclude:: al4_snippets/read_equilibrium_time_array.py
@@ -84,7 +92,7 @@ can use the data.
     not eliminate, the need for ``.value``). Progress for this can be followed
     on `IMAS-4680 <https://jira.iter.org/browse/IMAS-4680>`_.
 
-.. attention::
+.. note::
     IMASPy has two main ways of accessing IDSs. In the exercises above, we used
     the "attribute-like" access. This is the main way of navigating the IDS tree.
     However, IMASPy also provides a "dict-like" interface to access data, which
