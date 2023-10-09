@@ -18,8 +18,7 @@ def test_ids_valid_type():
 
     # For DD versions <4, `type` is never set at IDS top levels.
     # For DD versions >=4, `type` may be CONSTANT (i.e. no root time node) or DYNAMIC
-    valid_types = {IDSType.CONSTANT, IDSType.DYNAMIC}
-    assert len(ids_types) == {IDSType.NONE} or ids_types == valid_types
+    assert ids_types in ({IDSType.NONE}, {IDSType.CONSTANT, IDSType.DYNAMIC})
 
 
 def test_constant_ids(caplog):
