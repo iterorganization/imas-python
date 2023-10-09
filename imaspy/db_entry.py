@@ -30,6 +30,7 @@ from imaspy.ids_defs import (
     needs_imas,
 )
 from imaspy.ids_factory import IDSFactory
+from imaspy.ids_metadata import IDSType
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
@@ -349,7 +350,8 @@ class DBEntry:
             nbc_map = ddmap.new_to_old if source_is_older else ddmap.old_to_new
 
         # Now fill the IDSToplevel
-        if time_requested is None:  # get
+        if time_requested is None or destination.metadata.type is IDSType.CONSTANT:
+            # called from get(), or when the IDS is constant (see IMAS-3330)
             manager = self._db_ctx.global_action(ll_path, READ_OP)
         else:  # get_slice
             manager = self._db_ctx.slice_action(
@@ -457,6 +459,17 @@ class DBEntry:
         # TODO: allow unset homogeneous_time and quit with no action?
         if time_mode not in IDS_TIME_MODES:
             raise ValueError("'ids_properties.homogeneous_time' is not set or invalid.")
+        # IMAS-3330: automatically set time mode to independent:
+        if ids.metadata.type is IDSType.CONSTANT:
+            if time_mode != IDS_TIME_MODE_INDEPENDENT:
+                logger.warning(
+                    "ids_properties/homogeneous_time has been set to 2 for the constant"
+                    " IDS %s/%d, please check the program which has filled this IDS since "
+                    "this is the mandatory value for a constant IDS",
+                    ids_name,
+                    occurrence,
+                )
+                ids.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
         if is_slice and time_mode == IDS_TIME_MODE_INDEPENDENT:
             raise RuntimeError("Cannot use put_slice with IDS_TIME_MODE_INDEPENDENT.")
 
