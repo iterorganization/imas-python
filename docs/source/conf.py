@@ -416,15 +416,15 @@ napoleon_attr_annotations = (
 # See https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
+    # "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
     "numpy": ("https://numpy.org/doc/stable", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
-    "numba": ("https://numba.pydata.org/numba-doc/latest", None),
-    "matplotlib": ("https://matplotlib.org", None),
-    "xarray": ("http://xarray.pydata.org/en/stable/", None),
-    "dask": ("https://docs.dask.org/en/latest", None),
-    "cython": ("https://cython.readthedocs.io/", None),
-    "gitpython": ("https://gitpython.readthedocs.io/en/stable", None),
+    # "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
+    # "numba": ("https://numba.pydata.org/numba-doc/latest", None),
+    # "matplotlib": ("https://matplotlib.org", None),
+    # "xarray": ("http://xarray.pydata.org/en/stable/", None),
+    # "dask": ("https://docs.dask.org/en/latest", None),
+    # "cython": ("https://cython.readthedocs.io/", None),
+    # "gitpython": ("https://gitpython.readthedocs.io/en/stable", None),
     # "netcdf4": ("https://unidata.github.io/netcdf4-python/", None),  # netcdf4 does not have an intersphinx mapping
     # "jintrac": ("https://users.euro-fusion.org/pages/data-cmg/wiki/", None) Behind password, so cannot link there
 }
