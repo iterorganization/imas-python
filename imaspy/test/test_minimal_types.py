@@ -206,7 +206,7 @@ def test_ducktype_str0d(minimal):
     # Indexing and slicing
     assert node[:3] == "Tes"
     assert node[1:2] == node[1] == "e"
-    # Arithmic
+    # Arithmetic
     assert node + "!" == "Test!"
     assert node * 2 == 2 * node == "TestTest"
     # In place operation and __eq__
@@ -245,7 +245,7 @@ def test_ducktype_str1d(minimal):
     assert node == ["1", "2"]
     # Iteration
     assert tuple(node) == ("1", "2")
-    # Arithmic
+    # Arithmetic
     assert node + ["3"] == list("123")
     assert node * 2 == 2 * node == list("1212")
     # Check we haven't accidentally replaced `node` with an actual list
@@ -266,7 +266,7 @@ def test_ducktype_int0d(minimal):
     assert node.imag == 0.0
     assert node.bit_length() == 1
     assert node.to_bytes(1, "little") == b"\x01"
-    # Arithmic
+    # Arithmetic
     minimal.int_0d += 3
     assert node == 4
     assert +node == 4
@@ -308,7 +308,7 @@ def test_ducktype_flt0d(minimal):
     assert node.imag == 0.0
     assert node.conjugate() == np.pi
     assert not node.is_integer()
-    # Arithmic
+    # Arithmetic
     assert +node == np.pi
     assert -node == -np.pi
     assert bool(node) is True
@@ -345,7 +345,7 @@ def test_ducktype_cpx0d(minimal):
     assert node.real == 1.0
     assert node.imag == -1.5
     assert node.conjugate() == 1.0 + 1.5j
-    # Arithmic
+    # Arithmetic
     assert +node == 1.0 - 1.5j
     assert -node == -1.0 + 1.5j
     assert bool(node) is True
@@ -392,7 +392,7 @@ def test_ducktype_ndarray(minimal, tp, val):
     # Indexing
     assert np.array_equal(node[1], val[1])
     assert np.array_equal(node[:1], val[:1])
-    # Arithmic
+    # Arithmetic
     assert np.array_equal([1, 1] @ node, node @ [1, 1])
     assert np.array_equal([1, 1] @ node, [1, 1] @ val)
     assert np.array_equal(1 + node, node + 1)
