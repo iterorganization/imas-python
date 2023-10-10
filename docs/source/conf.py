@@ -442,3 +442,4 @@ def escape_underscores(string):
 
 def setup(app):
     DEFAULT_FILTERS["escape_underscores"] = escape_underscores
+    app.add_css_file("imaspy.css")
