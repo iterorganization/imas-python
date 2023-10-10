@@ -6,12 +6,13 @@ This contains references to :py:class:`IDSStructure`s
 * :py:class:`IDSStructArray`
 """
 
-from typing import Dict, Tuple
+from copy import deepcopy
+from typing import Optional, Tuple
 from xml.etree.ElementTree import Element
 
+from imaspy.al_context import LazyALContext
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_structure import IDSStructure
 from imaspy.setup_logging import root_logger as logger
 
 
@@ -43,16 +44,71 @@ class IDSStructArray(IDSMixin):
         super().__init__(parent, structure_xml)
         self.coordinates = IDSCoordinates(self)
 
-        self._convert_ids_types = False
-
         # Initialize with an 0-length list
         self.value = []
 
-        self._convert_ids_types = True
+        # Lazy loading context, only applicable when self._lazy is True
+        # When lazy loading, all items in self.value are None until they are requested
+        self._lazy_loaded = False  # Marks if we already loaded our size
+        self._lazy_context: Optional[LazyALContext] = None
+        self._lazy_paths = ("", "")  # path, timebasepath
+
+    def __deepcopy__(self, memo):
+        copy = self.__class__(self._parent, self._structure_xml)
+        for value in self.value:
+            value_copy = deepcopy(value, memo)
+            value_copy._parent = copy
+            copy.value.append(value_copy)
+        return copy
+
+    def _set_lazy_context(self, ctx: LazyALContext, path: str, timebase: str) -> None:
+        """Called by DBEntry during a lazy get/get_slice.
+
+        Set the context that we can use for retrieving our size and children.
+        """
+        self._lazy_context = ctx
+        self._lazy_paths = (path, timebase)
+
+    def _load(self, item: Optional[int]) -> None:
+        """When lazy loading, ensure that the requested item is loaded.
+
+        Args:
+            item: index of the item to load. When None, just ensure that our size is
+                loaded from the lowlevel.
+        """
+        assert self._lazy
+        assert self._lazy_context
+        if self._lazy_loaded:
+            if item is None:
+                return
+            if self.value[item] is not None:
+                return  # item is already loaded
+        # Load requested data from the backend
+        manager = self._lazy_context.lazy_arraystruct_action(*self._lazy_paths, item)
+        with manager as (new_ctx, size):
+            # Note: we can be a bit more efficient here by recognizing that the returned
+            # LazyALContext (new_ctx) for different items is essentially the same,
+            # except for the requested item number. It would need some work to get
+            # right, so keep the logic like this unless we find it to be a bottleneck.
+            if not self._lazy_loaded:
+                self.value = [None] * size
+                self._lazy_loaded = True
+            assert len(self.value) == size
+
+            if item is not None:
+                # Create and (lazily) load the requested item
+                from imaspy.db_entry import _get_children
+                from imaspy.ids_structure import IDSStructure
+
+                element = self.value[item] = IDSStructure(self, self._structure_xml)
+                nbc_map = self._lazy_context.nbc_map
+                _get_children(element, new_ctx, self._time_mode, "", nbc_map)
 
     @property
     def _element_structure(self):
         """Prepare an element structure JIT"""
+        from imaspy.ids_structure import IDSStructure
+
         struct = IDSStructure(self, self._structure_xml)
         return struct
 
@@ -66,27 +122,27 @@ class IDSStructArray(IDSMixin):
         # value is a list, so the given item should be convertable to integer
         # TODO: perhaps we should allow slices as well?
         list_idx = int(item)
+        if self._lazy:
+            self._load(item)
         return self.value[list_idx]
 
     def __setitem__(self, item, value):
         # value is a list, so the given item should be convertable to integer
         # TODO: perhaps we should allow slices as well?
+        if self._lazy:
+            raise ValueError("Lazy-loaded IDSs are read-only.")
         list_idx = int(item)
-        if hasattr(self, "_convert_ids_types") and self._convert_ids_types:
-            # Convert IDS type on set time. Never try this for hidden attributes!
-            if list_idx in self.value:
-                struct = self.value[list_idx]
-                struct.value = value
         self.value[list_idx] = value
 
     def __len__(self) -> int:
+        if self._lazy:
+            self._load(None)
         return len(self.value)
-
-    def __iter__(self):
-        return iter(self.value)
 
     @property
     def shape(self) -> Tuple[int]:
+        if self._lazy:
+            self._load(None)
         return (len(self.value),)
 
     def append(self, elt):
@@ -95,6 +151,8 @@ class IDSStructArray(IDSMixin):
         Parameters
         ----------
         """
+        if self._lazy:
+            raise ValueError("Lazy-loaded IDSs are read-only.")
         if not isinstance(elt, list):
             elements = [elt]
         else:
@@ -102,7 +160,6 @@ class IDSStructArray(IDSMixin):
         for e in elements:
             # Just blindly append for now
             # TODO: Maybe check if user is not trying to append weird elements
-            e._convert_ids_types = True
             e._parent = self
             self.value.append(e)
 
@@ -120,6 +177,8 @@ class IDSStructArray(IDSMixin):
             Specifies if the targeted array of structure should keep
             existing data in remaining elements after resizing it.
         """
+        if self._lazy:
+            raise ValueError("Lazy-loaded IDSs are read-only.")
         if nbelt < 0:
             raise ValueError(f"Invalid size {nbelt}: size may not be negative")
         if not keep:
@@ -129,8 +188,6 @@ class IDSStructArray(IDSMixin):
             new_els = []
             for _ in range(nbelt - cur):
                 new_el = self._element_structure
-                new_el._parent = self
-                new_el._convert_ids_types = True
                 new_els.append(new_el)
             self.append(new_els)
         elif nbelt < cur:
@@ -141,7 +198,8 @@ class IDSStructArray(IDSMixin):
     @property
     def has_value(self) -> bool:
         """True if this struct-array has nonzero size"""
-        return len(self.value) > 0
+        # Note self.__len__ will lazy load our size if needed
+        return len(self) > 0
 
     def _validate(self) -> None:
         # Common validation logic
