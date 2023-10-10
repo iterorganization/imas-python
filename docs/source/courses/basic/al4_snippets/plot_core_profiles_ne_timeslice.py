@@ -14,7 +14,6 @@ import matplotlib.pyplot as plt
 
 # Open input data entry
 entry = imaspy.training.get_training_imas_db_entry()
-assert isinstance(entry, imas.DBEntry)
 
 # Read n_e profile and the associated normalised toroidal flux coordinate at
 t = 443 # seconds

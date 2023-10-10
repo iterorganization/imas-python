@@ -22,7 +22,7 @@ rho_tor_norm = np.linspace(0, 1, num=64)
 
 # Generate some 1D profiles
 cp.profiles_1d.resize(len(cp.time))
-for index, t in enumerate(cp.time.value):
+for index, t in enumerate(cp.time):
     t_e = np.exp(-16 * rho_tor_norm**2) + (1 - np.tanh(4 * rho_tor_norm - 3)) * t / 8
     t_e *= t * 500
     # Store the generated t_e as electron temperature

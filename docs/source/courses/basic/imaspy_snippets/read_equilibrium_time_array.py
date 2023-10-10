@@ -6,12 +6,11 @@ import imaspy.training
 def find_nearest(a, a0):
     "Element in nd array `a` closest to the scalar value `a0`"
     idx = np.abs(a - a0).argmin()
-    return a.value[idx], idx
+    return a[idx], idx
 
 
 # Open input data entry
 entry = imaspy.training.get_training_db_entry()
-assert isinstance(entry, imaspy.DBEntry)
 
 # Read the time array from the equilibrium IDS
 eq = entry.get("equilibrium")

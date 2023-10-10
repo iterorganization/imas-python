@@ -19,7 +19,7 @@ assert isinstance(entry, imaspy.DBEntry)
 # Lazy-loaded input equilibrium
 # FIXME: Add lazy=True after merge with lazy loading PR
 eq_in = entry.get("equilibrium")  # , lazy=True)
-input_times = eq_in.time.value
+input_times = eq_in.time
 
 # Create output data entry
 output_entry = imaspy.DBEntry(
@@ -42,8 +42,8 @@ for time in input_times:
 
     p2d = eq.time_slice[0].profiles_2d[0]
     r, z = p2d.grid.dim1.value, p2d.grid.dim2.value
-    r_axis = eq.time_slice[0].global_quantities.magnetic_axis.r.value
-    z_axis = eq.time_slice[0].global_quantities.magnetic_axis.z.value
+    r_axis = eq.time_slice[0].global_quantities.magnetic_axis.r
+    z_axis = eq.time_slice[0].global_quantities.magnetic_axis.z
 
     # Create new rho/theta coordinates
     theta = np.linspace(-np.pi, np.pi, num=64, endpoint=False)
@@ -66,7 +66,7 @@ for time in input_times:
         data = p2d[data_node].value
         interp = RegularGridInterpolator((r, z), data)
         new_data = interp(interpolation_points).reshape(grid_r.shape)
-        p2d[data_node].value = new_data
+        p2d[data_node] = new_data
 
     # Update coordinate identifier
     p2d.grid_type.index = 2

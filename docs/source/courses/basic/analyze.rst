@@ -1,21 +1,18 @@
 Analyze with IMASPy
 ===================
 
-Loading IMAS data
------------------
-
 For this part of the training we will learn to open an IMAS database entry, and
 plot some basic data in it using `matplotlib <https://matplotlib.org/>`_.
 
 
 Open an IMAS database entry
-'''''''''''''''''''''''''''
+---------------------------
 
 IMAS explicitly separates the data on disk from the data in memory. To get
 started we load an existing IMAS data file from disk. The on-disk file
 is represented by an :class:`imaspy.DBEntry`, which we have to
 :meth:`~imaspy.db_entry.DBEntry.open()` to get a reference to the data file we
-will manipulate. The connection to the data file is kept intact until we neatly
+will manipulate. The connection to the data file is kept intact until we
 :meth:`~imaspy.db_entry.DBEntry.close()` the file. Note that the on-disk file
 will not be changed until an explicit :meth:`~imaspy.db_entry.DBEntry.put()` or
 :meth:`~imaspy.db_entry.DBEntry.put_slice()` is called.
@@ -36,19 +33,23 @@ can use the data.
        ``imas.DBEntry`` object. Use this method if you want to use the Python Access
        Layer interface.
 
+Exercise 1
+''''''''''
+
 .. md-tab-set::
 
     .. md-tab-item:: Exercise
 
         Open the training database entry: ``entry = imaspy.training.get_training_db_entry()``
 
-        1. Load the ``equilibrium`` IDS into memory using the ``get`` function
+        1. Load the ``equilibrium`` IDS into memory using the
+           :meth:`~imaspy.db_entry.DBEntry.get()` method
         2. Read and print the ``time`` array of the ``equilibrium`` IDS
         3. Load the ``core_profiles`` IDS into memory
-        4. Explore the ``core_profiles.profiles_1d`` property and try to match :math:`t\approx 433\mathrm{s}`
-           to one of the slices
+        4. Explore the ``core_profiles.profiles_1d`` property and try to match
+           :math:`t\approx 433\,\mathrm{s}` to one of the slices
         5. Read and print the 1D electron temperature profile (:math:`T_e`) from the
-           ``core_profiles`` IDS at time slice :math:`t\approx 433\mathrm{s}`
+           ``core_profiles`` IDS at time slice :math:`t\approx 433\,\mathrm{s}`
 
     .. md-tab-item:: AL4
 
@@ -59,28 +60,35 @@ can use the data.
         .. literalinclude:: imaspy_snippets/read_whole_equilibrium.py
 
 .. caution::
-   When dealing with unknown data, it can be dangerous to blindly load data.
-   Especially when dealing with larger data files, this might fill up the RAM of your
-   machine quickly. The ASCII files supplied with IMASPy are small specifically
-   for this purpose. IMASPy will allow to load a part of the data in the future
-   using lazy-loading, see
-   `IMAS-4506 <https://jira.iter.org/browse/IMAS-4506>`_.
+   When dealing with unknown data, you shouldn't blindly ``get()`` all data:
+   large data files might quickly fill up the available memory of your machine.
+
+   The recommendations for larger data files are:
+
+   - Only load the time slice(s) that you are interested in.
+   - Alternatively, IMASPy allows to load data on-demand, see
+     :ref:`Lazy loading` for more details.
+
+
+Exercise 2
+''''''''''
 
 .. md-tab-set::
 
     .. md-tab-item:: Exercise
 
-        Write a function that finds the closest time slice index to :math:`t=433\mathrm{s}`
-        inside the ``equilibrium`` IDS. Use the ``equilibrium.time`` property
+        Write a function that finds the closest time slice index to
+        :math:`t=433\,\mathrm{s}` inside the ``equilibrium`` IDS. Use the
+        ``equilibrium.time`` property
 
         .. hint::
             :collapsible:
 
             Create an array of the differences between the ``equilibrium.time``
-            array and your search term (:math:`t=433\mathrm{s}`)
+            array and your search term (:math:`t=433\,\mathrm{s}`).
 
             Now the index of the closest time slice can be found with
-            ``np.argmin``
+            :external:func:`numpy.argmin`.
 
     .. md-tab-item:: AL4
 
@@ -91,13 +99,9 @@ can use the data.
         .. literalinclude:: imaspy_snippets/read_equilibrium_time_array.py
 
 .. attention::
-    IMASPy objects generally behave the same way as numpy arrays. However, in
+    IMASPy objects mostly behave the same way as numpy arrays. However, in
     some cases functions explicitly expect a pure numpy array. In this case, the
-    ``.value`` attribute can be used to obtain the underlying data array.
-
-    We are investigating options for improving the API (which may reduce, but
-    not eliminate, the need for ``.value``). Progress for this can be followed
-    on `IMAS-4680 <https://jira.iter.org/browse/IMAS-4680>`_.
+    ``.value`` attribute can be used to obtain the underlying data.
 
 .. note::
     IMASPy has two main ways of accessing IDSs. In the exercises above, we used
@@ -109,18 +113,34 @@ can use the data.
 
 
 Retreiving part of an IDS
-'''''''''''''''''''''''''
-If the data structure is too large (i.e. larger than the available memory), one
-can decide to only load the ``core_profiles`` IDS at :math:`t=433\mathrm{s}`.
-This can be accomplished with the aforementioned :meth:`~imaspy.db_entry.DBEntry.get_slice()`
+-------------------------
+
+If the data structure is too large, several problems may pop up:
+
+- Loading the data from disk will take a long(er) time
+- The IDS data may not fit in the available memory
+
+To overcome this, we can load only part of the IDS data from disk.
+
+
+Retrieve a single time slice
+''''''''''''''''''''''''''''
+
+When we are interested in quantities at a single time slice (or a low number of time
+slices), we can decide to only load the data at specified times. This can be
+accomplished with the aforementioned :meth:`~imaspy.db_entry.DBEntry.get_slice()`
 method.
+
+
+Exercise 3
+^^^^^^^^^^
 
 .. md-tab-set::
 
     .. md-tab-item:: Exercise
 
         Use the :meth:`~imaspy.db_entry.DBEntry.get_slice()` method to obtain the electron density
-        :math:`n_e` at :math:`t\approx 433\mathrm{s}`.
+        :math:`n_e` at :math:`t\approx 433\,\mathrm{s}`.
         
         .. hint::
             :collapsible:
@@ -144,6 +164,10 @@ method.
 
 Now we can plot the :math:`n_e` profile obtained above:
 
+
+Exercise 4
+^^^^^^^^^^
+
 .. md-tab-set::
 
     .. md-tab-item:: Exercise
@@ -165,4 +189,51 @@ Now we can plot the :math:`n_e` profile obtained above:
             :scale: 100%
             :alt: matplotlib plot of electron temperature vs normalized toroidal flux coordinate
 
-            A plot of :math:`n_e` vs :math:`\rho_{tor, norm}`
+            A plot of :math:`n_e` vs :math:`\rho_{tor, norm}`.
+
+
+Lazy loading
+''''''''''''
+
+When you are interested in the time evolution of a quantity, using ``get_slice`` may be
+impractical. It gets around the limitation of the data not fitting in memory, but will
+still need to read all of the data from disk (just not at once).
+
+IMASPy has a `lazy loading` mode, where it will only read the requested data from disk
+when you try to access it. You can enable it by supplying ``lazy=True`` to a call to 
+:meth:`~imaspy.db_entry.DBEntry.get()` or :meth:`~imaspy.db_entry.DBEntry.get_slice()`.
+
+
+Exercise 5
+^^^^^^^^^^
+
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
+        Using ``matplotlib``, create a plot of :math:`T_e[0]` on the y-axis and
+        :math:`t` on the x-axis.
+
+        .. note::
+
+            Lazy loading is incompatible with the ASCII backend, so the training data
+            cannot be used for this example. When you are on the ITER cluster, you can
+            load the following data entry:: 
+
+                database, shot, run, user = "ITER", 134173, 106, "public"
+                data_entry = imaspy.DBEntry(MDSPLUS_BACKEND, database, shot, run, user)
+                data_entry.open()
+
+    .. md-tab-item:: IMASPy
+
+        .. literalinclude:: imaspy_snippets/plot_core_profiles_te.py
+
+    .. md-tab-item:: Plot
+
+        .. figure:: core_profiles_te.png
+            :scale: 100%
+            :alt: matplotlib plot of electron temperature vs time
+
+            A plot of :math:`T_e` vs :math:`t`.
+
+.. seealso:: :ref:`Lazy loading`

@@ -19,32 +19,8 @@ to :meth:`DBEntry.get`, or :meth:`DBEntry.get_slice`. The returned IDS
 object will fetch the data from the backend at the moment that you want to access it.
 See below example:
 
-.. code-block:: python
+.. literalinclude:: courses/basic/imaspy_snippets/plot_core_profiles_te.py
     :caption: Example with lazy loading of data
-
-    import imaspy
-    from imaspy.ids_defs import MDSPLUS_BACKEND
-    import numpy
-    from matplotlib import pyplot as plt
-
-    database, shot, run, user = "ITER", 134173, 106, "public"
-    data_entry = imaspy.DBEntry(MDSPLUS_BACKEND, database, shot, run, user)
-    data_entry.open()
-    # Enable lazy loading with `lazy=True`:
-    core_profiles = data_entry.get("core_profiles", lazy=True)
-
-    # No data has been read from the lowlevel backend yet
-    # The time array is loaded only when we access it on the following line:
-    time = core_profiles.time.value
-    print(f"Time has {len(time)} elements, between {time[0]} and {time[-1]}")
-
-    # Find the electron temperature at rho=0 for all time slices
-    electon_temperature_0 = numpy.array([
-        p1d.electrons.temperature.value[0]
-        for p1d in core_profiles.profiles_1d
-    ])
-    plt.plot(time, electon_temperature_0)
-    plt.show()
 
 In this example, using lazy loading is about 6 times faster than a regular
 :code:`get()`.
