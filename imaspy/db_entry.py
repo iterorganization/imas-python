@@ -496,8 +496,11 @@ class DBEntry:
             )
         else:
             manager = self._db_ctx.global_action(ll_path, WRITE_OP)
+        verify_maxoccur = self.backend_id == MDSPLUS_BACKEND
         with manager as write_ctx:
-            _put_children(ids, write_ctx, time_mode, "", is_slice, nbc_map)
+            _put_children(
+                ids, write_ctx, time_mode, "", is_slice, nbc_map, verify_maxoccur
+            )
 
     def delete_data(self, ids_name: str, occurrence: int = 0) -> None:
         """Delete the provided IDS occurrence from this IMAS database entry.
@@ -580,6 +583,7 @@ def _put_children(
     ctx_path: str,
     is_slice: bool,
     nbc_map: Optional[NBCPathMap],
+    verify_maxoccur: bool,
 ) -> None:
     """Recursively put all children of an IDSStructure"""
     # Note: when putting a slice, we do not need to descend into IDSStructure and
@@ -605,13 +609,24 @@ def _put_children(
 
         if isinstance(element, IDSStructArray):
             size = len(element)
+            if verify_maxoccur:
+                maxoccur = element.metadata.maxoccur
+                if maxoccur and size > maxoccur:
+                    raise RuntimeError(
+                        f"Exceeding maximum number of occurrences ({maxoccur}) "
+                        f"of {element._path}"
+                    )
             with ctx.arraystruct_action(new_path, timebase, size) as (new_ctx, _):
                 for item in element:
-                    _put_children(item, new_ctx, time_mode, "", is_slice, nbc_map)
+                    _put_children(
+                        item, new_ctx, time_mode, "", is_slice, nbc_map, verify_maxoccur
+                    )
                     new_ctx.iterate_over_arraystruct(1)
 
         elif isinstance(element, IDSStructure):
-            _put_children(element, ctx, time_mode, new_path, is_slice, nbc_map)
+            _put_children(
+                element, ctx, time_mode, new_path, is_slice, nbc_map, verify_maxoccur
+            )
 
         else:  # Data elements
             if is_slice and not element.metadata.type.is_dynamic:
