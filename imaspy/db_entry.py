@@ -4,12 +4,13 @@
 import importlib
 import logging
 import os
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from imaspy.exception import ValidationError
 from imaspy.ids_convert import NBCPathMap, dd_version_map_from_factories
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
+    ASCII_BACKEND,
     CHAR_DATA,
     INTEGER_DATA,
     FORCE_CREATE_PULSE,
@@ -36,7 +37,7 @@ from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
-from imaspy.al_context import ALContext
+from imaspy.al_context import ALContext, LazyALContext
 
 logger = logging.getLogger(__name__)
 
@@ -226,6 +227,7 @@ class DBEntry:
         ids_name: str,
         occurrence: int = 0,
         *,
+        lazy: bool = False,
         destination: Optional[IDSToplevel] = None,
     ) -> IDSToplevel:
         """Read the contents of the an IDS into memory.
@@ -241,6 +243,11 @@ class DBEntry:
             occurrence: Which occurrence of the IDS to read.
 
         Keyword Args:
+            lazy: When set to ``True``, values in this IDS will be retrieved only when
+                needed (instead of getting the full IDS immediately). See :ref:`Lazy
+                loading` for more details.
+
+                .. note:: Lazy loading is not supported by the ASCII backend.
             destination: Populate this IDSToplevel instead of creating an empty one.
 
         Returns:
@@ -255,7 +262,7 @@ class DBEntry:
                 imas_entry.open()
                 core_profiles = imas_entry.get("core_profiles")
         """  # noqa
-        return self._get(ids_name, occurrence, None, 0, destination)
+        return self._get(ids_name, occurrence, None, 0, destination, lazy)
 
     def get_slice(
         self,
@@ -264,6 +271,7 @@ class DBEntry:
         interpolation_method: int,
         occurrence: int = 0,
         *,
+        lazy: bool = False,
         destination: Optional[IDSToplevel] = None,
     ) -> IDSToplevel:
         """Read a single time slice from an IDS in this Database Entry.
@@ -284,6 +292,9 @@ class DBEntry:
             occurrence: Which occurrence of the IDS to read.
 
         Keyword Args:
+            lazy: When set to ``True``, values in this IDS will be retrieved only when
+                needed (instead of getting the full IDS immediately). See :ref:`Lazy
+                loading` for more details.
             destination: Populate this IDSToplevel instead of creating an empty one.
 
         Returns:
@@ -299,7 +310,12 @@ class DBEntry:
                 core_profiles = imas_entry.get_slice("core_profiles", 370, imaspy.ids_defs.PREVIOUS_INTERP)
         """  # noqa
         return self._get(
-            ids_name, occurrence, time_requested, interpolation_method, destination
+            ids_name,
+            occurrence,
+            time_requested,
+            interpolation_method,
+            destination,
+            lazy,
         )
 
     def _get(
@@ -309,10 +325,16 @@ class DBEntry:
         time_requested: Optional[float],
         interpolation_method: int,
         destination: Optional[IDSToplevel] = None,
+        lazy: bool = False
     ) -> IDSToplevel:
         """Actual implementation of get() and get_slice()"""
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
+        if lazy and self.backend_id == ASCII_BACKEND:
+            raise RuntimeError("Lazy loading is not supported by the ASCII backend.")
+        if lazy and destination:
+            raise ValueError("Cannot supply both a destination IDS when lazy loading.")
+
         ll_path = ids_name
         if occurrence != 0:
             ll_path += f"/{occurrence}"
@@ -340,7 +362,7 @@ class DBEntry:
             )
         # Ensure we have a destination
         if not destination:
-            destination = self._ids_factory.new(ids_name)
+            destination = self._ids_factory.new(ids_name, _lazy=lazy)
         # Create a version conversion map, if needed
         nbc_map = None
         if dd_version and dd_version != destination._dd_version:
@@ -350,11 +372,12 @@ class DBEntry:
             nbc_map = ddmap.new_to_old if source_is_older else ddmap.old_to_new
 
         # Now fill the IDSToplevel
+        context = LazyALContext(dbentry=self, nbc_map=nbc_map) if lazy else self._db_ctx
         if time_requested is None or destination.metadata.type is IDSType.CONSTANT:
             # called from get(), or when the IDS is constant (see IMAS-3330)
-            manager = self._db_ctx.global_action(ll_path, READ_OP)
+            manager = context.global_action(ll_path, READ_OP)
         else:  # get_slice
-            manager = self._db_ctx.slice_action(
+            manager = context.slice_action(
                 ll_path, READ_OP, time_requested, interpolation_method
             )
         with manager as read_ctx:
@@ -431,6 +454,8 @@ class DBEntry:
         """Actual implementation of put() and put_slice()"""
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
+        if ids._lazy:
+            raise ValueError("Lazy loaded IDSs cannot be used in put or put_slice.")
 
         # Automatic validation
         disable_validate = os.environ.get("IMAS_AL_DISABLE_VALIDATE")
@@ -531,7 +556,7 @@ class DBEntry:
 
 def _get_children(
     structure: IDSStructure,
-    ctx: ALContext,
+    ctx: Union[ALContext, LazyALContext],
     time_mode: int,
     ctx_path: str,
     nbc_map: Optional[NBCPathMap],
@@ -556,6 +581,12 @@ def _get_children(
                 timebase = _get_timebasepath(element, time_mode, new_path)
 
         if isinstance(element, IDSStructArray):
+            # Lazy loading:
+            if isinstance(ctx, LazyALContext):
+                # Provide the AOS with enough information to retrieve its data
+                element._set_lazy_context(ctx, new_path, timebase)
+                continue
+            # Regular get/get_slice:
             with ctx.arraystruct_action(new_path, timebase, 0) as (new_ctx, size):
                 element.resize(size)
                 for item in element:

@@ -42,7 +42,7 @@ def test_write_read_time(backend, worker_id, tmp_path, time_mode):
     dbentry.put(eq)
 
     eq = dbentry.get("equilibrium")
-    assert eq.time == np.array([0.0, 0.1, 0.2])
+    assert np.array_equal(eq.time, [0.0, 0.1, 0.2])
 
 
 def test_time_slicing_get(backend, worker_id, tmp_path, time_mode):

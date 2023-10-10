@@ -270,7 +270,7 @@ def unset_coordinate(coordinate):
                     element.value = []
                     return
 
-    visit_children(parent, callback)
+    visit_children(callback, parent)
 
 
 def compare_children(st1, st2, deleted_paths=set()):

@@ -2,7 +2,7 @@
 # You should have received the IMASPy LICENSE file with this project.
 
 import logging
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 from xml.etree.ElementTree import Element
 
 try:
@@ -85,6 +85,11 @@ class IDSMixin:
             # If we are not an IDSStructArray, we have no indexable children.
             my_path = parent_path + "/" + my_path
         return my_path
+
+    @cached_property
+    def _lazy(self):
+        """Whether this IDSMixin is part of a lazy-loaded IDSToplevel"""
+        return self._parent._lazy
 
     @cached_property
     def _version(self):
