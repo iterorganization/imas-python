@@ -7,7 +7,7 @@ by writing them as the old and reading as new and vice-versa
 
 import logging
 
-import numpy
+import numpy as np
 import pytest
 
 from imaspy.dd_zip import latest_dd_version
@@ -58,20 +58,20 @@ def test_nbc_change_leaf_renamed():
     # Leaf was renamed at 3.23.3. NBC metadata introduced in 3.28.0
     rp = IDSFactory("3.28.0").new("reflectometer_profile")
     rp.channel.resize(1)
-    data = numpy.linspace([0, 1, 2], [1, 2, 3], 5)
+    data = np.linspace([0, 1, 2], [1, 2, 3], 5)
     rp.channel[0].position.r = data
 
     # Test conversion from 3.28.0 -> 3.23.0
     rp2 = convert_ids(rp, "3.23.0")
-    assert numpy.array_equal(rp2.channel[0].position.r.data.value, data)
+    assert np.array_equal(rp2.channel[0].position.r.data.value, data)
 
     # Test conversion from 3.23.0 -> 3.28.0
     rp3 = convert_ids(rp2, "3.28.0")
-    assert numpy.array_equal(rp3.channel[0].position.r.value, data)
+    assert np.array_equal(rp3.channel[0].position.r.value, data)
 
 
 def test_ids_convert_deepcopy():
-    time = numpy.linspace(0, 1, 10)
+    time = np.linspace(0, 1, 10)
 
     cp = IDSFactory("3.28.0").new("core_profiles")
     cp.time = time
@@ -82,7 +82,7 @@ def test_ids_convert_deepcopy():
 
     cp3 = convert_ids(cp, "3.28.0", deepcopy=True)
     assert cp3.time.value is not time
-    assert numpy.array_equal(cp3.time.value, time)
+    assert np.array_equal(cp3.time.value, time)
 
 
 def test_pulse_schedule_aos_renamed_up(backend, worker_id, tmp_path):
@@ -182,11 +182,10 @@ def test_pulse_schedule_aos_renamed_autofill_up(backend, worker_id, tmp_path):
             (ch1.steering_angle_tor, ch2.launching_angle_tor),
         ]:
             assert new.reference_name == old.reference_name
-            assert new.reference.data == old.reference.data
-            assert new.reference.data_error_upper == old.reference.data_error_upper
-            assert new.reference.data_error_lower == old.reference.data_error_lower
+            for name in ["data", "data_error_upper", "data_error_lower", "time"]:
+                assert np.array_equal(new.reference[name], old.reference[name])
             assert new.reference.data_error_index == old.reference.data_error_index
-            assert new.reference.time == old.reference.time
+            assert np.array_equal(new.reference.time, old.reference.time)
             assert new.reference_type == old.reference_type
             assert new.envelope_type == old.envelope_type
 
