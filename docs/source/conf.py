@@ -104,7 +104,7 @@ release = str(full_version)
 # ones.
 extensions = [
     "sphinx.ext.autodoc",  # To auto-generate docs from Python docstrings
-    "sphinx.ext.autosectionlabel",  # Allow reference sections using its title
+    # "sphinx.ext.autosectionlabel",  # Allow reference sections using its title
     "sphinx.ext.todo",  # Support for todo items
     "sphinx.ext.napoleon",  # Support for NumPy and Google style docstrings
     "sphinx.ext.intersphinx",  # Generate links to other documentation files

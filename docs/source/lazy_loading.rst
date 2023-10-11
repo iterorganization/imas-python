@@ -1,3 +1,5 @@
+.. _`Lazy loading`:
+
 Lazy loading
 ============
 

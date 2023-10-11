@@ -5,6 +5,8 @@ For this part of the training we will learn to open an IMAS database entry, and
 plot some basic data in it using `matplotlib <https://matplotlib.org/>`_.
 
 
+.. _`Open an IMAS database entry`:
+
 Open an IMAS database entry
 ---------------------------
 
