@@ -70,7 +70,7 @@ class ALContext:
             path: access layer path for this global action: ``<idsname>[/<occurrence>]``
             rwmode: read-only or read-write operation mode: ``READ_OP``/``WRITE_OP``
             time_requested: time-point requested. Use ``UNDEFINED_TIME`` for put_slice.
-            interpolation-method: interpolation method to use: ``CLOSEST_INTERP``,
+            interpolation_method: interpolation method to use: ``CLOSEST_INTERP``,
                 ``LINEAR_INTERP`` or ``PREVIOUS_INTERP`` for get_slice;
                 ``UNDEFINED_INTERP`` for put_slice.
 
@@ -165,6 +165,7 @@ class LazyALContext:
     and only custom logic is needed for IDSStructArray there.
 
     This class tracks:
+
     - The DBEntry object which was used for get() / get_slice().
     - The context object from that DBEntry (such that we can detect if the underlying AL
       context was closed or replaced).
