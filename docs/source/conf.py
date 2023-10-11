@@ -418,7 +418,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     # "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
     "numpy": ("https://numpy.org/doc/stable", None),
-    # "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
     # "numba": ("https://numba.pydata.org/numba-doc/latest", None),
     # "matplotlib": ("https://matplotlib.org", None),
     # "xarray": ("http://xarray.pydata.org/en/stable/", None),

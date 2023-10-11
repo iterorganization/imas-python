@@ -15,6 +15,9 @@ method of an :py:class:`~imaspy.ids_factory.IDSFactory`.
     to how new IDSs are constructed in the Access Layer.
 
 
+Exercise 1
+''''''''''
+
 .. md-tab-set::
 
     .. md-tab-item:: Exercise
@@ -50,6 +53,10 @@ populate the following fields:
 - For each ``profiles_1d`` we generate an electron temperature array and store it in
   ``profiles_1d[index].electrons.temperature``.
 
+
+Exercise 2
+''''''''''
+
 .. md-tab-set::
     
     .. md-tab-item:: Exercise
@@ -62,11 +69,22 @@ populate the following fields:
             :start-at: # Set properties
             :end-before: # Validate the IDS for consistency
 
+        .. note::
+
+            When using the IMAS access layer instead of IMASPy, we must always create
+            numpy arrays (of the correct data type). IMASPy will
+            automatically convert your data to the appropriate numpy array.
+
     .. md-tab-item:: IMASPy
 
         .. literalinclude:: imaspy_snippets/create_core_profiles.py
             :start-at: # Set properties
             :end-before: # Validate the IDS for consistency
+
+        .. note::
+
+            Observe that we can assign a Python list to ``cp.time``. IMASPy will
+            automatically convert it to a numpy array.
 
 
 Sanity check the IDS
@@ -76,6 +94,10 @@ Before we store the IDS to disk, it is good practice to :ref:`validate the IDS <
 validation>`. When the IDS passes validation, you know that all filled quantities are
 consistent with their coordinates (because, what is the data worth if its coordinates
 are not provided?).
+
+
+Exercise 3
+''''''''''
 
 .. md-tab-set::
 
@@ -107,6 +129,10 @@ You should find that the IDS validation fails. Why?
     ``Dimension 1 of element `profiles_1d[0].electrons.temperature` has incorrect size
     64. Expected size is 0 (size of coordinate `profiles_1d[0].grid.rho_tor_norm`).``
 
+
+Exercise 4
+''''''''''
+
 .. md-tab-set::
 
     .. md-tab-item:: Exercise
@@ -126,8 +152,8 @@ You should find that the IDS validation fails. Why?
             :end-before: # Create a new data entry for storing the IDS
 
 
-Store IDS on disk
------------------
+Store the IDS on disk
+---------------------
 
 Now we have created, filled and validated an IDS, the only thing left is to store it to
 disk. Like loading IDSs, storing IDSs is achieved through the
@@ -139,6 +165,10 @@ need to :py:meth:`~imaspy.db_entry.DBEntry.create` the data entry on-disk before
     For this exercise we will use the ASCII backend. Although it doesn't have the best
     performance or features, it is available in all builds of the Access Layer. For
     production usage, it is recommended to use the HDF5 or MDSplus backends.
+
+
+Exercise 5
+''''''''''
 
 .. md-tab-set::
 

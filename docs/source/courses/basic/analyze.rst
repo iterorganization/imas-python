@@ -216,9 +216,9 @@ Exercise 5
 
         .. note::
 
-            Lazy loading is incompatible with the ASCII backend, so the training data
-            cannot be used for this example. When you are on the ITER cluster, you can
-            load the following data entry:: 
+            Lazy loading is not very useful for the small training data. When you are on
+            the ITER cluster, you can load the following data entry with much more data,
+            to better notice the difference that lazy loading can make::
 
                 database, shot, run, user = "ITER", 134173, 106, "public"
                 data_entry = imaspy.DBEntry(MDSPLUS_BACKEND, database, shot, run, user)

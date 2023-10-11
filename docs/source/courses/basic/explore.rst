@@ -17,6 +17,10 @@ the `Data Dictionary
 <https://portal.iter.org/departments/POP/CM/IMDesign/Data%20Model/CI>`_
 or explore the data interactively. We will focus on the latter method here.
 
+
+Exercise 1
+''''''''''
+
 .. md-tab-set::
 
     .. md-tab-item:: Exercise
@@ -79,7 +83,7 @@ Inspecting IMASPy objects
 looking for. For a more comprehensive overview of any IMASPy node, you can use
 :py:meth:`imaspy.util.inspect` to show:
 
-1.  The path to the node (relative to the IDS it is contained in).
+1.  The path to the node (relative to the IDS it is contained in)
 2.  The Data Dictionary version
 3.  The documentation metadata from the Data Dictionary
 4.  The `value` of the node (when applicable)
@@ -137,8 +141,8 @@ searches.
 .. literalinclude:: imaspy_snippets/find_paths.py
 
 
-Load an IDS and explore which data exists
------------------------------------------
+Exercise 2
+----------
 
 .. md-tab-set::
 
@@ -169,10 +173,10 @@ Load an IDS and explore which data exists
 
         .. literalinclude:: imaspy_snippets/explore_training_data.py
 
-    .. md-tab-item:: PF data
+    .. md-tab-item:: `pf_active` data
 
         .. literalinclude:: imaspy_snippets/explore_public_pf_active.py
 
-    .. md-tab-item:: EC data
+    .. md-tab-item:: `ec_launchers` data
 
         .. literalinclude:: imaspy_snippets/explore_public_ec_launchers.py

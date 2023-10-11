@@ -3,7 +3,6 @@ import imaspy.training
 
 # Open input data entry
 entry = imaspy.training.get_training_imas_db_entry()
-assert isinstance(entry, imas.DBEntry)
 
 cp = entry.get("core_profiles")
 for el in ["profiles_1d", "global_quantities", "code"]:

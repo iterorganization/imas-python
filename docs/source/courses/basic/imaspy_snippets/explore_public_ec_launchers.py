@@ -4,7 +4,6 @@ import imaspy.training
 # Open input data entry
 entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "ITER_MD", 120000, 204, "public")
 entry.open()
-assert isinstance(entry, imaspy.DBEntry)
 
 # Get the ec_launchers IDS
 pf = entry.get("ec_launchers")

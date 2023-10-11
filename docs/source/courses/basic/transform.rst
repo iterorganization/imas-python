@@ -14,8 +14,8 @@ Our strategy for doing this will be:
    #. Store the time slice
 
 
-Check which time slices exist
------------------------------
+Exercise 1: Check which time slices exist
+-----------------------------------------
 
 .. md-tab-set::
 
@@ -33,8 +33,8 @@ Check which time slices exist
             :end-before: # Create output data entry
 
 
-Load a time slice
------------------
+Exercise 2: Load a time slice
+-----------------------------
 
 .. md-tab-set::
 
@@ -50,8 +50,8 @@ Load a time slice
             :end-before: # Update comment
 
 
-Apply the transformation
-------------------------
+Exercise 3: Apply the transformation
+------------------------------------
 
 We will apply the transformation of the data as follows:
 
@@ -66,7 +66,7 @@ We will apply the transformation of the data as follows:
         Z = Z_\mathrm{axis} + \rho \sin(\theta)
 
 #.  For each data element, interpolate the data on the new grid. We can use
-    :py:class:`scipy.interpolate.RegularGridInterpolator` for this.
+    :external:class:`scipy.interpolate.RegularGridInterpolator` for this.
 #.  Finally, we store the new grid (including their rectilinear coordinates) and the
     transformed data in the IDS
 
@@ -75,8 +75,8 @@ We will apply the transformation of the data as follows:
     :end-before: # Finally, put the slice to disk
 
 
-Store a time slice
-------------------
+Exercise 4: Store a time slice
+------------------------------
 
 .. md-tab-set::
 
@@ -97,8 +97,8 @@ Store a time slice
             :caption: Store the time slice inside the loop
 
 
-Plotting data before and after the transformation
--------------------------------------------------
+Exercise 5: Plotting data before and after the transformation
+-------------------------------------------------------------
 
 .. md-tab-set::
 
