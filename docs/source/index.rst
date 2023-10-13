@@ -53,6 +53,12 @@ For developers
    api-hidden
 
 
+.. toctree::
+   :caption: IMASPy development
+
+   benchmarking
+
+
 LICENSE
 -------
 
