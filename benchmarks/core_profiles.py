@@ -71,6 +71,9 @@ def fill_slices(core_profiles, times):
 def create_dbentry(hli, backend):
     path = Path.cwd() / f"DB-{hli}-{backend}"
     path.mkdir(exist_ok=True)
+    if backend == imas.imasdef.MDSPLUS_BACKEND:
+        # Need to ensure that the MDS+ data folder exists:
+        (path / "benchmark" / "3" / "0").mkdir(parents=True, exist_ok=True)
     dbentry = DBEntry[hli](backend, "benchmark", 1, 1, str(path))
     options = f"-prefix {path}/" if backend == imas.imasdef.ASCII_BACKEND else None
     dbentry.create(options=options)
