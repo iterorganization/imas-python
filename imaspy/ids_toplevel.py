@@ -5,9 +5,14 @@
 """
 
 import logging
+import os
 from typing import TYPE_CHECKING, Optional
 import tempfile
-import os
+
+try:
+    from functools import cached_property
+except ImportError:
+    from cached_property import cached_property
 
 from imaspy.al_exception import ALException
 from imaspy.exception import ValidationError
@@ -36,16 +41,23 @@ class IDSToplevel(IDSStructure):
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
 
-    def __init__(self, parent: "IDSFactory", structure_xml):
+    _path = ""  # Path to ourselves without the IDS name and slashes
+
+    def __init__(self, parent: "IDSFactory", structure_xml, lazy=False):
         """Save backend_version and backend_xml and build translation layer.
 
         Args:
             parent: Parent of ``self``, an instance of :py:class:`IDSFactory`.
-            name: Name of this structure. Usually from the ``name`` attribute of
-                the IDS toplevel definition.
             structure_xml: XML structure that defines this IDS toplevel.
+            lazy: Whether this toplevel is used for a lazy-loaded get() or get_slice()
         """
+        self._lazy = lazy
         super().__init__(parent, structure_xml)
+
+    def __deepcopy__(self, memo):
+        copy = super().__deepcopy__(memo)
+        copy._lazy = self._lazy
+        return copy
 
     @property
     def _dd_version(self) -> str:
@@ -191,7 +203,7 @@ class IDSToplevel(IDSStructure):
             >>> core_profiles.profiles_1d.resize(1)
             >>> core_profiles.validate()
             [...]
-            imaspy.exception.CoordinateError: Dimension 0 of element profiles_1d has incorrect size 1. Expected size is 0 (size of coordinate time).
+            imaspy.exception.CoordinateError: Dimension 1 of element profiles_1d has incorrect size 1. Expected size is 0 (size of coordinate time).
             >>> core_profiles.time = [1]
             >>> core_profiles.validate()  # No error: IDS is valid
 
@@ -199,11 +211,10 @@ class IDSToplevel(IDSStructure):
         time_mode = self._time_mode
         if time_mode not in IDS_TIME_MODES:
             raise ValidationError(
-                f"Invalid value for ids_properties/homogeneous_time: {time_mode.value}",
-                {},
+                f"Invalid value for ids_properties/homogeneous_time: {time_mode.value}"
             )
         try:
-            self._validate({})
+            self._validate()
         except ValidationError as exc:
             # hide recursive stack trace from user
             logger.debug("Original stack-trace of ValidationError: ", exc_info=1)
@@ -283,3 +294,14 @@ class IDSToplevel(IDSStructure):
         raise NotImplementedError(
             "{!s}.partialGet(dataPath, occurrence=0)".format(self)
         )
+
+    def __repr__(self):
+        my_repr = f"<{type(self).__name__}"
+        my_repr += f" (IDS:{self.metadata.name})>"
+        return my_repr
+
+    @cached_property
+    def _toplevel(self) -> "IDSToplevel":
+        """Return ourselves"""
+        # Used to cut off recursive call
+        return self
