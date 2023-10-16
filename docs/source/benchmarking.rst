@@ -110,10 +110,10 @@ Setup advanced benchmarking
 '''''''''''''''''''''''''''
 
 First, some background on how ``asv`` tracks performance: it creates an isolated virtual
-environment (using the ``virtualenv`` package) for each commit that will be benchmarked.
-Then it installs IMASPy inside that envrionment for benchmarking. However, because the
-virtual environment is isolated, the ``imas`` package won't be available. We need to
-work around it by setting the environment variable ``ASV_PYTHONPATH``:
+environment (using the ``virtualenv`` package) and installs IMASPy for each commit that
+will be benchmarked. However, because the virtual environment is isolated, the ``imas``
+package won't be available. We need to work around it by setting the environment
+variable ``ASV_PYTHONPATH``:
 
 .. code-block:: console
     :caption: Setting up the ``ASV_PYTHONPATH`` on SDCC
@@ -131,8 +131,84 @@ work around it by setting the environment variable ``ASV_PYTHONPATH``:
 Deciding which commits to benchmark
 '''''''''''''''''''''''''''''''''''
 
-TODO:
-1. Check commits with `git rev-list`, e.g. `git rev-list HEAD^!`
-2. Run `asv run ...`, note on benchmarking on not benchmarking on login nodes of SDCC
-3. SLURM batch script for running on the compute cluster
-4. Showing results
+``asv run`` by default runs the benchmarks on two commits: the last commit on the
+``main`` branch and the last commit on the ``develop`` branch. If this is what you want,
+then you may skip this section and continue to the next.
+
+If you want to customize which commits are benchmarked, then ``asv run`` allows you to
+specify which commits you want to benchmark: ``asv run <range>``. The ``<range>``
+argument is passed to ``git rev-list``, and all commits returned by ``git`` will be
+benchmarked. See the `asv documentation for some examples
+<https://asv.readthedocs.io/en/stable/using.html#benchmarking>`_.
+
+.. caution::
+
+    Some arguments may result in lots of commits to benchmark, for example ``asv run
+    <branchname>`` will run benchmarks not only for the last commit in the branch, but
+    also for every ancestor commit of it. Use ``asv run <branchname>^!`` to run a
+    benchmark on just the last commit of the branch.
+
+    It is therefore highly adviced to check the output ``git rev-list`` before running
+    ``asv run``.
+
+.. seealso:: https://asv.readthedocs.io/en/stable/commands.html#asv-run
+
+
+Running benchmarks on SDCC
+''''''''''''''''''''''''''
+
+Running benchmarks on the SDCC login nodes is useful for debugging, but not for
+comparing performance: many people are using the login nodes at the same time, and the
+machine load is variable.
+
+Instead, you can submit a benchmark job to the compute nodes. 
+
+.. code-block:: bash
+    :caption: SLURM control script (``slurm.sh``)
+
+    #!/bin/bash
+
+    # Set SLURM options:
+    #SBATCH --job-name=IMASPy-benchmark
+    #SBATCH --time=1:00:00
+    #SBATCH --partition=gen10_ib
+    # Note: for proper benchmarking we need to exclusively reserve a node, even though
+    # we're only using 1 CPU (most of the time)
+    #SBATCH --exclusive
+    #SBATCH --nodes=1
+
+    bash -l ./run_benchmarks.sh
+
+.. code-block:: bash
+    :caption: Benchmark run script (``run_benchmarks.sh``)
+
+    # Load IMAS module
+    module purge
+    module load IMAS
+    # Verify we can run python and import imas
+    echo "Python version:"
+    python --version
+    echo "Import imas:"
+    python -c 'import imas; print(imas)'
+
+    # Set the ASV_PYTHONPATH so we can `import imas` in the benchmarks
+    export ASV_PYTHONPATH="$PYTHONPATH"
+    echo "ASV_PYTHONPATH=$ASV_PYTHONPATH"
+    echo
+
+    # Activate the virtual environment which has asv installed
+    . venv_imaspy/bin/activate
+
+    # Setup asv machine (using default values)
+    asv machine --yes
+
+    # Run the benchmarks
+    asv run -j 4 --show-stderr -a rounds=3 --interleave-rounds
+
+Submit the batch job with ``sbatch slurm.sh``.
+
+
+Viewing the results
+'''''''''''''''''''
+
+See https://asv.readthedocs.io/en/stable/using.html#viewing-the-results.

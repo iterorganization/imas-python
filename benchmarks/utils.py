@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 import imas
@@ -29,7 +30,13 @@ all_backends = [
     imas.imasdef.ASCII_BACKEND,
 ]
 
+# Suppress error logs for testing backend availabitily:
+#   ERROR:root:b'ual_open_pulse: [UALBackendException = HDF5 master file not found: <path>]'
+#   ERROR:root:b'ual_open_pulse: [UALBackendException = %TREE-E-FOPENR, Error opening file read-only.]'
+#   ERROR:root:b'ual_open_pulse: [UALBackendException = Missing pulse]'
+logging.getLogger().setLevel(logging.CRITICAL)
 available_backends = list(filter(backend_exists, all_backends))
+logging.getLogger().setLevel(logging.INFO)
 available_slicing_backends = [
     backend for backend in available_backends if backend != imas.imasdef.ASCII_BACKEND
 ]
