@@ -58,8 +58,6 @@ class IDSStructure(IDSMixin):
     IDSStructArrays
     """
 
-    _convert_ids_types = False
-
     def __init__(self, parent: IDSMixin, structure_xml: Element):
         """Initialize IDSStructure from XML specification
 
@@ -74,21 +72,60 @@ class IDSStructure(IDSMixin):
             structure_xml: Object describing the structure of the IDS. Usually
                 an instance of `xml.etree.ElementTree.Element`
         """
-        # To ease setting values at this stage, do not try to cast values
-        # to canonical forms
+        self._children = {child.get("name"): child for child in structure_xml}
         super().__init__(parent, structure_xml=structure_xml)
 
-        self._children = []  # Store the children as a list of strings.
-        # Loop over the direct descendants of the current node.
-        # Do not loop over grandchildren, that is handled by recursiveness.
+    def __getattr__(self, name):
+        if name not in self._children:
+            raise AttributeError(f"'{__class__}' object has no attribute '{name}'")
+        # Create child node
+        child = self._children[name]
+        child = get_node_type(child.get("data_type"))(self, child)
+        super().__setattr__(name, child)  # bypass setattr logic below: avoid recursion
+        return child
+        
+    def __setattr__(self, key, value):
+        """
+        'Smart' setting of attributes. To be able to warn the user on imaspy
+        IDS interaction time, instead of on database put time
+        Only try to cast user-facing attributes, as core developers might
+        want to always bypass this mechanism (I know I do!)
+        """
+        # Skip logic for any value that is not a child IDS node
+        if key.startswith("_") or key not in self._children:
+            return super().__setattr__(key, value)
 
-        for child in structure_xml:
-            my_name = child.get("name")
-            self._children.append(my_name)
-            child_node = get_node_type(child.get("data_type"))(self, child)
-            setattr(self, my_name, child_node)
-        # After initialization, always try to convert setting attributes on this structure
-        self._convert_ids_types = True
+        # This will raise an attribute error when there is no child named 'key', fine?
+        attr = getattr(self, key)
+
+        if isinstance(attr, IDSStructure):
+            if not isinstance(value, IDSStructure):
+                raise TypeError(
+                    f"Trying to set structure field {key} with non-structure."
+                )
+            if value.metadata.path != attr.metadata.path:
+                raise ValueError(
+                    f"Trying to set structure field {attr.metadata.path} "
+                    f"with a non-matching structure {value.metadata.path}."
+                )
+            super().__setattr__(key, value)
+            value._parent = self
+
+        elif isinstance(attr, IDSStructArray):
+            if not isinstance(value, IDSStructArray):
+                raise TypeError(
+                    f"Trying to set struct array field {key} with non-struct-array."
+                )
+            if value.metadata.path != attr.metadata.path:
+                raise ValueError(
+                    f"Trying to set struct array field {attr.metadata.path} "
+                    f"with a non-matching struct array {value.metadata.path}."
+                )
+            super().__setattr__(key, value)
+            value._parent = self
+
+        else:
+            attr.value = value
 
     def __deepcopy__(self, memo):
         copy = self.__class__(self._parent, self._structure_xml)
@@ -146,53 +183,6 @@ class IDSStructure(IDSMixin):
             # relevant __setitem__ of its parent
             parent = attr._parent
             parent[path.parts[-1]] = value
-
-    def __setattr__(self, key, value):
-        """
-        'Smart' setting of attributes. To be able to warn the user on imaspy
-        IDS interaction time, instead of on database put time
-        Only try to cast user-facing attributes, as core developers might
-        want to always bypass this mechanism (I know I do!)
-        """
-        # TODO: Check if this heuristic is sufficient
-        if self._convert_ids_types and not key[0] == "_":
-            # Convert IDS type on set time. Never try this for hidden attributes!
-            if hasattr(self, key):
-                attr = getattr(self, key)
-            else:
-                # Structure does not exist. It should have been pre-generated
-                raise NotImplementedError(
-                    "generating new structure from scratch {name}".format(name=key)
-                )
-
-            if isinstance(attr, IDSStructure):
-                if not isinstance(value, IDSStructure):
-                    raise TypeError(
-                        f"Trying to set structure field {key} with non-structure."
-                    )
-                if value.metadata.path != attr.metadata.path:
-                    raise ValueError(
-                        f"Trying to set structure field {attr.metadata.path} "
-                        f"with a non-matching structure {value.metadata.path}."
-                    )
-                super().__setattr__(key, value)
-                value._parent = self
-            elif isinstance(attr, IDSStructArray):
-                if not isinstance(value, IDSStructArray):
-                    raise TypeError(
-                        f"Trying to set struct array field {key} with non-struct-array."
-                    )
-                if value.metadata.path != attr.metadata.path:
-                    raise ValueError(
-                        f"Trying to set struct array field {attr.metadata.path} "
-                        f"with a non-matching struct array {value.metadata.path}."
-                    )
-                super().__setattr__(key, value)
-                value._parent = self
-            else:
-                attr.value = value
-        else:
-            super().__setattr__(key, value)
 
     def _validate(self) -> None:
         # Common validation logic
