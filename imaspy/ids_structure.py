@@ -8,6 +8,7 @@
 from copy import deepcopy
 from functools import lru_cache
 import logging
+from typing import Generator
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_metadata import IDSDataType
@@ -141,9 +142,19 @@ class IDSStructure(IDSMixin):
         return self._parent
 
     @property
-    def has_value(self):
+    def has_value(self) -> bool:
         """True if any of the children has a non-default value"""
-        return any(map(lambda el: el.has_value, self))
+        for child in self._iter_children_with_value():
+            return True
+        return False
+
+    def _iter_children_with_value(self) -> Generator[IDSMixin, None, None]:
+        """Iterate over all child nodes with non-default value."""
+        for child in self._children:
+            if child in self.__dict__:
+                child_node = getattr(self, child)
+                if child_node.has_value:
+                    yield child_node
 
     def __iter__(self):
         """Iterate over this structure's children"""
