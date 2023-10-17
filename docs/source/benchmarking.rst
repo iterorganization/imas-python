@@ -30,8 +30,8 @@ IMASPy-specific functional benchmarks
     For example: data conversion between DD versions.
 
 
-Running benchmarks (quick and dirty)
-------------------------------------
+Running benchmarks (quick)
+--------------------------
 
 When you have an existing IMASPy installation, you can run the benchmarks like this:
 
@@ -100,10 +100,10 @@ results in a 2D table of results.
 Running benchmarks (advanced)
 -----------------------------
 
-Running benchmarks in the quick and dirty way is great during development and for
-comparing the performance of IMASPy against the imas HLI. However, ``asv`` can also
-track the performance of benchmarks over various commits of IMASPy. Unfortunately this
-is a bit more tricky to set up.
+Running benchmarks quickly, as explained in the previous section, is great during
+development and for comparing the performance of IMASPy against the imas HLI. However,
+``asv`` can also track the performance of benchmarks over various commits of IMASPy.
+Unfortunately this is a bit more tricky to set up.
 
 
 Setup advanced benchmarking
