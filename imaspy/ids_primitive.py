@@ -15,6 +15,11 @@ import operator
 from typing import Tuple
 from xml.etree.ElementTree import Element
 
+try:
+    from functools import cached_property
+except ImportError:
+    from cached_property import cached_property
+
 import numpy as np
 from imaspy.al_context import LazyData
 
@@ -89,9 +94,12 @@ class IDSPrimitive(IDSMixin):
         """
         super().__init__(parent, structure_xml=structure_xml)
 
-        self.coordinates = IDSCoordinates(self)
         self.__value = None
         self._lazy_loaded = False
+
+    @cached_property
+    def coordinates(self):
+        return IDSCoordinates(self)
 
     def __deepcopy__(self, memo):
         # note: if parent needs updating it is handled by the deepcopy of our parent
