@@ -21,9 +21,11 @@ from imaspy.ids_defs import (
     ASCII_SERIALIZER_PROTOCOL,
     DEFAULT_SERIALIZER_PROTOCOL,
     IDS_TIME_MODE_UNKNOWN,
+    IDS_TIME_MODE_INDEPENDENT,
     IDS_TIME_MODES,
     needs_imas,
 )
+from imaspy.ids_metadata import IDSType
 from imaspy.ids_structure import IDSStructure
 
 if TYPE_CHECKING:
@@ -213,12 +215,24 @@ class IDSToplevel(IDSStructure):
             raise ValidationError(
                 f"Invalid value for ids_properties/homogeneous_time: {time_mode.value}"
             )
+        if self.metadata.type is IDSType.CONSTANT:  # IMAS-3330 static IDS
+            if time_mode != IDS_TIME_MODE_INDEPENDENT:
+                raise ValidationError(
+                    f"Invalid value for ids_properties/homogeneous_time: {time_mode}. "
+                    "The IDS is static, therefore homogeneous_time must be "
+                    f"IDS_TIME_MODE_INDEPENDENT ({IDS_TIME_MODE_INDEPENDENT})."
+                )
         try:
             self._validate()
         except ValidationError as exc:
             # hide recursive stack trace from user
             logger.debug("Original stack-trace of ValidationError: ", exc_info=1)
             raise exc.with_traceback(None) from None
+
+    def _validate(self):
+        # Override to skip the self.metadata.type.is_dynamic check in IDSMixin._validate
+        for child in self:
+            child._validate()
 
     @needs_imas
     def get(self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None) -> None:
