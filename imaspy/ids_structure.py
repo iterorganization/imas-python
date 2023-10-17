@@ -11,6 +11,7 @@ except ImportError:
     from cached_property import cached_property
 
 from copy import deepcopy
+from functools import lru_cache
 import logging
 from xml.etree.ElementTree import Element
 
@@ -29,25 +30,26 @@ from imaspy.ids_struct_array import IDSStructArray
 logger = logging.getLogger(__name__)
 
 
-def create_node(parent: "IDSStructure", structure_xml: Element):
-    data_type, ndim = IDSDataType.parse(structure_xml.get("data_type"))
+@lru_cache(maxsize=None)
+def get_node_type(data_type: str):
+    data_type, ndim = IDSDataType.parse(data_type)
     if data_type is IDSDataType.STRUCTURE:
-        return IDSStructure(parent, structure_xml)
+        return IDSStructure
     if data_type is IDSDataType.STRUCT_ARRAY:
-        return IDSStructArray(parent, structure_xml)
+        return IDSStructArray
     if data_type is IDSDataType.STR:
         if ndim == 0:
-            return IDSString0D(parent, structure_xml)
+            return IDSString0D
         else:
-            return IDSString1D(parent, structure_xml)
+            return IDSString1D
     if ndim == 0:
         if data_type is IDSDataType.FLT:
-            return IDSFloat0D(parent, structure_xml)
+            return IDSFloat0D
         if data_type is IDSDataType.INT:
-            return IDSInt0D(parent, structure_xml)
+            return IDSInt0D
         if data_type is IDSDataType.CPX:
-            return IDSComplex0D(parent, structure_xml)
-    return IDSNumericArray(parent, structure_xml)
+            return IDSComplex0D
+    return IDSNumericArray
 
 
 class IDSStructure(IDSMixin):
@@ -83,16 +85,10 @@ class IDSStructure(IDSMixin):
         # Loop over the direct descendants of the current node.
         # Do not loop over grandchildren, that is handled by recursiveness.
 
-        if logger.isEnabledFor(logging.TRACE):
-            log_string = " " * self.depth + " - % -38s initialization"
-
         for child in structure_xml:
             my_name = child.get("name")
-            if logger.isEnabledFor(logging.TRACE):
-                logger.trace(log_string, my_name)
             self._children.append(my_name)
-            # Decide what to do based on the data_type attribute
-            child_node = create_node(self, child)
+            child_node = get_node_type(child.get("data_type"))(self, child)
             setattr(self, my_name, child_node)
         # After initialization, always try to convert setting attributes on this structure
         self._convert_ids_types = True
