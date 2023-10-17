@@ -26,14 +26,10 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_INDEPENDENT,
 )
 from imaspy.ids_factory import IDSFactory
+from imaspy.imas_interface import imas, has_imas as _has_imas, lowlevel
 from imaspy.db_entry import DBEntry
 from imaspy.test.test_helpers import open_dbentry
 
-try:
-    import imas
-except ImportError:
-    imas = None
-_has_imas = imas is not None
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -183,9 +179,7 @@ def _lowlevel_wrapper(original_method):
 @pytest.fixture
 def log_lowlevel_calls(monkeypatch, requires_imas):
     """Debugging fixture to log calls to the imas lowlevel module."""
-    import imas._ual_lowlevel
-
-    for al_function in dir(imas._ual_lowlevel):
+    for al_function in dir(lowlevel):
         if al_function.startswith("ual_"):
-            wrapper = _lowlevel_wrapper(getattr(imas._ual_lowlevel, al_function))
-            monkeypatch.setattr(imas._ual_lowlevel, al_function, wrapper)
+            wrapper = _lowlevel_wrapper(getattr(lowlevel, al_function))
+            monkeypatch.setattr(lowlevel, al_function, wrapper)

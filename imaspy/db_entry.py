@@ -36,6 +36,7 @@ from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_toplevel import IDSToplevel
+from imaspy.imas_interface import lowlevel as al_lowlevel
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.al_context import ALContext, LazyALContext
 
@@ -95,11 +96,8 @@ class DBEntry:
         self.user_name = user_name or os.environ["USER"]
         self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
         self._db_ctx: Optional[ALContext] = None
-        # TODO: don't import all of IMAS, only load _ual_lowlevel, see
-        # https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
-        # TODO: allow using a different _ual_lowlevel module? See
-        # imas_ual_env_parsing.build_UAL_package_name
-        self._ull = importlib.import_module("imas._ual_lowlevel")
+
+        self._ull = al_lowlevel
         self._dd_version = dd_version
         self._xml_path = xml_path
         self._ids_factory = IDSFactory(dd_version, xml_path)
