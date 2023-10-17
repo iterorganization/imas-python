@@ -83,6 +83,9 @@ test = [
     "pytest-cov>=0.6",
     "pytest-xdist",
     "pytest-randomly",
+    "asv",
+    # virtualenv is a dependency of asv
+    "virtualenv",
 ]
 
 [project.scripts]
