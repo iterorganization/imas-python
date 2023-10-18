@@ -3,7 +3,7 @@
 
 from functools import partial
 import logging
-from typing import Any, Iterable, Iterator, Optional
+from typing import Any, Iterable, Iterator, List, Optional
 
 from imaspy import dd_zip
 from imaspy.ids_toplevel import IDSToplevel
@@ -74,6 +74,10 @@ class IDSFactory:
     def __iter__(self) -> Iterator[str]:
         """Iterate over the IDS names defined by the loaded Data Dictionary"""
         return iter(self._ids_elements)
+
+    def ids_names(self) -> List[str]:
+        """Get a list of all known IDS names in the loaded Data Dictionary"""
+        return list(self._ids_elements)
 
     def new(self, ids_name: str, *, _lazy: bool = False) -> IDSToplevel:
         """Create a new IDSToplevel element for the provided IDS name
