@@ -6,7 +6,7 @@ import imaspy
 # Option 1: Print the IDSs in the default-selected DD version
 factory = imaspy.IDSFactory()
 print("IDSs available in DD version", factory.version)
-print(list(factory))
+print(factory.ids_names())
 
 # Alternative:
 for ids_name in factory:

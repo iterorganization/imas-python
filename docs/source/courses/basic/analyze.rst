@@ -45,12 +45,28 @@ Exercise 1
         Open the training database entry: ``entry = imaspy.training.get_training_db_entry()``
 
         1. Load the ``equilibrium`` IDS into memory using the
-           :meth:`~imaspy.db_entry.DBEntry.get()` method
+           :meth:`entry.get <imaspy.db_entry.DBEntry.get()>` method
         2. Read and print the ``time`` array of the ``equilibrium`` IDS
         3. Load the ``core_profiles`` IDS into memory
         4. Explore the ``core_profiles.profiles_1d`` property and try to match
-           :math:`t\approx 433\,\mathrm{s}` to one of the slices
-        5. Read and print the 1D electron temperature profile (:math:`T_e`) from the
+           :math:`t\approx 433\,\mathrm{s}` to one of the slices.
+
+           .. note::
+
+                ``core_profiles.profiles_1d`` is time dependent with coordinate
+                ``core_profiles.time`` [#tm]_. This means that
+                ``core_profiles.profiles_1d[i]`` corresponds to the time
+                ``core_profiles.time[i]``.
+
+                .. [#tm] Time dependent coordinates may point to different quantities
+                    depending on the time mode of the IDS
+                    (``core_profiles.ids_properties.homogeneous_time``). In this case
+                    the IDS uses homogeneous time, so all time coordinates use
+                    ``core_profiles.time``. See also the `AL documentation (iter.org)
+                    <https://sharepoint.iter.org/departments/POP/CM/IMDesign/Code%20Documentation/ACCESS-LAYER-doc/python/5.0/use_ids.html#time-coordinates-and-time-handling>`_.
+
+        5. Read and print the 1D electron temperature profile (:math:`T_e`,
+           ``core_profiles.profiles_1d[i].electrons.temperature``) from the
            ``core_profiles`` IDS at time slice :math:`t\approx 433\,\mathrm{s}`
 
     .. md-tab-item:: AL4
@@ -101,9 +117,11 @@ Exercise 2
         .. literalinclude:: imaspy_snippets/read_equilibrium_time_array.py
 
 .. attention::
-    IMASPy objects mostly behave the same way as numpy arrays. However, in
-    some cases functions explicitly expect a pure numpy array. In this case, the
-    ``.value`` attribute can be used to obtain the underlying data.
+
+    IMASPy objects mostly behave the same way as numpy arrays. However, in some cases
+    functions explicitly expect a pure numpy array and supplying an IMASPy object raises
+    an exception. When this is the case, the ``.value`` attribute can be used to obtain
+    the underlying data.
 
 .. note::
     IMASPy has two main ways of accessing IDSs. In the exercises above, we used
@@ -222,6 +240,9 @@ Exercise 5
             the ITER cluster, you can load the following data entry with much more data,
             to better notice the difference that lazy loading can make::
 
+                import imaspy
+                from imaspy.ids_defs import MDSPLUS_BACKEND
+                
                 database, shot, run, user = "ITER", 134173, 106, "public"
                 data_entry = imaspy.DBEntry(MDSPLUS_BACKEND, database, shot, run, user)
                 data_entry.open()

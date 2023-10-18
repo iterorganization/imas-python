@@ -28,8 +28,6 @@ Exercise 1
         Find out the names of the available IDSs.
 
         .. hint::
-            :collapsible:
-
             The module ``imas.ids_names`` contains information on the available IDSs in
             AL4.
 
@@ -74,6 +72,22 @@ As with most Python objects, you can use :kbd:`Tab` completion on IMASPy objects
   :py:class:`~imaspy.ids_structure.IDSStructure` have tab completion for child nodes:
 
   .. image:: interactive_tab_core_profiles_toplevel.png
+
+
+Interactive help
+''''''''''''''''
+
+Use the built-in :external:py:func:`help()` function to get more information on IMASPy
+functions, objects, etc.
+
+.. code-block:: pycon
+
+    >>> import imaspy
+    >>> help(imaspy.DBEntry)
+    Help on class DBEntry in module imaspy.db_entry:
+
+    class DBEntry(builtins.object)
+    [...]
 
 
 Inspecting IMASPy objects
@@ -161,7 +175,8 @@ Exercise 2
           .. code-block:: python
 
             backend = HDF5_BACKEND
-            db_name, shot, run, user = "ITER_MD", 111001, 202, "public"
+            db_name, shot, run, user = "ITER_MD", 111001, 103, "public"
+
         - ITER machine description database, IDS ``ec_launchers``:
 
           .. code-block:: python

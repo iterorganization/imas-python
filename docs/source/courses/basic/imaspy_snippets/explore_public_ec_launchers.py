@@ -1,5 +1,4 @@
 import imaspy.util
-import imaspy.training
 
 # Open input data entry
 entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "ITER_MD", 120000, 204, "public")

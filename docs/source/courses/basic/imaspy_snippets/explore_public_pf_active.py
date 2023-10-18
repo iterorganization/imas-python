@@ -1,8 +1,7 @@
 import imaspy.util
-import imaspy.training
 
 # Open input data entry
-entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "ITER_MD", 111001, 202, "public")
+entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "ITER_MD", 111001, 103, "public")
 entry.open()
 
 # Get the pf_active IDS

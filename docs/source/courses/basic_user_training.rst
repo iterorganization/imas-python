@@ -17,7 +17,7 @@ specific guide below.
     :maxdepth: 1
 
     basic/setup
-    basic/analyze
     basic/explore
+    basic/analyze
     basic/transform
     basic/create
