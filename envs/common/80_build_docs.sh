@@ -18,4 +18,6 @@ $PIP freeze
 
 # Use the sphinx matching the venv we are in using SPHINXBUILD
 VENV_SPHINX_BUILD='../venv_imaspy/bin/sphinx-build'
+# Instruct sphinx to treat all warnings as errors
+export SPHINXOPTS='-W --keep-going'
 make -C docs html SPHINXBUILD="$PYTHON $VENV_SPHINX_BUILD"

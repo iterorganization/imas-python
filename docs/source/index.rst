@@ -34,6 +34,12 @@ It provides:
    lazy_loading
    mdsplus
 
+.. toctree::
+   :hidden:
+   :caption: IMASPy training courses
+
+   courses/basic_user_training
+
 
 README
 ------

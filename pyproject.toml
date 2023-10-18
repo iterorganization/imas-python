@@ -76,6 +76,7 @@ docs = [
     "sphinx-autosummary-accessors>=0.1.2",
     "sphinx-autodoc-typehints>=1.1.1",
     "sphinxcontrib.mermaid>=0.8",
+    "sphinx-tabs",
     "sphinx-immaterial",
 ]
 test = [
@@ -83,6 +84,7 @@ test = [
     "pytest-cov>=0.6",
     "pytest-xdist",
     "pytest-randomly",
+    "matplotlib",
     "asv",
     # virtualenv is a dependency of asv
     "virtualenv",

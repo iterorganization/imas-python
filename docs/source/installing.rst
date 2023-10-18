@@ -1,3 +1,5 @@
+.. _`Installing IMASPy`:
+
 Installing IMASPy
 =================
 

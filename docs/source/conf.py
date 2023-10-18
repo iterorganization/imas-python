@@ -104,7 +104,7 @@ release = str(full_version)
 # ones.
 extensions = [
     "sphinx.ext.autodoc",  # To auto-generate docs from Python docstrings
-    "sphinx.ext.autosectionlabel",  # Allow reference sections using its title
+    # "sphinx.ext.autosectionlabel",  # Allow reference sections using its title
     "sphinx.ext.todo",  # Support for todo items
     "sphinx.ext.napoleon",  # Support for NumPy and Google style docstrings
     "sphinx.ext.intersphinx",  # Generate links to other documentation files
@@ -112,16 +112,19 @@ extensions = [
     # 'sphinx.ext.doctest',  # numpy
     "sphinx.ext.autosummary",  # For summarizing autodoc-generated files
     "sphinx.ext.extlinks",  # For shortening internal links
-    "sphinx.ext.graphviz",  # Draw Graphs in docs
+    # "sphinx.ext.graphviz",  # Draw Graphs in docs
     # 'sphinx.ext.ifconfig',  # numpy
     # 'matplotlib.sphinxext.plot_directive',  # numpy
     # 'IPython.sphinxext.ipythoGn_console_highlighting',  # numpy
     # 'IPython.sphinxext.ipython_directive',  # numpy
     "sphinx.ext.mathjax",  # Render math as images
     "recommonmark",  # For markdown support, does not support 'full' CommonMark syntax (yet)!
-    "sphinxcontrib.mermaid",  # Draw graphs using Mermaid.js
+    # "sphinxcontrib.mermaid",  # Draw graphs using Mermaid.js
+    "sphinx_tabs.tabs", # Toggleable HTML tabs
     "sphinx_immaterial",  # Sphinx immaterial theme
 ]
+
+todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates", sphinx_autosummary_accessors.templates_path]
@@ -244,7 +247,7 @@ html_logo = "_static/imaspy_200x200.png"
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = "_static/favicon.ico"
+# html_favicon = "_static/favicon.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -413,15 +416,15 @@ napoleon_attr_annotations = (
 # See https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
+    # "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
     "numpy": ("https://numpy.org/doc/stable", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
-    "numba": ("https://numba.pydata.org/numba-doc/latest", None),
-    "matplotlib": ("https://matplotlib.org", None),
-    "xarray": ("http://xarray.pydata.org/en/stable/", None),
-    "dask": ("https://docs.dask.org/en/latest", None),
-    "cython": ("https://cython.readthedocs.io/", None),
-    "gitpython": ("https://gitpython.readthedocs.io/en/stable", None),
+    # "numba": ("https://numba.pydata.org/numba-doc/latest", None),
+    # "matplotlib": ("https://matplotlib.org", None),
+    # "xarray": ("http://xarray.pydata.org/en/stable/", None),
+    # "dask": ("https://docs.dask.org/en/latest", None),
+    # "cython": ("https://cython.readthedocs.io/", None),
+    # "gitpython": ("https://gitpython.readthedocs.io/en/stable", None),
     # "netcdf4": ("https://unidata.github.io/netcdf4-python/", None),  # netcdf4 does not have an intersphinx mapping
     # "jintrac": ("https://users.euro-fusion.org/pages/data-cmg/wiki/", None) Behind password, so cannot link there
 }
@@ -439,3 +442,4 @@ def escape_underscores(string):
 
 def setup(app):
     DEFAULT_FILTERS["escape_underscores"] = escape_underscores
+    app.add_css_file("imaspy.css")

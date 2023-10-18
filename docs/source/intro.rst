@@ -1,3 +1,5 @@
+.. _`IMASPy 5 minute introduction`:
+
 IMASPy 5 minute introduction
 ----------------------------
 

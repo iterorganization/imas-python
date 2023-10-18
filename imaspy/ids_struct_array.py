@@ -1,9 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
 """ IDS StructArray represents an Array of Structures in the IDS tree.
-This contains references to :py:class:`IDSStructure`s
-
-* :py:class:`IDSStructArray`
+This contains references to :py:class:`IDSStructure`\ s
 """
 
 from copy import deepcopy
@@ -44,7 +42,7 @@ class IDSStructArray(IDSMixin):
             parent: Parent structure. Can be anything, but at database write
                 time should be something with a path attribute
             structure_xml: Object describing the structure of the IDS. Usually
-                an instance of `xml.etree.ElementTree.Element`
+                an instance of ``xml.etree.ElementTree.Element``
         """
         super().__init__(parent, structure_xml)
 
@@ -156,8 +154,8 @@ class IDSStructArray(IDSMixin):
     def append(self, elt):
         """Append elements to the end of the array of structures.
 
-        Parameters
-        ----------
+        Args:
+            elt: IDS structure, or list of IDS structures, to append to this array
         """
         if self._lazy:
             raise ValueError("Lazy-loaded IDSs are read-only.")
@@ -174,16 +172,15 @@ class IDSStructArray(IDSMixin):
     def __repr__(self):
         return f"{self._build_repr_start()} with {len(self)} items)>"
 
-    def resize(self, nbelt, keep=False):
+    def resize(self, nbelt: int, keep: bool = False):
         """Resize an array of structures.
 
-        nbelt : int
-            The number of elements for the targeted array of structure,
-            which can be smaller or bigger than the size of the current
-            array if it already exists.
-        keep : bool, optional
-            Specifies if the targeted array of structure should keep
-            existing data in remaining elements after resizing it.
+        Args:
+            nbelt: The number of elements for the targeted array of structure,
+                which can be smaller or bigger than the size of the current
+                array if it already exists.
+            keep: Specifies if the targeted array of structure should keep
+                existing data in remaining elements after resizing it.
         """
         if self._lazy:
             raise ValueError("Lazy-loaded IDSs are read-only.")

@@ -141,4 +141,9 @@ else:
         else:
             del sys.modules[mod]
 
+    # Now delete all loaded submodules from sys.modules, otherwise below lazy import
+    # doesn't work correctly
+    for mod in [mod for mod in sys.modules if mod.startswith("imas.")]:
+        del sys.modules[mod]
+
     imas = _lazy_import("imas")

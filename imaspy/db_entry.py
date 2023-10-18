@@ -233,9 +233,6 @@ class DBEntry:
         This method fetches an IDS in its entirety, with all time slices it may contain.
         See :meth:`get_slice` for reading a specific time slice.
 
-        Empty fields within the IDS in the Data Entry are returned with the default
-        values indicated in :ref:`Empty fields`.
-
         Args:
             ids_name: Name of the IDS to read from the backend.
             occurrence: Which occurrence of the IDS to read.
@@ -387,10 +384,6 @@ class DBEntry:
         """Write the contents of an IDS into this Database Entry.
 
         The IDS is written entirely, with all time slices it may contain.
-
-        The IDS object can have none or many empty fields, empty fields are ignored and
-        remain empty in the data entry. Some fields are required to be filled before
-        calling this method, see :ref:`Empty fields`.
 
         Caution:
             The put method deletes any previously existing data within the target IDS

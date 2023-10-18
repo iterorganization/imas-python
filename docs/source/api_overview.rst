@@ -44,6 +44,8 @@ the IDSs as :py:class:`IDSToplevel` classes containing :py:class:`IDSStructures`
 See the :ref:`IMASPy 5 minute introduction` for a short introduction on IMASPy.
 
 
+.. _`Using multiple DD versions in the same environment`:
+
 Using multiple DD versions in the same environment
 ==================================================
 
@@ -199,6 +201,8 @@ pass on the memory and MDSPlus backend (the ASCII backend does not support
 slicing).
 
 
+.. _`IDS validation`:
+
 IDS validation
 ==============
 
@@ -304,11 +308,16 @@ size of your data must match the size of the coordinates:
     alternative coordinates must be set and its size must match the size of the
     quantity.
 
-3.  The Data Dictionary can indicate exclusive alternative coordinates, see for example
-    :ref:`Alternative coordinates`. Validation works the same as explained in the
-    previous point, except that exactly one of the alternative coordinate must be
-    filled. Its size must, of course, still match the size of the data in the specified
-    dimension.
+3.  The Data Dictionary can indicate exclusive alternative coordinates. See for
+    example the ``distribution(i1)/profiles_2d(itime)/density(:,:)`` quantity in the
+    ``distributions`` IDS, which has as first coordinate
+    ``distribution(i1)/profiles_2d(itime)/grid/r OR
+    distribution(i1)/profiles_2d(itime)/grid/rho_tor_norm``. This means that
+    either ``r`` or ``rho_tor_norm`` can be used as coordinate.
+    
+    Validation works the same as explained in the previous point, except that
+    exactly one of the alternative coordinate must be filled. Its size must, of
+    course, still match the size of the data in the specified dimension.
 
 4.  Some quantites indicate a coordinate must be the same size as another quantity
     through the property ``coordinateX_same_as``. In this case, the other quantity is

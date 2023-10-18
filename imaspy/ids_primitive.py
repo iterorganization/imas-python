@@ -115,7 +115,7 @@ class IDSPrimitive(IDSMixin):
         """Get the shape of the contained data.
 
         For 0D data types, the shape is always an empty tuple.
-        See also :external:py:meth:`numpy.shape`.
+        See also :external:py:func:`numpy.shape`.
         """
         if self.metadata.ndim == 0:
             return tuple()
@@ -130,7 +130,7 @@ class IDSPrimitive(IDSMixin):
 
         For 0D data types, the size is always 1 (even when set to the default).
         For 1+D data types, the size is the number of elements stored, see
-        :external:py:meth:`numpy.ndarray.size`.
+        :external:py:attr:`numpy.ndarray.size`.
         """
         if self.metadata.ndim == 0:
             return 1
