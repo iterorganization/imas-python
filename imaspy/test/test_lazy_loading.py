@@ -11,6 +11,7 @@ from imaspy.ids_defs import (
     MEMORY_BACKEND,
 )
 from imaspy.ids_factory import IDSFactory
+from imaspy.imas_interface import lowlevel
 from imaspy.test.test_helpers import compare_children, fill_consistent, open_dbentry
 
 
@@ -34,7 +35,7 @@ def test_lazy_load_aos(backend, worker_id, tmp_path, log_lowlevel_calls):
     # Now all profiles_1d/time are loaded, check that we use loaded values and do not
     # read data from the lowlevel
     with patch.multiple(
-        "imas._ual_lowlevel",
+        lowlevel,
         ual_read_data=DEFAULT,
         ual_begin_arraystruct_action=DEFAULT,
     ) as values:

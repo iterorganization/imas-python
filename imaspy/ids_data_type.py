@@ -2,6 +2,7 @@
 # You should have received the IMASPy LICENSE file with this project.
 
 from enum import Enum
+from functools import lru_cache
 from typing import Tuple, Optional
 
 import numpy as np
@@ -65,6 +66,7 @@ class IDSDataType(Enum):
         """Numpy dtype for array instances of this type."""
 
     @staticmethod
+    @lru_cache(maxsize=None)
     def parse(data_type: Optional[str]) -> Tuple[Optional["IDSDataType"], int]:
         """Parse data type string from the Data Dictionary.
 

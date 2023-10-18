@@ -31,10 +31,12 @@ from imaspy.ids_defs import (
     needs_imas,
 )
 from imaspy.ids_factory import IDSFactory
+from imaspy.ids_metadata import IDSType
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_toplevel import IDSToplevel
+from imaspy.imas_interface import lowlevel as al_lowlevel
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.al_context import ALContext, LazyALContext
 
@@ -94,11 +96,8 @@ class DBEntry:
         self.user_name = user_name or os.environ["USER"]
         self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
         self._db_ctx: Optional[ALContext] = None
-        # TODO: don't import all of IMAS, only load _ual_lowlevel, see
-        # https://docs.python.org/3/library/importlib.html#importing-a-source-file-directly
-        # TODO: allow using a different _ual_lowlevel module? See
-        # imas_ual_env_parsing.build_UAL_package_name
-        self._ull = importlib.import_module("imas._ual_lowlevel")
+
+        self._ull = al_lowlevel
         self._dd_version = dd_version
         self._xml_path = xml_path
         self._ids_factory = IDSFactory(dd_version, xml_path)
@@ -369,7 +368,8 @@ class DBEntry:
 
         # Now fill the IDSToplevel
         context = LazyALContext(dbentry=self, nbc_map=nbc_map) if lazy else self._db_ctx
-        if time_requested is None:  # get
+        if time_requested is None or destination.metadata.type is IDSType.CONSTANT:
+            # called from get(), or when the IDS is constant (see IMAS-3330)
             manager = context.global_action(ll_path, READ_OP)
         else:  # get_slice
             manager = context.slice_action(
@@ -475,6 +475,17 @@ class DBEntry:
         # TODO: allow unset homogeneous_time and quit with no action?
         if time_mode not in IDS_TIME_MODES:
             raise ValueError("'ids_properties.homogeneous_time' is not set or invalid.")
+        # IMAS-3330: automatically set time mode to independent:
+        if ids.metadata.type is IDSType.CONSTANT:
+            if time_mode != IDS_TIME_MODE_INDEPENDENT:
+                logger.warning(
+                    "ids_properties/homogeneous_time has been set to 2 for the constant"
+                    " IDS %s/%d, please check the program which has filled this IDS since "
+                    "this is the mandatory value for a constant IDS",
+                    ids_name,
+                    occurrence,
+                )
+                ids.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
         if is_slice and time_mode == IDS_TIME_MODE_INDEPENDENT:
             raise RuntimeError("Cannot use put_slice with IDS_TIME_MODE_INDEPENDENT.")
 
@@ -514,8 +525,11 @@ class DBEntry:
             )
         else:
             manager = self._db_ctx.global_action(ll_path, WRITE_OP)
+        verify_maxoccur = self.backend_id == MDSPLUS_BACKEND
         with manager as write_ctx:
-            _put_children(ids, write_ctx, time_mode, "", is_slice, nbc_map)
+            _put_children(
+                ids, write_ctx, time_mode, "", is_slice, nbc_map, verify_maxoccur
+            )
 
     def delete_data(self, ids_name: str, occurrence: int = 0) -> None:
         """Delete the provided IDS occurrence from this IMAS database entry.
@@ -604,6 +618,7 @@ def _put_children(
     ctx_path: str,
     is_slice: bool,
     nbc_map: Optional[NBCPathMap],
+    verify_maxoccur: bool,
 ) -> None:
     """Recursively put all children of an IDSStructure"""
     # Note: when putting a slice, we do not need to descend into IDSStructure and
@@ -629,13 +644,24 @@ def _put_children(
 
         if isinstance(element, IDSStructArray):
             size = len(element)
+            if verify_maxoccur:
+                maxoccur = element.metadata.maxoccur
+                if maxoccur and size > maxoccur:
+                    raise RuntimeError(
+                        f"Exceeding maximum number of occurrences ({maxoccur}) "
+                        f"of {element._path}"
+                    )
             with ctx.arraystruct_action(new_path, timebase, size) as (new_ctx, _):
                 for item in element:
-                    _put_children(item, new_ctx, time_mode, "", is_slice, nbc_map)
+                    _put_children(
+                        item, new_ctx, time_mode, "", is_slice, nbc_map, verify_maxoccur
+                    )
                     new_ctx.iterate_over_arraystruct(1)
 
         elif isinstance(element, IDSStructure):
-            _put_children(element, ctx, time_mode, new_path, is_slice, nbc_map)
+            _put_children(
+                element, ctx, time_mode, new_path, is_slice, nbc_map, verify_maxoccur
+            )
 
         else:  # Data elements
             if is_slice and not element.metadata.type.is_dynamic:

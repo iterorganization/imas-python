@@ -85,6 +85,9 @@ test = [
     "pytest-xdist",
     "pytest-randomly",
     "matplotlib",
+    "asv",
+    # virtualenv is a dependency of asv
+    "virtualenv",
 ]
 
 [project.scripts]

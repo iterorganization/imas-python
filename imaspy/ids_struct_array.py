@@ -8,6 +8,11 @@ from copy import deepcopy
 from typing import Optional, Tuple
 from xml.etree.ElementTree import Element
 
+try:
+    from functools import cached_property
+except ImportError:
+    from cached_property import cached_property
+
 from imaspy.al_context import LazyALContext
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_mixin import IDSMixin
@@ -40,7 +45,6 @@ class IDSStructArray(IDSMixin):
                 an instance of ``xml.etree.ElementTree.Element``
         """
         super().__init__(parent, structure_xml)
-        self.coordinates = IDSCoordinates(self)
 
         # Initialize with an 0-length list
         self.value = []
@@ -50,6 +54,10 @@ class IDSStructArray(IDSMixin):
         self._lazy_loaded = False  # Marks if we already loaded our size
         self._lazy_context: Optional[LazyALContext] = None
         self._lazy_paths = ("", "")  # path, timebasepath
+
+    @cached_property
+    def coordinates(self):
+        return IDSCoordinates(self)
 
     def __deepcopy__(self, memo):
         copy = self.__class__(self._parent, self._structure_xml)
@@ -158,15 +166,6 @@ class IDSStructArray(IDSMixin):
         for e in elements:
             # Just blindly append for now
             # TODO: Maybe check if user is not trying to append weird elements
-            if self.metadata.maxoccur and len(self.value) >= self.metadata.maxoccur:
-                raise RuntimeError(
-                    "Maxoccur is set to %s for %s, not adding %s"
-                    % (
-                        self.metadata.maxoccur,
-                        self.metadata.path,
-                        elt,
-                    )
-                )
             e._parent = self
             self.value.append(e)
 

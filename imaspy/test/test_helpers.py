@@ -11,7 +11,9 @@ from imaspy.ids_defs import (
     ASCII_BACKEND,
     IDS_TIME_MODE_HOMOGENEOUS,
     IDS_TIME_MODE_HETEROGENEOUS,
+    IDS_TIME_MODE_INDEPENDENT,
 )
+from imaspy.ids_metadata import IDSType
 from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
@@ -179,7 +181,10 @@ def fill_consistent(structure: IDSStructure):
             filling an IDSToplevel, a choice is made between the exclusive coordinates.
     """
     if isinstance(structure, IDSToplevel):
-        structure.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
+        time_mode = IDS_TIME_MODE_HETEROGENEOUS
+        if structure.metadata.type is IDSType.CONSTANT:
+            time_mode = IDS_TIME_MODE_INDEPENDENT
+        structure.ids_properties.homogeneous_time = time_mode
 
     exclusive_coordinates = []
 
