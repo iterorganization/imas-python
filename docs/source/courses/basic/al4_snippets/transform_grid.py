@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 # Open input data entry
 entry = imaspy.training.get_training_imas_db_entry()
 
-# Lazy-loaded input equilibrium
+# Use a partial get to retrieve the full time vector
 input_times = entry.partial_get("equilibrium", "time")
 
 # Create output data entry
