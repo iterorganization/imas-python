@@ -16,7 +16,7 @@ _IndexType = Union[None, str, int, "IDSPath", slice]
 """Type of an index in a path."""
 
 
-def _split_on_matching_parens(path: str) -> List[str]:
+def _split_on_matching_parens(path: str, open: str, close: str) -> List[str]:
     """Split a string on matching parentheses ``(``, ``)``.
 
     Return a list [before_first_(, between(), between)(, ..., after_last)]
@@ -24,20 +24,20 @@ def _split_on_matching_parens(path: str) -> List[str]:
     cur_index = 0
     ret = []
     while True:
-        next_open = path.find("(", cur_index)
-        next_close = path.find(")", cur_index)
+        next_open = path.find(open, cur_index)
+        next_close = path.find(close, cur_index)
         if next_open != -1:
             if next_open > next_close:
                 raise ValueError(f"Unmatched parentheses in: {path}")
             ret.append(path[cur_index:next_open])
             # find matching closing bracket
             cur_index = next_open + 1
-            next_open = path.find("(", next_open + 1)
+            next_open = path.find(open, next_open + 1)
             while next_open != -1 and next_open < next_close:
-                next_close = path.find(")", next_close + 1)
+                next_close = path.find(close, next_close + 1)
                 if next_close == -1:
                     raise ValueError(f"Unmatched parentheses in: {path}")
-                next_open = path.find("(", next_open + 1)
+                next_open = path.find(open, next_open + 1)
             ret.append(path[cur_index:next_close])
             cur_index = next_close + 1
         else:
@@ -68,7 +68,14 @@ def _parse_path(
     """
     path_parts: List[str] = []
     path_indices: List[Union[str, int, "IDSPath", slice]] = []
-    split_path = _split_on_matching_parens(path)
+    fortran_style = "(" in path
+    if fortran_style and "[" in path:
+        raise ValueError(
+            f"Cannot mix Fortran-style indexation with Python-style indexation: {path}"
+        )
+    split_path = _split_on_matching_parens(
+        path, "[("[fortran_style], "])"[fortran_style]
+    )
     # split_path always has an odd number of items, iterate over pairs first
     for i in range(0, len(split_path) - 1, 2):
         part, index = split_path[i : i + 2]
@@ -80,14 +87,14 @@ def _parse_path(
         if _generic_index.fullmatch(index):
             path_indices[-1] = index  # keep as string
         elif _number.fullmatch(index):
-            path_indices[-1] = int(index)
+            # if fortran-style (1-based index), decrease index by one
+            path_indices[-1] = int(index) - fortran_style
         elif _slice.fullmatch(index):
             start, stop = index.split(":")
-            # TODO: currently stores (Fortran-style) 1:3 as slice(1, 3), maybe we should
-            # immediately convert it to 0-based Python syntax slice(0, 3). Similarly for
-            # explicit indices like (1)
+            # When using Fortran style, we should decrement the start index by one
+            # e.g. Fortran-style (2:3) == [1:3] == range(1, 3)
             path_indices[-1] = slice(
-                int(start) if start else None,
+                int(start) - fortran_style if start else None,
                 int(stop) if stop else None,
             )
         else:  # it must be another path, parse it:
@@ -115,6 +122,8 @@ class IDSPath:
     - ``profiles_1d(itime)/zeff``, using a dummy ``itime`` index
     - ``distribution(1)/process(:)/nbi_unit``, using a Fortran-style explicit index (1)
       and Fortran-style range selector (:)
+    - ``distribution[0]/process[:]/nbi_unit``, using a Python-style explicit index [0]
+      and Python-style range selector [:]
     - ``coordinate_system(process(i1)/coordinate_index)/coordinate(1)`` using another
       IDSPath as index.
     """
@@ -156,14 +165,30 @@ class IDSPath:
     def items(self) -> Iterator[Tuple[str, _IndexType]]:
         return zip(self.parts, self.indices)
 
-    def goto(self, from_element: "IDSMixin") -> "IDSMixin":
+    def goto(self, from_element: "IDSMixin", *, from_root: bool = True) -> "IDSMixin":
         """Go to this path, taking from_element as reference.
 
         This returns the IDSMixin at the specified path, or raises an error when that
         path cannot be found.
+
+        Args:
+            from_element: IDS element to start the goto from
+            from_root: True iff we should start at the root, otherwise we start from the
+                provided IDS element (see example)
+
+        Example:
+            .. code-block:: python
+
+                cp = imaspy.IDSFactory().core_profiles()
+                cp.profiles_1d.resize(1)
+                element = cp.profiles_1d[0]
+                path1 = IDSPath("ids_properties/homogeneous_time")
+                assert path1.goto(element, True) is cp.ids_properties.homogeneous_time
+                path2 = IDSPath("electrons/temperature")
+                assert path2.goto(element, False) is element.electrons.temperature
         """
         from_path = from_element.metadata.path  # this path doesn't have indices
-        element = None
+        element = None if from_root else from_element
         for i, (part, index) in enumerate(self.items()):
             if isinstance(index, slice):
                 raise NotImplementedError("Cannot go to slices")
@@ -188,8 +213,8 @@ class IDSPath:
                         val = index.goto(from_element).value
                         if not isinstance(val, int):
                             raise ValueError(f"Invalid index {index} in path '{self}'.")
-                        index = val
-                    element = element[index - 1]  # path syntax uses 1-based indexing
+                        index = val - 1  # Stored as 1-based index
+                    element = element[index]
         if element is None:  # We point to from_element or a direct ancestor
             element = from_element
             for _ in range(len(from_path) - len(self)):
