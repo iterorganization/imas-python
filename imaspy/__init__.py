@@ -38,6 +38,7 @@ from . import (
     dd_zip,
     imas_ual_env_parsing,
     mdsplus_model,
+    util,
 )
 
 OLDEST_SUPPORTED_VERSION = V("3.21.1")
