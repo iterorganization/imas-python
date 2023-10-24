@@ -36,7 +36,7 @@ from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.imas_interface import lowlevel as al_lowlevel
+from imaspy.imas_interface import ll_interface
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.al_context import ALContext, LazyALContext
 
@@ -97,7 +97,6 @@ class DBEntry:
         self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
         self._db_ctx: Optional[ALContext] = None
 
-        self._ull = al_lowlevel
         self._dd_version = dd_version
         self._xml_path = xml_path
         self._ids_factory = IDSFactory(dd_version, xml_path)
@@ -112,13 +111,13 @@ class DBEntry:
         """Get the DD version used by this DB entry"""
         return self._ids_factory.version
 
-    def _ual_open_pulse(self, mode: int, options: Any) -> None:
+    def _open_pulse(self, mode: int, options: Any) -> None:
         """Internal method implementing open()/create()."""
         if self._db_ctx is not None:
             self.close()
         if self.backend_id == MDSPLUS_BACKEND:
             self._setup_mdsplus()
-        status, idx = self._ull.ual_begin_pulse_action(
+        status, idx = ll_interface.begin_pulse_action(
             self.backend_id,
             self.shot,
             self.run,
@@ -128,8 +127,8 @@ class DBEntry:
         )
         if status != 0:
             raise RuntimeError(f"Error calling ual_begin_pulse_action(), {status=}")
-        self._db_ctx = ALContext(idx, self._ull)
-        status = self._ull.ual_open_pulse(self._db_ctx.ctx, mode, options)
+        self._db_ctx = ALContext(idx)
+        status = ll_interface.open_pulse(self._db_ctx.ctx, mode, options)
         if status != 0:
             raise RuntimeError(f"Error opening/creating database entry: {status=}")
 
@@ -176,11 +175,11 @@ class DBEntry:
             return
 
         mode = ERASE_PULSE if erase else CLOSE_PULSE
-        status = self._ull.ual_close_pulse(self._db_ctx.ctx, mode, options)
+        status = ll_interface.close_pulse(self._db_ctx.ctx, mode, options)
         if status != 0:
             raise RuntimeError(f"Error closing database entry: {status=}")
 
-        self._ull.ual_end_action(self._db_ctx.ctx)
+        ll_interface.end_action(self._db_ctx.ctx)
         self._db_ctx = None
 
     def create(self, *, options=None, force=True) -> None:
@@ -201,7 +200,7 @@ class DBEntry:
                 imas_entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 1234)
                 imas_entry.create()
         """  # noqa
-        self._ual_open_pulse(FORCE_CREATE_PULSE if force else CREATE_PULSE, options)
+        self._open_pulse(FORCE_CREATE_PULSE if force else CREATE_PULSE, options)
 
     def open(self, *, options=None, force=False) -> None:
         """Open an existing database entry.
@@ -218,7 +217,7 @@ class DBEntry:
                 imas_entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 1234)
                 imas_entry.open()
         """  # noqa
-        self._ual_open_pulse(FORCE_OPEN_PULSE if force else OPEN_PULSE, options)
+        self._open_pulse(FORCE_OPEN_PULSE if force else OPEN_PULSE, options)
 
     def get(
         self,

@@ -23,6 +23,8 @@ import os.path
 import sys
 import sysconfig
 
+from packaging.version import Version
+
 logger = logging.getLogger(__name__)
 
 
@@ -78,7 +80,9 @@ if _imas_spec and _imas_spec.submodule_search_locations is None:
     pyver = ".".join(str(i) for i in sys.version_info[:2])
 
     path = os.path.join(
-        os.getenv("IMAS_PREFIX"), "python", "lib." + sysconfig.get_platform() + "-" + pyver
+        os.getenv("IMAS_PREFIX"),
+        "python",
+        "lib." + sysconfig.get_platform() + "-" + pyver,
     )
     if not os.path.isdir(path):
         path = os.path.join(
@@ -147,3 +151,157 @@ else:
         del sys.modules[mod]
 
     imas = _lazy_import("imas")
+
+
+class LowlevelInterface:
+    """Compatibility object.
+
+    Provides a stable API for the rest of IMASPy even when the `imas.lowlevel` interface
+    changes.
+
+    .. rubric:: Developer notes
+
+    - When initializing the singleton object, we determine the AL version and redefine
+      all methods that exist in the imported lowlevel module.
+    - If the lowlevel introduces new methods, we need to:
+
+        1.  Add a new method with the same name but prefix dropped (e.g. register_plugin
+            for lowlevel.al_register_plugin)
+        2.  The implementation of this method should provide a proper error message when
+            the method is called and the underlying lowlevel doesn't provide the
+            functionality. For instance ``raise self._minimal_version("5.0")``.
+
+    - If the lowlevel drops methods, we need to update the implementation fo the method
+      to provide a proper error message or a workaround.
+    - Renamed methods (if this will ever happen) are perhaps best handled in the
+      __init__ by providing a mapping of new to old name, so far this was only relevant
+      for the ``ual_`` to ``al_`` rename.
+    """
+
+    def __init__(self, lowlevel):
+        self._lowlevel = lowlevel
+        self._al_version = None
+        self._al_version_str = ""
+        public_methods = [attr for attr in dir(self) if not attr.startswith("_")]
+
+        # AL not available
+        if self._lowlevel is None:
+            # Replace all our public methods by _imas_not_available
+            for method in public_methods:
+                setattr(self, method, self._imas_not_available)
+            return
+
+        # Lowlevel available, try to determine AL version
+        if hasattr(lowlevel, "get_al_version"):
+            # Introduced after 5.0.0
+            self._al_version_str = self._lowlevel.get_al_version()
+            self._al_version = Version(self._al_version_str)
+        elif hasattr(lowlevel, "al_read_data"):
+            # In AL 5.0.0, all `ual_` methods were renamed to `al_`
+            self._al_version_str = "5.0.0"
+            self._al_version = Version(self._al_version_str)
+        else:
+            # AL 4, don't try to determine in more detail
+            self._al_version_str = "4.?.?"
+            self._al_version = Version("4")
+
+        if self._al_version < Version("5"):
+            method_prefix = "ual_"
+        else:
+            method_prefix = "al_"
+        # Overwrite all of our methods that are implemented in the lowlevel
+        for method in public_methods:
+            ll_method = getattr(lowlevel, method_prefix + method, None)
+            if ll_method is not None:
+                setattr(self, method, ll_method)
+
+    def _imas_not_available(self):
+        return RuntimeError(
+            "This function requires an imas installation, which is not available."
+        )
+
+    def _minimal_version(self, minversion):
+        return RuntimeError(
+            f"This function requires at least Access Layer version {minversion}, "
+            f"but the current version is {self._al_version_str}"
+        )
+
+    # AL 4 lowlevel API
+
+    def begin_pulse_action(self, backendID, shot, run, user, tokamak, version):
+        # Removed in AL5, compatibility handled in DBEntry
+        raise NotImplementedError(f"{__qualname__} is not implemented")
+
+    def open_pulse(self, pulseCtx, mode, options):
+        # Removed in AL5, compatibility handled in DBEntry
+        raise NotImplementedError(f"{__qualname__} is not implemented")
+
+    def close_pulse(self, pulseCtx, mode, options):
+        raise NotImplementedError(f"{__qualname__} is not implemented")
+
+    def begin_global_action(self, pulseCtx, dataobjectname, rwmode, datapath=""):
+        # datapath was added in AL5 to support more efficient partial_get in the
+        # UDA backend. TODO: figure out if this is useful for lazy loading.
+        raise NotImplementedError(f"{__qualname__} is not implemented")
+
+    def begin_slice_action(self, pulseCtx, dataobjectname, rwmode, time, interpmode):
+        raise NotImplementedError(f"{__qualname__} is not implemented")
+
+    def end_action(self, ctx):
+        raise NotImplementedError(f"{__qualname__} is not implemented")
+
+    def write_data(self, ctx, pyFieldPath, pyTimebasePath, inputData):
+        raise NotImplementedError(f"{__qualname__} is not implemented")
+
+    def read_data(self, ctx, fieldPath, pyTimebasePath, ualDataType, dim):
+        raise NotImplementedError(f"{__qualname__} is not implemented")
+
+    def delete_data(self, ctx, path):
+        raise NotImplementedError(f"{__qualname__} is not implemented")
+
+    def begin_arraystruct_action(self, ctx, path, pyTimebase, size):
+        raise NotImplementedError(f"{__qualname__} is not implemented")
+
+    def iterate_over_arraystruct(self, aosctx, step):
+        raise NotImplementedError(f"{__qualname__} is not implemented")
+
+    # New methods added in AL 5.0
+
+    def build_uri_from_legacy_parameters(
+        self, backendID, pulse, run, user, tokamak, version, options
+    ):
+        raise self._minimal_version("5.0")
+
+    def begin_dataentry_action(self, uri, mode):
+        raise self._minimal_version("5.0")
+
+    def register_plugin(self, name):
+        raise self._minimal_version("5.0")
+
+    def unregister_plugin(self, name):
+        raise self._minimal_version("5.0")
+
+    def bind_plugin(self, path, name):
+        raise self._minimal_version("5.0")
+
+    def unbind_plugin(self, path, name):
+        raise self._minimal_version("5.0")
+
+    def bind_readback_plugins(self, ctx):
+        raise self._minimal_version("5.0")
+
+    def unbind_readback_plugins(self, ctx):
+        raise self._minimal_version("5.0")
+
+    def write_plugins_metadata(self, ctx):
+        raise self._minimal_version("5.0")
+
+    def setvalue_parameter_plugin(self, parameter_name, inputData, pluginName):
+        raise self._minimal_version("5.0")
+
+    def get_al_version(self):
+        return self._al_version_str
+
+
+ll_interface = LowlevelInterface(lowlevel)
+"""IMASPy <-> IMAS lowlevel interface"""

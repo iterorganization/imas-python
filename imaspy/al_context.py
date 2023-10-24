@@ -3,7 +3,6 @@
 
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, Tuple, Union
-from types import ModuleType
 
 from imaspy.ids_defs import (
     CLOSEST_INTERP,
@@ -11,6 +10,7 @@ from imaspy.ids_defs import (
     PREVIOUS_INTERP,
     UNDEFINED_INTERP,
 )
+from imaspy.imas_interface import ll_interface
 
 INTERP_MODES = (
     CLOSEST_INTERP,
@@ -33,15 +33,13 @@ class ALContext:
     - Context managers for creating and automatically ending AL actions
     """
 
-    def __init__(self, ctx: int, ull: ModuleType) -> None:
+    def __init__(self, ctx: int) -> None:
         """Construct a new ALContext object
 
         Args:
             ctx: Context identifier returned by the AL
-            ull: ``imas._ual_lowlevel`` python module that returned this context
         """
         self.ctx = ctx
-        self.ull = ull
 
     @contextmanager
     def global_action(self, path: str, rwmode: int) -> Iterator["ALContext"]:
@@ -54,11 +52,11 @@ class ALContext:
         Yields:
             ctx: The created context.
         """
-        ctx = self._begin_action(self.ull.ual_begin_global_action, path, rwmode)
+        ctx = self._begin_action(ll_interface.begin_global_action, path, rwmode)
         try:
             yield ctx
         finally:
-            self.ull.ual_end_action(ctx.ctx)
+            ll_interface.end_action(ctx.ctx)
 
     @contextmanager
     def slice_action(
@@ -83,7 +81,7 @@ class ALContext:
                 f"{interpolation_method}"
             )
         ctx = self._begin_action(
-            self.ull.ual_begin_slice_action,
+            ll_interface.begin_slice_action,
             path,
             rwmode,
             time_requested,
@@ -92,7 +90,7 @@ class ALContext:
         try:
             yield ctx
         finally:
-            self.ull.ual_end_action(ctx.ctx)
+            ll_interface.end_action(ctx.ctx)
 
     @contextmanager
     def arraystruct_action(
@@ -111,12 +109,12 @@ class ALContext:
             size: The size of the array of structures (only relevant when reading data)
         """
         ctx, size = self._begin_action(
-            self.ull.ual_begin_arraystruct_action, path, timebase, size
+            ll_interface.begin_arraystruct_action, path, timebase, size
         )
         try:
             yield ctx, size
         finally:
-            self.ull.ual_end_action(ctx.ctx)
+            ll_interface.end_action(ctx.ctx)
 
     def _begin_action(
         self, action: Callable, *args: Any
@@ -126,18 +124,18 @@ class ALContext:
         if status != 0:
             raise RuntimeError(f"Error calling {action.__name__}: {status=}")
         if rest:
-            return ALContext(ctx, self.ull), *rest
-        return ALContext(ctx, self.ull)
+            return ALContext(ctx), *rest
+        return ALContext(ctx)
 
     def iterate_over_arraystruct(self, step: int) -> None:
         """Call ual_iterate_over_arraystruct with this context."""
-        status = self.ull.ual_iterate_over_arraystruct(self.ctx, step)
+        status = ll_interface.iterate_over_arraystruct(self.ctx, step)
         if status != 0:
             raise RuntimeError(f"Error iterating over arraystruct: {status=}")
 
     def read_data(self, path: str, timebasepath: str, datatype: int, dim: int) -> Any:
         """Call ual_read_data with this context."""
-        status, data = self.ull.ual_read_data(
+        status, data = ll_interface.read_data(
             self.ctx, path, timebasepath, datatype, dim
         )
         if status != 0:
@@ -146,13 +144,13 @@ class ALContext:
 
     def delete_data(self, path: str) -> None:
         """Call ual_delete_data with this context."""
-        status = self.ull.ual_delete_data(self.ctx, path)
+        status = ll_interface.delete_data(self.ctx, path)
         if status != 0:
             raise RuntimeError(f"Error deleting data at {path!r}: {status=}")
 
     def write_data(self, path: str, timebasepath: str, data: Any) -> None:
         """Call ual_write_data with this context."""
-        status = self.ull.ual_write_data(self.ctx, path, timebasepath, data)
+        status = ll_interface.write_data(self.ctx, path, timebasepath, data)
         if status != 0:
             raise RuntimeError(f"Error writing data at {path!r}: {status=}")
 
