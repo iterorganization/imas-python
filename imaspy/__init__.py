@@ -36,7 +36,6 @@ from . import (
     db_entry,
     dd_helpers,
     dd_zip,
-    imas_ual_env_parsing,
     mdsplus_model,
 )
 
