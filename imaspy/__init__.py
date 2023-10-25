@@ -37,6 +37,7 @@ from . import (
     dd_helpers,
     dd_zip,
     mdsplus_model,
+    util,
 )
 
 OLDEST_SUPPORTED_VERSION = V("3.21.1")
