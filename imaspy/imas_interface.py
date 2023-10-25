@@ -216,7 +216,7 @@ class LowlevelInterface:
                 setattr(self, method, ll_method)
 
     def _imas_not_available(self):
-        return RuntimeError(
+        raise RuntimeError(
             "This function requires an imas installation, which is not available."
         )
 
