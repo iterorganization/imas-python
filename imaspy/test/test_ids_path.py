@@ -63,14 +63,27 @@ def test_path_with_path_index():
     assert isinstance(path.indices[0], IDSPath)
     assert path.indices[0].parts == ("process", "coordinate_index")
     assert path.indices[0].indices == ("i1", None)
-    assert path.indices[1] == 1
+    assert path.indices[1] == 0
     assert len(path.indices) == 2
 
 
-def test_path_with_slices():
-    path = IDSPath("distribution(1:3)/process(:)/nbi_unit")
+@pytest.mark.parametrize(
+    "pth",
+    ["distribution(1:3)/process(:)/nbi_unit", "distribution[0:3]/process[:]/nbi_unit"],
+)
+def test_path_with_slices(pth):
+    path = IDSPath(pth)
     assert path.parts == ("distribution", "process", "nbi_unit")
-    assert path.indices == (slice(1, 3), slice(None), None)
+    assert path.indices == (slice(0, 3), slice(None), None)
+
+
+def test_path_integer_indices():
+    py_path = IDSPath("a[1]/b[2]/c[:2]/d[1:]")
+    f_path = IDSPath("a(2)/b(3)/c(:2)/d(2:)")
+    assert py_path.indices[0] == f_path.indices[0] == 1
+    assert py_path.indices[1] == f_path.indices[1] == 2
+    assert py_path.indices[2] == f_path.indices[2] == slice(None, 2)
+    assert py_path.indices[3] == f_path.indices[3] == slice(1, None)
 
 
 def test_path_immutable():

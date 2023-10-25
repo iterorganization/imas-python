@@ -5,11 +5,6 @@
 * :py:class:`IDSStructure`
 """
 
-try:
-    from functools import cached_property
-except ImportError:
-    from cached_property import cached_property
-
 from copy import deepcopy
 from functools import lru_cache
 import logging
@@ -17,11 +12,13 @@ from xml.etree.ElementTree import Element
 
 from imaspy.ids_metadata import IDSDataType
 from imaspy.ids_mixin import IDSMixin
+from imaspy.ids_path import IDSPath
 from imaspy.ids_primitive import (
     IDSComplex0D,
     IDSFloat0D,
     IDSInt0D,
     IDSNumericArray,
+    IDSPrimitive,
     IDSString1D,
     IDSString0D,
 )
@@ -133,14 +130,35 @@ class IDSStructure(IDSMixin):
 
     def __getitem__(self, key):
         keyname = str(key)
-        return getattr(self, keyname)
+        if keyname in self._children:
+            return getattr(self, keyname)
+
+        path = IDSPath(keyname)
+        if len(path) == 1 and path.indices[0] is None:
+            raise AttributeError(f"'{self!r}' has no attribute '{keyname}'")
+
+        return path.goto(self, from_root=False)
 
     def __repr__(self):
         return f"{self._build_repr_start()})>"
 
     def __setitem__(self, key, value):
         keyname = str(key)
-        self.__setattr__(keyname, value)
+        if keyname in self._children:
+            return self.__setattr__(keyname, value)
+
+        path = IDSPath(keyname)
+        if len(path) == 1 and path.indices[0] is None:
+            raise AttributeError(f"'{self!r}' has no attribute '{keyname}'")
+
+        attr = path.goto(self, from_root=False)
+        if isinstance(attr, IDSPrimitive):
+            attr.value = value
+        else:
+            # Setting an IDSStructArray or IDSStructure: delegate to the
+            # relevant __setitem__ of its parent
+            parent = attr._parent
+            parent[path.parts[-1]] = value
 
     def __setattr__(self, key, value):
         """
