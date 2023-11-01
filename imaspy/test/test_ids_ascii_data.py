@@ -4,7 +4,7 @@ import os
 from pathlib import PosixPath
 from importlib_resources import files
 
-import imaspy
+import imaspy.training
 import pytest
 
 
@@ -15,15 +15,8 @@ def test_data_exists():
 
 @pytest.fixture
 def test_data():
-    data_file: PosixPath = files(imaspy) / "assets/ITER_134173_106_equilibrium.ids"
-    shot, run, user, database = 134173, 106, "public", "ITER"
-    assert data_file.exists()
-    ocwd = os.getcwd()
-    os.chdir(data_file.parent)
-    db_entry = imaspy.DBEntry(imaspy.ids_defs.ASCII_BACKEND, database, shot, run)
-    db_entry.open()
+    db_entry = imaspy.training.get_training_db_entry()
     yield db_entry
-    os.chdir(ocwd)
     db_entry.close()
 
 

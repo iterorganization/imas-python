@@ -28,11 +28,6 @@ from packaging.version import Version
 logger = logging.getLogger(__name__)
 
 
-# TODO for AL5:
-# - imasdef needs extension module imas.al_defs
-# - _ual_lowlevel is renamed to _al_lowlevel
-
-
 def _lazy_import(name):
     if name in sys.modules:
         return sys.modules[name]
@@ -118,7 +113,10 @@ if _imas_spec is None:
         "Module 'imas' could not be imported. Some functionality is not available."
     )
 
-elif _imas_spec and _imas_spec.submodule_search_locations is None:
+elif (
+    _imas_spec and _imas_spec.submodule_search_locations is None
+    or "imas" in sys.modules
+):
     # Give up and just import the actual package...
     has_imas = True
     imas = importlib.import_module("imas")
@@ -127,6 +125,17 @@ elif _imas_spec and _imas_spec.submodule_search_locations is None:
 
 else:
     has_imas = True
+
+    # First try to find the al_defs module, which only exists in AL5
+    _al5 = False
+    for search_location in _imas_spec.submodule_search_locations:
+        for ext in importlib.machinery.EXTENSION_SUFFIXES:
+            location = f"{search_location}/al_defs{ext}"
+            if os.path.exists(location):
+                _al5 = True
+    if _al5:
+        # imasdef requires al_defs module
+        al_defs = _import_extension_submodule(_imas_spec, "al_defs")
 
     # Required by _ual_lowlevel, will import all of imas if we don't import these first
     imasdef = _import_submodule(_imas_spec, "imasdef", [".py"])
@@ -137,7 +146,8 @@ else:
     _modules = {"imasdef": imasdef, "hli_exception": hli_exception, "imas": object()}
     _old_modules = {mod: sys.modules.get(mod) for mod in _modules}
     sys.modules.update(_modules)
-    lowlevel = _import_extension_submodule(_imas_spec, "_ual_lowlevel")
+    _lowlevel_name = "_al_lowlevel" if _al5 else "_ual_lowlevel"
+    lowlevel = _import_extension_submodule(_imas_spec, _lowlevel_name)
     # Clean up the global modules
     for mod, old_module in _old_modules.items():
         if old_module is not None:
@@ -204,6 +214,7 @@ class LowlevelInterface:
             # AL 4, don't try to determine in more detail
             self._al_version_str = "4.?.?"
             self._al_version = Version("4")
+            public_methods.remove("close_pulse")
 
         if self._al_version < Version("5"):
             method_prefix = "ual_"
@@ -236,8 +247,10 @@ class LowlevelInterface:
         # Removed in AL5, compatibility handled in DBEntry
         raise NotImplementedError(f"{__qualname__} is not implemented")
 
-    def close_pulse(self, pulseCtx, mode, options):
-        raise NotImplementedError(f"{__qualname__} is not implemented")
+    def close_pulse(self, pulseCtx, mode):
+        # options argument (mandatory in AL4) was removed in AL5
+        # This method is overwritten in AL5, but for AL4 we need to do this:
+        return lowlevel.ual_close_pulse(pulseCtx, mode, None)
 
     def begin_global_action(self, pulseCtx, dataobjectname, rwmode, datapath=""):
         # datapath was added in AL5 to support more efficient partial_get in the

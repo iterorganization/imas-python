@@ -8,14 +8,17 @@ from importlib_resources import files
 from unittest.mock import patch
 
 import imaspy
-import imas
+from imaspy.imas_interface import imas
 
 
 def _initialize_training_db(DBEntry_cls):
-    shot, run, user, database = 134173, 106, "public", "ITER"
-    entry = DBEntry_cls(imaspy.ids_defs.ASCII_BACKEND, database, shot, run, user)
     assets_path = files(imaspy) / "assets/"
-    entry.open(options=f"-prefix {assets_path}/")
+    shot, run, user, database = 134173, 106, "public", "ITER"
+    if imaspy.imas_interface.ll_interface._al_version.major == 4:
+        entry = DBEntry_cls(imaspy.ids_defs.ASCII_BACKEND, database, shot, run, user)
+        entry.open(options=f"-prefix {assets_path}/")
+    else:
+        entry = DBEntry_cls(f"imas:ascii?path={assets_path}", "r")
 
     output_entry = DBEntry_cls(imaspy.ids_defs.MEMORY_BACKEND, database, shot, run)
     output_entry.create()

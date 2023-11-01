@@ -11,7 +11,7 @@ from imaspy.ids_defs import (
     MEMORY_BACKEND,
 )
 from imaspy.ids_factory import IDSFactory
-from imaspy.imas_interface import lowlevel
+from imaspy.imas_interface import lowlevel, ll_interface
 from imaspy.test.test_helpers import compare_children, fill_consistent, open_dbentry
 
 
@@ -34,16 +34,16 @@ def test_lazy_load_aos(backend, worker_id, tmp_path, log_lowlevel_calls):
         assert lazy_ids.profiles_1d[i].time == i
     # Now all profiles_1d/time are loaded, check that we use loaded values and do not
     # read data from the lowlevel
-    with patch.multiple(
-        lowlevel,
-        ual_read_data=DEFAULT,
-        ual_begin_arraystruct_action=DEFAULT,
-    ) as values:
+    if ll_interface._al_version.major == 4:
+        to_patch = {"ual_read_data": DEFAULT, "ual_begin_arraystruct_action": DEFAULT}
+    else:
+        to_patch = {"al_read_data": DEFAULT, "al_begin_arraystruct_action": DEFAULT}
+    with patch.multiple(lowlevel, **to_patch) as values:
         assert len(lazy_ids.profiles_1d) == 10
         for i in range(10):
             assert lazy_ids.profiles_1d[i].time == i
-        assert values["ual_read_data"].call_count == 0
-        assert values["ual_begin_arraystruct_action"].call_count == 0
+        for method in to_patch:
+            assert values[method].call_count == 0
 
     # Test get_slice
     lazy_ids_slice = dbentry.get_slice("core_profiles", 3.5, PREVIOUS_INTERP, lazy=True)

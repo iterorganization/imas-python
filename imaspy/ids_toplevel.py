@@ -48,7 +48,7 @@ def _create_serialization_dbentry(filepath: str) -> "DBEntry":
         return dbentry
     else:  # AL5
         path = Path(filepath)
-        dbentry = DBEntry(f"imas:ascii?path={path.parent};filename={path.name}", "w")
+        return DBEntry(f"imas:ascii?path={path.parent};filename={path.name}", "w")
 
 
 class IDSToplevel(IDSStructure):

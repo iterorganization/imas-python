@@ -123,7 +123,7 @@ class DBEntry:
             elif uri is not None:
                 args = (uri,) + args
             self.__legacy_init(*args, **kwargs)
-        elif ll_interface._al_version.major >= 5:
+        elif ll_interface._al_version.major < 5:
             raise ValueError("Providing a URI to DBEntry() requires IMAS version 5.")
         else:
             self._legacy_init = False
@@ -138,6 +138,7 @@ class DBEntry:
         self._dd_version = dd_version
         self._xml_path = xml_path
         self._ids_factory = IDSFactory(dd_version, xml_path)
+        self._uses_mdsplus = False
 
     def _build_legacy_uri(self, options):
         if not self._legacy_init:
@@ -145,14 +146,14 @@ class DBEntry:
                 "DBEntry was not constructed with legacy parameters, and no"
                 " URI provided to 'open()' or 'create()'"
             )
-        status, uri = self._ll.al_build_uri_from_legacy_parameters(
+        status, uri = ll_interface.build_uri_from_legacy_parameters(
             self.backend_id,
             self.shot,
             self.run,
             self.user_name,
             self.db_name,
             self.data_version,
-            options,
+            options if options is not None else "",
         )
         if status != 0:
             raise RuntimeError("Error calling al_build_uri_from_legacy_parameters()")
@@ -230,19 +231,19 @@ class DBEntry:
 
         # version = self._dd_version[0] if self._dd_version else "3"
         # ensure_data_dir(str(self.user_name), self.db_name, version, self.run)
+        self._uses_mdsplus = True
 
-    def close(self, *, options=None, erase=False):
+    def close(self, *, erase=False):
         """Close this Database Entry.
 
         Keyword Args:
-            options: Backend specific options.
             erase: Remove the pulse file from the database.
         """
         if self._db_ctx is None:
             return
 
         mode = ERASE_PULSE if erase else CLOSE_PULSE
-        status = ll_interface.close_pulse(self._db_ctx.ctx, mode, options)
+        status = ll_interface.close_pulse(self._db_ctx.ctx, mode)
         if status != 0:
             raise RuntimeError(f"Error closing database entry: {status=}")
 
@@ -284,7 +285,13 @@ class DBEntry:
                 imas_entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 1234)
                 imas_entry.open()
         """  # noqa
-        self._open_pulse(FORCE_OPEN_PULSE if force else OPEN_PULSE, options)
+        if force:
+            mode = FORCE_OPEN_PULSE
+            logger.warning(
+                "DBEntry.open(force=True) is deprecated, "
+                "use DBEntry.open(FORCE_OPEN_PULSE) instead"
+            )
+        self._open_pulse(mode, options)
 
     def get(
         self,
@@ -591,7 +598,7 @@ class DBEntry:
             )
         else:
             manager = self._db_ctx.global_action(ll_path, WRITE_OP)
-        verify_maxoccur = self.backend_id == MDSPLUS_BACKEND
+        verify_maxoccur = self._uses_mdsplus
         with manager as write_ctx:
             _put_children(
                 ids, write_ctx, time_mode, "", is_slice, nbc_map, verify_maxoccur
