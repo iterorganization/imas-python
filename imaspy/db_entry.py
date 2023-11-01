@@ -69,14 +69,9 @@ class DBEntry:
         self.db_name = db_name
         self.shot = shot
         self.run = run
-        if user_name is not None:
-            self.user_name = user_name
-        else:
-            self.user_name = os.environ["USER"]
-        if data_version is not None:
-            self.data_version = data_version
-        else:
-            self.data_version = os.environ["IMAS_VERSION"]
+        self.user_name = user_name or os.environ["USER"]
+        self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
+        self.uri = None
 
     @needs_imas
     def __init__(
@@ -128,8 +123,8 @@ class DBEntry:
             elif uri is not None:
                 args = (uri,) + args
             self.__legacy_init(*args, **kwargs)
-            options = kwargs.get("options", "")
-            self.uri = self._build_legacy_uri(options)
+        elif ll_interface._al_version.major >= 5:
+            raise ValueError("Providing a URI to DBEntry() requires IMAS version 5.")
         else:
             self._legacy_init = False
             if not uri:
@@ -177,12 +172,31 @@ class DBEntry:
         """Internal method implementing open()/create()."""
         if self._db_ctx is not None:
             self.close()
-        if urlparse(self.uri).path.lower() == "mdsplus":
-            self._setup_mdsplus()
-        status, ctx = ll_interface.begin_dataentry_action(self.uri, mode)
-        self._db_ctx = ALContext(ctx)
+        if self._legacy_init:
+            if ll_interface._al_version.major < 5:
+                # AL4 compatibility
+                if self.backend_id == MDSPLUS_BACKEND:
+                    self._setup_mdsplus()
+                status, ctx = ll_interface.begin_pulse_action(
+                    self.backend_id,
+                    self.shot,
+                    self.run,
+                    self.user_name,
+                    self.db_name,
+                    self.data_version,
+                )
+                if status != 0:
+                    raise RuntimeError(f"Error calling begin_pulse_action(), {status=}")
+                status = ll_interface.open_pulse(ctx, mode, options)
+            else:
+                self.uri = self._build_legacy_uri(options)
+        if ll_interface._al_version.major >= 5:
+            if urlparse(self.uri).path.lower() == "mdsplus":
+                self._setup_mdsplus()
+            status, ctx = ll_interface.begin_dataentry_action(self.uri, mode)
         if status != 0:
             raise RuntimeError(f"Error opening/creating database entry: {status=}")
+        self._db_ctx = ALContext(ctx)
 
     def _setup_mdsplus(self):
         """Additional setup required for MDSPLUS backend"""
@@ -372,7 +386,7 @@ class DBEntry:
         time_requested: Optional[float],
         interpolation_method: int,
         destination: Optional[IDSToplevel] = None,
-        lazy: bool = False
+        lazy: bool = False,
     ) -> IDSToplevel:
         """Actual implementation of get() and get_slice()"""
         if self._db_ctx is None:

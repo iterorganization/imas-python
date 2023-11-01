@@ -6,7 +6,7 @@
 
 import logging
 import os
-from pathlib import Path 
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 import tempfile
 
@@ -28,6 +28,7 @@ from imaspy.ids_defs import (
 )
 from imaspy.ids_metadata import IDSType
 from imaspy.ids_structure import IDSStructure
+from imaspy.imas_interface import ll_interface
 
 if TYPE_CHECKING:
     from imaspy.db_entry import DBEntry
@@ -35,6 +36,19 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+def _create_serialization_dbentry(filepath: str) -> "DBEntry":
+    """Create a temporary DBEntry for use in the ASCII serialization protocol."""
+    from imaspy.db_entry import DBEntry  # Local import to avoid circular imports
+
+    if ll_interface._al_version.major == 4:  # AL4 compatibility
+        dbentry = DBEntry(ASCII_BACKEND, "serialize", 1, 1, "serialize")
+        dbentry.create(options=f"-fullpath {filepath}")
+        return dbentry
+    else:  # AL5
+        path = Path(filepath)
+        dbentry = DBEntry(f"imas:ascii?path={path.parent};filename={path.name}", "w")
 
 
 class IDSToplevel(IDSStructure):
@@ -117,14 +131,11 @@ class IDSToplevel(IDSStructure):
         if self.ids_properties.homogeneous_time == IDS_TIME_MODE_UNKNOWN:
             raise ALException("IDS is found to be EMPTY (homogeneous_time undefined)")
         if protocol == ASCII_SERIALIZER_PROTOCOL:
-            from imaspy.db_entry import DBEntry
-
             tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
             filepath = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
-            filename=Path(filepath).name
-            uri = f"imas:ascii?path={tmpdir};filename={filename}"
-            dbentry = DBEntry(uri, 'w')
+            dbentry = _create_serialization_dbentry(filepath)
             dbentry.put(self)
+            dbentry.close()
 
             try:
                 # read contents of tmpfile
@@ -148,8 +159,6 @@ class IDSToplevel(IDSStructure):
             raise ValueError("No data provided")
         protocol = int(data[0])  # first byte of data contains serialization protocol
         if protocol == ASCII_SERIALIZER_PROTOCOL:
-            from imaspy.db_entry import DBEntry
-
             tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
             filepath = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
             # write data into tmpfile
@@ -157,10 +166,9 @@ class IDSToplevel(IDSStructure):
                 with open(filepath, "wb") as f:
                     f.write(data[1:])
                 # Temporarily open an ASCII backend for deserialization from tmpfile
-                filename=Path(filepath).name
-                uri = f"imas:ascii?path={tmpdir};filename={filename}"
-                dbentry = DBEntry(uri, 'w')
+                dbentry = _create_serialization_dbentry(filepath)
                 dbentry.get(self.metadata.name, destination=self)
+                dbentry.close()
             finally:
                 # tmpfile may not exist depending if an error occurs in above code
                 if os.path.exists(filepath):
