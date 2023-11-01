@@ -313,7 +313,7 @@ def convert_ids(
         xml_path: Path to a data dictionary XML file that should be used instead of the
             released data dictionary version specified by ``version``.
         factory: Existing IDSFactory to use for as target version.
-        destination: Use this IDSToplevel as target toplevel instead of creating one.
+        target: Use this IDSToplevel as target toplevel instead of creating one.
     """
     ids_name = toplevel.metadata.name
     if target is None:

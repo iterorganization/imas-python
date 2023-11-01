@@ -10,6 +10,7 @@ from imaspy.test.test_helpers import (
     fill_with_random_data,
     open_dbentry,
 )
+from imaspy.util import visit_children
 
 
 def test_latest_dd_autofill_consistency(ids_name):
@@ -17,7 +18,7 @@ def test_latest_dd_autofill_consistency(ids_name):
     fill_with_random_data(ids)
 
     # check that each element in ids has _parent set.
-    ids.visit_children(has_parent, leaf_only=False)
+    visit_children(has_parent, ids, leaf_only=False)
 
 
 def has_parent(child):

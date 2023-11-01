@@ -273,6 +273,18 @@ def create_model_ids_xml(cache_dir_path, fname, version):
 def create_mdsplus_model(cache_dir_path: Path) -> None:
     """Use jtraverser to compile a valid MDS model file."""
     try:
+        # In newer versions of MDSplus, CompileTree is renamed to
+        # mds.jtraverser.CompileTree. Find out which to use:
+        jarfile = str(jTraverser_jar())
+        compiletree_class = check_output(
+            ["jar", "tf", jarfile, "CompileTree", "mds/jtraverser/CompileTree"]
+        ).decode("utf-8")
+        if not compiletree_class:
+            raise RuntimeError(
+                f"Error making MDSplus model in {cache_dir_path}: "
+                "Could not determine CompileTree class in jTraverser.jar."
+            )
+        compiletree = compiletree_class.rpartition(".class")[0].replace("/", ".")
         check_output(
             [
                 "java",
@@ -280,8 +292,8 @@ def create_mdsplus_model(cache_dir_path: Path) -> None:
                 "-Xmx8g",  # what do these do?
                 "-XX:+UseG1GC",  # what do these do?
                 "-cp",
-                jTraverser_jar(),
-                "CompileTree",
+                jarfile,
+                compiletree,
                 "ids",
             ],
             cwd=str(cache_dir_path),

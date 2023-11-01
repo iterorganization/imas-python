@@ -104,26 +104,27 @@ release = str(full_version)
 # ones.
 extensions = [
     "sphinx.ext.autodoc",  # To auto-generate docs from Python docstrings
-    "sphinx.ext.autosectionlabel",
-    "sphinx.ext.todo",  # nature theme
-    "sphinx.ext.githubpages",  # nature theme
+    # "sphinx.ext.autosectionlabel",  # Allow reference sections using its title
+    "sphinx.ext.todo",  # Support for todo items
     "sphinx.ext.napoleon",  # Support for NumPy and Google style docstrings
     "sphinx.ext.intersphinx",  # Generate links to other documentation files
     # 'sphinx.ext.coverage',  # numpy
     # 'sphinx.ext.doctest',  # numpy
     "sphinx.ext.autosummary",  # For summarizing autodoc-generated files
     "sphinx.ext.extlinks",  # For shortening internal links
-    "sphinx.ext.graphviz",  # Draw Graphs in docs
+    # "sphinx.ext.graphviz",  # Draw Graphs in docs
     # 'sphinx.ext.ifconfig',  # numpy
     # 'matplotlib.sphinxext.plot_directive',  # numpy
     # 'IPython.sphinxext.ipythoGn_console_highlighting',  # numpy
     # 'IPython.sphinxext.ipython_directive',  # numpy
     "sphinx.ext.mathjax",  # Render math as images
-    "sphinx_rtd_theme",  # Theme
     "recommonmark",  # For markdown support, does not support 'full' CommonMark syntax (yet)!
-    "sphinx_autodoc_typehints",  # Auto-parse type hints. Napoleon BEFORE typehints
-    "sphinxcontrib.mermaid",  # Draw graphs using Mermaid.js
+    # "sphinxcontrib.mermaid",  # Draw graphs using Mermaid.js
+    "sphinx_tabs.tabs", # Toggleable HTML tabs
+    "sphinx_immaterial",  # Sphinx immaterial theme
 ]
+
+todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates", sphinx_autosummary_accessors.templates_path]
@@ -169,12 +170,65 @@ today_fmt = "%Y-%m-%d"
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = "sphinx_rtd_theme"
+html_theme = "sphinx_immaterial"
 
 # Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
-# html_theme_options = {"logo_only": True}
+# further.  For a list of options available for each theme, see
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
+# and
+# https://sphinx-immaterial.readthedocs.io/en/latest/customization.html#confval-html_theme_options
+html_theme_options = {
+    "repo_url": "https://git.iter.org/projects/IMAS/repos/imaspy",
+    "repo_name": "IMASPy",
+    "icon": {
+        "repo": "fontawesome/brands/bitbucket",
+    },
+    "features": [
+        # "navigation.expand",
+        # "navigation.tabs",
+        "navigation.sections",
+        "navigation.instant",
+        # "header.autohide",
+        "navigation.top",
+        # "navigation.tracking",
+        # "search.highlight",
+        # "search.share",
+        # "toc.integrate",
+        "toc.follow",
+        "toc.sticky",
+        # "content.tabs.link",
+        "announce.dismiss",
+    ],
+    # "toc_title_is_page_title": True,
+    # "globaltoc_collapse": True,
+    "palette": [
+        {
+            "media": "(prefers-color-scheme: light)",
+            "scheme": "default",
+            "primary": "indigo",
+            "accent": "green",
+            "toggle": {
+                "icon": "material/lightbulb-outline",
+                "name": "Switch to dark mode",
+            },
+        },
+        {
+            "media": "(prefers-color-scheme: dark)",
+            "scheme": "slate",
+            "primary": "light-blue",
+            "accent": "lime",
+            "toggle": {
+                "icon": "material/lightbulb",
+                "name": "Switch to light mode",
+            },
+        },
+    ],
+}
+
+object_description_options = [
+    (".*", dict(include_fields_in_toc=False)),
+    (".*parameter", dict(include_in_toc=False)),
+]
 
 # Add any paths that contain custom themes here, relative to this directory.
 # html_theme_path = []
@@ -188,12 +242,12 @@ html_theme = "sphinx_rtd_theme"
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-html_logo = "_static/dataset-diagram-logo.png"
+html_logo = "_static/imaspy_200x200.png"
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
 # pixels large.
-html_favicon = "_static/favicon.ico"
+# html_favicon = "_static/favicon.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -253,7 +307,7 @@ htmlhelp_basename = "imaspy_doc"
 # -- Extension configuration -------------------------------------------------
 # Configuration of sphinx.ext.autodoc
 # https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html
-autodoc_typehints = "none"  # Use sphinx_autodoc_typehints instead
+autodoc_typehints = "signature"
 
 
 # from recommonmark.transform import AutoStructify
@@ -287,8 +341,8 @@ autosummary_generate = True
 # See https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
-napoleon_include_init_with_doc = True
-napoleon_include_private_with_doc = True
+# napoleon_include_init_with_doc = False # Handled by our Sphinx template
+# napoleon_include_private_with_doc = False # Handled by our Sphinx template
 # napoleon_include_special_with_doc = True
 # napoleon_use_admonition_for_examples = False
 # napoleon_use_admonition_for_notes = False
@@ -349,7 +403,9 @@ napoleon_type_aliases = {
     "pd.DataFrame": "~pandas.NaT",
 }  # TODO: From xarray, improve! New in 3.2
 
-napoleon_attr_annotations = True  # Allow PEP 526 attributes annotations in classes. New in 3.4
+napoleon_attr_annotations = (
+    True  # Allow PEP 526 attributes annotations in classes. New in 3.4
+)
 
 # From xarray, huh?
 # napoleon_preprocess_types = True #From xarray, not in docs
@@ -360,15 +416,15 @@ napoleon_attr_annotations = True  # Allow PEP 526 attributes annotations in clas
 # See https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
+    # "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
     "numpy": ("https://numpy.org/doc/stable", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
-    "numba": ("https://numba.pydata.org/numba-doc/latest", None),
-    "matplotlib": ("https://matplotlib.org", None),
-    "xarray": ("http://xarray.pydata.org/en/stable/", None),
-    "dask": ("https://docs.dask.org/en/latest", None),
-    "cython": ("https://cython.readthedocs.io/", None),
-    "gitpython": ("https://gitpython.readthedocs.io/en/stable", None),
+    # "numba": ("https://numba.pydata.org/numba-doc/latest", None),
+    # "matplotlib": ("https://matplotlib.org", None),
+    # "xarray": ("http://xarray.pydata.org/en/stable/", None),
+    # "dask": ("https://docs.dask.org/en/latest", None),
+    # "cython": ("https://cython.readthedocs.io/", None),
+    # "gitpython": ("https://gitpython.readthedocs.io/en/stable", None),
     # "netcdf4": ("https://unidata.github.io/netcdf4-python/", None),  # netcdf4 does not have an intersphinx mapping
     # "jintrac": ("https://users.euro-fusion.org/pages/data-cmg/wiki/", None) Behind password, so cannot link there
 }
@@ -379,18 +435,6 @@ intersphinx_mapping = {
 # Configuration of sphinx.ext.mathjax
 # See https://www.sphinx-doc.org/en/master/usage/extensions/math.html#module-sphinx.ext.mathjax
 
-# Configuration of sphinx_autodoc_typehints
-# See https://pypi.org/project/sphinx-autodoc-typehints/
-set_type_checking_flag = (
-    True  # Set typing.TYPE_CHECKING to True to enable "expensive" typing imports
-)
-# typehints_fully_qualified = False # If True, class names are always fully qualified (e.g. module.for.Class). If False, just the class name displays (e.g. Class)
-always_document_param_types = (
-    True  # add stub documentation for undocumented parameters to be able to add type info.
-)
-# typehints_document_rtype = True # If False, never add an :rtype: directive. If True, add the :rtype: directive if no existing :rtype: is found.
-# simplify_optional_unions = True # If True, optional parameters of type "Union[...]" are simplified as being of type Union[..., None] in the resulting documention (e.g. Optional[Union[A, B]] -> Union[A, B, None]). # If False, the "Optional"-type is kept. Note: If False, any Union containing None will be displayed as Optional! Note: If an optional parameter has only a single type (e.g Optional[A] or Union[A, None]), it will always be displayed as Optional!
-
 
 def escape_underscores(string):
     return string.replace("_", r"\_")
@@ -398,3 +442,4 @@ def escape_underscores(string):
 
 def setup(app):
     DEFAULT_FILTERS["escape_underscores"] = escape_underscores
+    app.add_css_file("imaspy.css")

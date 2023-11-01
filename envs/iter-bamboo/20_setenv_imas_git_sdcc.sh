@@ -33,4 +33,6 @@ module load Doxygen/1.8.20-GCCcore-10.2.0
 export SAXONJARFILE=`echo $CLASSPATH | cut -d: -f4 | rev | cut -d/ -f1 | rev`
 echo [INFO] Set SAXONJARFILE to $SAXONJARFILE
 
+export IMAS_HOME=/work/imas
+
 module list

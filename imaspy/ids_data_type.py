@@ -2,7 +2,10 @@
 # You should have received the IMASPy LICENSE file with this project.
 
 from enum import Enum
+from functools import lru_cache
 from typing import Tuple, Optional
+
+import numpy as np
 
 from imaspy.ids_defs import EMPTY_INT, EMPTY_FLOAT, EMPTY_COMPLEX
 from imaspy.ids_defs import INTEGER_DATA, DOUBLE_DATA, COMPLEX_DATA, CHAR_DATA
@@ -37,15 +40,33 @@ class IDSDataType(Enum):
             "FLT": EMPTY_FLOAT,
             "CPX": EMPTY_COMPLEX,
         }.get(value, None)
+        """Default value for a field with this type."""
+
         self.al_type = {
             "STR": CHAR_DATA,
             "INT": INTEGER_DATA,
             "FLT": DOUBLE_DATA,
             "CPX": COMPLEX_DATA,
         }.get(value, None)
-        """Default value for a field with this type."""
+        """Lowlevel identifier for this type."""
+
+        self.python_type = {
+            "STR": str,
+            "INT": int,
+            "FLT": float,
+            "CPX": complex,
+        }.get(value, None)
+        """Python type for 0D instances of this type."""
+
+        self.numpy_dtype = {
+            "INT": np.int32,
+            "FLT": np.float64,
+            "CPX": np.complex128,
+        }.get(value, None)
+        """Numpy dtype for array instances of this type."""
 
     @staticmethod
+    @lru_cache(maxsize=None)
     def parse(data_type: Optional[str]) -> Tuple[Optional["IDSDataType"], int]:
         """Parse data type string from the Data Dictionary.
 
@@ -76,7 +97,7 @@ class IDSDataType(Enum):
             dtype, *rest = data_type.upper().split("_")
             if rest == ["TYPE"]:  # legacy str_type, int_type, flt_type, cpx_type:
                 ndim = 0
-            elif rest and '0' <= rest[0][0] <= '9':
+            elif rest and "0" <= rest[0][0] <= "9":
                 # works for both legacy flt_1d_type and regular TYP_ND
                 ndim = int(rest[0][0])
             else:

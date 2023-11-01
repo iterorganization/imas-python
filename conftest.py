@@ -1,16 +1,21 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
 #
-# Set up pytest so that any mention of 'backend' as a test argument
-# gets run with all four backends.
-# Same for ids_type, with all types
+# Set up pytest:
+# - Backend parametrization (and corresponding command line options)
+# - IDS name parametrization (and corresponding command line options)
+# - Fixtures that are useful across test modules
+
 from copy import deepcopy
+import functools
+import logging
 import os
 from pathlib import Path
 
 from packaging.version import Version
 import importlib_resources
 import pytest
+import numpy as np
 
 from imaspy.dd_zip import dd_etree, latest_dd_version
 from imaspy.ids_defs import (
@@ -21,14 +26,13 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_INDEPENDENT,
 )
 from imaspy.ids_factory import IDSFactory
+from imaspy.imas_interface import imas, has_imas as _has_imas, lowlevel
 from imaspy.db_entry import DBEntry
 from imaspy.test.test_helpers import open_dbentry
 
-try:
-    import imas
-except ImportError:
-    imas = None
-_has_imas = imas is not None
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 os.environ["IMAS_AL_DISABLE_VALIDATE"] = "1"
 
@@ -81,14 +85,12 @@ def requires_imas():
 def pytest_generate_tests(metafunc):
     if "ids_name" in metafunc.fixturenames:
         if metafunc.config.getoption("ids"):
-            metafunc.parametrize(
-                "ids_name",
-                [
-                    item
-                    for arg in metafunc.config.getoption("ids")
-                    for item in arg[0].split(",")
-                ],
-            )
+            ids_names = [
+                item
+                for arg in metafunc.config.getoption("ids")
+                for item in arg[0].split(",")
+            ]
+            metafunc.parametrize("ids_name", ids_names)
         elif metafunc.config.getoption("mini"):
             metafunc.parametrize("ids_name", ["pulse_schedule"])
         else:
@@ -157,6 +159,27 @@ def fake_filled_toplevel(
     top.wavevector[0].eigenmode.resize(1)
     eig = top.wavevector[0].eigenmode[0]
     eig.frequency_norm = 10
+    eig.poloidal_angle = np.linspace(0, 2, num=10) * np.pi
     top.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
 
     yield top
+
+
+def _lowlevel_wrapper(original_method):
+    @functools.wraps(original_method)
+    def wrapper(*args, **kwargs):
+        result = original_method(*args, **kwargs)
+        name = original_method.__name__
+        logger.info("UAL lowlevel call: %r(%s, %s) -> %s", name, args, kwargs, result)
+        return result
+
+    return wrapper
+
+
+@pytest.fixture
+def log_lowlevel_calls(monkeypatch, requires_imas):
+    """Debugging fixture to log calls to the imas lowlevel module."""
+    for al_function in dir(lowlevel):
+        if al_function.startswith("ual_"):
+            wrapper = _lowlevel_wrapper(getattr(lowlevel, al_function))
+            monkeypatch.setattr(lowlevel, al_function, wrapper)

@@ -31,7 +31,14 @@ It provides:
    intro
    api_overview
    metadata
+   lazy_loading
    mdsplus
+
+.. toctree::
+   :hidden:
+   :caption: IMASPy training courses
+
+   courses/basic_user_training
 
 
 README
@@ -51,6 +58,12 @@ For developers
 
    api
    api-hidden
+
+
+.. toctree::
+   :caption: IMASPy development
+
+   benchmarking
 
 
 LICENSE
