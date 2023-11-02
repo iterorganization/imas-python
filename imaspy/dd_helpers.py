@@ -274,3 +274,7 @@ def build_data_dictionary(repo, tag: str, saxon_jar_path: str, rebuild=False) ->
     except shutil.SameFileError:
         pass
     IDSDef.unlink(missing_ok=True)
+
+
+if __name__ == "__main__":
+    prepare_data_dictionaries()
