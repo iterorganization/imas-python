@@ -99,15 +99,44 @@ class DBEntry:
         IDSToplevel is for a different DD version, the data is converted automatically.
 
         Args:
-            backend_id: ID of the backend to use, e.g. HDF5_BACKEND. See :ref:`Backend
+            uri: IMAS URI of the data source (only available when using Access Layer 5)
+            mode: Mode to open the pulse in. One of:
+
+              - ``"r"``: Open an existing data entry. Raises an error when the data entry
+                does not exist. .. note:: The opened data entry is not read-only, it can
+                be written to.
+              - ``"a"``: Open an existing data entry, create the data entry if it does not
+                exist.
+              - ``"w"``: Create a data entry, overwriting any existing. .. caution:: This
+                will irreversibly delete any existing data.
+              - ``"x"``: Create a data entry. Raises an error when a data entry already
+                exists.
+
+        Notes:
+
+            Instead of the URI and mode, legacy parameters can be supplied as well. When
+            using Access Layer version 4, the URI/mode arguments are not supported and
+            the legacy parameters must be used instead:
+
+            ``backend_id``
+                ID of the backend to use, e.g. HDF5_BACKEND. See :ref:`Backend
                 identifiers`.
-            db_name: Database name, e.g. "ITER".
-            shot: Shot number of the database entry
-            run: Run number of the database entry
-            user_name: User name of the database, retrieved from environment when not
-                supplied.
-            data_version: Major version of the DD used by the the access layer,
-                retrieved from environment when not supplied.
+
+            ``db_name``
+                Database name, e.g. "ITER".
+
+            ``shot``
+                Shot number of the database entry
+
+            ``run``
+                Run number of the database entry
+
+            ``user_name``
+                User name of the database, retrieved from environment when not supplied.
+
+            ``data_version``
+                Major version of the DD used by the the access layer, retrieved from
+                environment when not supplied.
 
         Keyword Args:
             dd_version: Data dictionary version to use.

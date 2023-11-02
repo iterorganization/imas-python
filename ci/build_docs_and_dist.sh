@@ -24,11 +24,11 @@ source venv/bin/activate
 
 # Create sdist and wheel
 pip install --upgrade pip setuptools wheel build
-rm -rf imaspy/dist
-python -m build --no-isolation .
+rm -rf dist
+python -m build .
 
-# Install imaspy and documentation dependencies from wheel
-pip install "imaspy/dist/*.whl[docs]"
+# Install imaspy and documentation dependencies from the just-built wheel
+pip install "`readlink -f dist/*.whl`[docs]"
 
 # Debugging:
 pip freeze
