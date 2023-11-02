@@ -297,7 +297,8 @@ def compare_children(st1, st2, deleted_paths=set()):
             elif isinstance(child1.value, (list, np.ndarray)):
                 one = np.asarray(child1.value)
                 two = np.asarray(child2.value)
-                assert one.size == two.size
+                # Workaround for https://jira.iter.org/browse/IMAS-4948:
+                assert one.size == two.size or (child1 + child2 == [""])
                 if one.size > 0 and two.size > 0:
                     assert np.array_equal(one, two)
             else:
