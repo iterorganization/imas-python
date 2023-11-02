@@ -226,11 +226,10 @@ class DBEntry:
         # Note: MDSPLUS model directory only uses the major version component of
         # IMAS_VERSION, so we'll take the first character of IMAS_VERSION, or fallback
         # to "3" (older we don't support, newer is not available and probably never will
-        # with Access Layer 4.x). This needs to be revised for AL5 either way, since the
-        # directory structures are changing.
-
-        # version = self._dd_version[0] if self._dd_version else "3"
-        # ensure_data_dir(str(self.user_name), self.db_name, version, self.run)
+        # with Access Layer 4.x).
+        if ll_interface._al_version.major == 4:
+            version = self._dd_version[0] if self._dd_version else "3"
+            ensure_data_dir(str(self.user_name), self.db_name, version, self.run)
         self._uses_mdsplus = True
 
     def close(self, *, erase=False):
