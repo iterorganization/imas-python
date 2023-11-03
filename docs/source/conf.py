@@ -118,9 +118,6 @@ extensions = [
     # 'IPython.sphinxext.ipythoGn_console_highlighting',  # numpy
     # 'IPython.sphinxext.ipython_directive',  # numpy
     "sphinx.ext.mathjax",  # Render math as images
-    "recommonmark",  # For markdown support, does not support 'full' CommonMark syntax (yet)!
-    # "sphinxcontrib.mermaid",  # Draw graphs using Mermaid.js
-    "sphinx_tabs.tabs", # Toggleable HTML tabs
     "sphinx_immaterial",  # Sphinx immaterial theme
 ]
 
