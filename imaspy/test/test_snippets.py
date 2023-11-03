@@ -11,6 +11,7 @@ for course in ["basic"]:
     course_snippets.extend((courses / course).glob("*snippets/*.py"))
 
 
+@pytest.mark.filterwarnings("ignore:The input coordinates to pcolormesh:UserWarning")
 @pytest.mark.parametrize("snippet", course_snippets)
 def test_script_execution(snippet, monkeypatch):
     # Prevent showing plots in a GUI
