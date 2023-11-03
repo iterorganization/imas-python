@@ -1,7 +1,7 @@
 """A minimal testcase loading an IDS file and checking that the structure built is ok"""
 import numpy as np
 
-from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT
+from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.test.test_helpers import open_dbentry, randdims
 
 
@@ -43,6 +43,10 @@ def test_minimal_types_io(backend, ids_minimal_types, worker_id, tmp_path):
         else:
             assert minimal2[k].value == v
 
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
+
 
 def test_large_numbers(backend, ids_minimal_types, worker_id, tmp_path):
     """Write and then read again a large number"""
@@ -60,3 +64,7 @@ def test_large_numbers(backend, ids_minimal_types, worker_id, tmp_path):
     )
     minimal2 = dbentry2.get("minimal")
     assert minimal2["int_0d"] == 955683416
+
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()

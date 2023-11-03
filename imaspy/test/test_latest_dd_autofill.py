@@ -3,6 +3,7 @@ data dictionary version.
 """
 
 import copy
+from imaspy.ids_defs import MEMORY_BACKEND
 
 from imaspy.ids_factory import IDSFactory
 from imaspy.test.test_helpers import (
@@ -38,6 +39,10 @@ def test_latest_dd_autofill_separate(ids_name, backend, worker_id, tmp_path):
     ids2 = dbentry2.get(ids_name)
     compare_children(ids, ids2)
 
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
+
 
 def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
     """Write and then read again all IDSToplevels."""
@@ -54,6 +59,7 @@ def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
     # basic comparison first
     assert ids.ids_properties.comment == ids_ref.ids_properties.comment
     compare_children(ids, ids_ref)
+    dbentry.close()
 
 
 def test_latest_dd_autofill_serialize(ids_name, has_imas):

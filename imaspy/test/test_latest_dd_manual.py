@@ -3,7 +3,7 @@ data dictionary version.
 """
 
 from imaspy.ids_factory import IDSFactory
-from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
+from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
 from imaspy.test.test_helpers import open_dbentry
 
 
@@ -22,6 +22,10 @@ def test_latest_dd_manual(backend, worker_id, tmp_path):
     dbentry2 = open_dbentry(backend, "a", worker_id, tmp_path)
     ids2 = dbentry2.get(ids_name)
     assert ids2.ids_properties.comment.value == "test"
+
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
 
 
 def test_dir(backend, worker_id, tmp_path):

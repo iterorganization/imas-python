@@ -1,7 +1,7 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
 import string
 
-from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT
+from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.test.test_helpers import open_dbentry
 
 
@@ -22,6 +22,10 @@ def test_str_1d_empty(backend, ids_minimal_types, worker_id, tmp_path):
     minimal2 = dbentry2.get("minimal")
     assert list(minimal2.str_1d.value) == []
 
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
+
 
 def test_str_1d_long_single(backend, ids_minimal_types, worker_id, tmp_path):
     """Write and then read again a string on our minimal IDS."""
@@ -39,6 +43,10 @@ def test_str_1d_long_single(backend, ids_minimal_types, worker_id, tmp_path):
     )
     minimal2 = dbentry2.get("minimal")
     assert minimal2.str_1d.value == [string.ascii_uppercase * 100]
+
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
 
 
 def test_str_1d_multiple(backend, ids_minimal_types, worker_id, tmp_path):
@@ -61,6 +69,10 @@ def test_str_1d_multiple(backend, ids_minimal_types, worker_id, tmp_path):
         string.ascii_lowercase,
     ]
 
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
+
 
 def test_str_1d_long_multiple(backend, ids_minimal_types, worker_id, tmp_path):
     """Write and then read again a string on our minimal IDS."""
@@ -81,3 +93,7 @@ def test_str_1d_long_multiple(backend, ids_minimal_types, worker_id, tmp_path):
         string.ascii_uppercase * 100,
         string.ascii_lowercase * 100,
     ]
+
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()

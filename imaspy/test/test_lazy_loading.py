@@ -50,6 +50,8 @@ def test_lazy_load_aos(backend, worker_id, tmp_path, log_lowlevel_calls):
     assert lazy_ids_slice.profiles_1d.shape == (1,)
     assert lazy_ids_slice.profiles_1d[0].time == 3
 
+    dbentry.close()
+
 
 def test_lazy_loading_distributions_random(backend, worker_id, tmp_path):
     if backend == ASCII_BACKEND:
@@ -61,6 +63,8 @@ def test_lazy_loading_distributions_random(backend, worker_id, tmp_path):
 
     lazy_ids = dbentry.get("distributions", lazy=True)
     compare_children(ids, lazy_ids)
+
+    dbentry.close()
 
 
 def test_lazy_load_close_dbentry(requires_imas):
@@ -108,6 +112,8 @@ def test_lazy_load_readonly(requires_imas):
     with pytest.raises(ValueError):
         lazy_ids.time.value[0] = 10
 
+    dbentry.close()
+
 
 def test_lazy_load_no_put(requires_imas):
     dbentry = DBEntry(MEMORY_BACKEND, "ITER", 1, 1)
@@ -123,3 +129,5 @@ def test_lazy_load_no_put(requires_imas):
         dbentry.put(lazy_ids)
     with pytest.raises(ValueError):
         dbentry.put_slice(lazy_ids)
+
+    dbentry.close()

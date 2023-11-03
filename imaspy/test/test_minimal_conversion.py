@@ -1,4 +1,4 @@
-from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT
+from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.test.test_helpers import open_dbentry
 
 
@@ -18,6 +18,10 @@ def test_minimal_io_read_flt_int(
     minimal2 = dbentry2.get("minimal")
     assert minimal2.a.value == 2
 
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
+
 
 def test_minimal_io_read_int_flt(
     backend, ids_minimal, ids_minimal2, worker_id, tmp_path
@@ -34,3 +38,7 @@ def test_minimal_io_read_int_flt(
     dbentry = open_dbentry(backend, "r", worker_id, tmp_path, xml_path=ids_minimal)
     minimal = dbentry.get("minimal")
     assert minimal.a.value == 2.0
+
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()

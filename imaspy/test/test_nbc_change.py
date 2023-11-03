@@ -12,7 +12,7 @@ import pytest
 
 from imaspy.dd_zip import latest_dd_version
 from imaspy.ids_convert import convert_ids
-from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
+from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
 from imaspy.ids_factory import IDSFactory
 from imaspy.test.test_helpers import (
     compare_children,
@@ -100,6 +100,7 @@ def test_pulse_schedule_aos_renamed_up(backend, worker_id, tmp_path):
     # Now load back and ensure no conversion is done
     ids2 = dbentry.get("pulse_schedule")
     assert ids2.ec.launcher[0].name.value == "test"
+    dbentry.close()
 
 
 def test_pulse_schedule_aos_renamed_autodetect_up(backend, worker_id, tmp_path):
@@ -119,6 +120,10 @@ def test_pulse_schedule_aos_renamed_autodetect_up(backend, worker_id, tmp_path):
     ids2 = dbentry2.get("pulse_schedule")
     assert ids2.ec.launcher[0].name.value == "test"
 
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
+
 
 def test_pulse_schedule_aos_renamed_down(backend, worker_id, tmp_path):
     """pulse_schedule/ec/launcher was renamed from pulse_schedule/ec/antenna
@@ -135,6 +140,8 @@ def test_pulse_schedule_aos_renamed_down(backend, worker_id, tmp_path):
     # Now load back and ensure no conversion is done
     ids2 = dbentry.get("pulse_schedule")
     assert ids2.ec.antenna[0].name.value == "test"
+
+    dbentry.close()
 
 
 def test_pulse_schedule_aos_renamed_autodetect_down(backend, worker_id, tmp_path):
@@ -153,6 +160,10 @@ def test_pulse_schedule_aos_renamed_autodetect_down(backend, worker_id, tmp_path
     dbentry2 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.25.0")
     ids2 = dbentry2.get("pulse_schedule")
     assert ids2.ec.antenna[0].name.value == "test"
+
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
 
 
 def test_pulse_schedule_aos_renamed_autofill_up(backend, worker_id, tmp_path):
@@ -188,6 +199,7 @@ def test_pulse_schedule_aos_renamed_autofill_up(backend, worker_id, tmp_path):
             assert np.array_equal(new.reference.time, old.reference.time)
             assert new.reference_type == old.reference_type
             assert new.envelope_type == old.envelope_type
+    dbentry.close()
 
 
 def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
@@ -247,6 +259,10 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
 
     # Compare outcome of explicit conversion back to 3.25.0
     compare_children(ids2, convert_ids(explicit_3_30, "3.25.0"))
+
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
 
 
 def test_convert_min_to_max(ids_name):

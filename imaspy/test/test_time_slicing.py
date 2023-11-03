@@ -41,6 +41,7 @@ def test_write_read_time(backend, worker_id, tmp_path, time_mode):
 
     eq = dbentry.get("equilibrium")
     assert np.array_equal(eq.time, [0.0, 0.1, 0.2])
+    dbentry.close()
 
 
 def test_time_slicing_get(backend, worker_id, tmp_path, time_mode):
@@ -59,6 +60,7 @@ def test_time_slicing_get(backend, worker_id, tmp_path, time_mode):
     for time in range(3):
         eq = dbentry.get_slice("equilibrium", time * 0.1, CLOSEST_INTERP)
         assert eq.vacuum_toroidal_field.b0.value == time + 3.0
+    dbentry.close()
 
 
 def test_time_slicing_put(backend, worker_id, tmp_path, request, time_mode):
@@ -79,6 +81,7 @@ def test_time_slicing_put(backend, worker_id, tmp_path, request, time_mode):
 
     assert np.allclose(eq.vacuum_toroidal_field.b0.value, [3.0, 4.0, 5.0])
     assert np.allclose(eq.time.value, [0.0, 0.1, 0.2])
+    dbentry.close()
 
 
 def test_hli_time_slicing_put(backend, worker_id, tmp_path, time_mode):
@@ -139,6 +142,7 @@ def test_time_slicing_put_two(backend, worker_id, tmp_path, time_mode):
     )
     # Use allclose instead of array_equal since 0.15000000000000002 != 0.15
     assert np.allclose(eq.time.value, [0.0, 0.05, 0.1, 0.15, 0.2, 0.25])
+    dbentry.close()
 
 
 def test_time_slicing_time_mode(backend, worker_id, tmp_path, time_mode):
@@ -174,3 +178,4 @@ def test_time_slicing_time_mode(backend, worker_id, tmp_path, time_mode):
         assert np.array_equal(ctrls.linear_controller[0].inputs.data.value, [[1.0]])
         assert np.array_equal(ctrls.linear_controller[1].inputs.data.value, [[1.0]])
     assert np.array_equal(ctrls.code.output_flag.value, [1])
+    dbentry.close()

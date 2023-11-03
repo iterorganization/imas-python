@@ -1,7 +1,7 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
 import pytest
 
-from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MDSPLUS_BACKEND
+from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MDSPLUS_BACKEND, MEMORY_BACKEND
 from imaspy.ids_factory import IDSFactory
 from imaspy.test.test_helpers import open_dbentry
 
@@ -22,6 +22,8 @@ def test_minimal_struct_array_maxoccur(
             dbentry.put(minimal_struct_array)
     else:
         dbentry.put(minimal_struct_array)
+
+    dbentry.close()
 
 
 def test_minimal_struct_array_io(
@@ -53,3 +55,7 @@ def test_minimal_struct_array_io(
     minimal_struct_array2 = dbentry2.get("minimal_struct_array")
     assert minimal_struct_array2.struct_array[0].a.flt_0d.value == 2.0
     assert minimal_struct_array2.struct_array[1].a.flt_0d.value == 4.0
+
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()

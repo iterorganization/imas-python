@@ -2,7 +2,7 @@
 """
 import numpy as np
 
-from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT
+from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.ids_factory import IDSFactory
 from imaspy.test.test_helpers import fill_with_random_data, open_dbentry
 from imaspy.test.test_minimal_types_io import TEST_DATA
@@ -30,6 +30,7 @@ def test_minimal_types_str_1d_decode_and_put(
     assert minimal.str_1d.value == ["test", "test2"]
     dbentry.put(minimal)
     assert minimal.str_1d.value == ["test", "test2"]
+    dbentry.close()
 
 
 def test_minimal_types_io_automatic(backend, ids_minimal_types, worker_id, tmp_path):
@@ -58,3 +59,7 @@ def test_minimal_types_io_automatic(backend, ids_minimal_types, worker_id, tmp_p
                 )
             else:
                 assert minimal2[k].value == minimal[k].value
+
+    dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
