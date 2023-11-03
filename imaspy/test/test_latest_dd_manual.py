@@ -28,7 +28,7 @@ def test_latest_dd_manual(backend, worker_id, tmp_path):
         dbentry2.close()
 
 
-def test_dir(backend, worker_id, tmp_path):
+def test_dir():
     """Test calling `dir()` on `IDSFactory` to test if we can see IDSes"""
     factory = IDSFactory()
     f_dir = dir(factory)
