@@ -14,8 +14,8 @@ IMASPy IDS manipulation
    :toctree: generated/
    :recursive:
 
-
-   ids_root.IDSRoot
+   db_entry.DBEntry
+   ids_factory.IDSFactory
    ids_toplevel.IDSToplevel
    ids_primitive.IDSPrimitive
    ids_structure.IDSStructure

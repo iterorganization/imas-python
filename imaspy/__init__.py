@@ -19,7 +19,6 @@ from . import (
     ids_defs,
     ids_mixin,
     ids_primitive,
-    ids_root,
     ids_struct_array,
     ids_structure,
     ids_toplevel,
