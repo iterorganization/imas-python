@@ -32,7 +32,6 @@ from .ids_convert import convert_ids
 
 # Load the IMASPy IMAS AL/DD core
 from . import (
-    al_exception,
     db_entry,
     dd_helpers,
     dd_zip,

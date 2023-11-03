@@ -15,7 +15,6 @@ try:
 except ImportError:
     from cached_property import cached_property
 
-from imaspy.al_exception import ALException
 from imaspy.exception import ValidationError
 from imaspy.ids_defs import (
     ASCII_BACKEND,
@@ -129,7 +128,7 @@ class IDSToplevel(IDSStructure):
         if protocol is None:
             protocol = self.default_serializer_protocol()
         if self.ids_properties.homogeneous_time == IDS_TIME_MODE_UNKNOWN:
-            raise ALException("IDS is found to be EMPTY (homogeneous_time undefined)")
+            raise ValueError("IDS is found to be EMPTY (homogeneous_time undefined)")
         if protocol == ASCII_SERIALIZER_PROTOCOL:
             tmpdir = "/dev/shm" if os.path.exists("/dev/shm") else "."
             filepath = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
