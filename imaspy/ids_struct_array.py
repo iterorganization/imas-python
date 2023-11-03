@@ -1,7 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
-""" IDS StructArray represents an Array of Structures in the IDS tree.
-This contains references to :py:class:`IDSStructure`\ s
+"""IDS StructArray represents an Array of Structures in the IDS tree.
+This contains references to :py:class:`IDSStructure`\\ s
 """
 
 from copy import deepcopy

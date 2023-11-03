@@ -385,6 +385,9 @@ class IDSFloat0D(IDSNumeric0D, Real):
     def __float__(self) -> float:
         return self.value
 
+    def __int__(self) -> int:
+        return int(self.value)
+
     def __trunc__(self) -> int:
         return int(self.value)
 
