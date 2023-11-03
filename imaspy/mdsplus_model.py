@@ -20,9 +20,7 @@ import imaspy
 from imaspy.dd_helpers import get_saxon
 from imaspy.dd_zip import get_dd_xml, get_dd_xml_crc
 
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 MDSPLUS_MODEL_TIMEOUT = int(os.getenv("MDSPLUS_MODEL_TIMEOUT", "120"))

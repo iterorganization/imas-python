@@ -34,10 +34,10 @@ see the Access Layer documentation for more details on the different backends.
 import functools
 import logging
 
-from imaspy.setup_logging import root_logger as logger
 from imaspy.imas_interface import imasdef, has_imas
 
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 if has_imas:
     ASCII_BACKEND = imasdef.ASCII_BACKEND

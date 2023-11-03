@@ -20,9 +20,7 @@ from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.util import visit_children
 
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 BASE_STRING = string.ascii_uppercase + string.digits
 

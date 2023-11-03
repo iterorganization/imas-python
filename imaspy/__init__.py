@@ -10,7 +10,7 @@ __version__ = _version.get_versions()["version"]
 version = __version__
 
 # Import logging _first_
-from .setup_logging import root_logger as logger
+from . import setup_logging
 
 # Hardcode this for stricter imports and debugging
 # These imports define the "data containers" for IMASPy.

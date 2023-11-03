@@ -5,6 +5,7 @@ This contains references to :py:class:`IDSStructure`\ s
 """
 
 from copy import deepcopy
+import logging
 from typing import Optional, Tuple
 from xml.etree.ElementTree import Element
 
@@ -16,7 +17,9 @@ except ImportError:
 from imaspy.al_context import LazyALContext
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_mixin import IDSMixin
-from imaspy.setup_logging import root_logger as logger
+
+
+logger = logging.getLogger(__name__)
 
 
 class IDSStructArray(IDSMixin):

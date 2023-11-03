@@ -22,9 +22,7 @@ from imaspy.test.test_helpers import open_dbentry
 # import IMAS HLI, skip module when this is an install without IMAS
 imas = pytest.importorskip("imas")
 
-root_logger = logging.getLogger("imaspy")
-logger = root_logger
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(params=(IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS))
