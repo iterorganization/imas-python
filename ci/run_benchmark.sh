@@ -24,9 +24,12 @@ rm -rf venv  # Environment should be clean, but remove directory to be sure
 python -m venv --system-site-packages venv
 source venv/bin/activate
 
-# Install asv
+# Install asv and imaspy
 pip install --upgrade pip setuptools wheel
-pip install asv virtualenv
+pip install asv virtualenv .
+
+# Generate MDS+ models cache
+python -c 'import imaspy; print(imaspy.mdsplus_model.mdsplus_model_dir(version=imaspy.IDSFactory().version))'
 
 # Copy previous results (if any)
 mkdir -p /mnt/bamboo_deploy/imaspy/benchmarks/results
