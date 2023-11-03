@@ -100,12 +100,13 @@ else:
 
 
 def needs_imas(func):
+    if has_imas:
+        return func
+
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        if not has_imas:
-            raise RuntimeError(
-                f"Function {func.__name__} requires IMAS, but IMAS is not available."
-            )
-        return func(*args, **kwargs)
+        raise RuntimeError(
+            f"Function {func.__name__} requires IMAS, but IMAS is not available."
+        )
 
     return wrapper
