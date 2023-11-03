@@ -108,19 +108,6 @@ class IDSStructure(IDSMixin):
         """True if any of the children has a non-default value"""
         return any(map(lambda el: el.has_value, self))
 
-    def keys(self):
-        """Behave like a dictionary by defining a keys() method"""
-        return self._children
-
-    def values(self):
-        """Behave like a dictionary by defining a values() method"""
-        return map(self.__getitem__, self._children)
-
-    def items(self):
-        """Behave like a dictionary by defining an items() method"""
-        # define values inline, because some IDSes overwrite values
-        return zip(self.keys(), map(self.__getitem__, self._children))
-
     def __iter__(self):
         """Iterate over this structure's children"""
         return iter(map(self.__getitem__, self._children))
