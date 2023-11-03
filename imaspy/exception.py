@@ -1,14 +1,8 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
-
-
 import logging
-import re
-
 
 logger = logging.getLogger(__name__)
-_index_replacement_re = re.compile(r"\((itime|i[0-9]+)\)")
-_endswith_index_re = re.compile(r"\((itime|i[0-9]+|(:,?)+)\)(?=[^/])")
 
 
 class CoordinateLookupError(Exception):
