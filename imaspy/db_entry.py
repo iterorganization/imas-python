@@ -648,7 +648,7 @@ class DBEntry:
             _delete_children(ids, write_ctx, "")
 
     @overload
-    def list_all_occurrences(self, ids_name: str, node_path: None) -> List[int]:
+    def list_all_occurrences(self, ids_name: str, node_path: None = None) -> List[int]:
         ...
 
     @overload
@@ -667,7 +667,7 @@ class DBEntry:
         Args:
             ids_name: name of the IDS (e.g. "magnetics", "core_profiles" or
                 "equilibrium")
-            node_path: path to a Data-Dictionnary node (e.g. "ids_properties/comment",
+            node_path: path to a Data-Dictionary node (e.g. "ids_properties/comment",
                 "code/name", "ids_properties/provider").
 
         Returns:
@@ -696,6 +696,10 @@ class DBEntry:
             has_occurrence_list = True
         except LLInterfaceError:
             # al_get_occurrences is not available in the lowlevel
+            logger.info(
+                "list_all_occurrences: lowlevel too old for list_all_occurrences, "
+                "using IMASPy heuristic to determine filled occurrences."
+            )
             occurrence_list = []
             has_occurrence_list = False
 
@@ -713,6 +717,10 @@ class DBEntry:
                         # expect an error for getting this occurrence...
                         raise  
                     # Apparently this occurrence is not filled, stop guessing:
+                    logger.info(
+                        "Occurrence %d is not filled, assuming no IDSs with "
+                        "higher occurrence numbers are filled."
+                    )
                     break
                 if node_path is not None:
                     node_content_list.append(ids[node_path])
