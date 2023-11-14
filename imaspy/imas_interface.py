@@ -163,6 +163,10 @@ else:
     imas = _lazy_import("imas")
 
 
+class LLInterfaceError(RuntimeError):
+    """Exception thrown when a method doesn't exist on the lowlevel interface."""
+
+
 class LowlevelInterface:
     """Compatibility object.
 
@@ -232,7 +236,7 @@ class LowlevelInterface:
         )
 
     def _minimal_version(self, minversion):
-        return RuntimeError(
+        return LLInterfaceError(
             f"This function requires at least Access Layer version {minversion}, "
             f"but the current version is {self._al_version_str}"
         )
@@ -241,11 +245,11 @@ class LowlevelInterface:
 
     def begin_pulse_action(self, backendID, shot, run, user, tokamak, version):
         # Removed in AL5, compatibility handled in DBEntry
-        raise NotImplementedError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__qualname__} is not implemented")
 
     def open_pulse(self, pulseCtx, mode, options):
         # Removed in AL5, compatibility handled in DBEntry
-        raise NotImplementedError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__qualname__} is not implemented")
 
     def close_pulse(self, pulseCtx, mode):
         # options argument (mandatory in AL4) was removed in AL5
@@ -255,28 +259,28 @@ class LowlevelInterface:
     def begin_global_action(self, pulseCtx, dataobjectname, rwmode, datapath=""):
         # datapath was added in AL5 to support more efficient partial_get in the
         # UDA backend. TODO: figure out if this is useful for lazy loading.
-        raise NotImplementedError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__qualname__} is not implemented")
 
     def begin_slice_action(self, pulseCtx, dataobjectname, rwmode, time, interpmode):
-        raise NotImplementedError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__qualname__} is not implemented")
 
     def end_action(self, ctx):
-        raise NotImplementedError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__qualname__} is not implemented")
 
     def write_data(self, ctx, pyFieldPath, pyTimebasePath, inputData):
-        raise NotImplementedError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__qualname__} is not implemented")
 
     def read_data(self, ctx, fieldPath, pyTimebasePath, ualDataType, dim):
-        raise NotImplementedError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__qualname__} is not implemented")
 
     def delete_data(self, ctx, path):
-        raise NotImplementedError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__qualname__} is not implemented")
 
     def begin_arraystruct_action(self, ctx, path, pyTimebase, size):
-        raise NotImplementedError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__qualname__} is not implemented")
 
     def iterate_over_arraystruct(self, aosctx, step):
-        raise NotImplementedError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__qualname__} is not implemented")
 
     # New methods added in AL 5.0
 
@@ -311,6 +315,11 @@ class LowlevelInterface:
 
     def setvalue_parameter_plugin(self, parameter_name, inputData, pluginName):
         raise self._minimal_version("5.0")
+    
+    # New methods added in AL 5.1
+
+    def get_occurrences(self, ctx, ids_name):
+        raise self._minimal_version("5.1")
 
     def get_al_version(self):
         return self._al_version_str

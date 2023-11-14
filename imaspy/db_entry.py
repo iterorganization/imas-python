@@ -1,10 +1,9 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
 
-import importlib
 import logging
 import os
-from typing import Any, Optional, Union
+from typing import Any, List, Optional, Tuple, Union, overload
 from urllib.parse import urlparse
 
 from imaspy.exception import ValidationError
@@ -37,7 +36,7 @@ from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.imas_interface import ll_interface
+from imaspy.imas_interface import LLInterfaceError, ll_interface
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.al_context import ALContext, LazyALContext
 
@@ -647,6 +646,83 @@ class DBEntry:
         ids = self._ids_factory.new(ids_name)
         with self._db_ctx.global_action(ll_path, WRITE_OP) as write_ctx:
             _delete_children(ids, write_ctx, "")
+
+    @overload
+    def list_all_occurrences(self, ids_name: str, node_path: None) -> List[int]:
+        ...
+
+    @overload
+    def list_all_occurrences(
+        self, ids_name: str, node_path: str
+    ) -> Tuple[List[int], List[IDSMixin]]:
+        ...
+
+    def list_all_occurrences(self, ids_name, node_path=None):
+        """List all non-empty occurrences of an IDS
+
+        When using AL 5.1 or later, this will request the occurrences from the backend.
+        In earlier versions of the Access Layer, IMASPy will attempt to determine which
+        occurrences are filled.
+
+        Args:
+            ids_name: name of the IDS (e.g. "magnetics", "core_profiles" or
+                "equilibrium")
+            node_path: path to a Data-Dictionnary node (e.g. "ids_properties/comment",
+                "code/name", "ids_properties/provider").
+
+        Returns:
+            tuple or list:
+                When no ``node_path`` is supplied, a (sorted) list with non-empty
+                occurrence numbers is returned.
+
+                When ``node_path`` is supplied, a tuple ``(occurrence_list,
+                node_content_list)`` is returned. The ``occurrence_list`` is a (sorted)
+                list of non-empty occurrence numbers. The ``node_content_list`` contains
+                the contents of the node in the corresponding occurrences.
+
+        Example:
+            .. code-block:: python
+
+                dbentry = imas.DBEntry(uri, "r")
+                occurrence_list, node_content_list = \\
+                    dbentry.list_all_occurrences("magnetics", "ids_properties/comment")
+                dbentry.close()
+        """
+        if self._db_ctx is None:
+            raise RuntimeError("Database entry is not opened, use open() first.")
+
+        try:
+            occurrence_list = list(ll_interface.get_occurrences(self._db_ctx, ids_name))
+            has_occurrence_list = True
+        except LLInterfaceError:
+            # al_get_occurrences is not available in the lowlevel
+            occurrence_list = []
+            has_occurrence_list = False
+
+        node_content_list = []
+        if not has_occurrence_list or node_path is not None:
+            # Lazy load these occurrences. If we don't know which occurrences exist yet,
+            # we will load up to 1024 (and stop at the first undefined occurrence)
+            occurrences = occurrence_list if has_occurrence_list else range(1024)
+            for occ in occurrences:
+                try:
+                    ids = self.get(ids_name, occ, lazy=True)
+                except RuntimeError:
+                    if has_occurrence_list:
+                        # The backend indicated that this occurrence exists, so we don't
+                        # expect an error for getting this occurrence...
+                        raise  
+                    # Apparently this occurrence is not filled, stop guessing:
+                    break
+                if node_path is not None:
+                    node_content_list.append(ids[node_path])
+                if not has_occurrence_list:
+                    occurrence_list.append(occ)
+        
+        if node_path is None:
+            return occurrence_list
+        return occurrence_list, node_content_list
+
 
 
 def _get_children(
