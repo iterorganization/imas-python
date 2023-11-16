@@ -693,44 +693,21 @@ class DBEntry:
 
         try:
             occurrence_list = list(ll_interface.get_occurrences(self._db_ctx, ids_name))
-            has_occurrence_list = True
         except LLInterfaceError:
             # al_get_occurrences is not available in the lowlevel
-            logger.info(
-                "list_all_occurrences: lowlevel too old for list_all_occurrences, "
-                "using IMASPy heuristic to determine filled occurrences."
-            )
-            occurrence_list = []
-            has_occurrence_list = False
+            raise RuntimeError(
+                "list_all_occurrences is not available. "
+                "Access Layer 5.1 or newer is required."
+            ) from None
 
-        node_content_list = []
-        if not has_occurrence_list or node_path is not None:
-            # Lazy load these occurrences. If we don't know which occurrences exist yet,
-            # we will load up to 1024 (and stop at the first undefined occurrence)
-            occurrences = occurrence_list if has_occurrence_list else range(1024)
-            for occ in occurrences:
-                try:
-                    ids = self.get(ids_name, occ, lazy=True)
-                except RuntimeError:
-                    if has_occurrence_list:
-                        # The backend indicated that this occurrence exists, so we don't
-                        # expect an error for getting this occurrence...
-                        raise  
-                    # Apparently this occurrence is not filled, stop guessing:
-                    logger.info(
-                        "Occurrence %d is not filled, assuming no IDSs with "
-                        "higher occurrence numbers are filled."
-                    )
-                    break
-                if node_path is not None:
-                    node_content_list.append(ids[node_path])
-                if not has_occurrence_list:
-                    occurrence_list.append(occ)
-        
         if node_path is None:
             return occurrence_list
-        return occurrence_list, node_content_list
 
+        node_content_list = [
+            self.get(ids_name, occ, lazy=True)[node_path]
+            for occ in occurrence_list
+        ]
+        return occurrence_list, node_content_list
 
 
 def _get_children(

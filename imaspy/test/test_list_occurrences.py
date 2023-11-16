@@ -27,29 +27,36 @@ def filled_dbentry():
 
 
 def test_list_occurrences_no_path(filled_dbentry):
-    occurrences = filled_dbentry.list_all_occurrences("core_profiles")
-    assert occurrences == [0, 1, 2]
-
-    occurrences = filled_dbentry.list_all_occurrences("magnetics")
     if ll_interface._al_version >= Version("5.1"):
-        assert occurrences == [0, 1, 3, 6]
-    else:  # Our algorithm will stop after discovering occurrence 2 doesn't exist
-        assert occurrences == [0, 1]
+        occurrences = filled_dbentry.list_all_occurrences("core_profiles")
+        assert occurrences == [0, 1, 2]
 
-    assert filled_dbentry.list_all_occurrences("core_sources") == []
+        occurrences = filled_dbentry.list_all_occurrences("magnetics")
+        assert occurrences == [0, 1, 3, 6]
+
+        assert filled_dbentry.list_all_occurrences("core_sources") == []
+
+    else:  # AL 5.0 or lower
+        with pytest.raises(RuntimeError):
+            filled_dbentry.list_all_occurrences("core_profiles")
+        with pytest.raises(RuntimeError):
+            filled_dbentry.list_all_occurrences("magnetics")
+        with pytest.raises(RuntimeError):
+            filled_dbentry.list_all_occurrences("core_sources")
 
 
 def test_list_occurrences_with_path(filled_dbentry):
-    res = filled_dbentry.list_all_occurrences("core_profiles", "ids_properties/comment")
-    assert res[0] == [0, 1, 2]
-    assert res[1] == [
-        "core_profiles occurrence 0",
-        "core_profiles occurrence 1",
-        "core_profiles occurrence 2",
-    ]
-
-    res = filled_dbentry.list_all_occurrences("magnetics", "ids_properties/comment")
+    comment = "ids_properties/comment"
     if ll_interface._al_version >= Version("5.1"):
+        res = filled_dbentry.list_all_occurrences("core_profiles", comment)
+        assert res[0] == [0, 1, 2]
+        assert res[1] == [
+            "core_profiles occurrence 0",
+            "core_profiles occurrence 1",
+            "core_profiles occurrence 2",
+        ]
+
+        res = filled_dbentry.list_all_occurrences("magnetics", comment)
         assert res[0] == [0, 1, 3, 6]
         assert res[1] == [
             "magnetics occurrence 0",
@@ -57,9 +64,14 @@ def test_list_occurrences_with_path(filled_dbentry):
             "magnetics occurrence 3",
             "magnetics occurrence 6",
         ]
-    else:  # Our algorithm will stop after discovering occurrence 2 doesn't exist
-        assert res[0] == [0, 1]
-        assert res[1] == ["magnetics occurrence 0", "magnetics occurrence 1"]
-        
-    res = filled_dbentry.list_all_occurrences("core_sources", "ids_properties/comment")
-    assert res == ([], [])
+
+        res = filled_dbentry.list_all_occurrences("core_sources", comment)
+        assert res == ([], [])
+
+    else:  # AL 5.0 or lower
+        with pytest.raises(RuntimeError):
+            filled_dbentry.list_all_occurrences("core_profiles", comment)
+        with pytest.raises(RuntimeError):
+            filled_dbentry.list_all_occurrences("magnetics", comment)
+        with pytest.raises(RuntimeError):
+            filled_dbentry.list_all_occurrences("core_sources", comment)
