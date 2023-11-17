@@ -1,5 +1,7 @@
 import datetime
+import os
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
@@ -131,27 +133,29 @@ class Generate:
 
 
 class Put:
-    params = [hlis, available_backends]
-    param_names = ["hli", "backend"]
+    params = [["0", "1"], hlis, available_slicing_backends]
+    param_names = ["disable_validate", "hli", "backend"]
 
-    def setup(self, hli, backend):
+    def setup(self, disable_validate, hli, backend):
         self.dbentry = create_dbentry(hli, backend)
         self.core_profiles = factory[hli].core_profiles()
         fill_slices(self.core_profiles, TIME)
+        os.environ["IMAS_AL_DISABLE_VALIDATE"] = disable_validate
 
-    def time_put(self, hli, backend):
+    def time_put(self, disable_validate, hli, backend):
         self.dbentry.put(self.core_profiles)
 
 
 class PutSlice:
-    params = [hlis, available_slicing_backends]
-    param_names = ["hli", "backend"]
+    params = [["0", "1"], hlis, available_slicing_backends]
+    param_names = ["disable_validate", "hli", "backend"]
 
-    def setup(self, hli, backend):
+    def setup(self, disable_validate, hli, backend):
         self.dbentry = create_dbentry(hli, backend)
         self.core_profiles = factory[hli].core_profiles()
+        os.environ["IMAS_AL_DISABLE_VALIDATE"] = disable_validate
 
-    def time_put_slice(self, hli, backend):
+    def time_put_slice(self, disable_validate, hli, backend):
         for t in TIME:
             fill_slices(self.core_profiles, [t])
             self.dbentry.put_slice(self.core_profiles)
@@ -181,3 +185,32 @@ class Deserialize:
 
     def time_deserialize(self, hli, serializer):
         self.core_profiles.deserialize(self.data)
+
+
+if __name__ == "__main__":
+    import numpy.core.fromnumeric
+    import time
+
+    old_wrapit = numpy.core.fromnumeric._wrapit
+    times = []
+    def new_wrapit(*args, **kwargs):
+        stime = time.time_ns()
+        retval = old_wrapit(*args, **kwargs)
+        rtime = time.time_ns() - stime
+        times.append(rtime)
+        if rtime > 100_000:
+            breakpoint()
+        return retval
+    numpy.core.fromnumeric._wrapit = new_wrapit
+
+    get = Get()
+    get.setup("imas", 14)
+    get.time_get("imas", 14)
+    imas_times = sorted(times)
+    times = []
+
+    get = Get()
+    get.setup("imaspy", 14)
+    get.time_get("imaspy", 14)
+    imaspy_times = sorted(times)
+    times = []
