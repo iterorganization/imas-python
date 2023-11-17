@@ -133,7 +133,7 @@ class Generate:
 
 
 class Put:
-    params = [["0", "1"], hlis, available_slicing_backends]
+    params = [["0", "1"], hlis, available_backends]
     param_names = ["disable_validate", "hli", "backend"]
 
     def setup(self, disable_validate, hli, backend):
