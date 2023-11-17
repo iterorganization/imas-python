@@ -63,6 +63,7 @@ dependencies = [
     "click",
     "importlib_resources",
     "packaging",
+    "xxhash >= 2",
 ]
 
 [project.optional-dependencies]

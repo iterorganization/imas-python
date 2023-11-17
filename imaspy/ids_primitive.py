@@ -6,12 +6,13 @@ Provides the class for an IDS Primitive data type
 
 * :py:class:`IDSPrimitive`
 """
-from copy import deepcopy
 import logging
 import math
-from numbers import Number, Complex, Real, Integral
-from functools import wraps
 import operator
+import struct
+from copy import deepcopy
+from functools import wraps
+from numbers import Complex, Integral, Number, Real
 from typing import Tuple
 from xml.etree.ElementTree import Element
 
@@ -21,12 +22,12 @@ except ImportError:
     from cached_property import cached_property
 
 import numpy as np
-from imaspy.al_context import LazyData
+from xxhash import xxh3_64, xxh3_64_digest
 
+from imaspy.al_context import LazyData
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_mixin import IDSMixin
-
 
 logger = logging.getLogger(__name__)
 
@@ -317,6 +318,9 @@ class IDSString0D(IDSPrimitive):
     def __len__(self):  # override as it is the only 0D quantity with a length
         return len(self.value)
 
+    def _xxhash(self) -> bytes:
+        return xxh3_64_digest(self.value.encode("UTF-8"))
+
 
 class IDSString1D(IDSPrimitive):
     """IDSPrimitive specialization for STR_1D."""
@@ -348,6 +352,12 @@ class IDSString1D(IDSPrimitive):
             logger.info(_CONVERT_MSG, type(value), self)
         return [_cast_str(self, value)]
 
+    def _xxhash(self) -> bytes:
+        hsh = xxh3_64(len(self).to_bytes(8, "little"))
+        for s in self:
+            hsh.update(xxh3_64_digest(s.encode("UTF-8")))
+        return hsh.digest()
+
 
 class IDSNumeric0D(IDSPrimitive):
     """Abstract base class for INT_0D, FLT_0D and CPX_0D."""
@@ -378,6 +388,9 @@ class IDSComplex0D(IDSNumeric0D, Complex):
     def conjugate(self) -> complex:
         return self.value.conjugate()
 
+    def _xxhash(self) -> bytes:
+        return xxh3_64_digest(struct.pack("<dd", self.real, self.imag))
+
 
 class IDSFloat0D(IDSNumeric0D, Real):
     """IDSPrimitive specialization for FLT_0D."""
@@ -400,6 +413,9 @@ class IDSFloat0D(IDSNumeric0D, Real):
     def __round__(self, ndigits=None):
         return round(self.value, ndigits)
 
+    def _xxhash(self) -> bytes:
+        return xxh3_64_digest(struct.pack("<d", self.value))
+
 
 class IDSInt0D(IDSNumeric0D, Integral):
     """IDSPrimitive specialization for INT_0D."""
@@ -418,6 +434,9 @@ class IDSInt0D(IDSNumeric0D, Integral):
 
     def __round__(self, ndigits=None):
         return round(self.value, ndigits)
+
+    def _xxhash(self) -> bytes:
+        return xxh3_64_digest(self.value.to_bytes(4, "little", signed=True))
 
 
 class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
@@ -473,6 +492,15 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
         if value.ndim != self.metadata.ndim:
             raise ValueError(f"Trying to assign a {value.ndim}D value to {self!r}.")
         return value
+
+    def _xxhash(self) -> bytes:
+        arr = self.value
+        hsh = xxh3_64(arr.ndim.to_bytes(1, 'little'))
+        hsh.update(struct.pack("<" + arr.ndim * "q", *arr.shape))
+        # Ensure array is little endian, only create a copy if it is big-endian
+        arr = arr.astype(arr.dtype.newbyteorder('little'), copy=False)
+        hsh.update(arr.tobytes(order='C'))
+        return hsh.digest()
 
 
 def _fullname(o) -> str:
