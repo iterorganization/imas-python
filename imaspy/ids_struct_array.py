@@ -13,6 +13,8 @@ try:
 except ImportError:
     from cached_property import cached_property
 
+from xxhash import xxh3_64
+
 from imaspy.al_context import LazyALContext
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_metadata import IDSMetadata
@@ -216,3 +218,9 @@ class IDSStructArray(IDSMixin):
             self.coordinates._validate()
             for child in self:
                 child._validate()
+
+    def _xxhash(self) -> bytes:
+        hsh = xxh3_64(len(self).to_bytes(8, 'little'))
+        for s in self:
+            hsh.update(s._xxhash())
+        return hsh.digest()
