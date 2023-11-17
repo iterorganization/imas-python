@@ -202,5 +202,5 @@ class IDSStructure(IDSMixin):
         # Common validation logic
         super()._validate()
         # IDSStructure specific: validate child nodes
-        for child in self:
+        for child in self._iter_children_with_value():
             child._validate()
