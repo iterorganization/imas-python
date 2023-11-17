@@ -73,8 +73,11 @@ class IDSStructure(IDSMixin):
             structure_xml: Object describing the structure of the IDS. Usually
                 an instance of `xml.etree.ElementTree.Element`
         """
-        self._children = {child.get("name"): child for child in structure_xml}
+        # Note: __setattr__ needs _children defined, so first set to empty list to
+        # prevent infinite recursion when setting self.metadata in super().__init__
+        self._children = []
         super().__init__(parent, structure_xml=structure_xml)
+        self._children = self.metadata._children
 
     def __getattr__(self, name):
         if name not in self._children:
@@ -84,7 +87,7 @@ class IDSStructure(IDSMixin):
         child = get_node_type(child.get("data_type"))(self, child)
         super().__setattr__(name, child)  # bypass setattr logic below: avoid recursion
         return child
-        
+
     def __setattr__(self, key, value):
         """
         'Smart' setting of attributes. To be able to warn the user on imaspy
@@ -144,7 +147,7 @@ class IDSStructure(IDSMixin):
     @property
     def has_value(self) -> bool:
         """True if any of the children has a non-default value"""
-        for child in self._iter_children_with_value():
+        for _ in self._iter_children_with_value():
             return True
         return False
 

@@ -3,6 +3,7 @@
 """ Core of the IMASPy interpreted IDS metadata
 """
 from enum import Enum
+import types
 from typing import Optional, Any, Dict
 from xml.etree.ElementTree import Element
 
@@ -103,6 +104,11 @@ class IDSMetadata:
         for attr_name in attrib:
             if not hasattr(self, attr_name):
                 setattr(self, attr_name, attrib[attr_name])
+
+        # Cache children in a read-only dict
+        self._children = types.MappingProxyType({
+            xml_child.get("name"): xml_child for xml_child in structure_xml
+        })
 
         # Prevent accidentally modifying attributes
         self._init_done = True
