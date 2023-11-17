@@ -91,7 +91,7 @@ class IDSPrimitive(IDSMixin):
 
         Args:
             parent: Parent node of this leaf
-            structure_xml: DD XML node that describes this IDSPrimitive
+            metadata: IDSMetadata that describes this IDSPrimitive
         """
         super().__init__(parent, metadata)
 

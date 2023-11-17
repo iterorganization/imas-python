@@ -45,8 +45,7 @@ class IDSStructArray(IDSMixin):
         Args:
             parent: Parent structure. Can be anything, but at database write
                 time should be something with a path attribute
-            structure_xml: Object describing the structure of the IDS. Usually
-                an instance of ``xml.etree.ElementTree.Element``
+            metadata: IDSMetadata describing the structure of the IDS
         """
         super().__init__(parent, metadata)
 
