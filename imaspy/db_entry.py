@@ -724,7 +724,9 @@ def _get_children(
             continue  # skip dynamic (time-dependent) nodes
 
         name = child_meta.name
-        path = str(child_meta.path)
+        path = child_meta.path_string
+        data_type = child_meta.data_type
+
         if nbc_map and path in nbc_map:
             if nbc_map.path[path] is None:
                 continue  # element does not exist in the on-disk DD version
@@ -734,41 +736,38 @@ def _get_children(
                 timebase = "/time"
         else:
             new_path = f"{ctx_path}/{name}" if ctx_path else name
-            if child_meta.data_type is not IDSDataType.STRUCTURE:
+            if data_type is not IDSDataType.STRUCTURE:
                 timebase = _get_timebasepath(child_meta, structure, time_mode, new_path)
 
-        if child_meta.data_type is IDSDataType.STRUCT_ARRAY:
-            # Create element
-            element = structure[name]
+        if data_type is IDSDataType.STRUCT_ARRAY:
             # Lazy loading:
             if isinstance(ctx, LazyALContext):
                 # Provide the AOS with enough information to retrieve its data
-                element._set_lazy_context(ctx, new_path, timebase)
+                getattr(structure, name)._set_lazy_context(ctx, new_path, timebase)
                 continue
             # Regular get/get_slice:
             with ctx.arraystruct_action(new_path, timebase, 0) as (new_ctx, size):
-                element.resize(size)
-                for item in element:
-                    _get_children(item, new_ctx, time_mode, "", nbc_map)
-                    new_ctx.iterate_over_arraystruct(1)
+                if size > 0:
+                    element = getattr(structure, name)
+                    element.resize(size)
+                    for item in element:
+                        _get_children(item, new_ctx, time_mode, "", nbc_map)
+                        new_ctx.iterate_over_arraystruct(1)
 
-        elif child_meta.data_type is IDSDataType.STRUCTURE:
+        elif data_type is IDSDataType.STRUCTURE:
             element = getattr(structure, name)
             _get_children(element, ctx, time_mode, new_path, nbc_map)
 
         else:  # Data elements
-            data_type = child_meta.data_type
             ndim = child_meta.ndim
             if data_type is IDSDataType.STR:
                 ndim += 1  # STR_0D is a 1D CHARACTER type...
             data = ctx.read_data(new_path, timebase, data_type.al_type, ndim)
             if not (
-                # Empty arrays
+                # Empty arrays and STR_1D
                 data is None
-                # EMPTY_INT, EMPTY_FLOAT, EMPTY_COMPLEX
-                or (ndim == 0 and data == data_type.default)
-                # Empty string 0d/1d
-                or (data_type is IDSDataType.STR and not data)
+                # EMPTY_INT, EMPTY_FLOAT, EMPTY_COMPLEX, empty string
+                or (child_meta.ndim == 0 and data == data_type.default)
             ):
                 getattr(structure, name).value = data
 
