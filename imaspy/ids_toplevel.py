@@ -6,9 +6,9 @@
 
 import logging
 import os
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
-import tempfile
 
 try:
     from functools import cached_property
@@ -20,12 +20,12 @@ from imaspy.ids_defs import (
     ASCII_BACKEND,
     ASCII_SERIALIZER_PROTOCOL,
     DEFAULT_SERIALIZER_PROTOCOL,
-    IDS_TIME_MODE_UNKNOWN,
     IDS_TIME_MODE_INDEPENDENT,
+    IDS_TIME_MODE_UNKNOWN,
     IDS_TIME_MODES,
     needs_imas,
 )
-from imaspy.ids_metadata import IDSType
+from imaspy.ids_metadata import IDSMetadata, IDSType, get_toplevel_metadata
 from imaspy.ids_structure import IDSStructure
 from imaspy.imas_interface import ll_interface
 
@@ -75,7 +75,13 @@ class IDSToplevel(IDSStructure):
             lazy: Whether this toplevel is used for a lazy-loaded get() or get_slice()
         """
         self._lazy = lazy
-        super().__init__(parent, structure_xml)
+        # structure_xml might be an IDSMetadata already when initializing from __copy__
+        # or __deepcopy__
+        if isinstance(structure_xml, IDSMetadata):
+            metadata = structure_xml
+        else:
+            metadata = get_toplevel_metadata(structure_xml)
+        super().__init__(parent, metadata)
 
     def __deepcopy__(self, memo):
         copy = super().__deepcopy__(memo)

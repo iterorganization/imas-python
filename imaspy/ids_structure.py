@@ -9,9 +9,8 @@ from copy import deepcopy
 from functools import lru_cache
 import logging
 from typing import Generator
-from xml.etree.ElementTree import Element
 
-from imaspy.ids_metadata import IDSDataType
+from imaspy.ids_metadata import IDSDataType, IDSMetadata
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_path import IDSPath
 from imaspy.ids_primitive import (
@@ -29,18 +28,18 @@ logger = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=None)
-def get_node_type(data_type: str):
-    data_type, ndim = IDSDataType.parse(data_type)
+def get_node_type(meta: IDSMetadata):
+    data_type = meta.data_type
     if data_type is IDSDataType.STRUCTURE:
         return IDSStructure
     if data_type is IDSDataType.STRUCT_ARRAY:
         return IDSStructArray
     if data_type is IDSDataType.STR:
-        if ndim == 0:
+        if meta.ndim == 0:
             return IDSString0D
         else:
             return IDSString1D
-    if ndim == 0:
+    if meta.ndim == 0:
         if data_type is IDSDataType.FLT:
             return IDSFloat0D
         if data_type is IDSDataType.INT:
@@ -59,7 +58,7 @@ class IDSStructure(IDSMixin):
     IDSStructArrays
     """
 
-    def __init__(self, parent: IDSMixin, structure_xml: Element):
+    def __init__(self, parent: IDSMixin, metadata: IDSMetadata):
         """Initialize IDSStructure from XML specification
 
         Initializes in-memory an IDSStructure. The XML should contain
@@ -76,15 +75,15 @@ class IDSStructure(IDSMixin):
         # Note: __setattr__ needs _children defined, so first set to empty list to
         # prevent infinite recursion when setting self.metadata in super().__init__
         self._children = []
-        super().__init__(parent, structure_xml=structure_xml)
+        super().__init__(parent, metadata)
         self._children = self.metadata._children
 
     def __getattr__(self, name):
         if name not in self._children:
             raise AttributeError(f"'{__class__}' object has no attribute '{name}'")
         # Create child node
-        child = self._children[name]
-        child = get_node_type(child.get("data_type"))(self, child)
+        child_meta = self._children[name]
+        child = get_node_type(child_meta)(self, child_meta)
         super().__setattr__(name, child)  # bypass setattr logic below: avoid recursion
         return child
 
@@ -132,7 +131,7 @@ class IDSStructure(IDSMixin):
             attr.value = value
 
     def __deepcopy__(self, memo):
-        copy = self.__class__(self._parent, self._structure_xml)
+        copy = self.__class__(self._parent, self.metadata)
         for child in self._children:
             child_copy = deepcopy(getattr(self, child))
             setattr(copy, child, child_copy)

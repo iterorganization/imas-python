@@ -2,12 +2,12 @@ from copy import deepcopy
 
 import pytest
 
-from imaspy.ids_metadata import IDSMetadata, IDSType
+from imaspy.ids_metadata import IDSMetadata, IDSType, get_toplevel_metadata
 
 
 def test_metadata_cache(fake_structure_xml):
-    meta = IDSMetadata(structure_xml=fake_structure_xml)
-    meta2 = IDSMetadata(structure_xml=fake_structure_xml)
+    meta = get_toplevel_metadata(fake_structure_xml)
+    meta2 = get_toplevel_metadata(fake_structure_xml)
     assert meta is meta2
 
 

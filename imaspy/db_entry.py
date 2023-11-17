@@ -719,8 +719,7 @@ def _get_children(
     nbc_map: Optional[NBCPathMap],
 ) -> None:
     """Recursively get all children of an IDSStructure"""
-    for name, xml in structure._children.items():
-        child_meta = IDSMetadata(xml)
+    for name, child_meta in structure._children.items():
         if time_mode == IDS_TIME_MODE_INDEPENDENT and child_meta.type.is_dynamic:
             continue  # skip dynamic (time-dependent) nodes
 
@@ -776,8 +775,7 @@ def _get_children(
 
 def _delete_children(structure: IDSMetadata, ctx: ALContext, ctx_path: str) -> None:
     """Recursively delete all children of an IDSStructure"""
-    for name, xml in structure._children.items():
-        child_meta = IDSMetadata(xml)
+    for name, child_meta in structure._children.items():
         new_path = f"{ctx_path}/{name}" if ctx_path else name
         if child_meta.data_type is IDSDataType.STRUCTURE:
             _delete_children(child_meta, ctx, new_path)

@@ -6,14 +6,13 @@ Provides the class for an IDS Primitive data type
 
 * :py:class:`IDSPrimitive`
 """
-from copy import deepcopy
 import logging
 import math
-from numbers import Number, Complex, Real, Integral
-from functools import wraps
 import operator
+from copy import deepcopy
+from functools import wraps
+from numbers import Complex, Integral, Number, Real
 from typing import Tuple
-from xml.etree.ElementTree import Element
 
 try:
     from functools import cached_property
@@ -21,12 +20,12 @@ except ImportError:
     from cached_property import cached_property
 
 import numpy as np
-from imaspy.al_context import LazyData
 
+from imaspy.al_context import LazyData
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_data_type import IDSDataType
+from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_mixin import IDSMixin
-
 
 logger = logging.getLogger(__name__)
 
@@ -85,14 +84,14 @@ class IDSPrimitive(IDSMixin):
     Lives entirely in-memory until 'put' into a database.
     """
 
-    def __init__(self, parent: IDSMixin, structure_xml: Element):
+    def __init__(self, parent: IDSMixin, metadata: IDSMetadata):
         """Initialize IDSPrimitive
 
         Args:
             parent: Parent node of this leaf
             structure_xml: DD XML node that describes this IDSPrimitive
         """
-        super().__init__(parent, structure_xml=structure_xml)
+        super().__init__(parent, metadata)
 
         self.__value = None
         self._lazy_loaded = False
@@ -104,7 +103,7 @@ class IDSPrimitive(IDSMixin):
     def __deepcopy__(self, memo):
         # note: if parent needs updating it is handled by the deepcopy of our parent
         # TODO: implement the statement on the previous line O_O
-        copy = self.__class__(self._parent, self._structure_xml)
+        copy = self.__class__(self._parent, self.metadata)
         copy.__value = deepcopy(self.__value, memo)
         copy._lazy_loaded = self._lazy_loaded
         return copy

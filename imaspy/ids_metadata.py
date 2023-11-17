@@ -3,6 +3,7 @@
 """ Core of the IMASPy interpreted IDS metadata
 """
 from enum import Enum
+from functools import lru_cache
 import types
 from typing import Optional, Any, Dict
 from xml.etree.ElementTree import Element
@@ -46,6 +47,19 @@ class IDSType(Enum):
         self.is_dynamic = name == "dynamic"
 
 
+
+# This cache is for IDSMetadata for IDS toplevels
+# Typical use case is one or two DD versions
+# Currently the DD has ~70 unique IDSs, so this cache has plenty of size to store all
+# IDSs of two DD versions.
+#
+# Perhaps the cache could be smaller, but that would be less efficient for the unit
+# tests...
+@lru_cache(maxsize=256)
+def get_toplevel_metadata(structure_xml):
+    return IDSMetadata(structure_xml)
+
+
 class IDSMetadata:
     """Container for IDS Metadata
 
@@ -55,23 +69,16 @@ class IDSMetadata:
     IMASPy.
     """
 
-    _cache: Dict[Element, "IDSMetadata"] = {}
-
-    def __new__(cls, structure_xml: Element) -> "IDSMetadata":
-        if structure_xml not in cls._cache:
-            cls._cache[structure_xml] = super().__new__(cls)
-        return cls._cache[structure_xml]
-
     def __init__(self, structure_xml: Element) -> None:
-        if hasattr(self, "_init_done"):
-            return  # Already initialized, __new__ returned from cache
         attrib = structure_xml.attrib
+        self._structure_xml = structure_xml
 
         # Mandatory attributes
         self.name = attrib["name"]
 
         # These are special and used in IMASPy logic, so we need to ensure proper values
-        self.maxoccur = self.parse_maxoccur(attrib.get("maxoccur", "unbounded"))
+        maxoccur = attrib.get("maxoccur", "unbounded")
+        self.maxoccur = None if maxoccur == "unbounded" else int(maxoccur)
         self.data_type, self.ndim = IDSDataType.parse(attrib.get("data_type", None))
         self.path = IDSPath(attrib.get("path", ""))  # IDSToplevel has no path
         self.path_doc = attrib.get("path_doc", "")  # IDSToplevel has no path
@@ -107,7 +114,7 @@ class IDSMetadata:
 
         # Cache children in a read-only dict
         self._children = types.MappingProxyType({
-            xml_child.get("name"): xml_child for xml_child in structure_xml
+            xml_child.get("name"): IDSMetadata(xml_child) for xml_child in structure_xml
         })
 
         # Prevent accidentally modifying attributes
@@ -126,9 +133,3 @@ class IDSMetadata:
 
     def __deepcopy__(self, memo: dict):
         return self  # IDSMetadata is immutable
-
-    def parse_maxoccur(self, value: str) -> Optional[int]:
-        """Parse a maxoccur attribute string and return its pythonic value"""
-        if value == "unbounded":
-            return None
-        return int(value)

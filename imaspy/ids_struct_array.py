@@ -4,10 +4,9 @@
 This contains references to :py:class:`IDSStructure`\\ s
 """
 
-from copy import deepcopy
 import logging
+from copy import deepcopy
 from typing import Optional, Tuple
-from xml.etree.ElementTree import Element
 
 try:
     from functools import cached_property
@@ -16,8 +15,8 @@ except ImportError:
 
 from imaspy.al_context import LazyALContext
 from imaspy.ids_coordinates import IDSCoordinates
+from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_mixin import IDSMixin
-
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +37,7 @@ class IDSStructArray(IDSMixin):
         return self._element_structure
 
     # TODO: HLI compatibility `base_path_in`
-    def __init__(self, parent: IDSMixin, structure_xml: Element):
+    def __init__(self, parent: IDSMixin, metadata: IDSMetadata):
         """Initialize IDSStructArray from XML specification
 
         Args:
@@ -47,7 +46,7 @@ class IDSStructArray(IDSMixin):
             structure_xml: Object describing the structure of the IDS. Usually
                 an instance of ``xml.etree.ElementTree.Element``
         """
-        super().__init__(parent, structure_xml)
+        super().__init__(parent, metadata)
 
         # Initialize with an 0-length list
         self.value = []
@@ -63,7 +62,7 @@ class IDSStructArray(IDSMixin):
         return IDSCoordinates(self)
 
     def __deepcopy__(self, memo):
-        copy = self.__class__(self._parent, self._structure_xml)
+        copy = self.__class__(self._parent, self.metadata)
         for value in self.value:
             value_copy = deepcopy(value, memo)
             value_copy._parent = copy
@@ -109,7 +108,7 @@ class IDSStructArray(IDSMixin):
                 from imaspy.db_entry import _get_children
                 from imaspy.ids_structure import IDSStructure
 
-                element = self.value[item] = IDSStructure(self, self._structure_xml)
+                element = self.value[item] = IDSStructure(self, self.metadata)
                 nbc_map = self._lazy_context.nbc_map
                 _get_children(element, new_ctx, self._time_mode, "", nbc_map)
 
@@ -118,7 +117,7 @@ class IDSStructArray(IDSMixin):
         """Prepare an element structure JIT"""
         from imaspy.ids_structure import IDSStructure
 
-        struct = IDSStructure(self, self._structure_xml)
+        struct = IDSStructure(self, self.metadata)
         return struct
 
     def __setattr__(self, key, value):
