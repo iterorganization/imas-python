@@ -31,7 +31,7 @@ from imaspy.ids_defs import (
     needs_imas,
 )
 from imaspy.ids_factory import IDSFactory
-from imaspy.ids_metadata import IDSType
+from imaspy.ids_metadata import IDSMetadata, IDSType
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
@@ -617,7 +617,9 @@ class DBEntry:
             with self._db_ctx.global_action(ll_path, WRITE_OP) as write_ctx:
                 # New IDS to ensure all fields in "our" DD version are deleted
                 # If ids is in another version, we might not erase all fields
-                _delete_children(self._ids_factory.new(ids_name), write_ctx, "")
+                _delete_children(
+                    self._ids_factory.new(ids_name).metadata, write_ctx, ""
+                )
 
         if is_slice:
             manager = self._db_ctx.slice_action(
@@ -645,7 +647,7 @@ class DBEntry:
             ll_path += f"/{occurrence}"
         ids = self._ids_factory.new(ids_name)
         with self._db_ctx.global_action(ll_path, WRITE_OP) as write_ctx:
-            _delete_children(ids, write_ctx, "")
+            _delete_children(ids.metadata, write_ctx, "")
 
     @overload
     def list_all_occurrences(self, ids_name: str, node_path: None = None) -> List[int]:
@@ -704,8 +706,7 @@ class DBEntry:
             return occurrence_list
 
         node_content_list = [
-            self.get(ids_name, occ, lazy=True)[node_path]
-            for occ in occurrence_list
+            self.get(ids_name, occ, lazy=True)[node_path] for occ in occurrence_list
         ]
         return occurrence_list, node_content_list
 
@@ -718,12 +719,13 @@ def _get_children(
     nbc_map: Optional[NBCPathMap],
 ) -> None:
     """Recursively get all children of an IDSStructure"""
-    for element in structure:
-        if time_mode == IDS_TIME_MODE_INDEPENDENT and element.metadata.type.is_dynamic:
+    for name, xml in structure._children.items():
+        child_meta = IDSMetadata(xml)
+        if time_mode == IDS_TIME_MODE_INDEPENDENT and child_meta.type.is_dynamic:
             continue  # skip dynamic (time-dependent) nodes
 
-        name = element.metadata.name
-        path = str(element.metadata.path)
+        name = child_meta.name
+        path = str(child_meta.path)
         if nbc_map and path in nbc_map:
             if nbc_map.path[path] is None:
                 continue  # element does not exist in the on-disk DD version
@@ -733,10 +735,12 @@ def _get_children(
                 timebase = "/time"
         else:
             new_path = f"{ctx_path}/{name}" if ctx_path else name
-            if not isinstance(element, IDSStructure):
-                timebase = _get_timebasepath(element, time_mode, new_path)
+            if child_meta.data_type is not IDSDataType.STRUCTURE:
+                timebase = _get_timebasepath(child_meta, structure, time_mode, new_path)
 
-        if isinstance(element, IDSStructArray):
+        if child_meta.data_type is IDSDataType.STRUCT_ARRAY:
+            # Create element
+            element = structure[name]
             # Lazy loading:
             if isinstance(ctx, LazyALContext):
                 # Provide the AOS with enough information to retrieve its data
@@ -749,27 +753,28 @@ def _get_children(
                     _get_children(item, new_ctx, time_mode, "", nbc_map)
                     new_ctx.iterate_over_arraystruct(1)
 
-        elif isinstance(element, IDSStructure):
+        elif child_meta.data_type is IDSDataType.STRUCTURE:
+            element = structure[name]
             _get_children(element, ctx, time_mode, new_path, nbc_map)
 
         else:  # Data elements
-            data_type = element.metadata.data_type
-            ndim = element.metadata.ndim
+            data_type = child_meta.data_type
+            ndim = child_meta.ndim
             if data_type is IDSDataType.STR:
                 ndim += 1  # STR_0D is a 1D CHARACTER type...
             data = ctx.read_data(new_path, timebase, data_type.al_type, ndim)
             if data is not None:
-                element.value = data
+                structure[name].value = data
 
 
-def _delete_children(structure: IDSStructure, ctx: ALContext, ctx_path: str) -> None:
+def _delete_children(structure: IDSMetadata, ctx: ALContext, ctx_path: str) -> None:
     """Recursively delete all children of an IDSStructure"""
-    for element in structure:
-        name = element.metadata.name
+    for name, xml in structure._children.items():
+        child_meta = IDSMetadata(xml)
         new_path = f"{ctx_path}/{name}" if ctx_path else name
-        if isinstance(element, IDSStructure):
-            _delete_children(element, ctx, new_path)
-        else:  # Data elements and IDSStructArray
+        if child_meta.data_type is IDSDataType.STRUCTURE:
+            _delete_children(child_meta, ctx, new_path)
+        else:
             ctx.delete_data(new_path)
 
 
@@ -802,7 +807,9 @@ def _put_children(
         else:
             new_path = f"{ctx_path}/{name}" if ctx_path else name
             if not isinstance(element, IDSStructure):
-                timebase = _get_timebasepath(element, time_mode, new_path)
+                timebase = _get_timebasepath(
+                    element.metadata, structure, time_mode, new_path
+                )
 
         if isinstance(element, IDSStructArray):
             size = len(element)
@@ -832,18 +839,20 @@ def _put_children(
                 ctx.write_data(new_path, timebase, element.value)
 
 
-def _get_timebasepath(ele: IDSMixin, time_mode: int, ctx_path: str) -> str:
+def _get_timebasepath(
+    ele_meta: IDSMetadata, parent: IDSStructure, time_mode: int, ctx_path: str
+) -> str:
     """Calculate the timebasepath to use for the lowlevel."""
-    if isinstance(ele, IDSStructArray):
+    if ele_meta.data_type is IDSDataType.STRUCT_ARRAY:
         # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#367-384
-        if not ele.metadata.type.is_dynamic:
+        if not ele_meta.type.is_dynamic:
             return ""
         timebasepath = ctx_path + "/time"
     else:  # IDSPrimitive
         # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#1524-1566
-        if not ele.metadata.type.is_dynamic or ele._parent._is_dynamic:
+        if not ele_meta.type.is_dynamic or parent._is_dynamic:
             return ""
-        timebasepath = ele.metadata.timebasepath
+        timebasepath = ele_meta.timebasepath
     if time_mode == IDS_TIME_MODE_HOMOGENEOUS:
         return "/time"
     # IDS_TIME_MODE_HETEROGENEOUS

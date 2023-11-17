@@ -82,7 +82,9 @@ def test_compare_timebasepath_functions(ids_name):
             new_path = f"{ctx_path}/{name}" if ctx_path else name
 
             tbp1 = _get_tbp(item._structure_xml, paths)
-            tbp2 = _get_timebasepath(item, IDS_TIME_MODE_HETEROGENEOUS, new_path)
+            tbp2 = _get_timebasepath(
+                item.metadata, item._parent, IDS_TIME_MODE_HETEROGENEOUS, new_path
+            )
             assert tbp1 == tbp2
 
             if isinstance(item, IDSStructure):
