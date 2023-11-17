@@ -5,10 +5,12 @@
 * :py:class:`IDSStructure`
 """
 
+import logging
 from copy import deepcopy
 from functools import lru_cache
-import logging
 from xml.etree.ElementTree import Element
+
+from xxhash import xxh3_64
 
 from imaspy.ids_metadata import IDSDataType
 from imaspy.ids_mixin import IDSMixin
@@ -19,8 +21,8 @@ from imaspy.ids_primitive import (
     IDSInt0D,
     IDSNumericArray,
     IDSPrimitive,
-    IDSString1D,
     IDSString0D,
+    IDSString1D,
 )
 from imaspy.ids_struct_array import IDSStructArray
 
@@ -200,3 +202,22 @@ class IDSStructure(IDSMixin):
         # IDSStructure specific: validate child nodes
         for child in self:
             child._validate()
+
+    def _xxhash(self) -> bytes:
+        hsh = xxh3_64()
+        children = sorted(self._children)
+
+        # Skip ids_properties.version_put
+        if self.metadata.name == "ids_properties":
+            if "version_put" in children:  # Some old DDs don't have version_put defined
+                children.remove("version_put")
+
+        for childname in children:
+            child = self[childname]
+            if not child.has_value:
+                continue
+
+            hsh.update(childname.encode("UTF-8"))
+            hsh.update(child._xxhash())
+
+        return hsh.digest()
