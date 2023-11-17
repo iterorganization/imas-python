@@ -185,32 +185,3 @@ class Deserialize:
 
     def time_deserialize(self, hli, serializer):
         self.core_profiles.deserialize(self.data)
-
-
-if __name__ == "__main__":
-    import numpy.core.fromnumeric
-    import time
-
-    old_wrapit = numpy.core.fromnumeric._wrapit
-    times = []
-    def new_wrapit(*args, **kwargs):
-        stime = time.time_ns()
-        retval = old_wrapit(*args, **kwargs)
-        rtime = time.time_ns() - stime
-        times.append(rtime)
-        if rtime > 100_000:
-            breakpoint()
-        return retval
-    numpy.core.fromnumeric._wrapit = new_wrapit
-
-    get = Get()
-    get.setup("imas", 14)
-    get.time_get("imas", 14)
-    imas_times = sorted(times)
-    times = []
-
-    get = Get()
-    get.setup("imaspy", 14)
-    get.time_get("imaspy", 14)
-    imaspy_times = sorted(times)
-    times = []
