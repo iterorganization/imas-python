@@ -754,7 +754,7 @@ def _get_children(
                     new_ctx.iterate_over_arraystruct(1)
 
         elif child_meta.data_type is IDSDataType.STRUCTURE:
-            element = structure[name]
+            element = getattr(structure, name)
             _get_children(element, ctx, time_mode, new_path, nbc_map)
 
         else:  # Data elements
@@ -763,8 +763,15 @@ def _get_children(
             if data_type is IDSDataType.STR:
                 ndim += 1  # STR_0D is a 1D CHARACTER type...
             data = ctx.read_data(new_path, timebase, data_type.al_type, ndim)
-            if data is not None:
-                structure[name].value = data
+            if not (
+                # Empty arrays
+                data is None
+                # EMPTY_INT, EMPTY_FLOAT, EMPTY_COMPLEX
+                or (ndim == 0 and data == data_type.default)
+                # Empty string 0d/1d
+                or (data_type is IDSDataType.STR and not data)
+            ):
+                getattr(structure, name).value = data
 
 
 def _delete_children(structure: IDSMetadata, ctx: ALContext, ctx_path: str) -> None:
