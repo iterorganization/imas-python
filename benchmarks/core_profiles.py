@@ -114,6 +114,23 @@ class Get:
         self.dbentry.get("core_profiles")
 
 
+class LazyGet:
+    params = [[True, False], available_slicing_backends]
+    param_names = ["lazy", "backend"]
+    
+    def setup(self, lazy, backend):
+        self.dbentry = create_dbentry("imaspy", backend)
+        core_profiles = factory["imaspy"].core_profiles()
+        fill_slices(core_profiles, TIME)
+        self.dbentry.put(core_profiles)
+
+    def time_lazy_get(self, lazy, backend):
+        cp = self.dbentry.get("core_profiles", lazy=lazy)
+        electron_temperatures = np.array([
+            prof_1d.electrons.temperature for prof_1d in cp.profiles_1d
+        ])
+
+
 class Generate:
     params = [hlis]
     param_names = ["hli"]
