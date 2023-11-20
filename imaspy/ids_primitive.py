@@ -209,11 +209,10 @@ class IDSPrimitive(IDSMixin):
 
     @value.setter
     def value(self, setter_value):
+        # NOTE: This setter is bypassed during a get/get_slice, and self.__value is set
+        # directly.
         if self._lazy:
-            if not isinstance(setter_value, LazyData):
-                raise ValueError("Lazy-loaded IDSs are read-only.")
-            self.__value = setter_value
-            return
+            raise ValueError("Lazy-loaded IDSs are read-only.")
         if isinstance(setter_value, type(self)):
             # No need to cast, just overwrite contained value
             if (

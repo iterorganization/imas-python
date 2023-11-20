@@ -719,7 +719,6 @@ def _get_children(
         if time_mode == IDS_TIME_MODE_INDEPENDENT and child_meta.type.is_dynamic:
             continue  # skip dynamic (time-dependent) nodes
 
-        name = child_meta.name
         path = child_meta.path_string
         data_type = child_meta.data_type
 
@@ -766,7 +765,8 @@ def _get_children(
                 # EMPTY_INT, EMPTY_FLOAT, EMPTY_COMPLEX, empty string
                 or (child_meta.ndim == 0 and data == data_type.default)
             ):
-                getattr(structure, name).value = data
+                # NOTE: bypassing IDSPrimitive.value.setter logic
+                getattr(structure, name)._IDSPrimitive__value = data
 
 
 def _delete_children(structure: IDSMetadata, ctx: ALContext) -> None:
