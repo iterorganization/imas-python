@@ -229,7 +229,7 @@ class IDSCoordinates:
                     for alt in nonzero_alternatives
                 )
                 raise CoordinateLookupError(
-                    f"Dimension {key + 1} of element `{self._mixin._path}` has "
+                    f"Element `{self._mixin._path}` has "
                     "multiple alternative coordinates set, but they don't have "
                     f"matching sizes:\n{sizes}"
                 )
@@ -245,10 +245,12 @@ class IDSCoordinates:
             if coordinate.size is not None:
                 # alternatively we can be an index
                 return np.arange(self._mixin.shape[key])
+            coordinate_refs = coordinate.format_refs(self._mixin)
+            if ", " in coordinate_refs:
+                coordinate_refs = "any of " + coordinate_refs
             raise CoordinateLookupError(
-                f"Dimension {key + 1} of element `{self._mixin._path}` must "
-                f"have exactly one of its coordinates "
-                f"({coordinate.format_refs(self._mixin)}) set, but none are set."
+                f"Element `{self._mixin._path}` must have its coordinate in dimension "
+                f"{key + 1} ({coordinate_refs}) filled."
             )
 
         if sum(ref_is_defined) == 1:
@@ -257,7 +259,7 @@ class IDSCoordinates:
                     return refs[i]
 
         raise CoordinateLookupError(
-            f"Dimension {key + 1} of element `{self._mixin._path}` must have "
+            f"Element `{self._mixin._path}` must have "
             f"exactly one of its coordinates ({coordinate.format_refs(self._mixin)}) "
             "set, but multiple are set."
         )
@@ -299,7 +301,7 @@ class IDSCoordinates:
                     # test_validate_reference_or_fixed_size) we continue checking the
                     # references below.
                     # If only size is specified, the dimension is not the correct size:
-                    raise CoordinateError(path, dim, shape[dim], coordinate.size, None)
+                    raise CoordinateError(path, dim, shape, coordinate.size, None)
 
             # Validate references
             assert coordinate.references
@@ -312,7 +314,7 @@ class IDSCoordinates:
                 if coordinate.size:
                     # other_element may be a numpy array when coordinate = "path OR
                     # 1...1" and path is unset
-                    raise CoordinateError(path, dim, shape[dim], coordinate.size, None)
+                    raise CoordinateError(path, dim, shape, coordinate.size, None)
                 # Otherwise, this is a dynamic AoS with heterogeneous_time, verify that
                 # none of the values are EMPTY_FLOAT
                 if EMPTY_FLOAT in other_element:
@@ -326,7 +328,7 @@ class IDSCoordinates:
                 continue  # Ignored error, continue to next dimension
             if shape[dim] != expected_size:
                 other_path = other_element._path
-                raise CoordinateError(path, dim, shape[dim], expected_size, other_path)
+                raise CoordinateError(path, dim, shape, expected_size, other_path)
 
         # Validate coordinate_same_as
         for dim in range(metadata.ndim):
@@ -343,7 +345,7 @@ class IDSCoordinates:
             expected_size = other_element.shape[dim]
             if shape[dim] != expected_size:
                 other_path = other_element._path
-                raise CoordinateError(path, dim, shape[dim], expected_size, other_path)
+                raise CoordinateError(path, dim, shape, expected_size, other_path)
 
     @contextmanager
     def _capture_goto_errors(self, dim, coordinate):
@@ -358,9 +360,10 @@ class IDSCoordinates:
             raise ValidationError(exc.args[0])
         except IndexError as exc:
             # Can happen in IDSPath.goto when an invalid index is encountered.
+            coordinate_refs = coordinate.format_refs(self._mixin)
             raise ValidationError(
-                f"Dimension {dim + 1} of element `{path}` has an invalid index "
-                f"provided for coordinate(s) {coordinate.format_refs(self._mixin)}."
+                f"Error while validating element `{path}`: dimension {dim + 1} has an "
+                f"invalid index for coordinate(s) {coordinate_refs}."
             ) from exc
         except Exception as exc:
             # Ignore all other exceptions and log them
