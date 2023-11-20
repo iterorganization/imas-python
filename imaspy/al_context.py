@@ -186,6 +186,7 @@ class LazyALContext:
         *,
         dbentry: Optional["DBEntry"] = None,
         nbc_map: Optional["NBCPathMap"] = None,
+        time_mode: Optional[int] = None,
     ) -> None:
         self.dbentry = dbentry or (parent_ctx and parent_ctx.dbentry)
         """DBEntry object that created us, or our parent."""
@@ -199,6 +200,10 @@ class LazyALContext:
         """Additional arguments we need to supply to self.method"""
         self.nbc_map = nbc_map or (parent_ctx and parent_ctx.nbc_map)
         """NBC map for _get_children() when lazy loading IDSStructArray items."""
+        if time_mode is None and parent_ctx:
+            time_mode = parent_ctx.time_mode
+        self.time_mode = time_mode
+        """Time mode used by the IDS being lazy loaded."""
 
     @contextmanager
     def get_context(self) -> Iterator[ALContext]:
@@ -272,36 +277,3 @@ class LazyALContext:
             assert 0 <= item < size
             new_ctx.iterate_over_arraystruct(item)
             yield new_ctx
-
-    def read_data(self, path: str, timebasepath: str, datatype: int, dim: int) -> Any:
-        """Lazily read data from the backend, see :meth:`AlContext.read_data`."""
-        return LazyData(self, path, timebasepath, datatype, dim)
-
-
-class LazyData:
-    """Lazy loaded data reference.
-
-    Can be assigned to an IDSPrimitive, allowing it to read the actual data from the
-    lowlevel backend when it is requested.
-
-    Args:
-        ctx: provides the context to load the data.
-        path: see :meth:`ALContext.read_data`
-        timebasepath: see :meth:`ALContext.read_data`
-        datatype: see :meth:`ALContext.read_data`
-        dim: see :meth:`ALContext.read_data`
-    """
-
-    def __init__(
-        self, ctx: LazyALContext, path: str, timebasepath: str, datatype: int, dim: int
-    ) -> None:
-        self.ctx = ctx
-        self.path = path
-        self.timebasepath = timebasepath
-        self.datatype = datatype
-        self.dim = dim
-
-    def get(self) -> Any:
-        """Read and return the data from the lowlevel"""
-        with self.ctx.get_context() as ctx:
-            return ctx.read_data(self.path, self.timebasepath, self.datatype, self.dim)

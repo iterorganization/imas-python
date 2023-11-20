@@ -11,7 +11,6 @@ import math
 import operator
 import struct
 from copy import deepcopy
-from functools import wraps
 from numbers import Complex, Integral, Number, Real
 from typing import Tuple
 
@@ -23,28 +22,12 @@ except ImportError:
 import numpy as np
 from xxhash import xxh3_64, xxh3_64_digest
 
-from imaspy.al_context import LazyData
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_mixin import IDSMixin
 
 logger = logging.getLogger(__name__)
-
-
-def _needs_value(func):
-    """Decorator to mark that this method requires the __value loaded.
-
-    When lazy loading, this will automatically load the requested data.
-    """
-
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        if self._lazy and not self._lazy_loaded:
-            self._load()
-        return func(self, *args, **kwargs)
-
-    return wrapper
 
 
 def _binary_wrapper(op, name):
@@ -96,7 +79,6 @@ class IDSPrimitive(IDSMixin):
         super().__init__(parent, metadata)
 
         self.__value = None
-        self._lazy_loaded = False
 
     @cached_property
     def coordinates(self):
@@ -111,7 +93,6 @@ class IDSPrimitive(IDSMixin):
         return copy
 
     @property
-    @_needs_value
     def shape(self) -> Tuple[int, ...]:
         """Get the shape of the contained data.
 
@@ -125,7 +106,6 @@ class IDSPrimitive(IDSMixin):
         return np.shape(self.__value)
 
     @property
-    @_needs_value
     def size(self) -> int:
         """Get the size of stored data (number of elements stored).
 
@@ -143,14 +123,12 @@ class IDSPrimitive(IDSMixin):
         return self.__value.size
 
     @property
-    @_needs_value
     def has_value(self) -> bool:
         """True if a value is defined here that is not the default"""
         if self.__value is None:  # No value set
             return False
         return self.size > 0  # Default for ndarray and STR_1D types is size == 0
 
-    @_needs_value
     def __len__(self) -> int:
         if self.metadata.ndim == 0:
             raise TypeError(f"IDS data node of type {self.data_type} has no len()")
@@ -178,24 +156,7 @@ class IDSPrimitive(IDSMixin):
             empty = "empty "
         return f"{self._build_repr_start()}, {empty}{self.data_type})>{value_repr}"
 
-    def _load(self):
-        """Perform actual loading of the data.
-
-        Only call this method when this is a lazy-loaded IDS and the value has not yet
-        been loaded.
-        """
-        assert self._lazy and not self._lazy_loaded
-        assert isinstance(self.__value, LazyData)
-        data = self.__value.get()
-        self.__value = None if data is None else self._cast_value(data)
-        if isinstance(self.__value, np.ndarray):
-            # Convert the numpy array to a read-only view
-            self.__value = self.__value.view()
-            self.__value.flags.writeable = False
-        self._lazy_loaded = True
-
     @property
-    @_needs_value
     def value(self):
         """Return the value of this IDSPrimitive if it is set,
         otherwise return the default"""

@@ -92,6 +92,7 @@ def test_lazy_load_readonly(requires_imas):
     dbentry.put(ids)
 
     lazy_ids = dbentry.get("core_profiles", lazy=True)
+    assert lazy_ids._lazy is True
 
     # AoS modifiers
     with pytest.raises(ValueError):
