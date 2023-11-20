@@ -26,7 +26,7 @@ class CoordinateError(ValidationError):
         Args:
             element_path: path of the element with incorrect size
             dimension: (0-based) dimension with incorrect size
-            shape: shape of element in the given dimension
+            shape: shape of element (e.g. ``(2, 4)``)
             expected_size: size of the coordinate for the specified dimension
             coor_path: path of the coordinate, may be None when a coordinate is of fixed
                 size (e.g. ``1...3``)
