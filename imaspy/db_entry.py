@@ -476,7 +476,7 @@ class DBEntry:
                 ll_path, READ_OP, time_requested, interpolation_method
             )
         with manager as read_ctx:
-            _get_children(destination, read_ctx, time_mode, "", nbc_map)
+            _get_children(destination, read_ctx, time_mode, nbc_map)
 
         return destination
 
@@ -617,9 +617,7 @@ class DBEntry:
             with self._db_ctx.global_action(ll_path, WRITE_OP) as write_ctx:
                 # New IDS to ensure all fields in "our" DD version are deleted
                 # If ids is in another version, we might not erase all fields
-                _delete_children(
-                    self._ids_factory.new(ids_name).metadata, write_ctx, ""
-                )
+                _delete_children(self._ids_factory.new(ids_name).metadata, write_ctx)
 
         if is_slice:
             manager = self._db_ctx.slice_action(
@@ -629,9 +627,7 @@ class DBEntry:
             manager = self._db_ctx.global_action(ll_path, WRITE_OP)
         verify_maxoccur = self._uses_mdsplus
         with manager as write_ctx:
-            _put_children(
-                ids, write_ctx, time_mode, "", is_slice, nbc_map, verify_maxoccur
-            )
+            _put_children(ids, write_ctx, time_mode, is_slice, nbc_map, verify_maxoccur)
 
     def delete_data(self, ids_name: str, occurrence: int = 0) -> None:
         """Delete the provided IDS occurrence from this IMAS database entry.
@@ -715,10 +711,10 @@ def _get_children(
     structure: IDSStructure,
     ctx: Union[ALContext, LazyALContext],
     time_mode: int,
-    ctx_path: str,
     nbc_map: Optional[NBCPathMap],
 ) -> None:
     """Recursively get all children of an IDSStructure"""
+    lazy = isinstance(ctx, LazyALContext)
     for name, child_meta in structure._children.items():
         if time_mode == IDS_TIME_MODE_INDEPENDENT and child_meta.type.is_dynamic:
             continue  # skip dynamic (time-dependent) nodes
@@ -732,16 +728,17 @@ def _get_children(
                 continue  # element does not exist in the on-disk DD version
             new_path = nbc_map.ctxpath[path]
             timebase = nbc_map.tbp[path]
-            if timebase and time_mode == IDS_TIME_MODE_HOMOGENEOUS:
-                timebase = "/time"
         else:
-            new_path = f"{ctx_path}/{name}" if ctx_path else name
-            if data_type is not IDSDataType.STRUCTURE:
-                timebase = _get_timebasepath(child_meta, structure, time_mode, new_path)
+            new_path = child_meta._ctx_path
+            timebase = child_meta.timebasepath
+
+        # Override time base for homogeneous time
+        if timebase and time_mode == IDS_TIME_MODE_HOMOGENEOUS:
+            timebase = "/time"
 
         if data_type is IDSDataType.STRUCT_ARRAY:
             # Lazy loading:
-            if isinstance(ctx, LazyALContext):
+            if lazy:
                 # Provide the AOS with enough information to retrieve its data
                 getattr(structure, name)._set_lazy_context(ctx, new_path, timebase)
                 continue
@@ -751,12 +748,12 @@ def _get_children(
                     element = getattr(structure, name)
                     element.resize(size)
                     for item in element:
-                        _get_children(item, new_ctx, time_mode, "", nbc_map)
+                        _get_children(item, new_ctx, time_mode, nbc_map)
                         new_ctx.iterate_over_arraystruct(1)
 
         elif data_type is IDSDataType.STRUCTURE:
             element = getattr(structure, name)
-            _get_children(element, ctx, time_mode, new_path, nbc_map)
+            _get_children(element, ctx, time_mode, nbc_map)
 
         else:  # Data elements
             ndim = child_meta.ndim
@@ -772,21 +769,19 @@ def _get_children(
                 getattr(structure, name).value = data
 
 
-def _delete_children(structure: IDSMetadata, ctx: ALContext, ctx_path: str) -> None:
+def _delete_children(structure: IDSMetadata, ctx: ALContext) -> None:
     """Recursively delete all children of an IDSStructure"""
-    for name, child_meta in structure._children.items():
-        new_path = f"{ctx_path}/{name}" if ctx_path else name
+    for child_meta in structure._children.values():
         if child_meta.data_type is IDSDataType.STRUCTURE:
-            _delete_children(child_meta, ctx, new_path)
+            _delete_children(child_meta, ctx)
         else:
-            ctx.delete_data(new_path)
+            ctx.delete_data(child_meta._ctx_path)
 
 
 def _put_children(
     structure: IDSStructure,
     ctx: ALContext,
     time_mode: int,
-    ctx_path: str,
     is_slice: bool,
     nbc_map: Optional[NBCPathMap],
     verify_maxoccur: bool,
@@ -799,21 +794,19 @@ def _put_children(
         if time_mode == IDS_TIME_MODE_INDEPENDENT and element.metadata.type.is_dynamic:
             continue  # skip dynamic data when in time independent mode
 
-        name = element.metadata.name
         path = str(element.metadata.path)
         if nbc_map and path in nbc_map:
             if nbc_map.path[path] is None:
                 continue  # element does not exist in the on-disk DD version
             new_path = nbc_map.ctxpath[path]
             timebase = nbc_map.tbp[path]
-            if timebase and time_mode == IDS_TIME_MODE_HOMOGENEOUS:
-                timebase = "/time"
         else:
-            new_path = f"{ctx_path}/{name}" if ctx_path else name
-            if not isinstance(element, IDSStructure):
-                timebase = _get_timebasepath(
-                    element.metadata, structure, time_mode, new_path
-                )
+            new_path = element.metadata._ctx_path
+            timebase = element.metadata.timebasepath
+
+        # Override time base for homogeneous time
+        if timebase and time_mode == IDS_TIME_MODE_HOMOGENEOUS:
+            timebase = "/time"
 
         if isinstance(element, IDSStructArray):
             size = len(element)
@@ -827,37 +820,14 @@ def _put_children(
             with ctx.arraystruct_action(new_path, timebase, size) as (new_ctx, _):
                 for item in element:
                     _put_children(
-                        item, new_ctx, time_mode, "", is_slice, nbc_map, verify_maxoccur
+                        item, new_ctx, time_mode, is_slice, nbc_map, verify_maxoccur
                     )
                     new_ctx.iterate_over_arraystruct(1)
 
         elif isinstance(element, IDSStructure):
-            _put_children(
-                element, ctx, time_mode, new_path, is_slice, nbc_map, verify_maxoccur
-            )
+            _put_children(element, ctx, time_mode, is_slice, nbc_map, verify_maxoccur)
 
         else:  # Data elements
             if is_slice and not element.metadata.type.is_dynamic:
                 continue  # put_slice only stores dynamic data
-            if element.has_value:
-                ctx.write_data(new_path, timebase, element.value)
-
-
-def _get_timebasepath(
-    ele_meta: IDSMetadata, parent: IDSStructure, time_mode: int, ctx_path: str
-) -> str:
-    """Calculate the timebasepath to use for the lowlevel."""
-    if ele_meta.data_type is IDSDataType.STRUCT_ARRAY:
-        # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#367-384
-        if not ele_meta.type.is_dynamic:
-            return ""
-        timebasepath = ctx_path + "/time"
-    else:  # IDSPrimitive
-        # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#1524-1566
-        if not ele_meta.type.is_dynamic or parent._is_dynamic:
-            return ""
-        timebasepath = ele_meta.timebasepath
-    if time_mode == IDS_TIME_MODE_HOMOGENEOUS:
-        return "/time"
-    # IDS_TIME_MODE_HETEROGENEOUS
-    return timebasepath
+            ctx.write_data(new_path, timebase, element.value)

@@ -111,7 +111,7 @@ class IDSStructArray(IDSMixin):
 
                 element = self.value[item] = IDSStructure(self, self.metadata)
                 nbc_map = self._lazy_context.nbc_map
-                _get_children(element, new_ctx, self._time_mode, "", nbc_map)
+                _get_children(element, new_ctx, self._time_mode, nbc_map)
 
     @property
     def _element_structure(self):

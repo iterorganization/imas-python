@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from imaspy.db_entry import _get_timebasepath
 from imaspy.ids_convert import (
     dd_version_map_from_factories,
     _get_ctxpath,
@@ -82,9 +81,7 @@ def test_compare_timebasepath_functions(ids_name):
             new_path = f"{ctx_path}/{name}" if ctx_path else name
 
             tbp1 = _get_tbp(item.metadata._structure_xml, paths)
-            tbp2 = _get_timebasepath(
-                item.metadata, item._parent, IDS_TIME_MODE_HETEROGENEOUS, new_path
-            )
+            tbp2 = item.metadata.timebasepath
             assert tbp1 == tbp2
 
             if isinstance(item, IDSStructure):

@@ -47,7 +47,6 @@ class IDSType(Enum):
         self.is_dynamic = name == "dynamic"
 
 
-
 # This cache is for IDSMetadata for IDS toplevels
 # Typical use case is one or two DD versions
 # Currently the DD has ~70 unique IDSs, so this cache has plenty of size to store all
@@ -57,7 +56,7 @@ class IDSType(Enum):
 # tests...
 @lru_cache(maxsize=256)
 def get_toplevel_metadata(structure_xml):
-    return IDSMetadata(structure_xml)
+    return IDSMetadata(structure_xml, "", None)
 
 
 class IDSMetadata:
@@ -69,12 +68,26 @@ class IDSMetadata:
     IMASPy.
     """
 
-    def __init__(self, structure_xml: Element) -> None:
+    def __init__(
+        self,
+        structure_xml: Element,
+        context_path: str,
+        parent_meta: Optional["IDSMetadata"],
+    ) -> None:
         attrib = structure_xml.attrib
         self._structure_xml = structure_xml
+        self._parent = parent_meta
 
         # Mandatory attributes
         self.name = attrib["name"]
+
+        # Context path: path relative to the nearest Array of Structures
+        if parent_meta is None:  # Toplevel IDS
+            self._ctx_path = ""
+        elif context_path:
+            self._ctx_path = f"{context_path}/{self.name}"
+        else:
+            self._ctx_path = self.name
 
         # These are special and used in IMASPy logic, so we need to ensure proper values
         maxoccur = attrib.get("maxoccur", "unbounded")
@@ -85,6 +98,22 @@ class IDSMetadata:
         self.path_doc = attrib.get("path_doc", "")  # IDSToplevel has no path
         self.type = IDSType(attrib.get("type", None))
         self.timebasepath = attrib.get("timebasepath", "")
+
+        # timebasepath is not always defined in the DD XML, mainly not for struct_arrays
+        # Also, when it is defined, it may not be correct (DD 3.39.0)
+        if self.data_type is IDSDataType.STRUCT_ARRAY:
+            # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#367-384
+            if self.type.is_dynamic:
+                self.timebasepath = self._ctx_path + "/time"
+            else:
+                self.timebasepath = ""
+        else:  # IDSPrimitive
+            # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#1524-1566
+            if self.timebasepath and (not self.type.is_dynamic or self._parent._is_dynamic):
+                self.timebasepath = ""
+        self._is_dynamic = self.type.is_dynamic
+        if self._parent is not None:
+            self._is_dynamic = self._is_dynamic or self._parent._is_dynamic
 
         # Parse coordinates
         coors = [IDSCoordinate("")] * self.ndim
@@ -104,8 +133,7 @@ class IDSMetadata:
         self.alternative_coordinate1 = tuple()
         if "alternative_coordinate1" in attrib:
             self.alternative_coordinate1 = tuple(
-                IDSPath(coor)
-                for coor in attrib["alternative_coordinate1"].split(";")
+                IDSPath(coor) for coor in attrib["alternative_coordinate1"].split(";")
             )
 
         # Store any remaining attributes from the DD XML
@@ -114,8 +142,10 @@ class IDSMetadata:
                 setattr(self, attr_name, attrib[attr_name])
 
         # Cache children in a read-only dict
+        ctx_path = "" if self.data_type is IDSDataType.STRUCT_ARRAY else self._ctx_path
         self._children = types.MappingProxyType({
-            xml_child.get("name"): IDSMetadata(xml_child) for xml_child in structure_xml
+            xml_child.get("name"): IDSMetadata(xml_child, ctx_path, self)
+            for xml_child in structure_xml
         })
 
         # Prevent accidentally modifying attributes
