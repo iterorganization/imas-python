@@ -23,6 +23,7 @@ def _get_children(
 ) -> None:
     """Recursively get all children of an IDSStructure."""
     # NOTE: changes in this method must be propagated to _get_child and vice versa
+    #   Performance: this method is specialized for the non-lazy get
 
     for name, child_meta in structure._children.items():
         if time_mode == IDS_TIME_MODE_INDEPENDENT and child_meta.type.is_dynamic:
@@ -76,6 +77,7 @@ def _get_children(
 def _get_child(child: IDSMixin, ctx: LazyALContext):
     """Get a single child when required (lazy loading)."""
     # NOTE: changes in this method must be propagated to _get_children and vice versa
+    #   Performance: this method is specialized for the lazy get
 
     time_mode = ctx.time_mode
     if time_mode == IDS_TIME_MODE_INDEPENDENT and child_meta.type.is_dynamic:
