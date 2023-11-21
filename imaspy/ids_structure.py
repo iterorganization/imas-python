@@ -8,11 +8,12 @@
 import logging
 from copy import deepcopy
 from functools import lru_cache
-from xml.etree.ElementTree import Element
+import logging
+from typing import Generator
 
 from xxhash import xxh3_64
 
-from imaspy.ids_metadata import IDSDataType
+from imaspy.ids_metadata import IDSDataType, IDSMetadata
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_path import IDSPath
 from imaspy.ids_primitive import (
@@ -30,18 +31,18 @@ logger = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=None)
-def get_node_type(data_type: str):
-    data_type, ndim = IDSDataType.parse(data_type)
+def get_node_type(meta: IDSMetadata):
+    data_type = meta.data_type
     if data_type is IDSDataType.STRUCTURE:
         return IDSStructure
     if data_type is IDSDataType.STRUCT_ARRAY:
         return IDSStructArray
     if data_type is IDSDataType.STR:
-        if ndim == 0:
+        if meta.ndim == 0:
             return IDSString0D
         else:
             return IDSString1D
-    if ndim == 0:
+    if meta.ndim == 0:
         if data_type is IDSDataType.FLT:
             return IDSFloat0D
         if data_type is IDSDataType.INT:
@@ -60,9 +61,7 @@ class IDSStructure(IDSMixin):
     IDSStructArrays
     """
 
-    _convert_ids_types = False
-
-    def __init__(self, parent: IDSMixin, structure_xml: Element):
+    def __init__(self, parent: IDSMixin, metadata: IDSMetadata):
         """Initialize IDSStructure from XML specification
 
         Initializes in-memory an IDSStructure. The XML should contain
@@ -73,27 +72,68 @@ class IDSStructure(IDSMixin):
         Args:
             parent: Parent structure. Can be anything, but at database write
                 time should be something with a path attribute
-            structure_xml: Object describing the structure of the IDS. Usually
-                an instance of `xml.etree.ElementTree.Element`
+            metadata: IDSMetadata describing the structure of the IDS
         """
-        # To ease setting values at this stage, do not try to cast values
-        # to canonical forms
-        super().__init__(parent, structure_xml=structure_xml)
+        # Note: __setattr__ needs _children defined, so first set to empty list to
+        # prevent infinite recursion when setting self.metadata in super().__init__
+        self._children = []
+        super().__init__(parent, metadata)
+        self._children = self.metadata._children
 
-        self._children = []  # Store the children as a list of strings.
-        # Loop over the direct descendants of the current node.
-        # Do not loop over grandchildren, that is handled by recursiveness.
+    def __getattr__(self, name):
+        if name not in self._children:
+            raise AttributeError(f"'{__class__}' object has no attribute '{name}'")
+        # Create child node
+        child_meta = self._children[name]
+        child = get_node_type(child_meta)(self, child_meta)
+        super().__setattr__(name, child)  # bypass setattr logic below: avoid recursion
+        return child
 
-        for child in structure_xml:
-            my_name = child.get("name")
-            self._children.append(my_name)
-            child_node = get_node_type(child.get("data_type"))(self, child)
-            setattr(self, my_name, child_node)
-        # After initialization, always try to convert setting attributes on this structure
-        self._convert_ids_types = True
+    def __setattr__(self, key, value):
+        """
+        'Smart' setting of attributes. To be able to warn the user on imaspy
+        IDS interaction time, instead of on database put time
+        Only try to cast user-facing attributes, as core developers might
+        want to always bypass this mechanism (I know I do!)
+        """
+        # Skip logic for any value that is not a child IDS node
+        if key.startswith("_") or key not in self._children:
+            return super().__setattr__(key, value)
+
+        # This will raise an attribute error when there is no child named 'key', fine?
+        attr = getattr(self, key)
+
+        if isinstance(attr, IDSStructure):
+            if not isinstance(value, IDSStructure):
+                raise TypeError(
+                    f"Trying to set structure field {key} with non-structure."
+                )
+            if value.metadata.path != attr.metadata.path:
+                raise ValueError(
+                    f"Trying to set structure field {attr.metadata.path} "
+                    f"with a non-matching structure {value.metadata.path}."
+                )
+            super().__setattr__(key, value)
+            value._parent = self
+
+        elif isinstance(attr, IDSStructArray):
+            if not isinstance(value, IDSStructArray):
+                raise TypeError(
+                    f"Trying to set struct array field {key} with non-struct-array."
+                )
+            if value.metadata.path != attr.metadata.path:
+                raise ValueError(
+                    f"Trying to set struct array field {attr.metadata.path} "
+                    f"with a non-matching struct array {value.metadata.path}."
+                )
+            super().__setattr__(key, value)
+            value._parent = self
+
+        else:
+            attr.value = value
 
     def __deepcopy__(self, memo):
-        copy = self.__class__(self._parent, self._structure_xml)
+        copy = self.__class__(self._parent, self.metadata)
         for child in self._children:
             child_copy = deepcopy(getattr(self, child))
             setattr(copy, child, child_copy)
@@ -106,9 +146,19 @@ class IDSStructure(IDSMixin):
         return self._parent
 
     @property
-    def has_value(self):
+    def has_value(self) -> bool:
         """True if any of the children has a non-default value"""
-        return any(map(lambda el: el.has_value, self))
+        for _ in self._iter_children_with_value():
+            return True
+        return False
+
+    def _iter_children_with_value(self) -> Generator[IDSMixin, None, None]:
+        """Iterate over all child nodes with non-default value."""
+        for child in self._children:
+            if child in self.__dict__:
+                child_node = getattr(self, child)
+                if child_node.has_value:
+                    yield child_node
 
     def __iter__(self):
         """Iterate over this structure's children"""
@@ -149,58 +199,11 @@ class IDSStructure(IDSMixin):
             parent = attr._parent
             parent[path.parts[-1]] = value
 
-    def __setattr__(self, key, value):
-        """
-        'Smart' setting of attributes. To be able to warn the user on imaspy
-        IDS interaction time, instead of on database put time
-        Only try to cast user-facing attributes, as core developers might
-        want to always bypass this mechanism (I know I do!)
-        """
-        # TODO: Check if this heuristic is sufficient
-        if self._convert_ids_types and not key[0] == "_":
-            # Convert IDS type on set time. Never try this for hidden attributes!
-            if hasattr(self, key):
-                attr = getattr(self, key)
-            else:
-                # Structure does not exist. It should have been pre-generated
-                raise NotImplementedError(
-                    "generating new structure from scratch {name}".format(name=key)
-                )
-
-            if isinstance(attr, IDSStructure):
-                if not isinstance(value, IDSStructure):
-                    raise TypeError(
-                        f"Trying to set structure field {key} with non-structure."
-                    )
-                if value.metadata.path != attr.metadata.path:
-                    raise ValueError(
-                        f"Trying to set structure field {attr.metadata.path} "
-                        f"with a non-matching structure {value.metadata.path}."
-                    )
-                super().__setattr__(key, value)
-                value._parent = self
-            elif isinstance(attr, IDSStructArray):
-                if not isinstance(value, IDSStructArray):
-                    raise TypeError(
-                        f"Trying to set struct array field {key} with non-struct-array."
-                    )
-                if value.metadata.path != attr.metadata.path:
-                    raise ValueError(
-                        f"Trying to set struct array field {attr.metadata.path} "
-                        f"with a non-matching struct array {value.metadata.path}."
-                    )
-                super().__setattr__(key, value)
-                value._parent = self
-            else:
-                attr.value = value
-        else:
-            super().__setattr__(key, value)
-
     def _validate(self) -> None:
         # Common validation logic
         super()._validate()
         # IDSStructure specific: validate child nodes
-        for child in self:
+        for child in self._iter_children_with_value():
             child._validate()
 
     def _xxhash(self) -> bytes:

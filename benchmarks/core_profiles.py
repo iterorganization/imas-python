@@ -1,5 +1,7 @@
 import datetime
+import os
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
@@ -131,27 +133,29 @@ class Generate:
 
 
 class Put:
-    params = [hlis, available_backends]
-    param_names = ["hli", "backend"]
+    params = [["0", "1"], hlis, available_backends]
+    param_names = ["disable_validate", "hli", "backend"]
 
-    def setup(self, hli, backend):
+    def setup(self, disable_validate, hli, backend):
         self.dbentry = create_dbentry(hli, backend)
         self.core_profiles = factory[hli].core_profiles()
         fill_slices(self.core_profiles, TIME)
+        os.environ["IMAS_AL_DISABLE_VALIDATE"] = disable_validate
 
-    def time_put(self, hli, backend):
+    def time_put(self, disable_validate, hli, backend):
         self.dbentry.put(self.core_profiles)
 
 
 class PutSlice:
-    params = [hlis, available_slicing_backends]
-    param_names = ["hli", "backend"]
+    params = [["0", "1"], hlis, available_slicing_backends]
+    param_names = ["disable_validate", "hli", "backend"]
 
-    def setup(self, hli, backend):
+    def setup(self, disable_validate, hli, backend):
         self.dbentry = create_dbentry(hli, backend)
         self.core_profiles = factory[hli].core_profiles()
+        os.environ["IMAS_AL_DISABLE_VALIDATE"] = disable_validate
 
-    def time_put_slice(self, hli, backend):
+    def time_put_slice(self, disable_validate, hli, backend):
         for t in TIME:
             fill_slices(self.core_profiles, [t])
             self.dbentry.put_slice(self.core_profiles)

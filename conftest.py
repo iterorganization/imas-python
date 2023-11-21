@@ -26,7 +26,7 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_INDEPENDENT,
 )
 from imaspy.ids_factory import IDSFactory
-from imaspy.imas_interface import imas, has_imas as _has_imas, lowlevel
+from imaspy.imas_interface import imas, has_imas as _has_imas, lowlevel, ll_interface
 from imaspy.db_entry import DBEntry
 from imaspy.test.test_helpers import open_dbentry
 
@@ -180,6 +180,11 @@ def _lowlevel_wrapper(original_method):
 def log_lowlevel_calls(monkeypatch, requires_imas):
     """Debugging fixture to log calls to the imas lowlevel module."""
     for al_function in dir(lowlevel):
-        if al_function.startswith("ual_"):
+        if al_function.startswith("ual_") or al_function.startswith("al"):
             wrapper = _lowlevel_wrapper(getattr(lowlevel, al_function))
             monkeypatch.setattr(lowlevel, al_function, wrapper)
+    for al_function in dir(ll_interface):
+        if not al_function.startswith("_"):
+            wrapper = _lowlevel_wrapper(getattr(ll_interface, al_function))
+            monkeypatch.setattr(ll_interface, al_function, wrapper)
+        

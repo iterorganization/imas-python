@@ -5,7 +5,6 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from imaspy.db_entry import _get_timebasepath
 from imaspy.ids_convert import (
     dd_version_map_from_factories,
     _get_ctxpath,
@@ -73,7 +72,7 @@ def test_timebasepath(core_profiles_paths):
 def test_compare_timebasepath_functions(ids_name):
     # Ensure that the two timebasepath implementations are consistent
     ids = IDSFactory().new(ids_name)
-    ids_element = ids._structure_xml
+    ids_element = ids.metadata._structure_xml
     paths = {field.get("path", ""): field for field in ids_element.iterfind(".//field")}
 
     def recurse(structure: IDSStructure, ctx_path: str):
@@ -81,8 +80,8 @@ def test_compare_timebasepath_functions(ids_name):
             name = item.metadata.name
             new_path = f"{ctx_path}/{name}" if ctx_path else name
 
-            tbp1 = _get_tbp(item._structure_xml, paths)
-            tbp2 = _get_timebasepath(item, IDS_TIME_MODE_HETEROGENEOUS, new_path)
+            tbp1 = _get_tbp(item.metadata._structure_xml, paths)
+            tbp2 = item.metadata.timebasepath
             assert tbp1 == tbp2
 
             if isinstance(item, IDSStructure):

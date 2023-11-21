@@ -14,7 +14,6 @@ from copy import deepcopy
 from functools import wraps
 from numbers import Complex, Integral, Number, Real
 from typing import Tuple
-from xml.etree.ElementTree import Element
 
 try:
     from functools import cached_property
@@ -27,6 +26,7 @@ from xxhash import xxh3_64, xxh3_64_digest
 from imaspy.al_context import LazyData
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_data_type import IDSDataType
+from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_mixin import IDSMixin
 
 logger = logging.getLogger(__name__)
@@ -86,14 +86,14 @@ class IDSPrimitive(IDSMixin):
     Lives entirely in-memory until 'put' into a database.
     """
 
-    def __init__(self, parent: IDSMixin, structure_xml: Element):
+    def __init__(self, parent: IDSMixin, metadata: IDSMetadata):
         """Initialize IDSPrimitive
 
         Args:
             parent: Parent node of this leaf
-            structure_xml: DD XML node that describes this IDSPrimitive
+            metadata: IDSMetadata that describes this IDSPrimitive
         """
-        super().__init__(parent, structure_xml=structure_xml)
+        super().__init__(parent, metadata)
 
         self.__value = None
         self._lazy_loaded = False
@@ -105,7 +105,7 @@ class IDSPrimitive(IDSMixin):
     def __deepcopy__(self, memo):
         # note: if parent needs updating it is handled by the deepcopy of our parent
         # TODO: implement the statement on the previous line O_O
-        copy = self.__class__(self._parent, self._structure_xml)
+        copy = self.__class__(self._parent, self.metadata)
         copy.__value = deepcopy(self.__value, memo)
         copy._lazy_loaded = self._lazy_loaded
         return copy
@@ -209,11 +209,10 @@ class IDSPrimitive(IDSMixin):
 
     @value.setter
     def value(self, setter_value):
+        # NOTE: This setter is bypassed during a get/get_slice, and self.__value is set
+        # directly.
         if self._lazy:
-            if not isinstance(setter_value, LazyData):
-                raise ValueError("Lazy-loaded IDSs are read-only.")
-            self.__value = setter_value
-            return
+            raise ValueError("Lazy-loaded IDSs are read-only.")
         if isinstance(setter_value, type(self)):
             # No need to cast, just overwrite contained value
             if (

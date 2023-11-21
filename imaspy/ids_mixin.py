@@ -3,7 +3,6 @@
 
 import logging
 from typing import TYPE_CHECKING
-from xml.etree.ElementTree import Element
 
 try:
     from functools import cached_property
@@ -24,12 +23,11 @@ class IDSMixin:
     """The base class which unifies properties of structure, struct_array, toplevel, root
     and primitive nodes (IDSPrimitive and IDSNumericArray)"""
 
-    def __init__(self, parent: "IDSMixin", structure_xml: Element):
+    def __init__(self, parent: "IDSMixin", metadata: IDSMetadata):
         """Setup basic properties for a tree node (leaf or non-leaf) such as
         name, _parent, _backend_name etc."""
         self._parent = parent
-        self._structure_xml = structure_xml
-        self.metadata = IDSMetadata(structure_xml=self._structure_xml)
+        self.metadata = metadata
         dd_doc = getattr(self.metadata, "documentation", None)
         if dd_doc:
             self.__doc__ = dd_doc

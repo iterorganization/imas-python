@@ -97,7 +97,7 @@ def find_paths(node: IDSMixin, query: str) -> List[str]:
         >>> imaspy.util.find_paths(core_profiles, "(^|/)time$")
         ['profiles_1d/time', 'profiles_2d/time', 'time']
     """
-    dd_element = node._structure_xml
+    dd_element = node.metadata._structure_xml
     pattern = re.compile(query)
     matching_paths = []
 
