@@ -120,7 +120,10 @@ elif (
     # Give up and just import the actual package...
     has_imas = True
     imas = importlib.import_module("imas")
-    lowlevel = importlib.import_module("imas._ual_lowlevel")
+    try:
+        lowlevel = importlib.import_module("imas._ual_lowlevel")
+    except ModuleNotFoundError:  # AL5
+        lowlevel = importlib.import_module("imas._al_lowlevel")
     imasdef = importlib.import_module("imas.imasdef")
 
 else:
