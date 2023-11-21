@@ -21,7 +21,7 @@ def _get_children(
     time_mode: int,
     nbc_map: Optional[NBCPathMap],
 ) -> None:
-    """Recursively get all children of an IDSStructure"""
+    """Recursively get all children of an IDSStructure."""
     # NOTE: changes in this method must be propagated to _get_child and vice versa
 
     for name, child_meta in structure._children.items():
@@ -123,7 +123,6 @@ def _get_child(child: IDSMixin, ctx: LazyALContext):
                 data.flags.writeable = False
             # NOTE: bypassing IDSPrimitive.value.setter logic
             child._IDSPrimitive__value = data
-
 
 
 def _delete_children(structure: IDSMetadata, ctx: ALContext) -> None:
