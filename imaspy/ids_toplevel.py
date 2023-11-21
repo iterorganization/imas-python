@@ -233,6 +233,12 @@ class IDSToplevel(IDSStructure):
             >>> core_profiles.validate()  # No error: IDS is valid
 
         """  # noqa: E501 (line too long)
+        if self._lazy:
+            logger.warning(
+                f"Validating lazy loaded IDS '%s': this will not validate the full "
+                "IDS, only the loaded data is validated.",
+                self.metadata.name,
+            )
         time_mode = self._time_mode
         if time_mode not in IDS_TIME_MODES:
             raise ValidationError(

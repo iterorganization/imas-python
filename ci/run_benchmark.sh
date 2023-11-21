@@ -61,5 +61,5 @@ fi
 asv publish
 
 # And persistently store them
-cp -rf .asv/results /mnt/bamboo_deploy/imaspy/benchmarks/
+cp -rf .asv/{results,html} /mnt/bamboo_deploy/imaspy/benchmarks/
 

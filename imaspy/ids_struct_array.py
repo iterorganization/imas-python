@@ -105,13 +105,11 @@ class IDSStructArray(IDSMixin):
             assert len(self.value) == size
 
             if item is not None:
-                # Create and (lazily) load the requested item
-                from imaspy.db_entry import _get_children
+                # Create the requested item
                 from imaspy.ids_structure import IDSStructure
 
                 element = self.value[item] = IDSStructure(self, self.metadata)
-                nbc_map = self._lazy_context.nbc_map
-                _get_children(element, new_ctx, self._time_mode, nbc_map)
+                element._set_lazy_context(new_ctx)
 
     @property
     def _element_structure(self):

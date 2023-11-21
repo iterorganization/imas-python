@@ -3,12 +3,11 @@
 
 import logging
 import os
-from typing import Any, List, Optional, Tuple, Union, overload
+from typing import Any, List, Optional, Tuple, overload
 from urllib.parse import urlparse
 
 from imaspy.exception import ValidationError
-from imaspy.ids_convert import NBCPathMap, dd_version_map_from_factories
-from imaspy.ids_data_type import IDSDataType
+from imaspy.ids_convert import dd_version_map_from_factories
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     CHAR_DATA,
@@ -21,7 +20,6 @@ from imaspy.ids_defs import (
     ERASE_PULSE,
     READ_OP,
     WRITE_OP,
-    IDS_TIME_MODE_HOMOGENEOUS,
     IDS_TIME_MODE_INDEPENDENT,
     IDS_TIME_MODE_UNKNOWN,
     IDS_TIME_MODES,
@@ -31,14 +29,13 @@ from imaspy.ids_defs import (
     needs_imas,
 )
 from imaspy.ids_factory import IDSFactory
-from imaspy.ids_metadata import IDSMetadata, IDSType
+from imaspy.ids_metadata import IDSType
 from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_structure import IDSStructure
-from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.imas_interface import LLInterfaceError, ll_interface
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.al_context import ALContext, LazyALContext
+from imaspy.db_entry_helpers import _get_children, _delete_children, _put_children
 
 logger = logging.getLogger(__name__)
 
@@ -428,7 +425,7 @@ class DBEntry:
         if lazy and self.backend_id == ASCII_BACKEND:
             raise RuntimeError("Lazy loading is not supported by the ASCII backend.")
         if lazy and destination:
-            raise ValueError("Cannot supply both a destination IDS when lazy loading.")
+            raise ValueError("Cannot supply a destination IDS when lazy loading.")
 
         ll_path = ids_name
         if occurrence != 0:
@@ -466,8 +463,11 @@ class DBEntry:
             )
             nbc_map = ddmap.new_to_old if source_is_older else ddmap.old_to_new
 
+        if lazy:
+            context = LazyALContext(dbentry=self, nbc_map=nbc_map, time_mode=time_mode)
+        else:
+            context = self._db_ctx
         # Now fill the IDSToplevel
-        context = LazyALContext(dbentry=self, nbc_map=nbc_map) if lazy else self._db_ctx
         if time_requested is None or destination.metadata.type is IDSType.CONSTANT:
             # called from get(), or when the IDS is constant (see IMAS-3330)
             manager = context.global_action(ll_path, READ_OP)
@@ -476,7 +476,10 @@ class DBEntry:
                 ll_path, READ_OP, time_requested, interpolation_method
             )
         with manager as read_ctx:
-            _get_children(destination, read_ctx, time_mode, nbc_map)
+            if lazy:
+                destination._set_lazy_context(read_ctx)
+            else:
+                _get_children(destination, read_ctx, time_mode, nbc_map)
 
         return destination
 
@@ -705,129 +708,3 @@ class DBEntry:
             self.get(ids_name, occ, lazy=True)[node_path] for occ in occurrence_list
         ]
         return occurrence_list, node_content_list
-
-
-def _get_children(
-    structure: IDSStructure,
-    ctx: Union[ALContext, LazyALContext],
-    time_mode: int,
-    nbc_map: Optional[NBCPathMap],
-) -> None:
-    """Recursively get all children of an IDSStructure"""
-    lazy = isinstance(ctx, LazyALContext)
-    for name, child_meta in structure._children.items():
-        if time_mode == IDS_TIME_MODE_INDEPENDENT and child_meta.type.is_dynamic:
-            continue  # skip dynamic (time-dependent) nodes
-
-        path = child_meta.path_string
-        data_type = child_meta.data_type
-
-        if nbc_map and path in nbc_map:
-            if nbc_map.path[path] is None:
-                continue  # element does not exist in the on-disk DD version
-            new_path = nbc_map.ctxpath[path]
-            timebase = nbc_map.tbp[path]
-        else:
-            new_path = child_meta._ctx_path
-            timebase = child_meta.timebasepath
-
-        # Override time base for homogeneous time
-        if timebase and time_mode == IDS_TIME_MODE_HOMOGENEOUS:
-            timebase = "/time"
-
-        if data_type is IDSDataType.STRUCT_ARRAY:
-            # Lazy loading:
-            if lazy:
-                # Provide the AOS with enough information to retrieve its data
-                getattr(structure, name)._set_lazy_context(ctx, new_path, timebase)
-                continue
-            # Regular get/get_slice:
-            with ctx.arraystruct_action(new_path, timebase, 0) as (new_ctx, size):
-                if size > 0:
-                    element = getattr(structure, name)
-                    element.resize(size)
-                    for item in element:
-                        _get_children(item, new_ctx, time_mode, nbc_map)
-                        new_ctx.iterate_over_arraystruct(1)
-
-        elif data_type is IDSDataType.STRUCTURE:
-            element = getattr(structure, name)
-            _get_children(element, ctx, time_mode, nbc_map)
-
-        else:  # Data elements
-            ndim = child_meta.ndim
-            if data_type is IDSDataType.STR:
-                ndim += 1  # STR_0D is a 1D CHARACTER type...
-            data = ctx.read_data(new_path, timebase, data_type.al_type, ndim)
-            if not (
-                # Empty arrays and STR_1D
-                data is None
-                # EMPTY_INT, EMPTY_FLOAT, EMPTY_COMPLEX, empty string
-                or (child_meta.ndim == 0 and data == data_type.default)
-            ):
-                # NOTE: bypassing IDSPrimitive.value.setter logic
-                getattr(structure, name)._IDSPrimitive__value = data
-
-
-def _delete_children(structure: IDSMetadata, ctx: ALContext) -> None:
-    """Recursively delete all children of an IDSStructure"""
-    for child_meta in structure._children.values():
-        if child_meta.data_type is IDSDataType.STRUCTURE:
-            _delete_children(child_meta, ctx)
-        else:
-            ctx.delete_data(child_meta._ctx_path)
-
-
-def _put_children(
-    structure: IDSStructure,
-    ctx: ALContext,
-    time_mode: int,
-    is_slice: bool,
-    nbc_map: Optional[NBCPathMap],
-    verify_maxoccur: bool,
-) -> None:
-    """Recursively put all children of an IDSStructure"""
-    # Note: when putting a slice, we do not need to descend into IDSStructure and
-    # IDSStructArray elements if they don't contain dynamic data nodes. That is hard to
-    # detect now, so we just recurse and check the data elements
-    for element in structure._iter_children_with_value():
-        if time_mode == IDS_TIME_MODE_INDEPENDENT and element.metadata.type.is_dynamic:
-            continue  # skip dynamic data when in time independent mode
-
-        path = str(element.metadata.path)
-        if nbc_map and path in nbc_map:
-            if nbc_map.path[path] is None:
-                continue  # element does not exist in the on-disk DD version
-            new_path = nbc_map.ctxpath[path]
-            timebase = nbc_map.tbp[path]
-        else:
-            new_path = element.metadata._ctx_path
-            timebase = element.metadata.timebasepath
-
-        # Override time base for homogeneous time
-        if timebase and time_mode == IDS_TIME_MODE_HOMOGENEOUS:
-            timebase = "/time"
-
-        if isinstance(element, IDSStructArray):
-            size = len(element)
-            if verify_maxoccur:
-                maxoccur = element.metadata.maxoccur
-                if maxoccur and size > maxoccur:
-                    raise RuntimeError(
-                        f"Exceeding maximum number of occurrences ({maxoccur}) "
-                        f"of {element._path}"
-                    )
-            with ctx.arraystruct_action(new_path, timebase, size) as (new_ctx, _):
-                for item in element:
-                    _put_children(
-                        item, new_ctx, time_mode, is_slice, nbc_map, verify_maxoccur
-                    )
-                    new_ctx.iterate_over_arraystruct(1)
-
-        elif isinstance(element, IDSStructure):
-            _put_children(element, ctx, time_mode, is_slice, nbc_map, verify_maxoccur)
-
-        else:  # Data elements
-            if is_slice and not element.metadata.type.is_dynamic:
-                continue  # put_slice only stores dynamic data
-            ctx.write_data(new_path, timebase, element.value)

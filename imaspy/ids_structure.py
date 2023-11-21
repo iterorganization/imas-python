@@ -13,6 +13,8 @@ from typing import Generator
 
 from xxhash import xxh3_64
 
+from imaspy.al_context import LazyALContext
+from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_metadata import IDSDataType, IDSMetadata
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_path import IDSPath
@@ -79,14 +81,19 @@ class IDSStructure(IDSMixin):
         self._children = []
         super().__init__(parent, metadata)
         self._children = self.metadata._children
+        self._lazy_context = None
 
     def __getattr__(self, name):
         if name not in self._children:
-            raise AttributeError(f"'{__class__}' object has no attribute '{name}'")
+            raise AttributeError(f"'{self.__class__}' object has no attribute '{name}'")
         # Create child node
         child_meta = self._children[name]
         child = get_node_type(child_meta)(self, child_meta)
         super().__setattr__(name, child)  # bypass setattr logic below: avoid recursion
+        if self._lazy:  # lazy load the child
+            from imaspy.db_entry_helpers import _get_child
+
+            _get_child(child, self._lazy_context)
         return child
 
     def __setattr__(self, key, value):
@@ -138,6 +145,13 @@ class IDSStructure(IDSMixin):
             child_copy = deepcopy(getattr(self, child))
             setattr(copy, child, child_copy)
         return copy
+
+    def _set_lazy_context(self, ctx: LazyALContext) -> None:
+        """Called by DBEntry during a lazy get/get_slice.
+
+        Set the context that we can use for retrieving our children.
+        """
+        self._lazy_context = ctx
 
     @property
     def _dd_parent(self) -> IDSMixin:
