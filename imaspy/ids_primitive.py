@@ -89,7 +89,6 @@ class IDSPrimitive(IDSMixin):
         # TODO: implement the statement on the previous line O_O
         copy = self.__class__(self._parent, self.metadata)
         copy.__value = deepcopy(self.__value, memo)
-        copy._lazy_loaded = self._lazy_loaded
         return copy
 
     @property
