@@ -3,12 +3,14 @@
 """ Main CLI entry point """
 
 import contextlib
+from pathlib import Path
 import sys
 
 import click
 from packaging.version import Version
 
 import imaspy
+from imaspy import dd_zip
 import imaspy.imas_interface
 
 
@@ -71,15 +73,24 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
     """Convert an IDS to the target DD version.
 
     uri_in      URI of the input Data Entry
-    dd_version  Data dictionary version to convert to
+    dd_version  Data dictionary version to convert to. Can also be the path to an
+                IDSDef.xml to convert to custom/unreleased DD versions.
     uri_out     URI of the output Data Entry
     """
     min_version_guard(Version("5.1"))
 
+    # Check if we can load the requested version
+    if dd_version in dd_zip.dd_xml_versions():
+        version_params = dict(dd_version=dd_version)
+    elif Path(dd_version).exists():
+        version_params = dict(xml_path=dd_version)
+    else:
+        dd_zip.raise_unknown_dd_version_error(dd_version)
+
     entry_in = imaspy.DBEntry(uri_in, "r")
-    # Set dd_version, so the IDSs are converted to this version during put()
+    # Set dd_version/xml_path, so the IDSs are converted to this version during put()
     # Use "x" to prevent accidentally overwriting existing Data Entries
-    entry_out = imaspy.DBEntry(uri_out, "x", dd_version=dd_version)
+    entry_out = imaspy.DBEntry(uri_out, "x", **version_params)
 
     # First build IDS/occurrence list so we can show a decent progress bar
     ids_list = [ids] if ids != "*" else entry_out.factory.ids_names()
@@ -103,8 +114,11 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
         for ids_name, occurrence in bar:
             click.echo(f"Converting {ids_name}/{occurrence}...")
             ids = entry_in.get(ids_name, occurrence)
-            # Conversion happens during put:
-            entry_out.put(ids_name)
+            # Explicitly convert instead of auto-converting during put. This is a bit
+            # slower, but gives better diagnostics:
+            ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
+            # Store in output entry:
+            entry_out.put(ids2, occurrence)
 
 
 if __name__ == "__main__":

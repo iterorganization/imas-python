@@ -187,18 +187,22 @@ def dd_xml_versions() -> List[str]:
     return sorted(_read_dd_versions(), key=sort_key)
 
 
+def raise_unknown_dd_version_error(version):
+    suggestions = ""
+    close_matches = difflib.get_close_matches(version, dd_xml_versions(), n=1)
+    if close_matches:
+        suggestions = f" Did you mean {close_matches[0]!r}?"
+    raise ValueError(
+        f"Data dictionary version {version!r} cannot be found.{suggestions} "
+        f"Available versions are: {', '.join(reversed(dd_xml_versions()))}."
+    )
+
+
 def get_dd_xml(version):
     """Read XML file for the given data dictionary version."""
     dd_versions = _read_dd_versions()
     if version not in dd_versions:
-        suggestions = ""
-        close_matches = difflib.get_close_matches(version, dd_versions, n=1)
-        if close_matches:
-            suggestions = f" Did you mean {close_matches[0]!r}?"
-        raise ValueError(
-            f"Data dictionary version {version!r} cannot be found.{suggestions} "
-            f"Available versions are: {', '.join(reversed(dd_xml_versions()))}."
-        )
+        raise_unknown_dd_version_error(version)
     path, fname = dd_versions[version]
     with _open_zipfile(path) as zipfile:
         return zipfile.read(fname)
