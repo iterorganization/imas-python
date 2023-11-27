@@ -8,9 +8,10 @@ from functools import lru_cache
 import logging
 import re
 from xml.etree.ElementTree import Element, ElementTree
-from packaging.version import Version, InvalidVersion
+from packaging.version import Version
 from typing import Dict, Iterator, Optional, Set, Tuple
 
+from imaspy.dd_zip import parse_dd_version
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_path import IDSPath
 from imaspy.ids_struct_array import IDSStructArray
@@ -278,14 +279,8 @@ def dd_version_map_from_factories(
     """Build a DDVersionMap from two IDSFactories."""
     assert factory1._version
     assert factory2._version
-    try:
-        factory1_version = Version(factory1._version)
-        factory2_version = Version(factory2._version)
-    except InvalidVersion:
-        # git-describe versions like 3.38.1-123-fe82191c are not valid Version
-        # so strip everything including and after the first -
-        factory1_version = Version(re.sub("-.*", "", factory1._version))
-        factory2_version = Version(re.sub("-.*", "", factory2._version))
+    factory1_version = parse_dd_version(factory1._version)
+    factory2_version = parse_dd_version(factory2._version)
     old_version, old_factory, new_factory = min(
         (factory1_version, factory1, factory2),
         (factory2_version, factory2, factory1),
@@ -345,8 +340,8 @@ def convert_ids(
     else:
         target_ids = target
 
-    source_version = Version(toplevel._version)
-    target_version = Version(target_ids._version)
+    source_version = parse_dd_version(toplevel._version)
+    target_version = parse_dd_version(target_ids._version)
     logger.info(
         "Starting conversion of IDS %s from version %s to version %s.",
         ids_name,

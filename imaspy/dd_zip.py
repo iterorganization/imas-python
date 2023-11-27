@@ -42,8 +42,7 @@ from zipfile import ZipFile
 
 from importlib_resources import as_file, files
 from importlib_resources.abc import Traversable
-from packaging.version import InvalidVersion
-from packaging.version import Version as V
+from packaging.version import InvalidVersion, Version
 
 import imaspy
 
@@ -75,6 +74,18 @@ def _generate_zipfile_locations() -> Iterator[Union[Path, Traversable]]:
     yield Path(zip_name).resolve()
     yield Path(_get_xdg_config_dir()).resolve() / "imaspy" / zip_name
     yield files(imaspy) / "assets" / zip_name
+
+
+def parse_dd_version(version: str) -> Version:
+    try:
+        return Version(version)
+    except InvalidVersion:
+        # This is probably a dev build of the DD, of which the version is obtained with
+        # `git describe` in the format X.Y.Z-<ncommits>-g<hash> with X.Y.Z the previous
+        # released version: try again after converting the first dash to a + and treat
+        # it like a `local` version specifier, which is recognized as newer.
+        # https://packaging.python.org/en/latest/specifications/version-specifiers/
+        return Version(version.replace("-", "+", 1))
 
 
 # Note: DD etrees don't consume a lot of memory, so we'll keep max 32 in memory
@@ -176,13 +187,13 @@ def dd_xml_versions() -> List[str]:
 
     def sort_key(version):
         try:
-            return V(version)
+            return parse_dd_version(version)
         except InvalidVersion:
             # Don't fail when a malformatted version is present in the DD zip
             logger.error(
                 f"Could not convert DD XML version {version} to a Version.", exc_info=1
             )
-            return V(0)
+            return Version(0)
 
     return sorted(_read_dd_versions(), key=sort_key)
 
@@ -219,7 +230,7 @@ def get_dd_xml_crc(version):
 
 def print_supported_version_warning(version):
     try:
-        if V(version) < imaspy.OLDEST_SUPPORTED_VERSION:
+        if parse_dd_version(version) < imaspy.OLDEST_SUPPORTED_VERSION:
             logger.warning(
                 "Version %s is below lowest supported version of %s.\
                 Proceed at your own risk.",
