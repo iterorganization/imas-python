@@ -17,7 +17,7 @@ It provides:
 This package is developed on [ITER bitbucket](https://git.iter.org/projects/IMAS/repos/imaspy).
 For user support, contact the IMAS team on the [IMAS user slack](https://imasusers.slack.com),
 open a [JIRA issue](https://jira.iter.org/projects/IMAS), or email the
-support team on imas-support@iter.org.
+support team on <imas-support@iter.org>.
 
 ## Installation
 
@@ -29,13 +29,9 @@ There is a `module` available on ITER and the Gateway, so you can run
 module load IMASPy
 ```
 
-Additionally, if you wish to use the MDSPlus backend, you should load
-
-```bash
-module load MDSplus-Java/7.96.17-GCCcore-10.2.0-Java-11
-```
-
-at least the first time you are using the backend with a new data-dictionary version.
+IMASPy can work with either Access Layer versions 4 or 5 (the used version is
+automatically detected when importing the `imaspy` module). IMASPy still works (with
+limited functionality) when no IMAS module is loaded.
 
 ### Local
 
@@ -121,46 +117,6 @@ make -C docs html
 Interaction with the IMAS AL is provided by a Cython interface to the Access Layer.
 As Cython code, it needs to be compiled on your local system.
 To find the headers, the Access Layer `include` folder needs to be in your `INCLUDE_PATH`. On most HPC systems, a `module load IMAS` is enough.
-
-## Where does IMASPy live in IMAS ecosystem?
-
-IMASPy tries to fill a slightly different niche than existing tools. It aims
-to be an _alternative_ to Python HLI instead of a wrapper. It tries to be
-dynamic instead of pre-generated. Is hopes to be extendable instead of
-wrappable.
-
-A small, biased, and wildly incomplete of some common IMAS tools, and
-where they live with respect to IMASPy.
-
-``` mermaid
-classDiagram
-  MDSPLUS_DATABASE .. LL_AL : puts
-  MDSPLUS_DATABASE .. LL_AL : gets
-  MDSPLUS_DATABASE .. LL_HDC : puts
-  MDSPLUS_DATABASE .. LL_HDC : gets
-  IMAS DD <.. PythonHLI: build dep
-  IMAS DD <-- IMASPy:  runtime dep
-  LL_HDC <-- HDC_python_bindings : calls
-  LL_AL <-- Cython_HLI : calls
-  Python_helpers <-- IMASPy: calls
-  HDC_python_bindings <.. IMASPy: Could call
-
-  Cython_HLI <-- Python_helpers : calls
-  Python_helpers <-- Python HLI: calls
-
-  IMASDD <..  IMASviz_codegen: build dep
-  IMASviz_codegen <..  IMASviz: build dep
-
-  PythonHLI <-- OMAS: calls
-  OMAS <-- OMFIT: calls
-  OMFIT <-- IMASgo : calls
-
-  PythonHLI <-- pyAL: calls
-  PythonHLI <-- JINTRAC_WORKFLOWS : calls
-  pyAL <-- HnCD_WORKFLOWS : calls
-  PythonHLI <-- HnCD_WORKFLOWS : calls
-  PythonHLI <-- IMASviz: calls
-```
 
 ## Acknowledgments
 
