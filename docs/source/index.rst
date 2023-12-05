@@ -39,6 +39,7 @@ It provides:
    :caption: IMASPy training courses
 
    courses/basic_user_training
+   courses/advanced_user_training
 
 
 README

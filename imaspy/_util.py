@@ -20,6 +20,7 @@ from rich.tree import Tree
 import scipy.interpolate
 
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
+from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
@@ -130,6 +131,8 @@ def _make_tree(structure, hide_empty_nodes=True, *, tree=None):
 
 
 def inspect_impl(ids_node, hide_empty_nodes):
+    if not isinstance(ids_node, IDSMixin):
+        return rich.inspect(ids_node)
     # Title
     if isinstance(ids_node, IDSToplevel):
         title = f"IDS: [green]{ids_node.metadata.name}"

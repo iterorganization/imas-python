@@ -61,7 +61,7 @@ class IDSCoordinate:
             return  # Already initialized, __new__ returned from cache
         self._coordinate_spec = coordinate_spec
         self.size: Optional[int] = None
-        """Exact size of this dimension, e.g. 2 when coordinate = 1...2."""
+        """Exact size of this dimension. For example, 2 when coordinate = 1...2."""
 
         refs: List[IDSPath] = []
         specs = coordinate_spec.split(" OR ")
@@ -82,16 +82,16 @@ class IDSCoordinate:
                     logger.debug(
                         f"Ignoring invalid coordinate specifier {spec}", exc_info=True
                     )
-        self.references = tuple(refs)
-        """A tuple of :class:`~imaspy.ids_path.IDSPath` that this coordinate refers to.
+        self.references: "tuple[IDSPath]" = tuple(refs)
+        """A tuple paths that this coordinate refers to.
         """
 
         num_rules = len(self.references) + (self.size is not None)
-        self.has_validation = num_rules > 0
+        self.has_validation: bool = num_rules > 0
         """True iff this coordinate specifies a validation rule."""
-        self.has_alternatives = num_rules > 1
+        self.has_alternatives: bool = num_rules > 1
         """True iff exclusive alternative coordinates are specified."""
-        self.is_time_coordinate = any(ref.is_time_path for ref in self.references)
+        self.is_time_coordinate: bool = any(ref.is_time_path for ref in self.references)
         """True iff this coordinate refers to ``time``."""
 
         # Prevent accidentally modifying attributes
@@ -209,12 +209,12 @@ class IDSCoordinates:
                     data = [_goto(coordinate_path, ele).value for ele in self._node]
                     return np.array(data)
             coordinate_node = _goto(coordinate_path, self._node)
-            if not coordinate_node.metadata.alternative_coordinate1:
+            if not coordinate_node.metadata.alternative_coordinates:
                 return coordinate_node
 
             # This coordinate has alternatives, check which are set
             nonzero_alternatives = [coordinate_node] if len(coordinate_node) > 0 else []
-            for alternative_path in coordinate_node.metadata.alternative_coordinate1:
+            for alternative_path in coordinate_node.metadata.alternative_coordinates:
                 alternative_node = alternative_path.goto(coordinate_node)
                 if len(alternative_node) > 0:
                     nonzero_alternatives.append(alternative_node)

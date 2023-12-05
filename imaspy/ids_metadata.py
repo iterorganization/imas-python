@@ -60,12 +60,10 @@ def get_toplevel_metadata(structure_xml):
 
 
 class IDSMetadata:
-    """Container for IDS Metadata
+    """Container for IDS Metadata stored in the Data Dictionary.
 
     Metadata is everything saved in the attributes of variables in IDSDef.xml.
     This includes for example documentation, its units, and coordinates.
-    Metadata is parsed and saved in pythonic types, and used throughout
-    IMASPy.
     """
 
     def __init__(
@@ -79,7 +77,8 @@ class IDSMetadata:
         self._parent = parent_meta
 
         # Mandatory attributes
-        self.name = attrib["name"]
+        self.name: str = attrib["name"]
+        """Name of the IDS node, for example ``"comment"``."""
 
         # Context path: path relative to the nearest Array of Structures
         if parent_meta is None:  # Toplevel IDS
@@ -91,13 +90,31 @@ class IDSMetadata:
 
         # These are special and used in IMASPy logic, so we need to ensure proper values
         maxoccur = attrib.get("maxoccur", "unbounded")
-        self.maxoccur = None if maxoccur == "unbounded" else int(maxoccur)
+        self.maxoccur: Optional[int] = None if maxoccur == "unbounded" else int(maxoccur)
+        """Maximum number of occurrences allowed in the MDS+ backend. Applies to IDS
+        toplevels and Arrays of Structures."""
+        self.data_type: IDSDataType
+        """Data type of the IDS node."""
+        self.ndim: int
+        """Number of dimensions (rank) of the IDS node."""
         self.data_type, self.ndim = IDSDataType.parse(attrib.get("data_type", None))
-        self.path_string = attrib.get("path", "")  # IDSToplevel has no path
-        self.path = IDSPath(self.path_string)
-        self.path_doc = attrib.get("path_doc", "")  # IDSToplevel has no path
-        self.type = IDSType(attrib.get("type", None))
+        self.path_string: str = attrib.get("path", "")  # IDSToplevel has no path
+        """Path of this IDS node from the IDS toplevel, for example
+        ``"ids_properties/comment"``."""
+        self.path: IDSPath = IDSPath(self.path_string)
+        """Parsed path of this IDS node from the IDS toplevel, see also
+        :py:attr:`path_string`."""
+        self.path_doc: str = attrib.get("path_doc", "")  # IDSToplevel has no path
+        """Path of this IDS node from the IDS toplevel, as shown in the Data Dictionary
+        documentation. For example ``"time_slice(itime)/profiles_2d(i1)/r(:,:)"``."""
+        self.type: IDSType = IDSType(attrib.get("type", None))
+        """Type of the IDS node, indicating if this node is time dependent. Possible
+        values are ``dynamic`` (i.e. time-dependent), ``constant`` and ``static``."""
         self.timebasepath = attrib.get("timebasepath", "")
+        self.units: str = attrib.get("units", "")
+        """Units of this IDS node. For example ``"m.s^-2"``."""
+        if self.units == "as_parent" and parent_meta is not None:
+            self.units = parent_meta.units
 
         # timebasepath is not always defined in the DD XML, mainly not for struct_arrays
         # Also, when it is defined, it may not be correct (DD 3.39.0)
@@ -128,13 +145,19 @@ class IDSMetadata:
             if coor + "_same_as" in attrib:
                 coors_same_as[dim] = IDSCoordinate(attrib[coor + "_same_as"])
                 setattr(self, coor + "_same_as", coors_same_as[dim])
-        self.coordinates = tuple(coors)
-        self.coordinates_same_as = tuple(coors_same_as)
+        self.coordinates: "tuple[IDSCoordinate]" = tuple(coors)
+        """Tuple of coordinates of this node.
+
+        ``coordinates[0]`` is the coordinate of the first dimension, etc."""
+        self.coordinates_same_as: "tuple[IDSCoordinate]" = tuple(coors_same_as)
+        """Indicates quantities which share the same coordinate in a given dimension,
+        but the coordinate is not explicitly stored in the IDS."""
 
         # Parse alternative coordinates
-        self.alternative_coordinate1 = tuple()
+        self.alternative_coordinates: "tuple[IDSPath]" = tuple()
+        """Quantities that can be used as coordinate instead of this node."""
         if "alternative_coordinate1" in attrib:
-            self.alternative_coordinate1 = tuple(
+            self.alternative_coordinates = tuple(
                 IDSPath(coor) for coor in attrib["alternative_coordinate1"].split(";")
             )
 

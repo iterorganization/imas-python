@@ -1,0 +1,171 @@
+.. _`Using metadata`:
+
+Using Data Dictionary metadata
+==============================
+
+IMASPy provides convenient access to Data Dictionary metadata of any IDS node through
+the ``metadata`` attribute:
+
+.. code-block:: python
+
+    >>> import imaspy
+    >>> core_profiles = imaspy.IDSFactory().core_profiles()
+    >>> core_profiles.metadata
+    <IDSMetadata for 'core_profiles'>
+    >>> core_profiles.time.metadata
+    <IDSMetadata for 'time'>
+    >>> # etc.
+
+In this lesson we will show how to work with this metadata by exploring a couple of use
+cases.
+
+
+Overview of available metadata
+------------------------------
+
+The data dictionary metadata that is parsed by IMASPy is listed in the API
+documentation for :py:class:`~imaspy.ids_metadata.IDSMetadata`.
+
+Note that not all metadata from the IMAS Data Dictionary is parsed by IMASPy.
+This metadata is still accessible on the :code:`metadata` attribute. You can use
+:py:func:`imaspy.util.inspect` to get an overview of all metadata associated to an
+element in an IDS.
+
+.. code-block:: python
+    :caption: Example showing all metadata for some ``core_profiles`` elements.
+
+    >>> import imaspy
+    >>> core_profiles = imaspy.IDSFactory().core_profiles()
+    >>> imaspy.util.inspect(core_profiles.metadata)
+    ╭---- <class 'imaspy.ids_metadata.IDSMetadata'> -----╮
+    │ Container for IDS Metadata                         │
+    │                                                    │
+    │ ╭------------------------------------------------╮ │
+    │ │ <IDSMetadata for 'core_profiles'>              │ │
+    │ ╰------------------------------------------------╯ │
+    │                                                    │
+    │   alternative_coordinates = ()                     │
+    │               coordinates = ()                     │
+    │       coordinates_same_as = ()                     │
+    │                 data_type = None                   │
+    │             documentation = 'Core plasma profiles' │
+    │     lifecycle_last_change = '3.39.0'               │
+    │          lifecycle_status = 'active'               │
+    │         lifecycle_version = '3.1.0'                │
+    │                  maxoccur = 15                     │
+    │                      name = 'core_profiles'        │
+    │                      ndim = 0                      │
+    │                      path = IDSPath('')            │
+    │                  path_doc = ''                     │
+    │               path_string = ''                     │
+    │ specific_validation_rules = 'yes'                  │
+    │              timebasepath = ''                     │
+    │                      type = <IDSType.NONE: None>   │
+    │                     units = ''                     │
+    ╰----------------------------------------------------╯
+    >>> imaspy.util.inspect(core_profiles.time.metadata)
+    ╭------ <class 'imaspy.ids_metadata.IDSMetadata'> -------╮
+    │ Container for IDS Metadata                             │
+    │                                                        │
+    │ ╭----------------------------------------------------╮ │
+    │ │ <IDSMetadata for 'time'>                           │ │
+    │ ╰----------------------------------------------------╯ │
+    │                                                        │
+    │ alternative_coordinates = ()                           │
+    │             coordinate1 = IDSCoordinate('1...N')       │
+    │             coordinates = (IDSCoordinate('1...N'),)    │
+    │     coordinates_same_as = (IDSCoordinate(''),)         │
+    │               data_type = <IDSDataType.FLT: 'FLT'>     │
+    │           documentation = 'Generic time'               │
+    │                maxoccur = None                         │
+    │                    name = 'time'                       │
+    │                    ndim = 1                            │
+    │                    path = IDSPath('time')              │
+    │                path_doc = 'time(:)'                    │
+    │             path_string = 'time'                       │
+    │            timebasepath = 'time'                       │
+    │                    type = <IDSType.DYNAMIC: 'dynamic'> │
+    │                   units = 's'                          │
+    ╰--------------------------------------------------------╯
+
+
+Coordinate metadata
+-------------------
+
+The Data Dictionary has coordinate information on all non-scalar nodes: arrays of
+structures and data nodes that are not 0D. These coordinate descriptions can become
+quite complicated, but summarized they come in two categories:
+
+1.  Coordinates are indices.
+
+    This is indicated by the Data Dictionary as coordinate = ``1...{x}``. Here ``{x}``
+    can be a number (e.g. ``1...3``), which means that this dimension should have
+    exactly ``x`` elements. ``{x}`` can also be a literal ``N``: ``1...N``, meaning that
+    the size of this dimension does not have a predetermined size.
+
+    Sometimes multiple variables have index variables, but they are still
+    linked. For example, image sensors could have one variable indicating raw observed
+    values per pixel, and another variable storing some processed quantities per pixel.
+    In this case, the coordinates are indices (line / column index of the pixel), but
+    these must be the same for both quantities. This information is stored in the
+    :py:attr:`~imaspy.ids_metadata.IDSMetadata.coordinates_same_as` metadata.
+
+2.  Coordinates are other quantities in the Data Dictionary.
+
+    This is indicated by the Data Dictionary by specifying the path to the coordinate.
+    There are multiple scenarios here, which are described in more detail in the section
+    :ref:`Using coordinates of quantities`.
+
+
+Using coordinates
+'''''''''''''''''
+
+For most use cases it is not necessary to become an expert in all
+intricacies of Data Dictionary coordinates. Instead, you can use the ``coordinates``
+attribute of array of structures and data nodes. For example ``<ids
+node>.coordinates[0]`` will give you the data to use for the first coordinate.
+
+
+Exercise 1: Using coordinates
+`````````````````````````````
+
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
+        1.  Load the training data for the ``core_profiles`` IDS. You can refresh how to
+            do this in the following section of the basic training material: :ref:`Open
+            an IMAS database entry`.
+
+            a.  Print the coordinate of ``profiles_1d[0].electrons.temperature``. This
+                is a 1D array, so there is only one coordinate. It can be accessed with
+                ``<node>.coordinates[0]``. Do you recognize the coordinate?
+            b.  Print the coordinate of the ``profiles_1d`` array of structures. What
+                do you notice?
+            c.  Change the time mode of the IDS from homogeneous time to heterogeneous
+                time. You do this by setting ``ids_properties.homogeneous_time = 0``.
+                Print the coordinate of the ``profiles_1d`` array of structure again.
+                What has changed?
+
+        2.  Load the training data for the ``equilibrium`` IDS.
+
+            a.  What is the coordinate of ``time_slice/profiles_2d``?
+            b.  What are the coordinates of ``time_slice/profiles_2d/b_field_r``?
+
+    .. md-tab-item:: Solution
+
+        .. literalinclude:: imaspy_snippets/coordinates.py
+
+
+
+Units and dimensional analysis with Pint
+----------------------------------------
+
+.. note::
+
+    This section uses the python package `Pint` to perform calculations with units. This
+    package can be installed by following `the instructions on their website
+    <https://pint.readthedocs.io/en/stable/getting/index.html>`_.
+
+.. TODO::
+    TODO

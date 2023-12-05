@@ -1,3 +1,5 @@
+.. _`ids metadata`:
+
 IDS metadata
 ============
 
@@ -9,9 +11,30 @@ interacting with this metadata.
 On this page you find several examples for querying and using the metadata of
 IDS elements.
 
-.. contents:: Contents
-    :local:
+.. seealso::
+    IMASPy advanced training: :ref:`Using metadata`
 
+
+Overview of available metadata
+------------------------------
+
+An overview of available metadata is given in the API documentation for
+:py:class:`~imaspy.ids_metadata.IDSMetadata`.
+The documented attributes are always available, but additional metadata from the data
+dictionary may be available as well.
+For example, the data dictionary indicates a ``lifecycle_last_change`` on all IDS
+toplevels (in which DD version was that IDS last updated). This is not listed in the
+metadata documentation, but you can still access it. See the following code sample:
+
+.. code-block:: pycon
+
+    >>> import imaspy
+    >>> core_profiles = imaspy.IDSFactory().core_profiles()
+    >>> core_profiles.metadata.lifecycle_last_change
+    '3.39.0'
+
+
+.. _`Using coordinates of quantities`:
 
 Using coordinates of quantities
 -------------------------------
@@ -20,6 +43,8 @@ All multi-dimensional quantities in an IDS have coordinate information. These
 can be data nodes (for example 2D floating point data) or array of structure
 nodes.
 
+
+.. _`Get coordinate values`:
 
 Get coordinate values
 '''''''''''''''''''''
@@ -107,34 +132,6 @@ coordinate from IMASPy, four things may happen:
     API documentation for :py:class:`~imaspy.ids_coordinates.IDSCoordinates`
 
 
-Other useful metadata
-'''''''''''''''''''''
-
-A brief overview of useful metadata attributes follows below.
-Note that some attributes may not be set, this usually indicates that that
-metadata attribute is not specified by the Data Dictionary.
-
-data_type
-    The data type of the IDS element. This is an instance of
-    :py:class:`~imaspy.ids_data_type.IDSDataType`.
-
-ndim
-    The number of dimensions of the IDS element. A structure node always has 0
-    dimensions. An array of structure node has 1 dimension. For data nodes
-    the dimensionality can be between 0 and 6.
-
-documentation
-    A short description of the IDS element and (usually) its physical
-    interpretation.
-
-units
-    The units for this quantity.
-
-maxoccur
-    The maximum number of times that this array of structures may appear for the
-    MDSPLUS backend.
-
-
 Query coordinate information
 ''''''''''''''''''''''''''''
 
@@ -143,7 +140,7 @@ In IMASPy you can query coordinate information in two ways:
 1.  Directly query the coordinate attribute on the metadata:
     :code:`<quantity>.metadata.coordinate2` gives you the coordinate information
     for the second dimension of the quantity.
-2.  Use the :py:attr:`IDSMetadata.coordinates` attribute:
+2.  Use the :py:attr:`~imaspy.ids_metadata.IDSMetadata.coordinates` attribute:
     :code:`<quantity>.metadata.coordinates` is a tuple containing all coordinate
     information for the quantity.
 
@@ -176,52 +173,36 @@ several types of coordinate information:
     >>> pf_active.coil[0].current_limit_max.metadata.coordinates
     (IDSCoordinate('coil(i1)/b_field_max'), IDSCoordinate('coil(i1)/temperature'))
 
+
 .. seealso::
     API documentation for :py:class:`~imaspy.ids_coordinates.IDSCoordinate`.
 
 
-Show all metadata associated to a quantity or structure
--------------------------------------------------------
+Query alternative coordinates
+'''''''''''''''''''''''''''''
 
-Not all metadata from the IMAS Data Dictionary is handled specially by IMASPy.
-This metadata is still accessible on the :code:`metadata` attribute. You can use
-:external:py:func:`vars` to get an overview of all metadata associated to an
-element in an IDS.
+Starting in Data Dictionary 4.0, a coordinate quantity may indicate alternatives for
+itself. These alternatives are stored in the metadata attribute
+:py:attr:`~imaspy.ids_metadata.IDSMetadata.alternative_coordinates`.
+
+For example, most quantities in ``profiles_1d`` of the ``core_profiles`` IDS have
+``profiles_1d/grid/rho_tor_norm`` as coordinate. However, there are alternatives
+that may be used instead (e.g. ``rho_tor``, ``psi``, ...). This is then indicated in
+the metadata of ``rho_tor_norm``:
 
 .. code-block:: python
-    :caption: Example showing all metadata for some ``core_profiles`` elements.
+    :caption: Showing alternative coordinates in Data Dictionary version 4.0.0
 
-    >>> from pprint import pprint
-    >>> core_profiles = imaspy.IDSFactory().core_profiles()
-    >>> pprint(vars(core_profiles.ids_properties.metadata))
-    {'_init_done': True,
-     'coordinates': (),
-     'coordinates_same_as': (),
-     'data_type': <IDSDataType.STRUCTURE: 'structure'>,
-     'documentation': 'Interface Data Structure properties. This element '
-                      'identifies the node above as an IDS',
-     'maxoccur': None,
-     'name': 'ids_properties',
-     'ndim': 0,
-     'path': IDSPath('ids_properties'),
-     'path_doc': 'ids_properties',
-     'structure_reference': 'ids_properties'}
-    >>> pprint(vars(core_profiles.time.metadata))
-    {'_init_done': True,
-     'coordinate1': IDSCoordinate('1...N'),
-     'coordinates': (IDSCoordinate('1...N'),),
-     'coordinates_same_as': (IDSCoordinate(''),),
-     'data_type': <IDSDataType.FLT: 'FLT'>,
-     'documentation': 'Generic time',
-     'maxoccur': None,
-     'name': 'time',
-     'ndim': 1,
-     'path': IDSPath('time'),
-     'path_doc': 'time(:)',
-     'timebasepath': 'time',
-     'type': 'dynamic',
-     'units': 's'}
-
-
-.. seealso::
-    API documentation for :py:class:`~imaspy.ids_metadata.IDSMetadata`.
+    >>> import imaspy
+    >>> import rich
+    >>> dd4 = imaspy.IDSFactory("4.0.0")
+    >>> core_profiles = dd4.core_profiles()
+    >>> rich.print(cp.profiles_1d[0].grid.rho_tor_norm.metadata.alternative_coordinates)
+    (
+        IDSPath('profiles_1d(itime)/grid/rho_tor'),
+        IDSPath('profiles_1d(itime)/grid/psi'),
+        IDSPath('profiles_1d(itime)/grid/volume'),
+        IDSPath('profiles_1d(itime)/grid/area'),
+        IDSPath('profiles_1d(itime)/grid/surface'),
+        IDSPath('profiles_1d(itime)/grid/rho_pol_norm')
+    )
