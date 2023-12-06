@@ -116,10 +116,6 @@ quite complicated, but summarized they come in two categories:
     There are multiple scenarios here, which are described in more detail in the section
     :ref:`Using coordinates of quantities`.
 
-
-Using coordinates
-'''''''''''''''''
-
 For most use cases it is not necessary to become an expert in all
 intricacies of Data Dictionary coordinates. Instead, you can use the ``coordinates``
 attribute of array of structures and data nodes. For example ``<ids
@@ -127,7 +123,7 @@ node>.coordinates[0]`` will give you the data to use for the first coordinate.
 
 
 Exercise 1: Using coordinates
-`````````````````````````````
+'''''''''''''''''''''''''''''
 
 .. md-tab-set::
 
@@ -149,13 +145,39 @@ Exercise 1: Using coordinates
 
         2.  Load the training data for the ``equilibrium`` IDS.
 
-            a.  What is the coordinate of ``time_slice/profiles_2d``?
-            b.  What are the coordinates of ``time_slice/profiles_2d/b_field_r``?
+            a.  What is the coordinate of ``time_slice[]/profiles_2d[]``?
+            b.  What are the coordinates of ``time_slice[]/profiles_2d[]/b_field_r``?
 
     .. md-tab-item:: Solution
 
         .. literalinclude:: imaspy_snippets/coordinates.py
 
+
+Exercise 2: Alternative coordinates
+'''''''''''''''''''''''''''''''''''
+
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
+        1.  Create an empty ``distributions`` IDS.
+        2.  Use the ``metadata`` attribute to find the coordinates of
+            ``distribution[]/profiles_2d[]/density``. What do you notice?
+        3.  Retrieve the coordinate values through the ``coordinates`` attribute. What
+            do you notice?
+        4.  You can still use the metadata to go to the coordinate node options:
+
+            a.  Use the :py:attr:`~imaspy.ids_coordinates.IDSCoordinate.references`
+                attribute of the :py:class:`~imaspy.ids_coordinates.IDSCoordinate`
+                objects in the ``metadata`` to get the paths to each of the coordinate
+                options. This will give you the :py:class:`~imaspy.ids_path.IDSPath`
+                objects for each coordinate option.
+            b.  Then, use :py:meth:`IDSPath.goto <imaspy.ids_path.IDSPath.goto>` to go
+                to the corresponding IDS node.
+
+    .. md-tab-item:: Solution
+
+        .. literalinclude:: imaspy_snippets/alternative_coordinates.py
 
 
 Units and dimensional analysis with Pint
@@ -168,4 +190,10 @@ Units and dimensional analysis with Pint
     <https://pint.readthedocs.io/en/stable/getting/index.html>`_.
 
 .. TODO::
-    TODO
+    Need an example use case to do the following steps on:
+
+    1.  Use training data (if possible), or create a small batch of test data
+    2.  Use ``metadata.units`` to create Pint Quantities
+    3.  Perform a calculation with the Quantities
+    4.  Check if units of derived quantity matches with the units expected by DD
+    5.  Convert quantity to correct units and store in IDS
