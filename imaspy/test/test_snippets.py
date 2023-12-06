@@ -5,9 +5,8 @@ import runpy
 import pytest
 
 courses = Path(__file__, "../../../", "docs/source/courses").resolve()
-basic_course = courses / "basic"
 course_snippets = []
-for course in ["basic"]:
+for course in ["basic", "advanced"]:
     course_snippets.extend((courses / course).glob("*snippets/*.py"))
 
 
