@@ -288,7 +288,7 @@ def alternative_coordinates_cp(latest_factory):
     cp.profiles_1d[0].time = 1.0
     cp.validate()
     grid = cp.profiles_1d[0].grid
-    if not grid.rho_tor_norm.metadata.alternative_coordinate1:
+    if not grid.rho_tor_norm.metadata.alternative_coordinates:
         pytest.skip("Alternative coordinates are introduced with DDv4")
     return cp
 
