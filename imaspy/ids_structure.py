@@ -9,7 +9,7 @@ import logging
 from copy import deepcopy
 from functools import lru_cache
 import logging
-from typing import Generator
+from typing import Generator, List
 
 from xxhash import xxh3_64
 
@@ -145,6 +145,9 @@ class IDSStructure(IDSMixin):
             child_copy = deepcopy(getattr(self, child))
             setattr(copy, child, child_copy)
         return copy
+
+    def __dir__(self) -> List[str]:
+        return sorted(set(object.__dir__(self)).union(self._children))
 
     def _set_lazy_context(self, ctx: LazyALContext) -> None:
         """Called by DBEntry during a lazy get/get_slice.
