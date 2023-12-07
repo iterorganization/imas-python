@@ -621,8 +621,8 @@ class DBEntry:
                 version_put.data_dictionary = self._ids_factory._version
             else:
                 version_put.data_dictionary = ids._dd_version
-            # TODO! AL version
-            ids.ids_properties.version_put.access_layer_language = "imaspy"
+            version_put.access_layer = ll_interface._al_version_str
+            version_put.access_layer_language = "imaspy " + imaspy.__version__
 
         if is_slice:
             with self._db_ctx.global_action(ll_path, READ_OP) as read_ctx:
