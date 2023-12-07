@@ -11,10 +11,11 @@ from imaspy.ids_convert import (
     _get_tbp,
     iter_parents,
 )
-from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS
+from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS, MEMORY_BACKEND
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
+from imaspy.test.test_helpers import open_dbentry
 
 
 def test_iter_parents():
@@ -92,3 +93,65 @@ def test_compare_timebasepath_functions(ids_name):
                     recurse(item[0], "")
 
     recurse(ids, "")
+
+
+def test_dbentry_autoconvert1(backend, worker_id, tmp_path):
+    entry1 = open_dbentry(backend, "w", worker_id, tmp_path, autoconvert=False)
+    entry2 = open_dbentry(backend, "a", worker_id, tmp_path, autoconvert=True)
+
+    default_factory = entry1.factory
+    default_version = default_factory.version
+    old_factory = IDSFactory("3.31.0")
+    assert default_version != "3.31.0"
+
+    old_ids = old_factory.new("core_profiles")
+    old_ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
+
+    # Put without conversion:
+    entry1.put(old_ids)
+    assert old_ids.ids_properties.version_put.data_dictionary == "3.31.0"
+
+    # Get without conversion
+    old_ids_get = entry1.get("core_profiles")
+    assert old_ids_get.ids_properties.version_put.data_dictionary == "3.31.0"
+    assert old_ids_get._dd_version == "3.31.0"
+
+    # Get with conversion
+    new_ids_get = entry2.get("core_profiles")
+    assert new_ids_get.ids_properties.version_put.data_dictionary == "3.31.0"
+    assert new_ids_get._dd_version == default_version
+
+    entry1.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        entry2.close()
+
+
+def test_dbentry_autoconvert2(backend, worker_id, tmp_path):
+    entry1 = open_dbentry(backend, "w", worker_id, tmp_path, autoconvert=False)
+    entry2 = open_dbentry(backend, "a", worker_id, tmp_path, autoconvert=True)
+
+    default_factory = entry1.factory
+    default_version = default_factory.version
+    old_factory = IDSFactory("3.31.0")
+    assert default_version != "3.31.0"
+
+    old_ids = old_factory.new("core_profiles")
+    old_ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
+
+    # Put with conversion
+    entry2.put(old_ids)
+    assert old_ids.ids_properties.version_put.data_dictionary == default_version
+
+    # Get without conversion, but it was already converted
+    old_ids_get = entry1.get("core_profiles")
+    assert old_ids_get.ids_properties.version_put.data_dictionary == default_version
+    assert old_ids_get._dd_version == default_version
+
+    # Get with conversion (but not needed)
+    new_ids_get = entry2.get("core_profiles")
+    assert new_ids_get.ids_properties.version_put.data_dictionary == default_version
+    assert new_ids_get._dd_version == default_version
+
+    entry1.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        entry2.close()

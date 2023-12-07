@@ -6,6 +6,7 @@ import os
 from typing import Any, List, Optional, Tuple, overload
 from urllib.parse import urlparse
 
+import imaspy
 from imaspy.exception import ValidationError
 from imaspy.ids_convert import dd_version_map_from_factories
 from imaspy.ids_defs import (
@@ -77,6 +78,7 @@ class DBEntry:
         *args,
         dd_version: Optional[str] = None,
         xml_path: Optional[str] = None,
+        autoconvert: bool = True,
         **kwargs,
     ) -> None:
         """Create a new IMAS database entry object.
@@ -137,6 +139,18 @@ class DBEntry:
         Keyword Args:
             dd_version: Data dictionary version to use.
             xml_path: Data dictionary definition XML file to use.
+            autoconvert: Automatically convert IDSs during ``put()`` and ``get()``.
+                If enabled (default), a call to ``get()`` or ``get_slice()`` will return
+                an IDS from the Data Dictionary version attached to this Data Entry, and
+                a call to ``put()`` or ``put_slice()`` will always store data in the
+                version attached to this Data Entry. Data is automatically converted
+                between the on-disk version and the in-memory version.
+
+                .. caution::
+                    When autoconvert is disabled, it is the responsibility of the user
+                    to ``put()`` the correct IDS versions. Mixing IDS versions within
+                    one ``DBEntry`` is not supported and may lead to data corruption or
+                    crashes.
         """
         self._db_ctx: Optional[ALContext] = None
         if args or kwargs:
@@ -164,6 +178,7 @@ class DBEntry:
         self._xml_path = xml_path
         self._ids_factory = IDSFactory(dd_version, xml_path)
         self._uses_mdsplus = False
+        self._autoconvert = autoconvert
 
     def _build_legacy_uri(self, options):
         if not self._legacy_init:
@@ -454,7 +469,10 @@ class DBEntry:
             )
         # Ensure we have a destination
         if not destination:
-            destination = self._ids_factory.new(ids_name, _lazy=lazy)
+            if self._autoconvert:  # store results in our DD version
+                destination = self._ids_factory.new(ids_name, _lazy=lazy)
+            else:  # store results in on-disk DD version
+                destination = IDSFactory(dd_version).new(ids_name, _lazy=lazy)
         # Create a version conversion map, if needed
         nbc_map = None
         if dd_version and dd_version != destination._dd_version:
@@ -567,7 +585,7 @@ class DBEntry:
         ids_name = ids.metadata.name
         # Create a version conversion map, if needed
         nbc_map = None
-        if ids._version != self._ids_factory._version:
+        if ids._version != self._ids_factory._version and self._autoconvert:
             ddmap, source_is_older = dd_version_map_from_factories(
                 ids_name, ids._parent, self._ids_factory
             )
@@ -598,7 +616,11 @@ class DBEntry:
 
         # Set version_put properties (version_put was added in DD 3.22)
         if hasattr(ids.ids_properties, "version_put"):
-            ids.ids_properties.version_put.data_dictionary = self._ids_factory._version
+            version_put = ids.ids_properties.version_put
+            if self._autoconvert:
+                version_put.data_dictionary = self._ids_factory._version
+            else:
+                version_put.data_dictionary = ids._dd_version
             # TODO! AL version
             ids.ids_properties.version_put.access_layer_language = "imaspy"
 
