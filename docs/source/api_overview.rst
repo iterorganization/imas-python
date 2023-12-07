@@ -111,6 +111,8 @@ The DBEntry class automatically converts IDSs to the requested version:
   converted to the requested target version.
 
 
+.. _`DD background`:
+
 Background information
 ----------------------
 
