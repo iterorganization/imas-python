@@ -458,7 +458,7 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
         hsh.update(struct.pack("<" + arr.ndim * "q", *arr.shape))
         # Ensure array is little endian, only create a copy if it is big-endian
         arr = arr.astype(arr.dtype.newbyteorder('little'), copy=False)
-        hsh.update(arr.tobytes(order='C'))
+        hsh.update(arr.tobytes(order='F'))
         return hsh.digest()
 
 
