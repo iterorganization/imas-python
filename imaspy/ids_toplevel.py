@@ -260,7 +260,7 @@ class IDSToplevel(IDSStructure):
 
     def _validate(self):
         # Override to skip the self.metadata.type.is_dynamic check in IDSMixin._validate
-        for child in self:
+        for child in self._iter_nonempty():
             child._validate()
 
     @needs_imas

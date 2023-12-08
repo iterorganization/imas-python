@@ -367,10 +367,7 @@ def _copy_structure(
         version_map: Version map containing NBC renames.
     """
     rename_map = version_map.new_to_old if source_is_new else version_map.old_to_new
-    for item in source:
-        if not item.has_value:
-            continue
-
+    for item in source._iter_nonempty():
         path = str(item.metadata.path)
         if path in rename_map:
             if rename_map.path[path] is None:
