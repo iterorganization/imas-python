@@ -172,7 +172,15 @@ class DDVersionMap:
             assert new_path is not None
             nbc_description = new_item.get("change_nbc_description")
             nbc_version = new_item.get("change_nbc_version")
-            if Version(nbc_version) < self.version_old:
+
+            try:
+                parsed_nbc_version = Version(nbc_version)
+            except InvalidVersion:
+                log_args = (nbc_version, new_path)
+                logger.error("Ignoring invalid NBC version: %r for %r.", *log_args)
+                continue
+
+            if parsed_nbc_version < self.version_old:
                 continue
             if nbc_description in DDVersionMap.RENAMED_DESCRIPTIONS:
                 previous_name = new_item.get("change_nbc_previous_name")
