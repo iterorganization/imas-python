@@ -123,6 +123,53 @@ Exercise 2: Convert an IDS between DD versions
         .. literalinclude:: imaspy_snippets/ids_convert.py
 
 
+Automatic conversion between DD versions
+----------------------------------------
+
+.. TODO::
+    TODO, first converge in this PR: https://git.iter.org/projects/IMAS/repos/imaspy/pull-requests/156/overview
+
+    1.  Show and explain the default autoconvert behaviour
+    2.  Use cases for disabling autoconvert
+    3.  Show how disabled autoconvert works
+
+
+Using custom builds of the Data Dictionary
+------------------------------------------
+
+In the previous sections we showed how you can direct IMASPy to use a specific released
+version of the Data Dictionary definitions. Sometimes it is useful to work with
+unreleased (development or custom) versions of the data dictionaries as well.
+
+.. caution::
+
+    Unreleased versions of the Data Dictionary should only be used for testing.
+    
+    Do not use an unreleased Data Dictionary version for long-term storage: data
+    might not be read properly in the future.
+
+If you build the Data Dictionary, a file called ``IDSDef.xml`` is created. This file
+contains all IDS definitions. To work with a custom DD build, you need to point IMASPy
+to this ``IDSDef.xml`` file:
+
+.. code-block:: python
+    :caption: Use a custom Data Dictionary build with IMASPy
+
+    my_idsdef_file = "path/to/IDSDef.xml"  # Replace with the actual path
+
+    # Point IDSFactory to this path:
+    my_factory = imaspy.IDSFactory(xml_path=my_idsdef_file)
+    # Now you can create IDSs using your custom DD build:
+    my_ids = my_factory.new("...")
+
+    # If you need a DBEntry to put / get IDSs in the custom version:
+    my_entry = imaspy.DBEntry("imas:hdf5?path=my-testdb", "w", xml_path=my_idsdef_file)
+
+
+Once you have created the ``IDSFactory`` and/or ``DBEntry`` pointing to your custom DD
+build, you can use them like you normally would.
+
+
 .. rubric:: Footnotes
 
 .. [#DDdefs] To be more precise, the Data Dictionary definitions are generated when the
