@@ -33,18 +33,17 @@ logger = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=None)
-def get_node_type(meta: IDSMetadata):
-    data_type = meta.data_type
+def get_node_type(data_type: IDSDataType, ndim: int):
     if data_type is IDSDataType.STRUCTURE:
         return IDSStructure
     if data_type is IDSDataType.STRUCT_ARRAY:
         return IDSStructArray
     if data_type is IDSDataType.STR:
-        if meta.ndim == 0:
+        if ndim == 0:
             return IDSString0D
         else:
             return IDSString1D
-    if meta.ndim == 0:
+    if ndim == 0:
         if data_type is IDSDataType.FLT:
             return IDSFloat0D
         if data_type is IDSDataType.INT:
@@ -88,7 +87,7 @@ class IDSStructure(IDSMixin):
             raise AttributeError(f"'{self.__class__}' object has no attribute '{name}'")
         # Create child node
         child_meta = self._children[name]
-        child = get_node_type(child_meta)(self, child_meta)
+        child = get_node_type(child_meta.data_type, child_meta.ndim)(self, child_meta)
         super().__setattr__(name, child)  # bypass setattr logic below: avoid recursion
         if self._lazy:  # lazy load the child
             from imaspy.db_entry_helpers import _get_child
