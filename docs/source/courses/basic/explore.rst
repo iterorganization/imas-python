@@ -1,3 +1,5 @@
+.. _`basic/explore`:
+
 Explore with IMASPy
 ===================
 

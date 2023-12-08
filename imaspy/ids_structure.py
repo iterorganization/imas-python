@@ -167,7 +167,14 @@ class IDSStructure(IDSBase):
         return False
 
     def _iter_nonempty(self) -> Generator[IDSBase, None, None]:
-        """Iterate over all child nodes with non-default value."""
+        """Iterate over all child nodes with non-default value.
+
+        Note:
+            Despite the private name (starting with an underscore) this method is
+            considered part of the public API.
+
+            The name starts with an underscore so it won't clash with IDS child names.
+        """
         for child in self._children:
             if child in self.__dict__:
                 child_node = getattr(self, child)
