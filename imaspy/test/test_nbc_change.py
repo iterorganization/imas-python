@@ -265,21 +265,25 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
         dbentry2.close()
 
 
-def test_convert_min_to_max(ids_name):
+def test_convert_min_to_max(ids_name, latest_factory):
     factory = IDSFactory("3.22.0")
     if not factory.exists(ids_name):
         pytest.skip("IDS %s not defined for version 3.22.0" % (ids_name,))
+    if not latest_factory.exists(ids_name):
+        pytest.skip(f"IDS {ids_name} not defined for version {latest_factory.version}")
 
     ids = factory.new(ids_name)
     fill_with_random_data(ids)
-    convert_ids(ids, latest_dd_version())
+    convert_ids(ids, latest_factory.version)
 
 
-def test_convert_max_to_min(ids_name):
+def test_convert_max_to_min(ids_name, latest_factory):
     factory = IDSFactory("3.22.0")
     if not factory.exists(ids_name):
-        pytest.skip("IDS %s not defined for version 3.22.0" % (ids_name,))
+        pytest.skip(f"IDS {ids_name} not defined for version 3.22.0")
+    if not latest_factory.exists(ids_name):
+        pytest.skip(f"IDS {ids_name} not defined for version {latest_factory.version}")
 
-    ids = IDSFactory(latest_dd_version()).new(ids_name)
+    ids = latest_factory.new(ids_name)
     fill_with_random_data(ids)
     convert_ids(ids, None, factory=factory)
