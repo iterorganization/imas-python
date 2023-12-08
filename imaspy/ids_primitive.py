@@ -403,8 +403,8 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
     # list, to support operations like np.add(array_like, list)
     _HANDLED_TYPES = (np.ndarray, Number)
 
-    def __array__(self):
-        return self.value
+    def __array__(self, dtype=None):
+        return self.value.astype(dtype, copy=False)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         out = kwargs.get("out", ())

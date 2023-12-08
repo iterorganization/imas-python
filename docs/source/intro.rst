@@ -57,8 +57,9 @@ We can now use this ``core_profiles`` IDS and assign some data to it:
     >>> # array quantities are automatically converted to the appropriate numpy arrays
     >>> core_profiles.time = [1, 2, 3]
     >>> # the python list of ints is converted to a 1D array of floats
-    >>> core_profiles.time.value
-    array([1., 2., 3.])
+    >>> core_profiles.time
+    <IDSNumericArray (IDS:core_profiles, time, FLT_1D)>
+    numpy.ndarray([1., 2., 3.])
     >>> # resize the profiles_1d array of structures to match the size of `time`
     >>> core_profiles.profiles_1d.resize(3)
     >>> len(core_profiles.profiles_1d)
@@ -66,11 +67,6 @@ We can now use this ``core_profiles`` IDS and assign some data to it:
     >>> # assign some data for the first time slice
     >>> core_profiles.profiles_1d[0].grid.rho_tor_norm = [0, 0.5, 1.0]
     >>> core_profiles.profiles_1d[0].j_tor = [0, 0, 0]
-
-.. note::
-
-    Until :issue:`IMAS-4680` is addressed, you should use :code:`.value` to get the
-    value of a quantity in IMASPy.
 
 As you can see in the example above, IMASPy automatically checks the data you try to
 assign to an IDS with the data type specified in the Data Dictionary. When
