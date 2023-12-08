@@ -63,7 +63,7 @@ def test_hash_int_nd(minimal, n):
         lambda i, j=0, k=0: (i << 16) + (j << 8) + k, (5,) * n, dtype=int
     )
     minimal[name] = arr
-    flattened = np.ravel(arr, order="C")
+    flattened = np.ravel(arr, order="F")
     expected = xxh3_64_digest(
         struct.pack("<B", n)
         + (struct.pack("<Q", 5) * n)
@@ -77,7 +77,7 @@ def test_hash_flt_nd(minimal, n):
     name = f"flt_{n}d"
     arr = np.random.random((5,) * n)
     minimal[name] = arr
-    flattened = np.ravel(arr, order="C")
+    flattened = np.ravel(arr, order="F")
     expected = xxh3_64_digest(
         struct.pack("<B", n)
         + (struct.pack("<Q", 5) * n)
@@ -91,7 +91,7 @@ def test_hash_cpx_nd(minimal, n):
     name = f"cpx_{n}d"
     arr = np.random.random((5,) * n) + np.random.random((5,) * n) * 1j
     minimal[name] = arr
-    flattened = np.ravel(arr, order="C")
+    flattened = np.ravel(arr, order="F")
     expected = xxh3_64_digest(
         struct.pack("<B", n)
         + (struct.pack("<Q", 5) * n)

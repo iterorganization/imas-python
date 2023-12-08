@@ -131,7 +131,7 @@ def calc_hash(node: IDSMixin) -> bytes:
 
             -   Dimension (8-bit integer)
             -   Shape (dimension * 64-bits little-endian integer)
-            -   Concatenated data (little-endian, C memory layout)
+            -   Concatenated data (little-endian, **Fortran memory layout**)
 
     2.  Array of structures nodes: hash of concatenation of
 
