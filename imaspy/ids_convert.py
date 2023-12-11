@@ -171,20 +171,30 @@ class DDVersionMap:
             new_path = new_item.get("path")
             assert new_path is not None
             nbc_description = new_item.get("change_nbc_description")
+            # change_nbc_version may be a comma-separated list of versions
+            # the only supported case is multiple renames in succession
             nbc_version = new_item.get("change_nbc_version")
 
             try:
-                parsed_nbc_version = Version(nbc_version)
+                parsed_nbc_versions = [
+                    Version(version) for version in nbc_version.split(",")
+                ]
             except InvalidVersion:
                 log_args = (nbc_version, new_path)
                 logger.error("Ignoring invalid NBC version: %r for %r.", *log_args)
                 continue
+            assert sorted(parsed_nbc_versions) == parsed_nbc_versions
 
-            if parsed_nbc_version < self.version_old:
+            if parsed_nbc_versions[-1] <= self.version_old:
                 continue
             if nbc_description in DDVersionMap.RENAMED_DESCRIPTIONS:
-                previous_name = new_item.get("change_nbc_previous_name")
-                assert previous_name is not None
+                previous_names = new_item.get("change_nbc_previous_name").split(",")
+                assert len(previous_names) == len(parsed_nbc_versions)
+                # select the correct previous name:
+                for i, version in enumerate(parsed_nbc_versions):
+                    if version > self.version_old:
+                        previous_name = previous_names[i]
+                        break
                 old_path = get_old_path(new_path, previous_name)
                 old_item = old_paths.get(old_path)
                 if old_item is None:

@@ -202,6 +202,33 @@ def test_pulse_schedule_aos_renamed_autofill_up(backend, worker_id, tmp_path):
     dbentry.close()
 
 
+def test_pulse_schedule_multi_rename():
+    # Multiple renames of the same element:
+    # DD >= 3.40+:  ec/beam
+    # DD 3.26-3.40: ec/launcher (but NBC metadata added in 3.28 only)
+    # DD < 3.26:    ec/antenna
+    ps = {
+        version: IDSFactory(version).new("pulse_schedule")
+        for version in ["3.25.0", "3.30.0", "3.39.0", "3.40.0"]
+    }
+    for ids in ps.values():
+        ids.ids_properties.homogeneous_time = 0
+    name = "This is the name of the first item in the AOS"
+    ps["3.25.0"].ec.antenna.resize(1)
+    ps["3.25.0"].ec.antenna[0].name = name
+    ps["3.30.0"].ec.launcher.resize(1)
+    ps["3.30.0"].ec.launcher[0].name = name
+    ps["3.39.0"].ec.launcher.resize(1)
+    ps["3.39.0"].ec.launcher[0].name = name
+    ps["3.40.0"].ec.beam.resize(1)
+    ps["3.40.0"].ec.beam[0].name = name
+
+    for version1 in ps:
+        for version2 in ps:
+            converted = convert_ids(ps[version1], version2)
+            compare_children(ps[version2], converted)
+
+
 def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
     """Create an ids, autofill it, save it as a newer version, read it back
     and check that it's the same.
