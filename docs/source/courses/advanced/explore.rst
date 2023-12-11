@@ -76,5 +76,62 @@ Exercise 1: Explore structures
 Explore IDS data nodes and arrays of structures
 -----------------------------------------------
 
-.. TODO::
-    ...
+Besides structures, IDSs contain arrays of structures, and data nodes. Arrays of
+structures (modeled by :py:class:`~imaspy.ids_struct_array.IDSStructArray`) are (as the
+name applies) arrays containing :py:class:`~imaspy.ids_structure.IDSStructure`\ s. Data
+nodes can contain scalar or array data of various types.
+
+Some methods and properties are defined for all data nodes and arrays of structures:
+
+``len(<node>)``
+    Returns the length of the node:
+    
+    - For scalar numbers (``INT_0D``, ``FLT_0D`` and ``CPX_0D``) this will give an
+      error.
+    - For strings (``STR_0D``) this will give the length of the string.
+    - For arrays (``STR_1D`` and ``ND`` numbers) this will give the length of the
+      `first` dimension.
+
+``<node>.has_value``
+    This is ``True`` when a value is stored in the node.
+
+``<node>.size``
+    Get the number of elements that are stored in the underlying data.
+
+    - For scalar types (``*_0D``) this is always 1.
+    - For 1D arrays, the ``size`` is always the same as their length (see
+      ``len(<node>)``).
+    - For ND arrays, the ``size`` is equal to ``np.prod(<node>.shape)``: the product of
+      the array's dimensions.
+
+``<node>.shape``
+    Get the shape of the underlying data.
+
+    There are as many items as the rank of the data: ``len(<node>.snape) ==
+    <node>.metadata.ndim``.
+
+``<node>.coordinates``
+    Get access to the coordinate values. See the :ref:`Using metadata` lesson for more
+    details.
+
+
+Apply a function to all nodes in an IDS
+'''''''''''''''''''''''''''''''''''''''
+
+Before diving into the exercise and use this new knowledge, it is useful to know the
+:py:meth:`imaspy.util.visit_children` method. This method allows you to apply a method
+to all nodes of an IDS. Additional keyword arguments can control whether you want to
+include leaf nodes (data nodes) only, or also include structures and arrays of
+structure. You can also choose between applying the function to filled nodes only (the
+default) or all nodes, including empty ones.
+
+
+.. seealso::
+    You can find more details in the API documentation:
+    :py:meth:`imaspy.util.visit_children`
+
+
+Exercise 2: Explore data nodes
+''''''''''''''''''''''''''''''
+
+.. TODO:: ...
