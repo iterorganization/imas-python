@@ -1,6 +1,7 @@
 # Unit tests for ids_convert.py.
 # See also integration tests for conversions in test_nbc_change.py
 
+import time
 from unittest.mock import MagicMock
 
 import pytest
@@ -11,7 +12,7 @@ from imaspy.ids_convert import (
     _get_tbp,
     iter_parents,
 )
-from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS, MEMORY_BACKEND
+from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HETEROGENEOUS, MEMORY_BACKEND
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
@@ -97,54 +98,62 @@ def test_compare_timebasepath_functions(ids_name):
 
 def test_dbentry_autoconvert1(backend, worker_id, tmp_path):
     entry_331 = open_dbentry(backend, "w", worker_id, tmp_path, dd_version="3.31.0")
-    entry_default = open_dbentry(backend, "a", worker_id, tmp_path)
-
-    default_factory = entry_default.factory
-    default_version = default_factory.version
     old_factory = entry_331.factory
-    assert default_version != "3.31.0"
-
     old_ids = old_factory.new("core_profiles")
     old_ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
 
     # Put without conversion:
     entry_331.put(old_ids)
     assert old_ids.ids_properties.version_put.data_dictionary == "3.31.0"
+    if backend != MEMORY_BACKEND:
+        entry_331.close()
+
+    entry_default = open_dbentry(backend, "r", worker_id, tmp_path)
+    default_version = entry_default.factory.version
+    assert default_version != "3.31.0"
 
     # Get without conversion
     old_ids_get = entry_default.get("core_profiles", autoconvert=False)
     assert old_ids_get.ids_properties.version_put.data_dictionary == "3.31.0"
     assert old_ids_get._dd_version == "3.31.0"
 
+    # Work around ASCII backend bug...
+    if backend == ASCII_BACKEND:
+        entry_default.close()
+        entry_default = open_dbentry(backend, "r", worker_id, tmp_path)
+
     # Get with conversion
     new_ids_get = entry_default.get("core_profiles")
     assert new_ids_get.ids_properties.version_put.data_dictionary == "3.31.0"
     assert new_ids_get._dd_version == default_version
 
-    entry_331.close()
-    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
-        entry_default.close()
+    entry_default.close()
 
 
 def test_dbentry_autoconvert2(backend, worker_id, tmp_path):
-    entry_331 = open_dbentry(backend, "w", worker_id, tmp_path, dd_version="3.31.0")
-    entry_default = open_dbentry(backend, "a", worker_id, tmp_path)
-
-    default_factory = entry_default.factory
-    default_version = default_factory.version
-    assert default_version != "3.31.0"
-
-    new_ids = default_factory.new("core_profiles")
+    entry_default = open_dbentry(backend, "w", worker_id, tmp_path)
+    default_version = entry_default.factory.version
+    new_ids = entry_default.factory.new("core_profiles")
     new_ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
 
     # Put without conversion:
     entry_default.put(new_ids)
     assert new_ids.ids_properties.version_put.data_dictionary == default_version
+    if backend != MEMORY_BACKEND:
+        entry_default.close()
+
+    entry_331 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.31.0")
+    assert default_version != "3.31.0"
 
     # Get without conversion
     new_ids_get = entry_331.get("core_profiles", autoconvert=False)
     assert new_ids_get.ids_properties.version_put.data_dictionary == default_version
     assert new_ids_get._dd_version == default_version
+
+    # Work around ASCII backend bug...
+    if backend == ASCII_BACKEND:
+        entry_331.close()
+        entry_331 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.31.0")
 
     # Get with conversion
     old_ids_get = entry_331.get("core_profiles")
@@ -152,5 +161,3 @@ def test_dbentry_autoconvert2(backend, worker_id, tmp_path):
     assert old_ids_get._dd_version == "3.31.0"
 
     entry_331.close()
-    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
-        entry_default.close()
