@@ -153,7 +153,7 @@ def maybe_set_random_value(primitive: IDSPrimitive, leave_empty=0.2) -> None:
         primitive.value = [random_string() for i in range(shape[0])]
     elif primitive.metadata.data_type is IDSDataType.INT:
         primitive.value = np.random.randint(
-            -2**31, 2**31 - 1, size=shape, dtype=np.int32
+            -(2**31), 2**31 - 1, size=shape, dtype=np.int32
         )
     elif primitive.metadata.data_type is IDSDataType.FLT:
         primitive.value = np.random.random_sample(size=shape)
@@ -304,7 +304,7 @@ def compare_children(st1, st2, deleted_paths=set()):
 
 
 def open_dbentry(
-    backend, mode, worker_id, tmp_path, dd_version=None, xml_path=None, autoconvert=True
+    backend, mode, worker_id, tmp_path, dd_version=None, xml_path=None
 ) -> DBEntry:
     """Open a DBEntry, with a tmpdir in place of the user argument"""
     if worker_id == "master":
@@ -320,7 +320,6 @@ def open_dbentry(
         str(tmp_path),
         dd_version=dd_version,
         xml_path=xml_path,
-        autoconvert=autoconvert,
     )
     options = f"-prefix {tmp_path}/" if backend == ASCII_BACKEND else None
     if mode == "w":
