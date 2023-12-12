@@ -114,3 +114,7 @@ versionfile_source = "imaspy/_version.py"
 versionfile_build = "imaspy/_version.py"
 tag_prefix = ""
 parentdir_prefix = ""
+
+[tool.black]
+# Exclude versioneer-generated file
+extend-exclude = "imaspy/_version.py"
