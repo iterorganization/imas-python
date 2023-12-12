@@ -24,4 +24,4 @@ def test_print_tree():
 def test_find_paths():
     cp = imaspy.IDSFactory("3.39.0").new("core_profiles")
     matches = imaspy.util.find_paths(cp, "(^|/)time$")
-    assert matches == ['profiles_1d/time', 'profiles_2d/time', 'time']
+    assert matches == ["profiles_1d/time", "profiles_2d/time", "time"]

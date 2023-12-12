@@ -176,7 +176,7 @@ def calc_hash(node: IDSMixin) -> bytes:
 
             cp = imaspy.IDSFactory().core_profiles()
             cp.ids_properties.homogeneous_time = 0
-            
+
             print(imaspy.util.calc_hash(cp).hex())  # 3b9b929756a242fd
     """
     return node._xxhash()

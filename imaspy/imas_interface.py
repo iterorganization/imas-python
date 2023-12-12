@@ -114,7 +114,8 @@ if _imas_spec is None:
     )
 
 elif (
-    _imas_spec and _imas_spec.submodule_search_locations is None
+    _imas_spec
+    and _imas_spec.submodule_search_locations is None
     or "imas" in sys.modules
 ):
     # Give up and just import the actual package...
@@ -318,7 +319,7 @@ class LowlevelInterface:
 
     def setvalue_parameter_plugin(self, parameter_name, inputData, pluginName):
         raise self._minimal_version("5.0")
-    
+
     # New methods added in AL 5.1
 
     def get_occurrences(self, ctx, ids_name):

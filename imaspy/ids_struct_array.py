@@ -217,7 +217,7 @@ class IDSStructArray(IDSMixin):
                 child._validate()
 
     def _xxhash(self) -> bytes:
-        hsh = xxh3_64(len(self).to_bytes(8, 'little'))
+        hsh = xxh3_64(len(self).to_bytes(8, "little"))
         for s in self:
             hsh.update(s._xxhash())
         return hsh.digest()

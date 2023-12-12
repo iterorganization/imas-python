@@ -24,7 +24,7 @@ def _initialize_training_db(DBEntry_cls):
     output_entry.create()
     for ids_name in ["core_profiles", "equilibrium"]:
         ids = entry.get(ids_name)
-        with patch.dict('os.environ', {"IMAS_AL_DISABLE_VALIDATE": "1"}):
+        with patch.dict("os.environ", {"IMAS_AL_DISABLE_VALIDATE": "1"}):
             output_entry.put(ids)
     entry.close()
     return output_entry

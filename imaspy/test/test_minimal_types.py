@@ -401,8 +401,8 @@ def test_ducktype_ndarray(minimal, tp, val):
     assert np.array_equal(2 * node, node + node)
     assert np.array_equal(2 * node, 2 * val)
     assert np.array_equal(node / 2, val / 2)
-    assert np.array_equal(node * node, node ** 2)
-    assert np.array_equal(node ** 2, val ** 2)
+    assert np.array_equal(node * node, node**2)
+    assert np.array_equal(node**2, val**2)
     if not tp.startswith("CPX"):
         assert np.array_equal(node // 2, val // 2)
     # Assignment

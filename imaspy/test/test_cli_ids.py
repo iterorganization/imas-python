@@ -56,5 +56,7 @@ def test_reopen_ids(filled_ascii_datastore):
     )
     minimal = dbentry.get("minimal")
 
-    assert minimal.ids_properties.version_put.access_layer_language == \
-        "imaspy " + imaspy.__version__
+    assert (
+        minimal.ids_properties.version_put.access_layer_language
+        == "imaspy " + imaspy.__version__
+    )

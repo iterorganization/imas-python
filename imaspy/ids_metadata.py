@@ -109,7 +109,9 @@ class IDSMetadata:
                 self.timebasepath = ""
         else:  # IDSPrimitive
             # https://git.iter.org/projects/IMAS/repos/access-layer/browse/pythoninterface/py_ids.xsl?at=refs%2Ftags%2F4.11.4#1524-1566
-            if self.timebasepath and (not self.type.is_dynamic or self._parent._is_dynamic):
+            if self.timebasepath and (
+                not self.type.is_dynamic or self._parent._is_dynamic
+            ):
                 self.timebasepath = ""
         self._is_dynamic = self.type.is_dynamic
         if self._parent is not None:
@@ -143,10 +145,12 @@ class IDSMetadata:
 
         # Cache children in a read-only dict
         ctx_path = "" if self.data_type is IDSDataType.STRUCT_ARRAY else self._ctx_path
-        self._children = types.MappingProxyType({
-            xml_child.get("name"): IDSMetadata(xml_child, ctx_path, self)
-            for xml_child in structure_xml
-        })
+        self._children = types.MappingProxyType(
+            {
+                xml_child.get("name"): IDSMetadata(xml_child, ctx_path, self)
+                for xml_child in structure_xml
+            }
+        )
 
         # Prevent accidentally modifying attributes
         self._init_done = True

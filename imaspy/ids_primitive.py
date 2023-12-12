@@ -454,11 +454,11 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
 
     def _xxhash(self) -> bytes:
         arr = self.value
-        hsh = xxh3_64(arr.ndim.to_bytes(1, 'little'))
+        hsh = xxh3_64(arr.ndim.to_bytes(1, "little"))
         hsh.update(struct.pack("<" + arr.ndim * "q", *arr.shape))
         # Ensure array is little endian, only create a copy if it is big-endian
-        arr = arr.astype(arr.dtype.newbyteorder('little'), copy=False)
-        hsh.update(arr.tobytes(order='F'))
+        arr = arr.astype(arr.dtype.newbyteorder("little"), copy=False)
+        hsh.update(arr.tobytes(order="F"))
         return hsh.digest()
 
 

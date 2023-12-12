@@ -348,7 +348,7 @@ class DBEntry:
                 an IDS from the Data Dictionary version attached to this Data Entry.
                 Data is automatically converted between the on-disk version and the
                 in-memory version.
-                
+
                 When set to ``False``, the IDS will be returned in the DD version it was
                 stored in.
             destination: Populate this IDSToplevel instead of creating an empty one.
@@ -405,7 +405,7 @@ class DBEntry:
                 an IDS from the Data Dictionary version attached to this Data Entry.
                 Data is automatically converted between the on-disk version and the
                 in-memory version.
-                
+
                 When set to ``False``, the IDS will be returned in the DD version it was
                 stored in.
             destination: Populate this IDSToplevel instead of creating an empty one.
@@ -429,7 +429,7 @@ class DBEntry:
             interpolation_method,
             destination,
             lazy,
-            autoconvert
+            autoconvert,
         )
 
     def _get(
