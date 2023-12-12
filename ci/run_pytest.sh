@@ -24,9 +24,9 @@ source venv/bin/activate
 
 # Install imaspy and test dependencies
 pip install --upgrade pip setuptools wheel
-pip install .[test]
-# The numpy included with SciPy-bundle/2020.11-intel-2020b is too old for xarray:
-pip install --upgrade numpy
+# Pin xarray version (the numpy bundled in SciPy-bundle/2020.11-intel-2020b is too old
+# for the latest xarray):
+pip install xarray==2022.3.0 .[test]
 
 # Debugging:
 pip freeze
