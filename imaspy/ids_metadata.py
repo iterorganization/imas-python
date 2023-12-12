@@ -90,7 +90,9 @@ class IDSMetadata:
 
         # These are special and used in IMASPy logic, so we need to ensure proper values
         maxoccur = attrib.get("maxoccur", "unbounded")
-        self.maxoccur: Optional[int] = None if maxoccur == "unbounded" else int(maxoccur)
+        self.maxoccur: Optional[int] = (
+            None if maxoccur == "unbounded" else int(maxoccur)
+        )
         """Maximum number of occurrences allowed in the MDS+ backend. Applies to IDS
         toplevels and Arrays of Structures."""
         self.data_type: IDSDataType
