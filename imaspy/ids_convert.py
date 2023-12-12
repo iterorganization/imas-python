@@ -6,9 +6,8 @@
 import copy
 from functools import lru_cache
 import logging
-import re
 from xml.etree.ElementTree import Element, ElementTree
-from packaging.version import Version
+from packaging.version import Version, InvalidVersion
 from typing import Dict, Iterator, Optional, Set, Tuple
 
 from imaspy.dd_zip import parse_dd_version

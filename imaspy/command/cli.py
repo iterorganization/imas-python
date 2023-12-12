@@ -108,7 +108,7 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
         cm = contextlib.nullcontext(idss_with_occurrences)
     else:
         cm = click.progressbar(idss_with_occurrences, label="Converting IDS")
-    
+
     # Convert all IDSs
     with cm as bar:
         for ids_name, occurrence in bar:
