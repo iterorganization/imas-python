@@ -164,11 +164,11 @@ class IDSStructure(IDSMixin):
     @property
     def has_value(self) -> bool:
         """True if any of the children has a non-default value"""
-        for _ in self._iter_children_with_value():
+        for _ in self._iter_nonempty():
             return True
         return False
 
-    def _iter_children_with_value(self) -> Generator[IDSMixin, None, None]:
+    def _iter_nonempty(self) -> Generator[IDSMixin, None, None]:
         """Iterate over all child nodes with non-default value."""
         for child in self._children:
             if child in self.__dict__:
@@ -219,7 +219,7 @@ class IDSStructure(IDSMixin):
         # Common validation logic
         super()._validate()
         # IDSStructure specific: validate child nodes
-        for child in self._iter_children_with_value():
+        for child in self._iter_nonempty():
             child._validate()
 
     def _xxhash(self) -> bytes:

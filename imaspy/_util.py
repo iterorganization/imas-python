@@ -104,10 +104,10 @@ def _make_tree(structure, hide_empty_nodes=True, *, tree=None):
     if not isinstance(structure, (IDSStructure, IDSStructArray)):
         raise TypeError()
 
-    for child in structure:
-        if hide_empty_nodes and not child.has_value:
-            continue
-
+    iterator = structure
+    if hide_empty_nodes and isinstance(structure, IDSStructure):
+        iterator = structure._iter_nonempty()
+    for child in iterator:
         if isinstance(child, IDSPrimitive):
             if not child.has_value:
                 value = "[bright_black]-"
@@ -117,10 +117,13 @@ def _make_tree(structure, hide_empty_nodes=True, *, tree=None):
             group = Columns([txt, value])
             tree.add(group)
         else:
-            ntree = tree
             if isinstance(child, IDSStructure):
                 txt = f"[magenta]{child._path}[/]"
                 ntree = tree.add(txt)
+            elif isinstance(child, IDSStructArray):
+                ntree = tree
+                if not child.has_value:
+                    tree.add(f"[magenta]{child._path}[][/]")
             _make_tree(child, hide_empty_nodes, tree=ntree)
 
     return tree

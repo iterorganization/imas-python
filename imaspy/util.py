@@ -7,11 +7,12 @@ from typing import List
 
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_primitive import IDSPrimitive
+from imaspy.ids_structure import IDSStructure
 
 logger = logging.getLogger(__name__)
 
 
-def visit_children(func, node, leaf_only=True):
+def visit_children(func, node, *, leaf_only=True, visit_empty=False):
     """Apply a function to node and its children
 
     IMASPy objects generally live in a tree structure. Similar to Pythons
@@ -23,28 +24,35 @@ def visit_children(func, node, leaf_only=True):
         node: Node that function ``func`` will be applied to.
             The function will be applied to the node itself and
             all its descendants, depending on `leaf_only`.
+
+    Keyword Args:
         leaf_only: Apply function to:
 
             * ``True``: Only leaf nodes, not internal nodes
             * ``False``: All nodes, including internal nodes
 
+        visit_empty: When set to True, also apply the function to empty nodes.
+
     Example:
         .. code-block:: python
 
             # Print all filled leaf nodes in a given IMASPy IDSToplevel
-            visit_children(
-                lambda x: print(x) if x.has_value else None,
-                toplevel,
-            )
+            visit_children(print, toplevel)
     """
-    if isinstance(node, IDSPrimitive):
-        # Leaf node
+    if isinstance(node, IDSPrimitive):  # Leaf node
         func(node)
+
     else:
         if not leaf_only:
             func(node)
-        for child in node:
-            visit_children(func, child, leaf_only)
+
+        iterator = node
+        if not visit_empty and isinstance(node, IDSStructure):
+            # Only iterate over non-empty nodes
+            iterator = node._iter_nonempty()
+
+        for child in iterator:
+            visit_children(func, child, leaf_only=leaf_only, visit_empty=visit_empty)
 
 
 def resample(node, old_time, new_time, homogeneousTime=None, inplace=False, **kwargs):

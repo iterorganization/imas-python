@@ -148,7 +148,7 @@ def _put_children(
     # Note: when putting a slice, we do not need to descend into IDSStructure and
     # IDSStructArray elements if they don't contain dynamic data nodes. That is hard to
     # detect now, so we just recurse and check the data elements
-    for element in structure._iter_children_with_value():
+    for element in structure._iter_nonempty():
         if time_mode == IDS_TIME_MODE_INDEPENDENT and element.metadata.type.is_dynamic:
             continue  # skip dynamic data when in time independent mode
 
