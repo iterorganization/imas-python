@@ -153,7 +153,7 @@ def maybe_set_random_value(primitive: IDSPrimitive, leave_empty=0.2) -> None:
         primitive.value = [random_string() for i in range(shape[0])]
     elif primitive.metadata.data_type is IDSDataType.INT:
         primitive.value = np.random.randint(
-            -2**31, 2**31 - 1, size=shape, dtype=np.int32
+            -(2**31), 2**31 - 1, size=shape, dtype=np.int32
         )
     elif primitive.metadata.data_type is IDSDataType.FLT:
         primitive.value = np.random.random_sample(size=shape)

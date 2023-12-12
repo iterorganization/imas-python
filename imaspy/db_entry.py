@@ -6,6 +6,7 @@ import os
 from typing import Any, List, Optional, Tuple, overload
 from urllib.parse import urlparse
 
+import imaspy
 from imaspy.exception import ValidationError
 from imaspy.ids_convert import dd_version_map_from_factories
 from imaspy.ids_defs import (
@@ -323,6 +324,7 @@ class DBEntry:
         occurrence: int = 0,
         *,
         lazy: bool = False,
+        autoconvert: bool = True,
         destination: Optional[IDSToplevel] = None,
     ) -> IDSToplevel:
         """Read the contents of the an IDS into memory.
@@ -340,6 +342,15 @@ class DBEntry:
                 loading` for more details.
 
                 .. note:: Lazy loading is not supported by the ASCII backend.
+            autoconvert: Automatically convert IDSs.
+
+                If enabled (default), a call to ``get()`` or ``get_slice()`` will return
+                an IDS from the Data Dictionary version attached to this Data Entry.
+                Data is automatically converted between the on-disk version and the
+                in-memory version.
+                
+                When set to ``False``, the IDS will be returned in the DD version it was
+                stored in.
             destination: Populate this IDSToplevel instead of creating an empty one.
 
         Returns:
@@ -354,7 +365,7 @@ class DBEntry:
                 imas_entry.open()
                 core_profiles = imas_entry.get("core_profiles")
         """  # noqa
-        return self._get(ids_name, occurrence, None, 0, destination, lazy)
+        return self._get(ids_name, occurrence, None, 0, destination, lazy, autoconvert)
 
     def get_slice(
         self,
@@ -364,6 +375,7 @@ class DBEntry:
         occurrence: int = 0,
         *,
         lazy: bool = False,
+        autoconvert: bool = True,
         destination: Optional[IDSToplevel] = None,
     ) -> IDSToplevel:
         """Read a single time slice from an IDS in this Database Entry.
@@ -387,6 +399,15 @@ class DBEntry:
             lazy: When set to ``True``, values in this IDS will be retrieved only when
                 needed (instead of getting the full IDS immediately). See :ref:`Lazy
                 loading` for more details.
+            autoconvert: Automatically convert IDSs.
+
+                If enabled (default), a call to ``get()`` or ``get_slice()`` will return
+                an IDS from the Data Dictionary version attached to this Data Entry.
+                Data is automatically converted between the on-disk version and the
+                in-memory version.
+                
+                When set to ``False``, the IDS will be returned in the DD version it was
+                stored in.
             destination: Populate this IDSToplevel instead of creating an empty one.
 
         Returns:
@@ -408,6 +429,7 @@ class DBEntry:
             interpolation_method,
             destination,
             lazy,
+            autoconvert
         )
 
     def _get(
@@ -416,8 +438,9 @@ class DBEntry:
         occurrence: int,
         time_requested: Optional[float],
         interpolation_method: int,
-        destination: Optional[IDSToplevel] = None,
-        lazy: bool = False,
+        destination: Optional[IDSToplevel],
+        lazy: bool,
+        autoconvert: bool,
     ) -> IDSToplevel:
         """Actual implementation of get() and get_slice()"""
         if self._db_ctx is None:
@@ -454,7 +477,10 @@ class DBEntry:
             )
         # Ensure we have a destination
         if not destination:
-            destination = self._ids_factory.new(ids_name, _lazy=lazy)
+            if autoconvert:  # store results in our DD version
+                destination = self._ids_factory.new(ids_name, _lazy=lazy)
+            else:  # store results in on-disk DD version
+                destination = IDSFactory(dd_version).new(ids_name, _lazy=lazy)
         # Create a version conversion map, if needed
         nbc_map = None
         if dd_version and dd_version != destination._dd_version:
@@ -598,9 +624,10 @@ class DBEntry:
 
         # Set version_put properties (version_put was added in DD 3.22)
         if hasattr(ids.ids_properties, "version_put"):
-            ids.ids_properties.version_put.data_dictionary = self._ids_factory._version
-            # TODO! AL version
-            ids.ids_properties.version_put.access_layer_language = "imaspy"
+            version_put = ids.ids_properties.version_put
+            version_put.data_dictionary = self._ids_factory._version
+            version_put.access_layer = ll_interface._al_version_str
+            version_put.access_layer_language = "imaspy " + imaspy.__version__
 
         if is_slice:
             with self._db_ctx.global_action(ll_path, READ_OP) as read_ctx:

@@ -1,6 +1,7 @@
 from click.testing import CliRunner
 import pytest
 
+import imaspy
 from imaspy.command.subcommands.ids import info, open_from_file
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.test.test_helpers import open_dbentry
@@ -54,4 +55,6 @@ def test_reopen_ids(filled_ascii_datastore):
         ASCII_BACKEND, "r", worker_id, tmp_path, xml_path=ids_minimal_types
     )
     minimal = dbentry.get("minimal")
-    assert minimal.ids_properties.version_put.access_layer_language == "imaspy"
+
+    assert minimal.ids_properties.version_put.access_layer_language == \
+        "imaspy " + imaspy.__version__
