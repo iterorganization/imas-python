@@ -60,7 +60,11 @@ Manual
    :caption: IMASPy development
    :maxdepth: 1
 
+   imaspy_architecture
+   code_style
+   ci_config
    benchmarking
+   release_imaspy
 
 
 LICENSE
