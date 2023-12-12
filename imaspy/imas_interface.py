@@ -71,7 +71,7 @@ def _import_submodule(package_spec, submodule, extensions):
 
 _imas_spec = importlib.util.find_spec("imas")
 if _imas_spec and _imas_spec.submodule_search_locations is None:
-    # We found the IMAS loader, do some magic to find the "real" imas package
+    # We found the IMAS loader (AL 4.x), do some magic to find the "real" imas package
     pyver = ".".join(str(i) for i in sys.version_info[:2])
 
     path = os.path.join(
@@ -91,10 +91,10 @@ if _imas_spec and _imas_spec.submodule_search_locations is None:
         names = os.listdir(path)
         namepattern = "imas_" + os.getenv("IMAS_VERSION").replace(".", "_") + "_ual_*"
         namecatchall = "imas_*_ual_*"
-        # A python module matching the name pattern with env's IMAS_VERSION is preferred,
-        # but may not be found when IMAS_VERSION does not match a proper tag name (e.g.
-        # in case of custom branch installation). Then learn the derived version string
-        # from the catchall, if it finds exactly 1 in this path.
+        # A python module matching the name pattern with env's IMAS_VERSION is
+        # preferred, but may not be found when IMAS_VERSION does not match a proper tag
+        # name (e.g. in case of custom branch installation). Then learn the derived
+        # version string from the catchall, if it finds exactly 1 in this path.
         name = fnmatch.filter(names, namepattern)
         if len(name) != 1:
             name = fnmatch.filter(names, namecatchall)
@@ -249,11 +249,11 @@ class LowlevelInterface:
 
     def begin_pulse_action(self, backendID, shot, run, user, tokamak, version):
         # Removed in AL5, compatibility handled in DBEntry
-        raise LLInterfaceError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__name__} is not implemented")
 
     def open_pulse(self, pulseCtx, mode, options):
         # Removed in AL5, compatibility handled in DBEntry
-        raise LLInterfaceError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__name__} is not implemented")
 
     def close_pulse(self, pulseCtx, mode):
         # options argument (mandatory in AL4) was removed in AL5
@@ -263,28 +263,28 @@ class LowlevelInterface:
     def begin_global_action(self, pulseCtx, dataobjectname, rwmode, datapath=""):
         # datapath was added in AL5 to support more efficient partial_get in the
         # UDA backend. TODO: figure out if this is useful for lazy loading.
-        raise LLInterfaceError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__name__} is not implemented")
 
     def begin_slice_action(self, pulseCtx, dataobjectname, rwmode, time, interpmode):
-        raise LLInterfaceError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__name__} is not implemented")
 
     def end_action(self, ctx):
-        raise LLInterfaceError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__name__} is not implemented")
 
     def write_data(self, ctx, pyFieldPath, pyTimebasePath, inputData):
-        raise LLInterfaceError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__name__} is not implemented")
 
     def read_data(self, ctx, fieldPath, pyTimebasePath, ualDataType, dim):
-        raise LLInterfaceError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__name__} is not implemented")
 
     def delete_data(self, ctx, path):
-        raise LLInterfaceError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__name__} is not implemented")
 
     def begin_arraystruct_action(self, ctx, path, pyTimebase, size):
-        raise LLInterfaceError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__name__} is not implemented")
 
     def iterate_over_arraystruct(self, aosctx, step):
-        raise LLInterfaceError(f"{__qualname__} is not implemented")
+        raise LLInterfaceError(f"{__name__} is not implemented")
 
     # New methods added in AL 5.0
 

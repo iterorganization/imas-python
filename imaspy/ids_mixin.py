@@ -60,8 +60,10 @@ class IDSMixin:
         """Build relative path from the toplevel to the node
 
         Examples:
-            - `ids.ids_properties.creation_data` is `ids_properties/creation_date`
-            - `gyrokinetics.wavevector[0].radial_component_norm` is `wavevector[0]/radial_component_norm
+            - ``ids.ids_properties.creation_data._path`` is
+              ``"ids_properties/creation_date"``
+            - ``gyrokinetics.wavevector[0].radial_component_norm._path`` is
+              ``"wavevector[0]/radial_component_norm"``
         """
         from imaspy.ids_struct_array import IDSStructArray
 
@@ -101,13 +103,7 @@ class IDSMixin:
         """Build the start of the string derived classes need for their repr.
 
         All derived classes need to represent the IDS they are part of,
-        and thus have a common string to start with. We collect that common logic here
-
-        Examples:
-            - `gyrokinetics.wavevector[0].eigenmode[0].time_norm` is
-                `<IDSNumericArray (IDS:gyrokinetics, wavevector[0]/eigenmode[0]/time_norm`
-            - `wavevector[0].eigenmode[0].frequency_norm` is
-                `<IDSPrimitive (IDS:gyrokinetics, wavevector[0]/eigenmode[0]/frequency_norm`
+        and thus have a common string to start with. We collect that common logic here.
         """
         my_repr = f"<{type(self).__name__}"
         my_repr += f" (IDS:{self._toplevel.metadata.name},"

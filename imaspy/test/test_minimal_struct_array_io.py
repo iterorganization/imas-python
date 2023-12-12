@@ -2,7 +2,6 @@
 import pytest
 
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MDSPLUS_BACKEND, MEMORY_BACKEND
-from imaspy.ids_factory import IDSFactory
 from imaspy.test.test_helpers import open_dbentry
 
 

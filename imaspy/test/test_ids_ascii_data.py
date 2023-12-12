@@ -1,6 +1,5 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
-import os
 from pathlib import PosixPath
 from importlib_resources import files
 

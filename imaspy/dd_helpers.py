@@ -31,7 +31,6 @@ def prepare_data_dictionaries():
     3. Generate IDSDef.xml and rename to IDSDef_${version}.xml
     4. Zip all these IDSDefs together and include in wheel
     """
-    import git
     from git import Repo
 
     saxon_jar_path = get_saxon()
@@ -116,13 +115,13 @@ def find_saxon_jar():
 def find_saxon_classpath():
     """Search JAVAs CLASSPATH for a Saxon .jar"""
     classpath = os.environ.get("CLASSPATH", "")
-    is_test = lambda x: "test" in x
-    is_saxon = lambda x: x.split("/")[-1].startswith("saxon")
-    is_jar = lambda x: x.endswith(".jar")
-    is_xqj = lambda x: "xqj" in x
-
     for part in re.split(";|:", classpath):
-        if is_jar(part) and is_saxon(part) and not is_test(part) and not is_xqj(part):
+        if (
+            part.endswith(".jar")
+            and part.split("/")[-1].startswith("saxon")
+            and "test" not in part
+            and "xqj" not in part
+        ):
             return part
 
 
@@ -143,7 +142,7 @@ def download_saxon():
     wrap this should probably manipulate either the name of this file, and/or
     the CLASSPATH"""
 
-    SAXON_PATH = "https://downloads.sourceforge.net/project/saxon/Saxon-HE/10/Java/SaxonHE10-3J.zip"
+    SAXON_PATH = "https://downloads.sourceforge.net/project/saxon/Saxon-HE/10/Java/SaxonHE10-3J.zip"  # noqa: E501
 
     resp = urlopen(SAXON_PATH)
     zipfile = ZipFile(BytesIO(resp.read()))

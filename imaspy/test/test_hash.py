@@ -21,14 +21,14 @@ def test_hash_str0d(minimal):
 
 
 def test_hash_str1d(minimal):
-    l = [
+    string_list = [
         "Test str_1d hash",
         "Of course, there must be ",
         "multiple entries to test!",
     ]
-    minimal.str_1d = l
-    hashes = list(map(xxh3_64_digest, l))
-    expected = xxh3_64_digest(struct.pack("<Q", len(l)) + b"".join(hashes))
+    minimal.str_1d = string_list
+    hashes = list(map(xxh3_64_digest, string_list))
+    expected = xxh3_64_digest(struct.pack("<Q", len(string_list)) + b"".join(hashes))
     assert expected == b"\x98\x011\x9dx+\x0e\xc0"
     assert imaspy.util.calc_hash(minimal.str_1d) == expected
 

@@ -1,15 +1,6 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
 
-import pprint
-
-import pytest
-
-from imaspy.ids_mixin import IDSMixin
-from imaspy.ids_structure import IDSStructure
-from imaspy.ids_toplevel import IDSToplevel
-
-
 def test_toplevel(fake_filled_toplevel):
     top = fake_filled_toplevel
     assert top.wavevector._toplevel == top

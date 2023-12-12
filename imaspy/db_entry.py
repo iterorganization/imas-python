@@ -99,13 +99,15 @@ class DBEntry:
             uri: IMAS URI of the data source (only available when using Access Layer 5)
             mode: Mode to open the pulse in. One of:
 
-              - ``"r"``: Open an existing data entry. Raises an error when the data entry
-                does not exist. .. note:: The opened data entry is not read-only, it can
-                be written to.
-              - ``"a"``: Open an existing data entry, create the data entry if it does not
-                exist.
-              - ``"w"``: Create a data entry, overwriting any existing. .. caution:: This
-                will irreversibly delete any existing data.
+              - ``"r"``: Open an existing data entry. Raises an error when the data
+                entry does not exist.
+
+                .. note:: The opened data entry is not read-only, it can be written to.
+              - ``"a"``: Open an existing data entry, create the data entry if it does
+                not exist.
+              - ``"w"``: Create a data entry, overwriting any existing.
+
+                .. caution:: This will irreversibly delete any existing data.
               - ``"x"``: Create a data entry. Raises an error when a data entry already
                 exists.
 
@@ -609,8 +611,8 @@ class DBEntry:
             if time_mode != IDS_TIME_MODE_INDEPENDENT:
                 logger.warning(
                     "ids_properties/homogeneous_time has been set to 2 for the constant"
-                    " IDS %s/%d, please check the program which has filled this IDS since "
-                    "this is the mandatory value for a constant IDS",
+                    " IDS %s/%d. Please check the program which has filled this IDS"
+                    " since this is the mandatory value for a constant IDS",
                     ids_name,
                     occurrence,
                 )

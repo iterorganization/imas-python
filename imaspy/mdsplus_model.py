@@ -117,10 +117,10 @@ def mdsplus_model_dir(version=None, xml_file=None):
     cache_dir_name = "%s-%08x" % (xml_name, crc)
     cache_dir_path = Path(_get_xdg_cache_dir()) / "imaspy" / "mdsplus" / cache_dir_name
     # TODO: include hash or version of "IDSDef2MDSpreTree.xsl", which we should fetch
-    # from the access layer instead of provide ourselves, if we wish to be resilient
-    # to upgrades there (has happened early 2021 already once).
-    # of course, upgrades to the on-disk formats should be versioned and documented properly,
-    # so this should never happen again.
+    # from the access layer instead of provide ourselves, if we wish to be resilient to
+    # upgrades there (has happened early 2021 already once). of course, upgrades to the
+    # on-disk formats should be versioned and documented properly, so this should never
+    # happen again.
 
     # There are multiple possible cases for the IMASPy cache
     # 1. The cache exist and can be used
@@ -175,7 +175,8 @@ def mdsplus_model_dir(version=None, xml_file=None):
         # create the empty directory to indicate we are building a new model
         try:
             cache_dir_path.mkdir(parents=True, exist_ok=True)
-            # ideally next we drop a timestamp so any successors can see how long they should wait
+            # ideally next we drop a timestamp so any successors can see how long they
+            # should wait
             logger.info(
                 "Creating and caching MDSplus model at %s, this may take a while",
                 tmp_cache_dir_path,

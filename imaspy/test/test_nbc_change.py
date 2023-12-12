@@ -10,7 +10,6 @@ import logging
 import numpy as np
 import pytest
 
-from imaspy.dd_zip import latest_dd_version
 from imaspy.ids_convert import convert_ids
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
 from imaspy.ids_factory import IDSFactory

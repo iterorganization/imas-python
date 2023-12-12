@@ -8,13 +8,11 @@
 import logging
 from copy import deepcopy
 from functools import lru_cache
-import logging
 from typing import Generator, List
 
 from xxhash import xxh3_64
 
 from imaspy.al_context import LazyALContext
-from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_metadata import IDSDataType, IDSMetadata
 from imaspy.ids_mixin import IDSMixin
 from imaspy.ids_path import IDSPath

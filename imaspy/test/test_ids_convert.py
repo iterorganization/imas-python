@@ -1,7 +1,6 @@
 # Unit tests for ids_convert.py.
 # See also integration tests for conversions in test_nbc_change.py
 
-import time
 from unittest.mock import MagicMock
 
 import pytest

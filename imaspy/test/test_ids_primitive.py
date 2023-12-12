@@ -32,7 +32,8 @@ def test_pretty_print(fake_filled_toplevel):
     fake_filled_toplevel.ids_properties.comment = "A filled comment"
     assert (
         pprint.pformat(fake_filled_toplevel.ids_properties.comment)
-        == "<IDSString0D (IDS:gyrokinetics, ids_properties/comment, STR_0D)>\nstr('A filled comment')"
+        == """<IDSString0D (IDS:gyrokinetics, ids_properties/comment, STR_0D)>
+str('A filled comment')"""
     )
 
 

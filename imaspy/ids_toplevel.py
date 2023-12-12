@@ -235,7 +235,7 @@ class IDSToplevel(IDSStructure):
         """  # noqa: E501 (line too long)
         if self._lazy:
             logger.warning(
-                f"Validating lazy loaded IDS '%s': this will not validate the full "
+                "Validating lazy loaded IDS '%s': this will not validate the full "
                 "IDS, only the loaded data is validated.",
                 self.metadata.name,
             )
@@ -265,11 +265,10 @@ class IDSToplevel(IDSStructure):
 
     @needs_imas
     def get(self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None) -> None:
-        """Get data from AL backend storage format and overwrite data in node
+        """Get data from AL backend storage format.
 
-        Tries to dynamically build all needed information for the AL. As this
-        is the root node, it is simple to construct AL paths and contexts at
-        this level. Should have an open database.
+        This method exists for API compatibility with the IMAS python HLI.
+        See :py:meth:`DBEntry.get <imaspy.db_entry.DBEntry.get>`.
         """
         if db_entry is None:
             raise NotImplementedError()
@@ -285,13 +284,8 @@ class IDSToplevel(IDSStructure):
     ) -> None:
         """Get a slice from the backend.
 
-        @param[in] time_requested time of the slice
-        - UNDEFINED_TIME if not relevant (e.g to append a slice or replace the last slice)
-        @param[in] interpolation_method mode for interpolation:
-        - CLOSEST_INTERP take the slice at the closest time
-        - PREVIOUS_INTERP take the slice at the previous time
-        - LINEAR_INTERP interpolate the slice between the values of the previous and next slice
-        - UNDEFINED_INTERP if not relevant (for write operations)
+        This method exists for API compatibility with the IMAS python HLI.
+        See :py:meth:`DBEntry.get_slice <imaspy.db_entry.DBEntry.get_slice>`.
         """
         if db_entry is None:
             raise NotImplementedError()
@@ -307,7 +301,11 @@ class IDSToplevel(IDSStructure):
     def putSlice(
         self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None
     ) -> None:
-        """Put a single slice into the backend. only append is supported"""
+        """Put a single slice into the backend.
+
+        This method exists for API compatibility with the IMAS python HLI.
+        See :py:meth:`DBEntry.put_slice <imaspy.db_entry.DBEntry.put_slice>`.
+        """
         if db_entry is None:
             raise NotImplementedError()
         db_entry.put_slice(self, occurrence)
@@ -316,11 +314,10 @@ class IDSToplevel(IDSStructure):
     def deleteData(
         self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None
     ) -> None:
-        """Delete AL backend storage data
+        """Delete AL backend storage data.
 
-        Tries to dynamically build all needed information for the AL. As this
-        is the root node, it is simple to construct AL paths and contexts at
-        this level. Should have an open database.
+        This method exists for API compatibility with the IMAS python HLI.
+        See :py:meth:`DBEntry.delete_data <imaspy.db_entry.DBEntry.delete_data>`.
         """
         if db_entry is None:
             raise NotImplementedError()
@@ -328,6 +325,11 @@ class IDSToplevel(IDSStructure):
 
     @needs_imas
     def put(self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None) -> None:
+        """Put this IDS to the backend.
+
+        This method exists for API compatibility with the IMAS python HLI.
+        See :py:meth:`DBEntry.put <imaspy.db_entry.DBEntry.put>`.
+        """
         if db_entry is None:
             raise NotImplementedError()
         db_entry.put(self, occurrence)

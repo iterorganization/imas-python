@@ -1,7 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
 
-from packaging.version import Version as V
+from packaging.version import Version as _V
 
 from . import _version
 
@@ -38,4 +38,4 @@ from . import (
     util,
 )
 
-OLDEST_SUPPORTED_VERSION = V("3.21.1")
+OLDEST_SUPPORTED_VERSION = _V("3.21.1")

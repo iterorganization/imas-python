@@ -5,7 +5,7 @@
 from enum import Enum
 from functools import lru_cache
 import types
-from typing import Optional, Any, Dict
+from typing import Optional, Any
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_coordinates import IDSCoordinate

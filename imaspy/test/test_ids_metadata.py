@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import pytest
 
-from imaspy.ids_metadata import IDSMetadata, IDSType, get_toplevel_metadata
+from imaspy.ids_metadata import IDSType, get_toplevel_metadata
 
 
 def test_metadata_cache(fake_structure_xml):
