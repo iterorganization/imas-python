@@ -7,7 +7,7 @@ equilibrium = entry.get("equilibrium")
 
 # 2. Print non-empty child nodes
 print("The following child nodes of the equilibrium IDS are filled:")
-for child_node in equilibrium._iter_children_with_value():
+for child_node in equilibrium._iter_nonempty():
     print('-', child_node.metadata.name)
 print()
 

@@ -134,4 +134,17 @@ default) or all nodes, including empty ones.
 Exercise 2: Explore data nodes
 ''''''''''''''''''''''''''''''
 
-.. TODO:: ...
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
+        1.  Load the training data for the ``equilibrium`` IDS.
+        2.  Create a function that prints the path, shape and size of an IDS node.
+        3.  Use :py:meth:`~imaspy.util.visit_children` to apply the function to all
+            non-empty nodes in the equilbrium IDS.
+        4.  Update your function such that it skips scalar (0D) IDS nodes. Apply the
+            updated function to the equilibrium IDS.
+
+    .. md-tab-item:: Solution
+
+        .. literalinclude:: imaspy_snippets/explore_data.py
