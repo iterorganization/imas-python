@@ -34,28 +34,23 @@ It provides:
    lazy_loading
    mdsplus
 
+The README is best read on :src:`#imaspy`.
+
+
+Manual
+------
+
 .. toctree::
-   :hidden:
    :caption: IMASPy training courses
+   :maxdepth: 2
 
    courses/basic_user_training
    courses/advanced_user_training
 
 
-README
-------
-
-The README is best read on :src:`#imaspy`.
-
-For developers
-==============
-
-* :doc:`api`
-* :doc:`api-hidden`
-
 .. toctree::
-   :hidden:
    :caption: API docs
+   :maxdepth: 1
 
    api
    api-hidden
@@ -63,6 +58,7 @@ For developers
 
 .. toctree::
    :caption: IMASPy development
+   :maxdepth: 1
 
    benchmarking
 
