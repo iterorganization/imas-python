@@ -25,5 +25,5 @@ python -m venv venv
 # Install and run linters
 pip install --upgrade black flake8
 
-black imaspy
+black --check imaspy
 flake8 imaspy
