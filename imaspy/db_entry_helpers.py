@@ -80,7 +80,7 @@ def _get_child(child: IDSMixin, ctx: LazyALContext):
     #   Performance: this method is specialized for the lazy get
 
     time_mode = ctx.time_mode
-    if time_mode == IDS_TIME_MODE_INDEPENDENT and child_meta.type.is_dynamic:
+    if time_mode == IDS_TIME_MODE_INDEPENDENT and child.metadata.type.is_dynamic:
         return  # skip dynamic (time-dependent) nodes
 
     child_meta = child.metadata
