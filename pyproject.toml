@@ -85,6 +85,8 @@ test = [
     "asv",
     # virtualenv is a dependency of asv
     "virtualenv",
+    # Pint is used in a training snippet
+    "pint",
 ]
 
 [project.scripts]

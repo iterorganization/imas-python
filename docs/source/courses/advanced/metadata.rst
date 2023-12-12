@@ -189,11 +189,50 @@ Units and dimensional analysis with Pint
     package can be installed by following `the instructions on their website
     <https://pint.readthedocs.io/en/stable/getting/index.html>`_.
 
-.. TODO::
-    Need an example use case to do the following steps on:
+The Data Dictionary specifies the units of stored quantities. This metadata is
+accessible in IMASPy via :py:attr:`metadata.units
+<imaspy.ids_metadata.IDSMetadata.units>`. In most cases, these units are in a format
+that ``pint`` can understand (for example ``T``, ``Wb``, ``m^-3``, ``m.s^-1``).
 
-    1.  Use training data (if possible), or create a small batch of test data
-    2.  Use ``metadata.units`` to create Pint Quantities
-    3.  Perform a calculation with the Quantities
-    4.  Check if units of derived quantity matches with the units expected by DD
-    5.  Convert quantity to correct units and store in IDS
+There are some exceptions to that, with the main ones ``-`` (indicating a quantity is
+dimensionless), ``Atomic Mass Unit`` and ``Elementary Charge Unit``. There are also
+cases when units are dependent on the context that a quantity is used, but we will not
+go into that in this lesson.
+
+For conversion of units from the Data Dictionary format to pint units, we recommend
+creating a custom function, such as the following:
+
+.. literalinclude:: imaspy_snippets/calc_with_units.py
+    :caption: Convert DD units to Pint Units
+    :start-at: # Create pint UnitRegistry
+    :end-before: # End
+
+
+Exercise 3: Calculate the mass density from ``core_profiles/profiles_1d``
+'''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
+        1.  Load the training data for the ``core_profiles`` IDS.
+        2.  Select the first time slice of ``profiles_1d`` for the calculation.
+        3.  Create a ``pint.UnitRegistry`` and conversion function from DD units to pint
+            units.
+        4.  Calculate the mass density:
+
+            a.  Create the result variable with the correct unit (``kg.m^-3``):
+                ``mass_density = ureg("0 kg.m^-3")``.
+            b.  Loop over all ion and neutral species in profiles_1d. For each one,
+                calculate the mass of the species (the sum of the masses of the elements
+                that comprise the species) and multiply it with the species density to
+                get the mass density of the species.
+
+                Use the ``metadata.units`` and ``dd_to_pint`` conversion function to get
+                the correct units during the calculation.
+            c.  Print the total mass density (the sum of all species mass densities) in
+                SI units (``kg.m^-3``).
+
+    .. md-tab-item:: Solution
+
+        .. literalinclude:: imaspy_snippets/calc_with_units.py
