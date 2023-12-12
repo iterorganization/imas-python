@@ -278,7 +278,7 @@ def compare_children(st1, st2, deleted_paths=set()):
     """
     for child1, child2 in zip(st1, st2):
         assert child1.metadata.name == child2.metadata.name
-        assert type(child1) == type(child2)
+        assert type(child1) is type(child2)
 
         if type(child1) in [IDSStructure, IDSToplevel]:
             compare_children(child1, child2, deleted_paths=deleted_paths)

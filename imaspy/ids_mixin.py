@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 class IDSMixin:
-    """The base class which unifies properties of structure, struct_array, toplevel, root
-    and primitive nodes (IDSPrimitive and IDSNumericArray)"""
+    """The base class which unifies properties of structure, struct_array, toplevel
+    and primitive nodes (IDSPrimitive and IDSNumericArray)."""
 
     def __init__(self, parent: "IDSMixin", metadata: IDSMetadata):
         """Setup basic properties for a tree node (leaf or non-leaf) such as
