@@ -26,4 +26,4 @@ python -m venv venv
 pip install --upgrade black flake8
 
 black imaspy
-flake8
+flake8 imaspy
