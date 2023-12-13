@@ -1,3 +1,5 @@
+.. _`ci configuration`:
+
 CI configuration
 ================
 
