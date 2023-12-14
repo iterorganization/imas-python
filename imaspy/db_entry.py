@@ -42,7 +42,28 @@ logger = logging.getLogger(__name__)
 
 
 class DBEntry:
-    """Represents an IMAS database entry, which is a collection of stored IDSs."""
+    """Represents an IMAS database entry, which is a collection of stored IDSs.
+
+    A ``DBEntry`` can be used as a :external:ref:`context manager <context-managers>`:
+
+    .. code-block:: python
+
+        import imaspy
+
+        # AL4-style constructor:
+        with imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 1234) as dbentry:
+            # dbentry is now opened and can be used for reading data:
+            ids = dbentry.get(...)
+        # The dbentry is now closed
+
+        # AL5-style constructor also allows creating the Data Entry with the mode
+        # argument
+        with imaspy.DBEntry("imas:hdf5?path=testdb", "w") as dbentry:
+            # dbentry is now created and can be used for writing data:
+            dbentry.put(ids)
+        # The dbentry is now closed
+
+    """
 
     _OPEN_MODES = {
         "r": OPEN_PULSE,
@@ -186,6 +207,17 @@ class DBEntry:
         if status != 0:
             raise RuntimeError("Error calling al_build_uri_from_legacy_parameters()")
         return uri
+
+    def __enter__(self):
+        # Context manager protocol
+        if self._db_ctx is None:
+            # Open if the DBEntry was not already opened or created
+            self.open()
+        return self
+
+    def __exit__(self, ecx_type, exc_value, traceback):
+        # Context manager protocol
+        self.close()
 
     @property
     def factory(self) -> IDSFactory:
