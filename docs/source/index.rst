@@ -72,11 +72,3 @@ LICENSE
 
 .. literalinclude:: ../../LICENSE.md
    :language: text
-
-
-Sitemap
--------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
