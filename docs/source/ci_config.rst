@@ -76,7 +76,7 @@ There are two Bamboo deployment projects for IMASPy:
 
 `Deploy IMASPy-doc <https://ci.iter.org/deploy/viewDeploymentProjectEnvironments.action?id=1784709122>`_
     Deploy the documentation created in the `Build docs and dists` job to `Sharepoint
-    <https://sharepoint.iter.org/departments/POP/CM/IMDesign/Code%20Documentation/IMASPy-doc/intro.html>`_.
+    <https://sharepoint.iter.org/departments/POP/CM/IMDesign/Code%20Documentation/IMASPy-doc/index.html>`_.
 
     This deployment project runs for after each successful CI build of the IMASPy main
     branch.
