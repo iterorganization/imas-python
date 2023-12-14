@@ -36,7 +36,7 @@ else:  # `import imas` successful
     has_imas = True
     try:
         lowlevel = imas._ual_lowlevel
-    except NameError:
+    except AttributeError:
         lowlevel = imas._al_lowlevel
     imasdef = imas.imasdef
 
