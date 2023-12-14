@@ -20,7 +20,7 @@ try:
     tic = time.time()
     # Don't directly `import imas`: code analyzers will break on the huge code base...
     imas = importlib.import_module("imas")
-    logger.info("Importing `imas` took %.3f seconds", time.time() - tic)
+    logger.info("Successfully imported `imas` (took %.3f seconds)", time.time() - tic)
 
 except ImportError as exc:
     imas = None
