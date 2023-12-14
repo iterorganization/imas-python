@@ -31,7 +31,7 @@ from imaspy.ids_defs import (
 )
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_metadata import IDSType
-from imaspy.ids_mixin import IDSMixin
+from imaspy.ids_base import IDSBase
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.imas_interface import LLInterfaceError, ll_interface
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
@@ -684,7 +684,7 @@ class DBEntry:
     @overload
     def list_all_occurrences(
         self, ids_name: str, node_path: str
-    ) -> Tuple[List[int], List[IDSMixin]]:
+    ) -> Tuple[List[int], List[IDSBase]]:
         ...
 
     def list_all_occurrences(self, ids_name, node_path=None):

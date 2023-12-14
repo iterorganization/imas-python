@@ -14,7 +14,7 @@ from xxhash import xxh3_64
 
 from imaspy.al_context import LazyALContext
 from imaspy.ids_metadata import IDSDataType, IDSMetadata
-from imaspy.ids_mixin import IDSMixin
+from imaspy.ids_base import IDSBase
 from imaspy.ids_path import IDSPath
 from imaspy.ids_primitive import (
     IDSComplex0D,
@@ -51,7 +51,7 @@ def get_node_type(data_type: IDSDataType, ndim: int):
     return IDSNumericArray
 
 
-class IDSStructure(IDSMixin):
+class IDSStructure(IDSBase):
     """IDS structure node
 
     Represents a node in the IDS tree. Does not itself contain data,
@@ -60,7 +60,7 @@ class IDSStructure(IDSMixin):
     IDSStructArrays
     """
 
-    def __init__(self, parent: IDSMixin, metadata: IDSMetadata):
+    def __init__(self, parent: IDSBase, metadata: IDSMetadata):
         """Initialize IDSStructure from XML specification
 
         Initializes in-memory an IDSStructure. The XML should contain
@@ -154,7 +154,7 @@ class IDSStructure(IDSMixin):
         self._lazy_context = ctx
 
     @property
-    def _dd_parent(self) -> IDSMixin:
+    def _dd_parent(self) -> IDSBase:
         if self.metadata.data_type is IDSDataType.STRUCT_ARRAY:
             return self._parent._parent
         return self._parent
@@ -166,7 +166,7 @@ class IDSStructure(IDSMixin):
             return True
         return False
 
-    def _iter_nonempty(self) -> Generator[IDSMixin, None, None]:
+    def _iter_nonempty(self) -> Generator[IDSBase, None, None]:
         """Iterate over all child nodes with non-default value."""
         for child in self._children:
             if child in self.__dict__:

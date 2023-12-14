@@ -5,7 +5,7 @@ import logging
 import re
 from typing import List
 
-from imaspy.ids_mixin import IDSMixin
+from imaspy.ids_base import IDSBase
 from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_structure import IDSStructure
 
@@ -86,7 +86,7 @@ def inspect(ids_node, hide_empty_nodes=False):
     return _util.inspect_impl(ids_node, hide_empty_nodes)
 
 
-def find_paths(node: IDSMixin, query: str) -> List[str]:
+def find_paths(node: IDSBase, query: str) -> List[str]:
     """Find all paths in the provided DD node (including children) that match the query.
 
     Matching is checked with :external:py:func:`re.search`.
@@ -117,7 +117,7 @@ def find_paths(node: IDSMixin, query: str) -> List[str]:
     return matching_paths
 
 
-def calc_hash(node: IDSMixin) -> bytes:
+def calc_hash(node: IDSBase) -> bytes:
     """Calculate the hash of the provided IDS object.
 
     Hashes are calculated as follows:

@@ -259,7 +259,7 @@ class IDSToplevel(IDSStructure):
             raise exc.with_traceback(None) from None
 
     def _validate(self):
-        # Override to skip the self.metadata.type.is_dynamic check in IDSMixin._validate
+        # Override to skip the self.metadata.type.is_dynamic check in IDSBase._validate
         for child in self._iter_nonempty():
             child._validate()
 

@@ -25,7 +25,7 @@ from xxhash import xxh3_64, xxh3_64_digest
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_metadata import IDSMetadata
-from imaspy.ids_mixin import IDSMixin
+from imaspy.ids_base import IDSBase
 
 logger = logging.getLogger(__name__)
 
@@ -62,14 +62,14 @@ def _unary_wrapper(op, name):
     return func
 
 
-class IDSPrimitive(IDSMixin):
+class IDSPrimitive(IDSBase):
     """IDS leaf node
 
     Represents actual data. Examples are (arrays of) strings, floats, integers.
     Lives entirely in-memory until 'put' into a database.
     """
 
-    def __init__(self, parent: IDSMixin, metadata: IDSMetadata):
+    def __init__(self, parent: IDSBase, metadata: IDSMetadata):
         """Initialize IDSPrimitive
 
         Args:

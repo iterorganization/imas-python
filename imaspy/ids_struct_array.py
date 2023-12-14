@@ -18,12 +18,12 @@ from xxhash import xxh3_64
 from imaspy.al_context import LazyALContext
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_metadata import IDSMetadata
-from imaspy.ids_mixin import IDSMixin
+from imaspy.ids_base import IDSBase
 
 logger = logging.getLogger(__name__)
 
 
-class IDSStructArray(IDSMixin):
+class IDSStructArray(IDSBase):
     """IDS array of structures (AoS) node
 
     Represents a node in the IDS tree. Does not itself contain data,
@@ -39,7 +39,7 @@ class IDSStructArray(IDSMixin):
         return self._element_structure
 
     # TODO: HLI compatibility `base_path_in`
-    def __init__(self, parent: IDSMixin, metadata: IDSMetadata):
+    def __init__(self, parent: IDSBase, metadata: IDSMetadata):
         """Initialize IDSStructArray from XML specification
 
         Args:

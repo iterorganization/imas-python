@@ -19,7 +19,7 @@ from imaspy.ids_defs import (
 from imaspy.ids_path import IDSPath
 
 if TYPE_CHECKING:  # Prevent circular imports
-    from imaspy.ids_mixin import IDSMixin
+    from imaspy.ids_base import IDSBase
     from imaspy.ids_primitive import IDSPrimitive
 
 logger = logging.getLogger(__name__)
@@ -112,7 +112,7 @@ class IDSCoordinate:
         """IDSCoordinate objects are immutable, we can be used e.g. as dict key."""
         return hash(self._coordinate_spec)
 
-    def format_refs(self, element: "IDSMixin") -> str:
+    def format_refs(self, element: "IDSBase") -> str:
         """Return a comma-separated list of paths representing self.references.
 
         Useful when constructing error messages to users.
@@ -126,7 +126,7 @@ class IDSCoordinate:
         return ", ".join(f"`{ref}`" for ref in ref_paths)
 
 
-def _goto(path: IDSPath, element: "IDSMixin") -> "IDSPrimitive":
+def _goto(path: IDSPath, element: "IDSBase") -> "IDSPrimitive":
     """Wrapper around IDSPath.goto to raise more meaningful errors."""
     try:
         return path.goto(element)
@@ -137,7 +137,7 @@ def _goto(path: IDSPath, element: "IDSMixin") -> "IDSPrimitive":
 
 
 class IDSCoordinates:
-    """Class representing coordinates of an IDSMixin.
+    """Class representing coordinates of an IDSStructArray or IDSPrimitive.
 
     Can be used to automatically retrieve coordinate values via the indexing operator.
 
@@ -150,23 +150,22 @@ class IDSCoordinates:
         IDSNumericArray("/core_profiles/time", array([], dtype=float64))
     """
 
-    def __init__(self, mixin: "IDSMixin") -> None:
-        self._mixin = mixin
+    def __init__(self, node: "IDSBase") -> None:
+        self._node = node
 
     def __repr__(self) -> str:
-        mixin_path = self._mixin._path
         coordinates = []
         for i in range(len(self)):
-            coor_str = f"\n  {i}: '{self._mixin.metadata.coordinates[i]}'"
-            same_as = self._mixin.metadata.coordinates_same_as[i]
+            coor_str = f"\n  {i}: '{self._node.metadata.coordinates[i]}'"
+            same_as = self._node.metadata.coordinates_same_as[i]
             if same_as.references:
                 coor_str += f" (same as '{same_as}')"
             coordinates.append(coor_str)
-        return f"<IDSCoordinates of '{mixin_path}'>{''.join(coordinates)}"
+        return f"<IDSCoordinates of '{self._node._path}'>{''.join(coordinates)}"
 
     def __len__(self) -> int:
-        """Number of coordinates is equal to the dimension of the bound IDSMixin."""
-        return self._mixin.metadata.ndim
+        """Number of coordinates is equal to the dimension of the bound IDS node."""
+        return self._node.metadata.ndim
 
     def __getitem__(self, key: int) -> Union["IDSPrimitive", np.ndarray]:
         """Get the coordinate of the given dimension.
@@ -180,13 +179,13 @@ class IDSCoordinates:
         When multiple coordinate paths are defined, the one that is set is returned. A
         ValueError is raised when multiple or none are defined.
         """
-        coordinate = self._mixin.metadata.coordinates[key]
+        coordinate = self._node.metadata.coordinates[key]
         if not coordinate.references:
-            return np.arange(self._mixin.shape[key])
+            return np.arange(self._node.shape[key])
         coordinate_path: Optional[IDSPath] = None
         # Time is a special coordinate:
         if coordinate.is_time_coordinate:
-            time_mode = self._mixin._time_mode
+            time_mode = self._node._time_mode
             if time_mode == HOMOGENEOUS_TIME:
                 coordinate_path = IDSPath("time")
             elif time_mode == HETEROGENEOUS_TIME:
@@ -203,13 +202,13 @@ class IDSCoordinates:
 
         # Check if the coordinate is inside the AoS
         if coordinate_path is not None:
-            if self._mixin.metadata.data_type is IDSDataType.STRUCT_ARRAY:
-                if self._mixin.metadata.path.is_ancestor_of(coordinate_path):
+            if self._node.metadata.data_type is IDSDataType.STRUCT_ARRAY:
+                if self._node.metadata.path.is_ancestor_of(coordinate_path):
                     # Create a numpy array with the contents of all elements in the AoS
                     # TODO: move this to IDSPath?
-                    data = [_goto(coordinate_path, ele).value for ele in self._mixin]
+                    data = [_goto(coordinate_path, ele).value for ele in self._node]
                     return np.array(data)
-            coordinate_node = _goto(coordinate_path, self._mixin)
+            coordinate_node = _goto(coordinate_path, self._node)
             if not coordinate_node.metadata.alternative_coordinate1:
                 return coordinate_node
 
@@ -229,7 +228,7 @@ class IDSCoordinates:
                     for alt in nonzero_alternatives
                 )
                 raise CoordinateLookupError(
-                    f"Element `{self._mixin._path}` has "
+                    f"Element `{self._node._path}` has "
                     "multiple alternative coordinates set, but they don't have "
                     f"matching sizes:\n{sizes}"
                 )
@@ -239,17 +238,17 @@ class IDSCoordinates:
 
         # Handle alternative coordinates, currently (DD 3.38.1) the `coordinate in
         # structure` logic is not applicable for these cases:
-        refs = [_goto(ref, self._mixin) for ref in coordinate.references]
+        refs = [_goto(ref, self._node) for ref in coordinate.references]
         ref_is_defined = [len(ref.value) > 0 for ref in refs]
         if sum(ref_is_defined) == 0:
             if coordinate.size is not None:
                 # alternatively we can be an index
-                return np.arange(self._mixin.shape[key])
-            coordinate_refs = coordinate.format_refs(self._mixin)
+                return np.arange(self._node.shape[key])
+            coordinate_refs = coordinate.format_refs(self._node)
             if ", " in coordinate_refs:
                 coordinate_refs = "any of " + coordinate_refs
             raise CoordinateLookupError(
-                f"Element `{self._mixin._path}` must have its coordinate in dimension "
+                f"Element `{self._node._path}` must have its coordinate in dimension "
                 f"{key + 1} ({coordinate_refs}) filled."
             )
 
@@ -259,8 +258,8 @@ class IDSCoordinates:
                     return refs[i]
 
         raise CoordinateLookupError(
-            f"Element `{self._mixin._path}` must have "
-            f"exactly one of its coordinates ({coordinate.format_refs(self._mixin)}) "
+            f"Element `{self._node._path}` must have "
+            f"exactly one of its coordinates ({coordinate.format_refs(self._node)}) "
             "set, but multiple are set."
         )
 
@@ -271,7 +270,7 @@ class IDSCoordinates:
         Returns:
             The index of the time coordinate, or None if there is no time coordinate.
         """
-        for i, coor in enumerate(self._mixin.metadata.coordinates):
+        for i, coor in enumerate(self._node.metadata.coordinates):
             if coor.is_time_coordinate:
                 return i
         return None
@@ -282,9 +281,9 @@ class IDSCoordinates:
         See also:
             :py:meth:`imaspy.ids_toplevel.IDSToplevel.validate`.
         """
-        shape = self._mixin.shape
-        metadata = self._mixin.metadata
-        path = self._mixin._path
+        shape = self._node.shape
+        metadata = self._node.metadata
+        path = self._node._path
 
         # Validate coordinate
         for dim in range(metadata.ndim):
@@ -338,7 +337,7 @@ class IDSCoordinates:
 
             assert len(same_as.references) == 1
             with self._capture_goto_errors(dim, coordinate) as captured:
-                other_element = same_as.references[0].goto(self._mixin)
+                other_element = same_as.references[0].goto(self._node)
             if captured:
                 continue  # Ignored error, continue to next dimension
 
@@ -353,14 +352,14 @@ class IDSCoordinates:
         IDSPath.goto().
         """
         did_capture = []
-        path = self._mixin._path
+        path = self._node._path
         try:
             yield did_capture
         except CoordinateLookupError as exc:
             raise ValidationError(exc.args[0])
         except IndexError as exc:
             # Can happen in IDSPath.goto when an invalid index is encountered.
-            coordinate_refs = coordinate.format_refs(self._mixin)
+            coordinate_refs = coordinate.format_refs(self._node)
             raise ValidationError(
                 f"Error while validating element `{path}`: dimension {dim + 1} has an "
                 f"invalid index for coordinate(s) {coordinate_refs}."
@@ -376,7 +375,7 @@ class IDSCoordinates:
                     coordinate.references,
                 )
             else:
-                if self._mixin._version <= "3.38.1":
+                if self._node._version <= "3.38.1":
                     version_error = (
                         "This is expected to happen in DD versions <= 3.38.1, where "
                         "some coordinate metadata is incorrect."

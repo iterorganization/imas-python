@@ -3,7 +3,7 @@
 
 from packaging.version import Version as _V
 
-from . import _version
+from . import _version, ids_base
 
 __version__ = _version.get_versions()["version"]
 
@@ -17,7 +17,6 @@ from . import setup_logging
 # We need these to work with data
 from . import (
     ids_defs,
-    ids_mixin,
     ids_primitive,
     ids_struct_array,
     ids_structure,

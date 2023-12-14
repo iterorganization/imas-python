@@ -8,7 +8,7 @@ import re
 from typing import TYPE_CHECKING, Any, Tuple, Union, List, Iterator, Dict
 
 if TYPE_CHECKING:  # Prevent circular imports
-    from imaspy.ids_mixin import IDSMixin
+    from imaspy.ids_base import IDSBase
 
 
 logger = logging.getLogger(__name__)
@@ -165,10 +165,10 @@ class IDSPath:
     def items(self) -> Iterator[Tuple[str, _IndexType]]:
         return zip(self.parts, self.indices)
 
-    def goto(self, from_element: "IDSMixin", *, from_root: bool = True) -> "IDSMixin":
+    def goto(self, from_element: "IDSBase", *, from_root: bool = True) -> "IDSBase":
         """Go to this path, taking from_element as reference.
 
-        This returns the IDSMixin at the specified path, or raises an error when that
+        This returns the IDS node at the specified path, or raises an error when that
         path cannot be found.
 
         Args:

@@ -19,11 +19,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class IDSMixin:
+class IDSBase:
     """The base class which unifies properties of structure, struct_array, toplevel
     and primitive nodes (IDSPrimitive and IDSNumericArray)."""
 
-    def __init__(self, parent: "IDSMixin", metadata: IDSMetadata):
+    def __init__(self, parent: "IDSBase", metadata: IDSMetadata):
         """Setup basic properties for a tree node (leaf or non-leaf) such as
         name, _parent, _backend_name etc."""
         self._parent = parent
@@ -38,7 +38,7 @@ class IDSMixin:
         return self._parent._time_mode
 
     @property
-    def _dd_parent(self) -> "IDSMixin":
+    def _dd_parent(self) -> "IDSBase":
         """Return the DD parent element
 
         Usually this is the same as the _parent element, but for IDSStructArray
