@@ -50,11 +50,6 @@ class IDSBase:
         """
         return self._parent
 
-    @cached_property
-    def _is_dynamic(self) -> bool:
-        """True if this element (or any parent) has type=dynamic"""
-        return self.metadata.type.is_dynamic or self._dd_parent._is_dynamic
-
     @property
     def _path(self) -> str:
         """Build relative path from the toplevel to the node
