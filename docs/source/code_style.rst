@@ -1,3 +1,5 @@
+.. _`code style and linting`:
+
 Code style and linting
 ======================
 
