@@ -63,4 +63,3 @@ pulse_schedule_3_39 = imaspy.convert_ids(pulse_schedule, "3.39.0")
 imaspy.util.print_tree(pulse_schedule_3_39)
 # What do you notice?
 #   Element 'ec/antenna/phase' does not exist in the target IDS. Data is not copied.
-

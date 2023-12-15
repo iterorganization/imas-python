@@ -19,6 +19,8 @@ Therefore IMASPy was always using the `default` DD version. Let's find out what 
 version is:
 
 
+.. _`dd version exercise 1`:
+
 Exercise 1: The default DD version
 ''''''''''''''''''''''''''''''''''
 
@@ -126,13 +128,122 @@ Exercise 2: Convert an IDS between DD versions
 Automatic conversion between DD versions
 ----------------------------------------
 
-.. TODO::
-    TODO, first converge in this PR: https://git.iter.org/projects/IMAS/repos/imaspy/pull-requests/156/overview
+When loading data (with :py:meth:`~imaspy.db_entry.DBEntry.get` or
+:py:meth:`~imaspy.db_entry.DBEntry.get_slice`) or storing data (with
+:py:meth:`~imaspy.db_entry.DBEntry.put` or
+:py:meth:`~imaspy.db_entry.DBEntry.put_slice`), IMASPy automatically converts the DD
+version for you. In this section we will see how that works.
 
-    1.  Show and explain the default autoconvert behaviour
-    2.  Use cases for disabling autoconvert
-    3.  Show how disabled autoconvert works
 
+The ``DBEntry`` DD version
+''''''''''''''''''''''''''
+
+A :py:class:`~imaspy.db_entry.DBEntry` object is tied to a specific version of the Data
+Dictionary. We have already briefly seen this in :ref:`dd version exercise 1`.
+
+The DD version can be selected when constructing a new ``DBEntry`` object, through the
+:py:param:`~imaspy.db_entry.DBEntry.__init__.dd_version` or
+:py:param:`~imaspy.db_entry.DBEntry.__init__.xml_path` (see also :ref:`Using custom
+builds of the Data Dictionary`) parameters. If you provide neither, the default DD
+version is used.
+
+When storing IDSs (``put`` or ``put_slice``), the ``DBEntry`` always converts the data
+to its version before writing it to the backend. When loading IDSs (``get`` or
+``get_slice``) an option exists to disable autoconversion. Let's see in the following
+two exercises how this works exactly.
+
+
+Exercise 3: Automatic conversion when storing IDSs
+''''''''''''''''''''''''''''''''''''''''''''''''''
+
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
+        1.  Load the training data for the ``core_profiles`` IDS. You can refresh how to
+            do this in the following section of the basic training material: :ref:`Open
+            an IMAS database entry`.
+        2.  Print the DD version for the loaded ``core_profiles`` IDS.
+        3.  Create a new ``DBEntry`` with DD version ``3.37.0``.
+            
+            .. code-block:: python
+
+                new_entry = imaspy.DBEntry(
+                    imaspy.ids_defs.MEMORY_BACKEND, "test", 0, 0, dd_version="3.37.0"
+                )
+        
+        4.  Put the ``core_profiles`` IDS in the new ``DBEntry``.
+        5.  Print the ``core_profiles.ids_properties.version_put.data_dictionary``.
+            What do you notice?
+
+    .. md-tab-item:: Solution
+
+        .. literalinclude:: imaspy_snippets/autoconvert_put.py
+
+
+Exercise 4: Automatic conversion when loading IDSs
+''''''''''''''''''''''''''''''''''''''''''''''''''
+
+.. md-tab-set::
+
+    .. md-tab-item:: Exercise
+
+        1.  For this exercise we will first create some test data:
+
+            .. literalinclude:: imaspy_snippets/autoconvert_get.py
+                :start-after: # 1.
+                :end-before: # 2.
+        
+        2.  Reopen the ``DBEntry`` with the default DD version.
+        3.  ``get`` the pulse schedule IDS. Print its
+            ``version_put/data_dictionary`` and ``_dd_version``. What do you
+            notice?
+        4.  Use ``imaspy.util.print_tree`` to print all data in the loaded IDS. What do
+            you notice?
+        5.  Repeat steps 3 and 4, but set
+            :py:param:`~imaspy.db_entry.DBEntry.get.autoconvert` to ``False``. What do
+            you notice this time?
+
+    .. md-tab-item:: Solution
+
+        .. literalinclude:: imaspy_snippets/autoconvert_get.py
+
+
+Use cases for disabling autoconvert
+'''''''''''''''''''''''''''''''''''
+
+As you could see in the exercise, disabling autoconvert enables you to retrieve all data
+exactly as it was stored. This can be useful, especially for non-active IDSs which may
+contain large changes between DD versions, such as:
+
+-   Interactive plotting tools
+-   Exploration of all stored data in a Data Entry
+-   Etc.
+
+
+.. caution::
+
+    The :py:meth:`~imaspy.ids_convert.convert_ids` method warns you when data is not
+    converted. Due to technical constraints, the ``autoconvert`` logic doesn't log any
+    such warnings.
+
+    You can work around this by explicitly converting the IDS:
+
+    .. code-block:: python
+
+        >>> # Continuing with the example from Exercise 4:
+        >>> ps_noconvert = entry.get("pulse_schedule", autoconvert=False)
+        >>> imaspy.convert_ids(ps_noconvert, "3.40.0")
+        15:32:32 INFO     Parsing data dictionary version 3.40.0 @dd_zip.py:129
+        15:32:32 INFO     Starting conversion of IDS pulse_schedule from version 3.25.0 to version 3.40.0. @ids_convert.py:350
+        15:32:32 INFO     Element 'ec/antenna/phase' does not exist in the target IDS. Data is not copied. @ids_convert.py:396
+        15:32:32 INFO     Element 'ec/antenna/launching_angle_pol/reference/data' does not exist in the target IDS. Data is not copied. @ids_convert.py:396
+        15:32:32 INFO     Element 'ec/antenna/launching_angle_tor/reference/data' does not exist in the target IDS. Data is not copied. @ids_convert.py:396
+        15:32:32 INFO     Conversion of IDS pulse_schedule finished. @ids_convert.py:366
+        <IDSToplevel (IDS:pulse_schedule)>
+
+
+.. _`Using custom builds of the Data Dictionary`:
 
 Using custom builds of the Data Dictionary
 ------------------------------------------
