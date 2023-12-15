@@ -479,7 +479,10 @@ class DBEntry:
         """Actual implementation of get() and get_slice()"""
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
-        if lazy and self.backend_id == ASCII_BACKEND:
+        if lazy and (
+            (self._legacy_init and self.backend_id == ASCII_BACKEND)
+            or (not self._legacy_init and self.uri.startswith("imas:ascii"))
+        ):
             raise RuntimeError("Lazy loading is not supported by the ASCII backend.")
         if lazy and destination:
             raise ValueError("Cannot supply a destination IDS when lazy loading.")
