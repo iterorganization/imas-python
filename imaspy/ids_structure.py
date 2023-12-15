@@ -1,8 +1,6 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
-""" A structure in an IDS
-
-* :py:class:`IDSStructure`
+"""A structure in an IDS
 """
 
 import logging

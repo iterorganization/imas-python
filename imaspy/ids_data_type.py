@@ -1,5 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Data Dictionary type handling functionality.
+"""
 
 from enum import Enum
 from functools import lru_cache

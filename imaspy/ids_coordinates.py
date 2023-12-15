@@ -1,6 +1,6 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
-"""Logic for interpreting coordinates in an IDS
+"""Logic for interpreting coordinates in an IDS.
 """
 
 from contextlib import contextmanager

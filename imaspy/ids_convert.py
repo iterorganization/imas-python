@@ -44,21 +44,27 @@ class NBCPathMap:
     """Object mapping paths in one DD version to path, timebasepath and context path."""
 
     def __init__(self) -> None:
-        # Dictionary mapping the ids path
-        # - When no changes have occurred (which is assumed to be the default case), the
-        #   path is not present in the dictionary.
-        # - When an element is renamed it maps the old to the new name (and vice versa).
-        # - When an element does not exist in the other version, it is mapped to None.
         self.path: Dict[str, Optional[str]] = {}
+        """Dictionary mapping the ids path
 
-        # Map providing timebasepath for renamed elements
+        - When no changes have occurred (which is assumed to be the default case), the
+          path is not present in the dictionary.
+        - When an element is renamed it maps the old to the new name (and vice versa).
+        - When an element does not exist in the other version, it is mapped to None.
+        """
+
         self.tbp: Dict[str, str] = {}
+        """Map providing the timebasepath for renamed elements."""
 
-        # Map providing path relative to the nearest AoS for renamed elements
         self.ctxpath: Dict[str, str] = {}
+        """Map providing the lowlevel context path for renamed elements."""
 
-        # Set listing which paths had a type change (and therefore a None entry in path)
         self.type_change: Set[str] = set()
+        """Set of paths that had a type change.
+
+        Type changes are mapped to None in :py:attr:`path`, this ``set`` allows to
+        distinguish between a type change and a removed node.
+        """
 
     def __setitem__(self, path: str, value: Tuple[Optional[str], str, str]) -> None:
         self.path[path], self.tbp[path], self.ctxpath[path] = value

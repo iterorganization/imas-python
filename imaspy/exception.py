@@ -1,5 +1,8 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Exception classes used in IMASPy.
+"""
+
 import difflib
 import logging
 from typing import TYPE_CHECKING, List

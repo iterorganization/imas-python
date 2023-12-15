@@ -1,5 +1,8 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Collection of useful helper methods when working with IMASPy.
+"""
+
 
 import logging
 import re

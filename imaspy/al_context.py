@@ -1,5 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Object-oriented interface to the IMAS lowlevel.
+"""
 
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Iterator, List, Optional, Tuple, Union

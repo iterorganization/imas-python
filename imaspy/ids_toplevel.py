@@ -1,7 +1,6 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
-""" Represents a Top-level IDS (like NBI etc)
-* :py:class:`IDSToplevel`
+"""Represents a Top-level IDS (like ``core_profiles``, ``equilibrium``, etc)
 """
 
 import logging

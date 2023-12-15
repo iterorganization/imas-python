@@ -1,5 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Base class for all IDS nodes.
+"""
 
 import logging
 from typing import TYPE_CHECKING
@@ -21,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 class IDSBase:
     """The base class which unifies properties of structure, struct_array, toplevel
-    and primitive nodes (IDSPrimitive and IDSNumericArray)."""
+    and data nodes."""
 
     def __init__(self, parent: "IDSBase", metadata: IDSMetadata):
         """Setup basic properties for a tree node (leaf or non-leaf) such as

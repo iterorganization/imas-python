@@ -1,9 +1,9 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
-
-# This file contains the implementation of all utility functions that need external
-# modules. Implementation has been removed from util.py to improve the performance of
-# `import imaspy`.
+"""This file contains the implementation of all utility functions that need external
+modules. Implementation has been removed from util.py to improve the performance of
+``import imaspy``.
+"""
 
 import copy
 import logging

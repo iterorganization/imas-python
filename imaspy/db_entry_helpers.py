@@ -1,5 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Helper methods for loading data from and storing data to Data Entries.
+"""
 
 from typing import Optional
 

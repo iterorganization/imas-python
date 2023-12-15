@@ -1,5 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Logic for interacting with IMAS Data Entries.
+"""
 
 import logging
 import os

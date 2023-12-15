@@ -1,10 +1,6 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
-""" Core IDS classes
-
-Provides the class for an IDS Primitive data type
-
-* :py:class:`IDSPrimitive`
+"""Provides the classes for IDS data nodes
 """
 import logging
 import math
@@ -400,6 +396,8 @@ class IDSInt0D(IDSNumeric0D, Integral):
 
 
 class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
+    """IDSPrimitive specialization for ND numeric types (wrapping ``numpy.ndarray``)."""
+
     # One might also consider adding the built-in list type to this
     # list, to support operations like np.add(array_like, list)
     _HANDLED_TYPES = (np.ndarray, Number)
