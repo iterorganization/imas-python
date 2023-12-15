@@ -1,7 +1,12 @@
 IMASPy Architecture
 ===================
 
-This document provides a brief overview of the architecture of IMASPy.
+This document provides a brief overview of the components of IMASPy, grouped into
+different functional areas.
+
+We don't aim to give detailed explanations of the code or the algorithms in it. These
+should be annotated in more detail in docstrings and inline comments.
+
 
 Data Dictionary metadata
 ------------------------
@@ -162,7 +167,7 @@ The following submodules and classes represent IDS nodes.
     :py:class:`~imaspy.ids_structure.IDSStructure` and models toplevel IDSs.
 
     It implements some API methods that are only available on IDSs, such as
-    ``validate``and ``(de)serialize``, and overwrites implementations of some
+    ``validate`` and ``(de)serialize``, and overwrites implementations of some
     properties.
 
 
@@ -211,9 +216,8 @@ until the data is requested. This is handled in two places:
     -   When the element is a data node (``IDSPrimitive`` subclass), the data for this
         element is loaded from the backend.
     -   When the element is another structure, nothing needs to be loaded from the
-        backend. Only when a data node inside the structure is accessed, data needs to
-        be loaded from the backend. Instead, we store the ``context`` on the created
-        ``IDSStructure`` and loading is handled recursively.
+        backend. Instead, we store the ``context`` on the created ``IDSStructure`` and
+        data loading is handled recursively when needed.
     -   When the element is an Array of Structures, we also only store the ``context``
         on the created ``IDSStructArray``. Loading is handled as described in point 2.
 
@@ -225,36 +229,109 @@ until the data is requested. This is handled in two places:
 Creating and loading IDSs
 -------------------------
 
--   :py:mod:`imaspy.db_entry`
--   :py:mod:`imaspy.db_entry_helpers`
--   :py:mod:`imaspy.ids_factory`
+-   :py:mod:`imaspy.db_entry` contains the :py:class:`~imaspy.db_entry.DBEntry` class.
+    This class represents an on-disk Data Entry and can be used to store
+    (:py:meth:`~imaspy.db_entry.DBEntry.put`,
+    :py:meth:`~imaspy.db_entry.DBEntry.put_slice`) or load
+    (:py:meth:`~imaspy.db_entry.DBEntry.get`,
+    :py:meth:`~imaspy.db_entry.DBEntry.get_slice`) IDSs. The actual implementation of
+    data storage and retrieval is handled by the :py:mod:`imaspy.db_entry_helpers`
+    module.
+
+    :py:class:`~imaspy.db_entry.DBEntry` handles the autoconversion between IDS versions
+    as described in :ref:`Automatic conversion between DD versions`.
+-   :py:mod:`imaspy.db_entry_helpers` contains implementation for ``get`` and ``put``.
+-   :py:mod:`imaspy.ids_factory` contains the :py:class:`~imaspy.ids_factory.IDSFactory`
+    class. This class is responsible for creating IDS toplevels from a given Data
+    Dictionary definition, and can list all IDS names inside a DD definition.
 
 
 Access Layer interfaces
 -----------------------
 
--   :py:mod:`imaspy.al_context`
--   :py:mod:`imaspy.ids_defs`
--   :py:mod:`imaspy.imas_interface`
+-   :py:mod:`imaspy.al_context` provides an object-oriented interface when working with
+    Lowlevel contexts. The contexts returned by the lowlevel are an integer identifier
+    and need to be provided to several LL methods (e.g. ``read_data``), some of which
+    may create new contexts.
+    
+    The :py:class:`~imaspy.al_context.ALContext` class implements this object oriented
+    interface.
+
+    A second class (:py:class:`~imaspy.al_context.LazyALContext`) implements the same
+    interface, but is used when :ref:`dev lazy loading`.
+-   :py:mod:`imaspy.ids_defs` provides access to Access Layer constants (mostly defined
+    in ``imas.imasdef``).
+-   :py:mod:`imaspy.imas_interface` provides a version-independent interface to the
+    Access Layer through :py:class:`~imaspy.imas_interface.LowlevelInterface`. It
+    defines all known methods of the Access Layer and defers to the correct
+    implementation if it is available in the loaded AL version (and raises a descriptive
+    exception if the function is not available).
 
 
 MDSplus support
 ---------------
 
--   :py:mod:`imaspy.mdsplus_model`
+-   :py:mod:`imaspy.mdsplus_model` is responsible for creating MDSplus `models`. These
+    models are specific to a DD version and are required when using the MDSplus
+    backend for creating new Data Entries.
+
+    .. seealso:: :ref:`MDSplus in IMASPy`
 
 
 Versioning
 ----------
 
-Something about versioneer and :py:mod:`_version.py`
+IMASPy uses `versioneer <https://github.com/python-versioneer/python-versioneer>`_ for
+versioning. An IMASPy release has a corresponding tag (which sets the version), e.g.
+`this is the tag
+<https://git.iter.org/projects/IMAS/repos/imaspy/browse?at=refs%2Ftags%2F0.8.0>`_ for
+version ``0.8.0``. Development builds are versioned based on the ``git describe`` of the
+repository.
+
+The :py:mod:`imaspy._version` is generated by ``versioneer`` and implements this logic
+for editable installs. This module is replaced by ``versioneer`` when building python
+packages (this is handled in ``setup.py``).
+
+
+Conversion between Data Dictionary versions
+-------------------------------------------
+
+:py:mod:`imaspy.ids_convert` contains logic for converting an IDS between DD versions.
+
+The :py:class:`~imaspy.ids_convert.DDVersionMap` class creates and contains mappings for
+an IDS between two Data Dictionary versions. It creates two mappings: one to be used
+when converting from the newer version of the two to the older version (``new_to_old``)
+and a map for the reverse (``old_to_new``). These mappings are of type
+:py:class:`~imaspy.ids_convert.NBCPathMap`. See its API documentation for more details.
+
+:py:func:`~imaspy.ids_convert.convert_ids` is the main API method for converting IDSs
+between versions. It works as follows:
+
+-   It builds a ``DDVersionMap`` between the two DD versions version and selects the
+    correct ``NBCPathMap`` (``new_to_old`` or ``old_to_new``).
+-   If needed, it creates a target IDS of the destination DD version.
+-   It then uses the ``NBCPathMap`` to convert data and store it in the target IDS.
+
+:py:class:`~imaspy.db_entry.DBEntry` can also handle automatic DD version conversion. It
+uses the same ``DDVersionMap`` and ``NBCPathMap`` as
+:py:func:`~imaspy.ids_convert.convert_ids`. When reading data from the backends, the
+``NBCPathMap`` is used to translate between the old and the new DD version. See the
+implementation in :py:mod:`imaspy.db_entry_helpers`.
 
 
 Miscelleneous
 -------------
 
--   :py:mod:`imaspy.exception`
--   :py:mod:`imaspy.ids_convert`
--   :py:mod:`imaspy.setup_logging`
--   :py:mod:`imaspy.training`
--   :py:mod:`imaspy.util` and :py:mod:`imaspy._util`
+The following is a list of miscelleneous modules, which don't belong to any of the other
+categories on this page.
+
+-   :py:mod:`imaspy.exception` contains all Exception classes that IMASPy may raise.
+-   :py:mod:`imaspy.setup_logging` initializes a logging handler for IMASPy.
+-   :py:mod:`imaspy.training` contains helper methods for making training data
+    available.
+-   :py:mod:`imaspy.util` contains useful utility methods. It is imported automatically.
+
+    All methods requiring third party libraries (``rich`` and ``scipy``) are implemented
+    in :py:mod:`imaspy._util`. This avoids importing these libraries immediately when a
+    user imports ``imaspy`` (which can take a couple hundred milliseconds). Instead,
+    this module is only loaded when a user needs this functionality.

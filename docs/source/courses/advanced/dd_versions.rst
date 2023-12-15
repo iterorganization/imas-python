@@ -125,6 +125,8 @@ Exercise 2: Convert an IDS between DD versions
         .. literalinclude:: imaspy_snippets/ids_convert.py
 
 
+.. _`Automatic conversion between DD versions`:
+
 Automatic conversion between DD versions
 ----------------------------------------
 
