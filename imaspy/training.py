@@ -13,14 +13,14 @@ from imaspy.imas_interface import imas
 
 def _initialize_training_db(DBEntry_cls):
     assets_path = files(imaspy) / "assets/"
-    shot, run, user, database = 134173, 106, "public", "ITER"
+    pulse, run, user, database = 134173, 106, "public", "ITER"
     if imaspy.imas_interface.ll_interface._al_version.major == 4:
-        entry = DBEntry_cls(imaspy.ids_defs.ASCII_BACKEND, database, shot, run, user)
+        entry = DBEntry_cls(imaspy.ids_defs.ASCII_BACKEND, database, pulse, run, user)
         entry.open(options=f"-prefix {assets_path}/")
     else:
         entry = DBEntry_cls(f"imas:ascii?path={assets_path}", "r")
 
-    output_entry = DBEntry_cls(imaspy.ids_defs.MEMORY_BACKEND, database, shot, run)
+    output_entry = DBEntry_cls(imaspy.ids_defs.MEMORY_BACKEND, database, pulse, run)
     output_entry.create()
     for ids_name in ["core_profiles", "equilibrium"]:
         ids = entry.get(ids_name)

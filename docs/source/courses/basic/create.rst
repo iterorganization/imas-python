@@ -180,7 +180,7 @@ Exercise 5
 
             backend = imaspy.ids_defs.ASCII_BACKEND
             database = "imaspy-course"
-            shot = 1
+            pulse = 1
             run = 1
 
         After a successful ``put`` you should see a file
@@ -190,7 +190,7 @@ Exercise 5
         .. hint::
             :collapsible:
 
-            The signature of :meth:`~imaspy.db_entry.DBEntry()` is: ``DBEntry(backend, database, shot, run)``
+            The signature of :meth:`~imaspy.db_entry.DBEntry()` is: ``DBEntry(backend, database, pulse, run)``
 
     .. md-tab-item:: AL4
 

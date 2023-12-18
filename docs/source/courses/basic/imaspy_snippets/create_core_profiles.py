@@ -42,8 +42,8 @@ for index in range(3):
 cp.validate()
 
 # Create a new data entry for storing the IDS
-shot, run, database = 1, 1, "imaspy-course"
-entry = imaspy.DBEntry(imaspy.ids_defs.ASCII_BACKEND, database, shot, run)
+pulse, run, database = 1, 1, "imaspy-course"
+entry = imaspy.DBEntry(imaspy.ids_defs.ASCII_BACKEND, database, pulse, run)
 entry.create()
 
 entry.put(cp)
