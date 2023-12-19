@@ -163,6 +163,21 @@ Exercise 2: Alternative coordinates
         1.  Create an empty ``distributions`` IDS.
         2.  Use the ``metadata`` attribute to find the coordinates of
             ``distribution[]/profiles_2d[]/density``. What do you notice?
+
+            .. hint::
+                :collapsible:
+
+                ``distribution`` and ``profiles_2d`` are arrays of structures. When
+                creating an empty IDS, these arrays of structures are empty as well.
+
+                To access the metadata of the structures inside, you have two options:
+
+                1.  Resize the array of structures so you can access the metadata of the
+                    elements.
+                2.  Use the indexing operator on
+                    :py:class:`~imaspy.ids_metadata.IDSMetadata`. For example,
+                    ``distributions.metadata["distribution/wave"]`` to get the metadata
+                    of the ``distribution[]/wave`` array of structures.
         3.  Retrieve the coordinate values through the ``coordinates`` attribute. What
             do you notice?
         4.  You can still use the metadata to go to the coordinate node options:

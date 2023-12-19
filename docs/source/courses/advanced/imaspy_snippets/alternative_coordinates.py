@@ -5,6 +5,8 @@ distributions = imaspy.IDSFactory().distributions()
 
 # 2. Use the metadata attribute to find the coordinates of
 #    distribution/profiles_2d/density
+print(distributions.metadata["distribution/profiles_2d/density"].coordinates)
+# Alternative, by resizing the Arrays of Structures:
 distributions.distribution.resize(1)
 distributions.distribution[0].profiles_2d.resize(1)
 p2d = distributions.distribution[0].profiles_2d[0]
