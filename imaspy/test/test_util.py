@@ -21,6 +21,14 @@ def test_print_tree():
     imaspy.util.print_tree(cp.ids_properties)  # Sub-tree
 
 
+def test_print_metadata_tree():
+    cp = imaspy.IDSFactory("3.39.0").new("core_profiles")
+    imaspy.util.print_metadata_tree(cp, 1)
+    imaspy.util.print_metadata_tree(cp.metadata, 1)
+    imaspy.util.print_metadata_tree(cp.metadata["ids_properties"], 0)
+    imaspy.util.print_metadata_tree(cp.metadata["profiles_1d/electrons"])
+
+
 def test_find_paths():
     cp = imaspy.IDSFactory("3.39.0").new("core_profiles")
     matches = imaspy.util.find_paths(cp, "(^|/)time$")

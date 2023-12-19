@@ -3,9 +3,10 @@
 
 import logging
 import re
-from typing import List
+from typing import List, Union
 
 from imaspy.ids_base import IDSBase
+from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_structure import IDSStructure
 
@@ -74,6 +75,36 @@ def print_tree(structure, hide_empty_nodes=True):
     import imaspy._util as _util
 
     return _util.print_tree_impl(structure, hide_empty_nodes)
+
+
+def print_metadata_tree(
+    structure: Union[IDSMetadata, IDSBase], maxdepth: int = 2
+) -> None:
+    """Print a tree of IDS metadata.
+
+    This can be used to inspect which child nodes the Data Dictionary allows for the
+    provided structure.
+
+    Args:
+        structure: IDS (structure) node or metadata belonging to an IDS node.
+        maxdepth: Control how deep to descend into the metadata tree. When set to 0, all
+            descendants are printed (caution: this can give a lot of output).
+
+    Examples:
+        .. code-block:: python
+
+            core_profiles = imaspy.IDSFactory().core_profiles()
+            # Print tree of the core_profiles IDS
+            imaspy.util.print_metadata_tree(core_profiles)
+            # Print descendants of the profiles_1d array of structure only:
+            imaspy.util.print_metadata_tree(core_profiles.metadata["profiles_1d"])
+            # Print descendants of the profiles_1d/electrons structure only:
+            electrons_metadata = core_profiles.metadata["profiles_1d/electrons"]
+            imaspy.util.print_metadata_tree(electrons_metadata)
+    """
+    import imaspy._util as _util
+
+    return _util.print_metadata_tree_impl(structure, maxdepth)
 
 
 def inspect(ids_node, hide_empty_nodes=False):
