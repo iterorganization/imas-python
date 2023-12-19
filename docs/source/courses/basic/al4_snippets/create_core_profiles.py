@@ -33,8 +33,8 @@ for index in range(3):
     cp.profiles_1d[index].grid.rho_tor_norm = rho_tor_norm
 
 # Create a new data entry for storing the IDS
-shot, run, database = 1, 1, "imaspy-course"
-entry = imas.DBEntry(imas.imasdef.ASCII_BACKEND, database, shot, run)
+pulse, run, database = 1, 1, "imaspy-course"
+entry = imas.DBEntry(imas.imasdef.ASCII_BACKEND, database, pulse, run)
 entry.create()
 
 entry.put(cp)

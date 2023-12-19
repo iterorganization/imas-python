@@ -92,15 +92,15 @@ def test_hli_time_slicing_put(backend, worker_id, tmp_path, time_mode):
     ids = imas.equilibrium()
 
     if worker_id == "master":
-        shot = 1
+        pulse = 1
     else:
-        shot = int(worker_id[2:]) + 1
+        pulse = int(worker_id[2:]) + 1
 
     # ensure presence of mdsplus model dir
     if backend == MDSPLUS_BACKEND:
         os.environ["ids_path"] = mdsplus_model_dir(version=os.environ["IMAS_VERSION"])
         ensure_data_dir(str(tmp_path), "test", "3", 9999)
-    db_entry = imas.DBEntry(backend, "test", shot, 9999, user_name=str(tmp_path))
+    db_entry = imas.DBEntry(backend, "test", pulse, 9999, user_name=str(tmp_path))
     status, ctx = db_entry.create()
     if status != 0:
         logger.error("Error opening db entry %s", status)

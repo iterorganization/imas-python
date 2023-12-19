@@ -308,14 +308,14 @@ def open_dbentry(
 ) -> DBEntry:
     """Open a DBEntry, with a tmpdir in place of the user argument"""
     if worker_id == "master":
-        shot = 1
+        pulse = 1
     else:
-        shot = int(worker_id[2:]) + 1
+        pulse = int(worker_id[2:]) + 1
 
     dbentry = DBEntry(
         backend,
         "test",
-        shot,
+        pulse,
         0,
         str(tmp_path),
         dd_version=dd_version,
