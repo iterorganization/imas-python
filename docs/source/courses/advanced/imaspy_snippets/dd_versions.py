@@ -20,5 +20,5 @@ default_entry = imaspy.DBEntry(imaspy.ids_defs.MEMORY_BACKEND, "test", 0, 0)
 default_entry.create()
 # Alternative URI syntax when using AL5.0.0:
 # default_entry = imaspy.DBEntry("imas:memory?path=.")
-print("DD version used for the DBEntry:", default_entry._dd_version)
+print("DD version used for the DBEntry:", default_entry.dd_version)
 # What do you notice? It is the same default version again.
