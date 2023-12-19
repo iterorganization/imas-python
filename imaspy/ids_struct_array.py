@@ -207,6 +207,11 @@ class IDSStructArray(IDSBase):
         # Note self.__len__ will lazy load our size if needed
         return len(self) > 0
 
+    @property
+    def size(self) -> int:
+        """Get the number of elements in this array"""
+        return len(self)
+
     def _validate(self) -> None:
         # Common validation logic
         super()._validate()
