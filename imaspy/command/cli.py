@@ -7,22 +7,24 @@ import sys
 from pathlib import Path
 
 import click
-import rich
 from packaging.version import Version
-from rich.progress import track
 from rich.logging import RichHandler
+from rich.progress import Progress
 
 import imaspy
 import imaspy.imas_interface
 from imaspy import dd_zip
 
 
-def setup_rich_log_handler():
+def setup_rich_log_handler(quiet: bool):
     # Disable default imaspy log handler
     imaspy_logger = logging.getLogger("imaspy")
     for handler in imaspy_logger.handlers:
         imaspy_logger.removeHandler(handler)
     imaspy_logger.addHandler(RichHandler())
+    if quiet:
+        # If loglevel is less than WARNING, set it to WARNING:
+        imaspy_logger.setLevel(max(logging.WARNING, imaspy_logger.getEffectiveLevel()))
 
 
 @click.group("imaspy")
@@ -68,7 +70,7 @@ def print_ids(uri, ids, occurrence, print_all):
     occurrence  Which occurrence to print (defaults to 0)
     """
     min_version_guard(Version("5.0"))
-    setup_rich_log_handler()
+    setup_rich_log_handler(False)
 
     dbentry = imaspy.DBEntry(uri, "r")
     ids_obj = dbentry.get(ids, occurrence, autoconvert=False)
@@ -92,7 +94,7 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
     uri_out     URI of the output Data Entry
     """
     min_version_guard(Version("5.1"))
-    setup_rich_log_handler()
+    setup_rich_log_handler(quiet)
 
     # Check if we can load the requested version
     if dd_version in dd_zip.dd_xml_versions():
@@ -118,21 +120,27 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
         else:
             idss_with_occurrences.append((ids_name, occurrence))
 
-    # Show progress bar?
-    if quiet:
-        iterator = idss_with_occurrences
-    else:
-        iterator = track(idss_with_occurrences)
-
     # Convert all IDSs
-    for ids_name, occurrence in iterator:
-        rich.print(f"Converting {ids_name}/{occurrence}...")
-        ids = entry_in.get(ids_name, occurrence, autoconvert=False)
-        # Explicitly convert instead of auto-converting during put. This is a bit
-        # slower, but gives better diagnostics:
-        ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
-        # Store in output entry:
-        entry_out.put(ids2, occurrence)
+    with Progress(disable=quiet) as progress:
+        task = progress.add_task("Converting", total=len(idss_with_occurrences) * 3)
+
+        for ids_name, occurrence in idss_with_occurrences:
+            name = f"{ids_name}/{occurrence}"
+
+            progress.update(task, description=f"Reading {name}...")
+            ids = entry_in.get(ids_name, occurrence, autoconvert=False)
+
+            progress.update(task, description=f"Converting {name}...", advance=1)
+            # Explicitly convert instead of auto-converting during put. This is a bit
+            # slower, but gives better diagnostics:
+            ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
+
+            # Store in output entry:
+            progress.update(task, description=f"Storing {name}...", advance=1)
+            entry_out.put(ids2, occurrence)
+
+            # Update progress bar
+            progress.update(task, advance=1)
 
 
 if __name__ == "__main__":
