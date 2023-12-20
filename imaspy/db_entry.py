@@ -253,7 +253,7 @@ class DBEntry:
     def _open_pulse(self, mode: int, options: Any) -> None:
         """Internal method implementing open()/create()."""
         if self._db_ctx is not None:
-            self.close()
+            raise RuntimeError("This DBEntry is already open")
         if self._legacy_init:
             if ll_interface._al_version.major < 5:
                 # AL4 compatibility
