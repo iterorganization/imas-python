@@ -38,8 +38,8 @@ that are contained in this structure. See the following example:
     print("Core profiles contains the following elements:")
     for child_node in core_profiles:
         print("-", child_node.metadata.name)
-    print()
 
+    print()
     print("Core profiles contains the following non-empty elements:")
     # If you only want to loop over child nodes that have some data in them:
     for filled_child_node in core_profiles._iter_nonempty():

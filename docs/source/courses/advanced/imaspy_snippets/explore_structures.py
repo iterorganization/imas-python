@@ -14,4 +14,4 @@ print()
 # 3. Print child nodes of ids_properties
 print("equilibrium/ids_properties has the following child nodes:")
 for child_node in equilibrium.ids_properties:
-    print(f"- {child_node.metadata.name}: {repr(child_node)}")
+    print(f"- {child_node.metadata.name}: {child_node!r}")
