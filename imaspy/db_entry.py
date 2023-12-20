@@ -494,7 +494,7 @@ class DBEntry:
             raise RuntimeError("Database entry is not opened, use open() first.")
         if lazy and (
             (self._legacy_init and self.backend_id == ASCII_BACKEND)
-            or (not self._legacy_init and self.uri.startswith("imas:ascii"))
+            or (not self._legacy_init and urlparse(self.uri).path.lower() == "ascii")
         ):
             raise RuntimeError("Lazy loading is not supported by the ASCII backend.")
         if lazy and destination:
