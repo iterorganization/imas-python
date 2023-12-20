@@ -1,8 +1,14 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+import difflib
 import logging
+from typing import TYPE_CHECKING
 
 import imaspy.imas_interface
+
+if TYPE_CHECKING:
+    from imaspy.ids_factory import IDSFactory
+
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +18,21 @@ if imaspy.imas_interface.has_imas:
     ALException = imaspy.imas_interface.lowlevel.ALException
 else:
     ALException = None
+
+
+class IDSNameError(ValueError):
+    """Error raised by DBEntry.get(_slice) when providing an invalid IDS name."""
+
+    def __init__(self, ids_name: str, factory: "IDSFactory") -> None:
+        suggestions = ""
+        close_matches = difflib.get_close_matches(ids_name, factory.ids_names(), n=1)
+        if close_matches:
+            suggestions = f" Did you mean {close_matches[0]!r}?"
+        super().__init__(f"IDS {ids_name!r} does not exist.{suggestions}")
+
+
+class DataEntryException(Exception):
+    """Error raised by DBEntry for unexpected data in the backend."""
 
 
 class CoordinateLookupError(Exception):

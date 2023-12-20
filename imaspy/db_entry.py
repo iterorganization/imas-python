@@ -7,7 +7,7 @@ from typing import Any, List, Optional, Tuple, overload
 from urllib.parse import urlparse
 
 import imaspy
-from imaspy.exception import ValidationError
+from imaspy.exception import DataEntryException, IDSNameError, ValidationError
 from imaspy.ids_convert import dd_version_map_from_factories
 from imaspy.ids_defs import (
     ASCII_BACKEND,
@@ -513,13 +513,16 @@ class DBEntry:
             dd_version = read_ctx.read_data(
                 "ids_properties/version_put/data_dictionary", "", CHAR_DATA, 1
             )
-        if time_mode not in IDS_TIME_MODES:
-            raise RuntimeError(
-                f"Invalid Database Entry: Found invalid value '{time_mode}' for "
-                "ids_properties.homogeneous_time in IDS "
-                f"{ids_name}, occurrence {occurrence}."
-            )
 
+        if time_mode not in IDS_TIME_MODES:
+            # First check if we know about this IDS name, perhaps it was a typo?
+            if self._ids_factory.exists(ids_name):
+                # IDS exists, but is not available in the backend
+                raise DataEntryException(
+                    f"IDS {ids_name!r}, occurrence {occurrence} is empty."
+                )
+            else:
+                raise IDSNameError(ids_name, self._ids_factory)
         if not dd_version:
             logger.warning(
                 "Loaded IDS (%s, occurrence %s) does not specify a data dictionary "
@@ -527,12 +530,14 @@ class DBEntry:
                 ids_name,
                 occurrence,
             )
+
         # Ensure we have a destination
         if not destination:
             if autoconvert:  # store results in our DD version
                 destination = self._ids_factory.new(ids_name, _lazy=lazy)
             else:  # store results in on-disk DD version
                 destination = IDSFactory(dd_version).new(ids_name, _lazy=lazy)
+
         # Create a version conversion map, if needed
         nbc_map = None
         if dd_version and dd_version != destination._dd_version:

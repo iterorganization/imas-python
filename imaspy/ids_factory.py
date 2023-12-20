@@ -6,6 +6,7 @@ import logging
 from typing import Any, Iterable, Iterator, List, Optional
 
 from imaspy import dd_zip
+from imaspy.exception import IDSNameError
 from imaspy.ids_toplevel import IDSToplevel
 
 
@@ -90,7 +91,7 @@ class IDSFactory:
                 when set to True.
         """
         if ids_name not in self._ids_elements:
-            raise ValueError(f"IDS {ids_name} not found in the Data Dictionary.")
+            raise IDSNameError(ids_name, self)
         return IDSToplevel(self, self._ids_elements[ids_name], _lazy)
 
     def exists(self, ids_name: str) -> bool:
