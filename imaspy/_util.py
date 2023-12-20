@@ -7,6 +7,7 @@
 
 import copy
 import logging
+from typing import Union
 
 import numpy
 import rich
@@ -18,9 +19,12 @@ from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
 import scipy.interpolate
+from imaspy.ids_base import IDSBase
+from imaspy.ids_data_type import IDSDataType
 
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_base import IDSBase
+from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
@@ -128,6 +132,26 @@ def _make_tree(structure, hide_empty_nodes=True, *, tree=None):
             _make_tree(child, hide_empty_nodes, tree=ntree)
 
     return tree
+
+
+def print_metadata_tree_impl(
+    structure: Union[IDSMetadata, IDSBase], maxdepth: int
+) -> None:
+    def _make_tree(tree: Tree, metadata: IDSMetadata, depth: int):
+        for child in metadata._children.values():
+            if child.data_type in (IDSDataType.STRUCTURE, IDSDataType.STRUCT_ARRAY):
+                newtree = tree.add(f"[magenta]{child.path_doc}[/]")
+                if maxdepth == 0 or depth < maxdepth:
+                    _make_tree(newtree, child, depth + 1)
+                else:
+                    newtree.add("[bright_black]<hidden>[/]")
+            else:
+                tree.add(f"[yellow]{child.path_doc}")
+
+    metadata = structure if isinstance(structure, IDSMetadata) else structure.metadata
+    tree = Tree(f"[magenta]{metadata.name}")
+    _make_tree(tree, metadata, 1)
+    rich.print(tree)
 
 
 def inspect_impl(ids_node, hide_empty_nodes):

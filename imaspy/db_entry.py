@@ -77,15 +77,30 @@ class DBEntry:
         self,
         backend_id: int,
         db_name: str,
-        shot: int,
-        run: int,
+        pulse: Optional[int] = None,
+        run: Optional[int] = None,
         user_name: Optional[str] = None,
         data_version: Optional[str] = None,
+        *,
+        shot: Optional[int] = None,
     ):
+        # Backwards compatibility: support shot as alias for pulse
+        if pulse is None:
+            if shot is None:
+                raise ValueError("No value provided for `pulse`")
+            pulse = shot
+        elif shot is not None:
+            raise ValueError(
+                "Cannot provide a value for `shot` and `pulse`. "
+                "`shot` is an alias for pulse, please use `pulse` instead."
+            )
+        if run is None:
+            raise ValueError("No value provided for `run`")
+
         self._legacy_init = True
         self.backend_id = backend_id
         self.db_name = db_name
-        self.shot = shot
+        self.pulse = pulse
         self.run = run
         self.user_name = user_name or os.environ["USER"]
         self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
@@ -145,8 +160,8 @@ class DBEntry:
             ``db_name``
                 Database name, e.g. "ITER".
 
-            ``shot``
-                Shot number of the database entry
+            ``pulse``
+                Pulse number of the database entry
 
             ``run``
                 Run number of the database entry
@@ -197,7 +212,7 @@ class DBEntry:
             )
         status, uri = ll_interface.build_uri_from_legacy_parameters(
             self.backend_id,
-            self.shot,
+            self.pulse,
             self.run,
             self.user_name,
             self.db_name,
@@ -240,7 +255,7 @@ class DBEntry:
                     self._setup_mdsplus()
                 status, ctx = ll_interface.begin_pulse_action(
                     self.backend_id,
-                    self.shot,
+                    self.pulse,
                     self.run,
                     self.user_name,
                     self.db_name,
@@ -479,7 +494,10 @@ class DBEntry:
         """Actual implementation of get() and get_slice()"""
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
-        if lazy and self.backend_id == ASCII_BACKEND:
+        if lazy and (
+            (self._legacy_init and self.backend_id == ASCII_BACKEND)
+            or (not self._legacy_init and self.uri.startswith("imas:ascii"))
+        ):
             raise RuntimeError("Lazy loading is not supported by the ASCII backend.")
         if lazy and destination:
             raise ValueError("Cannot supply a destination IDS when lazy loading.")

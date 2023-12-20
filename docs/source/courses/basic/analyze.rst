@@ -243,8 +243,8 @@ Exercise 5
                 import imaspy
                 from imaspy.ids_defs import MDSPLUS_BACKEND
                 
-                database, shot, run, user = "ITER", 134173, 106, "public"
-                data_entry = imaspy.DBEntry(MDSPLUS_BACKEND, database, shot, run, user)
+                database, pulse, run, user = "ITER", 134173, 106, "public"
+                data_entry = imaspy.DBEntry(MDSPLUS_BACKEND, database, pulse, run, user)
                 data_entry.open()
 
     .. md-tab-item:: IMASPy

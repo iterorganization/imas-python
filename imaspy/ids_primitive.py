@@ -196,6 +196,7 @@ class IDSPrimitive(IDSBase):
     __le__ = _binary_wrapper(operator.le, "le")
     __gt__ = _binary_wrapper(operator.gt, "gt")
     __ge__ = _binary_wrapper(operator.ge, "ge")
+    __contains__ = _binary_wrapper(operator.contains, "contains")
     # Numeric methods
     __add__, __radd__ = _numeric_wrapper(operator.add, "add")
     __sub__, __rsub__ = _numeric_wrapper(operator.sub, "sub")

@@ -177,14 +177,14 @@ Exercise 2
           .. code-block:: python
 
             backend = HDF5_BACKEND
-            db_name, shot, run, user = "ITER_MD", 111001, 103, "public"
+            db_name, pulse, run, user = "ITER_MD", 111001, 103, "public"
 
         - ITER machine description database, IDS ``ec_launchers``:
 
           .. code-block:: python
 
             backend = HDF5_BACKEND
-            db_name, shot, run, user = "ITER_MD", 120000, 204, "public"
+            db_name, pulse, run, user = "ITER_MD", 120000, 204, "public"
 
     .. md-tab-item:: Training data
 

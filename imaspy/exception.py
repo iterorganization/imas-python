@@ -2,7 +2,16 @@
 # You should have received the IMASPy LICENSE file with this project.
 import logging
 
+import imaspy.imas_interface
+
 logger = logging.getLogger(__name__)
+
+
+# Expose ALException, which may be thrown by the lowlevel
+if imaspy.imas_interface.has_imas:
+    ALException = imaspy.imas_interface.lowlevel.ALException
+else:
+    ALException = None
 
 
 class CoordinateLookupError(Exception):

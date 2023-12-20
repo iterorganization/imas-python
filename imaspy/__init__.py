@@ -3,7 +3,7 @@
 
 from packaging.version import Version as _V
 
-from . import _version, ids_base
+from . import _version
 
 __version__ = _version.get_versions()["version"]
 
@@ -11,17 +11,6 @@ version = __version__
 
 # Import logging _first_
 from . import setup_logging
-
-# Hardcode this for stricter imports and debugging
-# These imports define the "data containers" for IMASPy.
-# We need these to work with data
-from . import (
-    ids_defs,
-    ids_primitive,
-    ids_struct_array,
-    ids_structure,
-    ids_toplevel,
-)
 
 # Import main user API objects in the imaspy module
 from .db_entry import DBEntry
