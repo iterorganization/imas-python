@@ -43,7 +43,8 @@ Exercise 1: create a ``DataArray`` for ``profiles_1d/temperature``
             following items to ``xarray``:
 
             -   The data itself.
-            -   The coordinates and their values.
+            -   The coordinates and their values as a Python dictionary
+                ``{"coordinate_name": coordinate_value, [...]}``.
             -   Any additional attributes. For this example we add the ``units``.
             -   The name of the data.
 
