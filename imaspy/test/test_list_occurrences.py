@@ -3,12 +3,14 @@ import pytest
 
 import imaspy
 from imaspy.imas_interface import ll_interface
+from imaspy.test.test_helpers import open_dbentry
 
 
 @pytest.fixture
-def filled_dbentry():
-    entry = imaspy.DBEntry(imaspy.ids_defs.MEMORY_BACKEND, "test", 1, 1)
-    entry.create()
+def filled_dbentry(backend, worker_id, tmp_path):
+    if backend == imaspy.ids_defs.MEMORY_BACKEND:
+        pytest.skip("list_occurrences is not implemented for the MEMORY backend")
+    entry = open_dbentry(backend, "w", worker_id, tmp_path)
 
     for i in range(3):
         cp = entry.factory.core_profiles()
@@ -45,7 +47,10 @@ def test_list_occurrences_no_path(filled_dbentry):
             filled_dbentry.list_all_occurrences("core_sources")
 
 
-def test_list_occurrences_with_path(filled_dbentry):
+def test_list_occurrences_with_path(backend, filled_dbentry):
+    if backend == imaspy.ids_defs.ASCII_BACKEND:
+        pytest.skip("Lazy loading is not supported by the ASCII backend")
+
     comment = "ids_properties/comment"
     if ll_interface._al_version >= Version("5.1"):
         res = filled_dbentry.list_all_occurrences("core_profiles", comment)

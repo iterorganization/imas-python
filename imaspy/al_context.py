@@ -2,7 +2,7 @@
 # You should have received the IMASPy LICENSE file with this project.
 
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterator, List, Optional, Tuple, Union
 
 from imaspy.ids_defs import (
     CLOSEST_INTERP,
@@ -153,6 +153,15 @@ class ALContext:
         status = ll_interface.write_data(self.ctx, path, timebasepath, data)
         if status != 0:
             raise RuntimeError(f"Error writing data at {path!r}: {status=}")
+
+    def list_all_occurrences(self, ids_name: str) -> List[int]:
+        """List all occurrences of this IDS."""
+        status, occurrences = ll_interface.get_occurrences(self.ctx, ids_name)
+        if status != 0:
+            raise RuntimeError(f"Error listing occurrences for {ids_name!r}: {status=}")
+        if occurrences is not None:
+            return list(occurrences)
+        return []
 
 
 class LazyALContext:

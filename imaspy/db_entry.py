@@ -772,7 +772,7 @@ class DBEntry:
             raise RuntimeError("Database entry is not opened, use open() first.")
 
         try:
-            occurrence_list = list(ll_interface.get_occurrences(self._db_ctx, ids_name))
+            occurrence_list = self._db_ctx.list_all_occurrences(ids_name)
         except LLInterfaceError:
             # al_get_occurrences is not available in the lowlevel
             raise RuntimeError(
