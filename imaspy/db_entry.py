@@ -31,7 +31,7 @@ from imaspy.ids_defs import (
 )
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_metadata import IDSType
-from imaspy.ids_mixin import IDSMixin
+from imaspy.ids_base import IDSBase
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.imas_interface import LLInterfaceError, ll_interface
 from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
@@ -42,7 +42,28 @@ logger = logging.getLogger(__name__)
 
 
 class DBEntry:
-    """Represents an IMAS database entry, which is a collection of stored IDSs."""
+    """Represents an IMAS database entry, which is a collection of stored IDSs.
+
+    A ``DBEntry`` can be used as a :external:ref:`context manager <context-managers>`:
+
+    .. code-block:: python
+
+        import imaspy
+
+        # AL4-style constructor:
+        with imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 1234) as dbentry:
+            # dbentry is now opened and can be used for reading data:
+            ids = dbentry.get(...)
+        # The dbentry is now closed
+
+        # AL5-style constructor also allows creating the Data Entry with the mode
+        # argument
+        with imaspy.DBEntry("imas:hdf5?path=testdb", "w") as dbentry:
+            # dbentry is now created and can be used for writing data:
+            dbentry.put(ids)
+        # The dbentry is now closed
+
+    """
 
     _OPEN_MODES = {
         "r": OPEN_PULSE,
@@ -56,15 +77,30 @@ class DBEntry:
         self,
         backend_id: int,
         db_name: str,
-        shot: int,
-        run: int,
+        pulse: Optional[int] = None,
+        run: Optional[int] = None,
         user_name: Optional[str] = None,
         data_version: Optional[str] = None,
+        *,
+        shot: Optional[int] = None,
     ):
+        # Backwards compatibility: support shot as alias for pulse
+        if pulse is None:
+            if shot is None:
+                raise ValueError("No value provided for `pulse`")
+            pulse = shot
+        elif shot is not None:
+            raise ValueError(
+                "Cannot provide a value for `shot` and `pulse`. "
+                "`shot` is an alias for pulse, please use `pulse` instead."
+            )
+        if run is None:
+            raise ValueError("No value provided for `run`")
+
         self._legacy_init = True
         self.backend_id = backend_id
         self.db_name = db_name
-        self.shot = shot
+        self.pulse = pulse
         self.run = run
         self.user_name = user_name or os.environ["USER"]
         self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
@@ -124,8 +160,8 @@ class DBEntry:
             ``db_name``
                 Database name, e.g. "ITER".
 
-            ``shot``
-                Shot number of the database entry
+            ``pulse``
+                Pulse number of the database entry
 
             ``run``
                 Run number of the database entry
@@ -176,7 +212,7 @@ class DBEntry:
             )
         status, uri = ll_interface.build_uri_from_legacy_parameters(
             self.backend_id,
-            self.shot,
+            self.pulse,
             self.run,
             self.user_name,
             self.db_name,
@@ -186,6 +222,17 @@ class DBEntry:
         if status != 0:
             raise RuntimeError("Error calling al_build_uri_from_legacy_parameters()")
         return uri
+
+    def __enter__(self):
+        # Context manager protocol
+        if self._db_ctx is None:
+            # Open if the DBEntry was not already opened or created
+            self.open()
+        return self
+
+    def __exit__(self, ecx_type, exc_value, traceback):
+        # Context manager protocol
+        self.close()
 
     @property
     def factory(self) -> IDSFactory:
@@ -208,7 +255,7 @@ class DBEntry:
                     self._setup_mdsplus()
                 status, ctx = ll_interface.begin_pulse_action(
                     self.backend_id,
-                    self.shot,
+                    self.pulse,
                     self.run,
                     self.user_name,
                     self.db_name,
@@ -447,7 +494,10 @@ class DBEntry:
         """Actual implementation of get() and get_slice()"""
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
-        if lazy and self.backend_id == ASCII_BACKEND:
+        if lazy and (
+            (self._legacy_init and self.backend_id == ASCII_BACKEND)
+            or (not self._legacy_init and self.uri.startswith("imas:ascii"))
+        ):
             raise RuntimeError("Lazy loading is not supported by the ASCII backend.")
         if lazy and destination:
             raise ValueError("Cannot supply a destination IDS when lazy loading.")
@@ -684,7 +734,7 @@ class DBEntry:
     @overload
     def list_all_occurrences(
         self, ids_name: str, node_path: str
-    ) -> Tuple[List[int], List[IDSMixin]]:
+    ) -> Tuple[List[int], List[IDSBase]]:
         ...
 
     def list_all_occurrences(self, ids_name, node_path=None):

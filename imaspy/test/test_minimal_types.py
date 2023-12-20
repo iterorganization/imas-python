@@ -212,6 +212,8 @@ def test_ducktype_str0d(minimal):
     # In place operation and __eq__
     minimal.str_0d += "X"
     assert node == node.value == "TestX"
+    # Contains
+    assert "estX" in node
     # Check we haven't accidentally replaced `node` with an actual string
     assert node is minimal.str_0d
 
@@ -228,6 +230,7 @@ def test_ducktype_str1d(minimal):
     assert node == ["a", "b"]
     node.extend("cdefgh")
     assert node == list("abcdefgh")
+    assert "d" in node
     # Indexing and slicing
     assert node[:3] == ["a", "b", "c"]
     assert node[4] == "e"

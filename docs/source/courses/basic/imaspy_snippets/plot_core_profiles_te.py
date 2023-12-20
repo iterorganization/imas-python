@@ -13,8 +13,8 @@ import imaspy
 from imaspy.ids_defs import MDSPLUS_BACKEND
 from matplotlib import pyplot as plt
 
-database, shot, run, user = "ITER", 134173, 106, "public"
-data_entry = imaspy.DBEntry(MDSPLUS_BACKEND, database, shot, run, user)
+database, pulse, run, user = "ITER", 134173, 106, "public"
+data_entry = imaspy.DBEntry(MDSPLUS_BACKEND, database, pulse, run, user)
 data_entry.open()
 # Enable lazy loading with `lazy=True`:
 core_profiles = data_entry.get("core_profiles", lazy=True)

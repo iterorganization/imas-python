@@ -99,7 +99,7 @@ IMAS Access Layer. Please check the `IMAS Access Layer documentation
 
 - Which backend to use (e.g. MDSPLUS or HDF5)
 - ``tokamak`` (also known as database)
-- ``shot``
+- ``pulse``
 - ``run``
 
 In IMASPy you do this as follows:
@@ -107,7 +107,7 @@ In IMASPy you do this as follows:
 .. code-block:: python
 
     >>> # Create a new IMAS data entry for storing the core_profiles IDS we created earlier
-    >>> # Here we specify the backend, database, shot and run
+    >>> # Here we specify the backend, database, pulse and run
     >>> dbentry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "TEST", 10, 2)
     >>> dbentry.create()
     >>> # now store the core_profiles IDS we just populated

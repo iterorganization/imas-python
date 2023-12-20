@@ -5,8 +5,8 @@ import os
 import imas
 
 # Open input datafile
-shot, run, user, database = 134173, 106, "public", "ITER"
-input = imas.DBEntry(imas.imasdef.MDSPLUS_BACKEND, database, shot, run, user)
+pulse, run, user, database = 134173, 106, "public", "ITER"
+input = imas.DBEntry(imas.imasdef.MDSPLUS_BACKEND, database, pulse, run, user)
 input.open()
 
 # Read Te profile and the associated normalised toroidal flux coordinate
@@ -31,7 +31,7 @@ input.close()
 
 # Dump the data to ASCII
 # Create output datafile
-temp = imas.DBEntry(imas.imasdef.MEMORY_BACKEND, database, shot, run, user)
+temp = imas.DBEntry(imas.imasdef.MEMORY_BACKEND, database, pulse, run, user)
 temp.create()
 for ids_name, ids_list in idss.items():
     for ids_slice in ids_list:
@@ -45,7 +45,7 @@ temp.close()
 
 user = os.getenv("USER")
 # Because we use the ASCII backend, this results in a .ids file in the cwd
-output = imas.DBEntry(imas.imasdef.ASCII_BACKEND, database, shot, run, user)
+output = imas.DBEntry(imas.imasdef.ASCII_BACKEND, database, pulse, run, user)
 output.create()
 
 # Save the IDS

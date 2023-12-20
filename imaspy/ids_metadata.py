@@ -2,10 +2,11 @@
 # You should have received the IMASPy LICENSE file with this project.
 """ Core of the IMASPy interpreted IDS metadata
 """
+import re
+import types
 from enum import Enum
 from functools import lru_cache
-import types
-from typing import Optional, Any
+from typing import Any, Optional
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_coordinates import IDSCoordinate
@@ -66,6 +67,15 @@ class IDSMetadata:
     This includes for example documentation, its units, and coordinates.
     Metadata is parsed and saved in pythonic types, and used throughout
     IMASPy.
+
+    Metadata of structure (and array of structures) child nodes can be obtained with the
+    indexing operator:
+
+    .. code-block:: python
+
+        core_profiles = imaspy.IDSFactory().core_profiles()
+        # Get the metadata of the time child of the profiles_1d array of structures
+        p1d_time_meta = core_profiles.metadata["profiles_1d/time"]
     """
 
     def __init__(
@@ -168,3 +178,15 @@ class IDSMetadata:
 
     def __deepcopy__(self, memo: dict):
         return self  # IDSMetadata is immutable
+
+    def __getitem__(self, path):
+        item = self
+        for part in re.split("[./]", path):
+            try:
+                item = item._children[part]
+            except KeyError:
+                raise KeyError(
+                    f"Invalid path '{path}', '{item.name}' does not have a "
+                    f"'{part}' element."
+                ) from None
+        return item

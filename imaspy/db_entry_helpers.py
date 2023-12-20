@@ -10,7 +10,7 @@ from imaspy.ids_convert import NBCPathMap
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_INDEPENDENT
 from imaspy.ids_metadata import IDSMetadata
-from imaspy.ids_mixin import IDSMixin
+from imaspy.ids_base import IDSBase
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 
@@ -74,7 +74,7 @@ def _get_children(
                 getattr(structure, name)._IDSPrimitive__value = data
 
 
-def _get_child(child: IDSMixin, ctx: LazyALContext):
+def _get_child(child: IDSBase, ctx: LazyALContext):
     """Get a single child when required (lazy loading)."""
     # NOTE: changes in this method must be propagated to _get_children and vice versa
     #   Performance: this method is specialized for the lazy get
