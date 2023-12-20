@@ -110,7 +110,7 @@ def print_metadata_tree(
 def inspect(ids_node, hide_empty_nodes=False):
     """Inspect and print an IDS node.
 
-    Inspired by `rich.inspect`, but customized to accomadate IDS specifics.
+    Inspired by `rich.inspect`, but customized for IDS specifics.
     """
     import imaspy._util as _util
 
