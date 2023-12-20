@@ -21,15 +21,22 @@ def setup_rich_log_handler(quiet: bool):
     imaspy_logger = logging.getLogger("imaspy")
     for handler in imaspy_logger.handlers:
         imaspy_logger.removeHandler(handler)
-    imaspy_logger.addHandler(RichHandler())
-    if quiet:
+    # Disable any root log handlers
+    root_logger = logging.getLogger()
+    for handler in root_logger.handlers:
+        root_logger.removeHandler(handler)
+    # Install rich handler on the root logger:
+    root_logger.addHandler(RichHandler())
+    if quiet:  # Silence IMASPy INFO messages
         # If loglevel is less than WARNING, set it to WARNING:
         imaspy_logger.setLevel(max(logging.WARNING, imaspy_logger.getEffectiveLevel()))
 
 
-@click.group("imaspy")
+@click.group("imaspy", invoke_without_command=True)
 def cli():
-    pass
+    # Limit the traceback to 1 item: avoid scaring CLI users with long traceback prints
+    # and let them focus on the actual error message
+    sys.tracebacklimit = 1
 
 
 def min_version_guard(al_version: Version):
