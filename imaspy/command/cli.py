@@ -12,8 +12,8 @@ from rich.logging import RichHandler
 from rich.progress import Progress
 
 import imaspy
-import imaspy.imas_interface
-from imaspy import dd_zip
+from imaspy import dd_zip, imas_interface
+from imaspy.exception import UnknownDDVersion
 
 
 def setup_rich_log_handler(quiet: bool):
@@ -34,7 +34,7 @@ def cli():
 
 def min_version_guard(al_version: Version):
     """Print an error message if the loaded AL version is too old."""
-    used_version = imaspy.imas_interface.ll_interface._al_version
+    used_version = imas_interface.ll_interface._al_version
     if used_version >= al_version:
         return
     click.echo(
@@ -102,7 +102,7 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
     elif Path(dd_version).exists():
         version_params = dict(xml_path=dd_version)
     else:
-        dd_zip.raise_unknown_dd_version_error(dd_version)
+        raise UnknownDDVersion(dd_version, dd_zip.dd_xml_versions())
 
     entry_in = imaspy.DBEntry(uri_in, "r")
     # Set dd_version/xml_path, so the IDSs are converted to this version during put()

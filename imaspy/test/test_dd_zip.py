@@ -2,6 +2,7 @@ import pytest
 from packaging.version import InvalidVersion
 
 from imaspy.dd_zip import get_dd_xml, parse_dd_version
+from imaspy.exception import UnknownDDVersion
 
 
 def test_known_version():
@@ -14,7 +15,7 @@ def test_known_version():
 def test_known_failing_version():
     """Test if 0.0 is not part of the IDSDef.zip"""
 
-    with pytest.raises(ValueError):
+    with pytest.raises(UnknownDDVersion):
         get_dd_xml("0.0")
 
 

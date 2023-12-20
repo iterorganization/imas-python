@@ -2,7 +2,7 @@
 # You should have received the IMASPy LICENSE file with this project.
 import difflib
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import imaspy.imas_interface
 
@@ -18,6 +18,20 @@ if imaspy.imas_interface.has_imas:
     ALException = imaspy.imas_interface.lowlevel.ALException
 else:
     ALException = None
+
+
+class UnknownDDVersion(ValueError):
+    """Error raised when an unknown DD version is specified."""
+
+    def __init__(self, version: str, available: List[str]) -> None:
+        close_matches = difflib.get_close_matches(version, available, n=1)
+        if close_matches:
+            suggestions = f"Did you mean {close_matches[0]!r}?"
+        else:
+            suggestions = f"Available versions are {', '.join(reversed(available))}"
+        super().__init__(
+            f"Data dictionary version {version!r} cannot be found. {suggestions}"
+        )
 
 
 class IDSNameError(ValueError):
