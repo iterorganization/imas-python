@@ -178,8 +178,10 @@ Exercise 2: Alternative coordinates
                     :py:class:`~imaspy.ids_metadata.IDSMetadata`. For example,
                     ``distributions.metadata["distribution/wave"]`` to get the metadata
                     of the ``distribution[]/wave`` array of structures.
-        3.  Retrieve the coordinate values through the ``coordinates`` attribute. What
-            do you notice?
+        3.  Resize the ``distribution`` and ``distribution[0].profiles_2d`` arrays of
+            structures. Retrieve the coordinate values through the
+            ``distribution[0].profiles_2d[0].density.coordinates`` attribute. What do
+            you notice?
         4.  You can still use the metadata to go to the coordinate node options:
 
             a.  Use the :py:attr:`~imaspy.ids_coordinates.IDSCoordinate.references`
