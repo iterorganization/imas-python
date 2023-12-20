@@ -93,7 +93,6 @@ _DD_CACHE_SIZE = 32
 ZIPFILE_LOCATIONS = list(_generate_zipfile_locations())
 
 
-@lru_cache(_DD_CACHE_SIZE)
 def dd_etree(version=None, xml_path=None):
     """Return the DD element tree corresponding to the provided dd_version or xml_file.
 
@@ -131,7 +130,12 @@ def dd_etree(version=None, xml_path=None):
     if not version and not xml_path:
         # Use latest available from
         version = latest_dd_version()
+    # Do the actual loading in a cached method:
+    return _load_etree(version, xml_path)
 
+
+@lru_cache(_DD_CACHE_SIZE)
+def _load_etree(version, xml_path):
     if xml_path:
         logger.info("Parsing data dictionary from file: %s", xml_path)
         tree = ET.parse(xml_path)
