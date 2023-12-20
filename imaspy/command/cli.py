@@ -2,6 +2,7 @@
 # You should have received the IMASPy LICENSE file with this project.
 """ Main CLI entry point """
 
+import logging
 import sys
 from pathlib import Path
 
@@ -9,10 +10,19 @@ import click
 import rich
 from packaging.version import Version
 from rich.progress import track
+from rich.logging import RichHandler
 
 import imaspy
 import imaspy.imas_interface
 from imaspy import dd_zip
+
+
+def setup_rich_log_handler():
+    # Disable default imaspy log handler
+    imaspy_logger = logging.getLogger("imaspy")
+    for handler in imaspy_logger.handlers:
+        imaspy_logger.removeHandler(handler)
+    imaspy_logger.addHandler(RichHandler())
 
 
 @click.group("imaspy")
@@ -58,6 +68,7 @@ def print_ids(uri, ids, occurrence, print_all):
     occurrence  Which occurrence to print (defaults to 0)
     """
     min_version_guard(Version("5.0"))
+    setup_rich_log_handler()
 
     dbentry = imaspy.DBEntry(uri, "r")
     ids_obj = dbentry.get(ids, occurrence, autoconvert=False)
@@ -81,6 +92,7 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
     uri_out     URI of the output Data Entry
     """
     min_version_guard(Version("5.1"))
+    setup_rich_log_handler()
 
     # Check if we can load the requested version
     if dd_version in dd_zip.dd_xml_versions():
