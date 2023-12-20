@@ -59,7 +59,7 @@ def print_ids(uri, ids, occurrence, print_all):
     min_version_guard(Version("5.0"))
 
     dbentry = imaspy.DBEntry(uri, "r")
-    ids_obj = dbentry.get(ids, occurrence)
+    ids_obj = dbentry.get(ids, occurrence, autoconvert=False)
     imaspy.util.print_tree(ids_obj, not print_all)
 
 
