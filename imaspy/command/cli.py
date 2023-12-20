@@ -8,6 +8,7 @@ from pathlib import Path
 
 import click
 from packaging.version import Version
+from rich import console, traceback
 from rich.logging import RichHandler
 from rich.progress import Progress
 
@@ -32,11 +33,20 @@ def setup_rich_log_handler(quiet: bool):
         imaspy_logger.setLevel(max(logging.WARNING, imaspy_logger.getEffectiveLevel()))
 
 
+def _excepthook(type_, value, tb):
+    # Only display the last traceback frame:
+    if tb is not None:
+        while tb.tb_next:
+            tb = tb.tb_next
+    rich_tb = traceback.Traceback.from_exception(type_, value, tb, extra_lines=0)
+    console.Console(stderr=True).print(rich_tb)
+
+
 @click.group("imaspy", invoke_without_command=True)
 def cli():
     # Limit the traceback to 1 item: avoid scaring CLI users with long traceback prints
     # and let them focus on the actual error message
-    sys.tracebacklimit = 1
+    sys.excepthook = _excepthook
 
 
 def min_version_guard(al_version: Version):
