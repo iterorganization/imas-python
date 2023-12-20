@@ -11,23 +11,22 @@ from typing import Union
 
 import numpy
 import rich
-from rich.console import Group
+import scipy.interpolate
 from rich.columns import Columns
+from rich.console import Group
 from rich.panel import Panel
 from rich.pretty import Pretty
 from rich.table import Table
 from rich.text import Text
 from rich.tree import Tree
-import scipy.interpolate
+
 from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
-
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
-from imaspy.ids_base import IDSBase
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_primitive import IDSPrimitive
-from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
+from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.util import visit_children
 
