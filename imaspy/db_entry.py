@@ -178,6 +178,11 @@ class DBEntry:
             xml_path: Data dictionary definition XML file to use.
         """
         self._db_ctx: Optional[ALContext] = None
+        self._dd_version = dd_version
+        self._xml_path = xml_path
+        self._ids_factory = IDSFactory(dd_version, xml_path)
+        self._uses_mdsplus = False
+
         if args or kwargs:
             # uri and mode may be set as positional arguments in which case they
             # represent backend_id and db_name, though backend_id and/or db_name may
@@ -198,11 +203,6 @@ class DBEntry:
                 modes = set(self._OPEN_MODES)
                 raise ValueError(f"Unknown mode {mode!r}, was expecting any of {modes}")
             self.open(self._OPEN_MODES[mode])
-
-        self._dd_version = dd_version
-        self._xml_path = xml_path
-        self._ids_factory = IDSFactory(dd_version, xml_path)
-        self._uses_mdsplus = False
 
     def _build_legacy_uri(self, options):
         if not self._legacy_init:
