@@ -10,6 +10,7 @@ import imaspy
 from imaspy.exception import (
     DataEntryException,
     IDSNameError,
+    LowlevelError,
     MDSPlusModelError,
     ValidationError,
 )
@@ -225,7 +226,7 @@ class DBEntry:
             options if options is not None else "",
         )
         if status != 0:
-            raise RuntimeError("Error calling al_build_uri_from_legacy_parameters()")
+            raise LowlevelError("build URI from legacy parameters", status)
         return uri
 
     def __enter__(self):
@@ -267,7 +268,7 @@ class DBEntry:
                     self.data_version,
                 )
                 if status != 0:
-                    raise RuntimeError(f"Error calling begin_pulse_action(), {status=}")
+                    raise LowlevelError("begin pulse action", status)
                 status = ll_interface.open_pulse(ctx, mode, options)
             else:
                 self.uri = self._build_legacy_uri(options)
@@ -276,7 +277,7 @@ class DBEntry:
                 self._setup_mdsplus(mode)
             status, ctx = ll_interface.begin_dataentry_action(self.uri, mode)
         if status != 0:
-            raise RuntimeError(f"Error opening/creating database entry: {status=}")
+            raise LowlevelError("opening/creating data entry", status)
         self._db_ctx = ALContext(ctx)
 
     def _setup_mdsplus(self, mode):
@@ -317,7 +318,7 @@ class DBEntry:
         mode = ERASE_PULSE if erase else CLOSE_PULSE
         status = ll_interface.close_pulse(self._db_ctx.ctx, mode)
         if status != 0:
-            raise RuntimeError(f"Error closing database entry: {status=}")
+            raise LowlevelError("close data entry", status)
 
         ll_interface.end_action(self._db_ctx.ctx)
         self._db_ctx = None
@@ -693,7 +694,7 @@ class DBEntry:
                 # No data yet on disk, so just put everything
                 is_slice = False
             elif db_time_mode != time_mode:
-                raise RuntimeError(
+                raise DataEntryException(
                     f"Cannot change homogeneous_time from {db_time_mode} to {time_mode}"
                 )
 

@@ -42,16 +42,23 @@ class MDSPlusModelError(Exception):
         super().__init__(f"Error building MDSplus data model: {msg}")
 
 
+class LowlevelError(Exception):
+    """Error raised when lowlevel returns nonzero status"""
+
+    def __init__(self, function: str, status: int):
+        super().__init__(
+            f"An Access Layer lowlevel operation ({function}) was unsuccessful "
+            f"({status=}). "
+            "More debug information should be available earlier in the program output."
+        )
+
+
 class CoordinateLookupError(Exception):
     """Error raised by IDSCoordinate.__getitem__ when a coordinate cannot be found."""
-
-    pass
 
 
 class ValidationError(Exception):
     """Error raised by IDSToplevel.validate() to indicate the IDS is not valid."""
-
-    pass
 
 
 class CoordinateError(ValidationError):
