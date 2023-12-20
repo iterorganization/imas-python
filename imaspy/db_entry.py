@@ -7,7 +7,12 @@ from typing import Any, List, Optional, Tuple, overload
 from urllib.parse import urlparse
 
 import imaspy
-from imaspy.exception import DataEntryException, IDSNameError, ValidationError
+from imaspy.exception import (
+    DataEntryException,
+    IDSNameError,
+    MDSPlusModelError,
+    ValidationError,
+)
 from imaspy.ids_convert import dd_version_map_from_factories
 from imaspy.ids_defs import (
     ASCII_BACKEND,
@@ -252,7 +257,7 @@ class DBEntry:
             if ll_interface._al_version.major < 5:
                 # AL4 compatibility
                 if self.backend_id == MDSPLUS_BACKEND:
-                    self._setup_mdsplus()
+                    self._setup_mdsplus(mode)
                 status, ctx = ll_interface.begin_pulse_action(
                     self.backend_id,
                     self.pulse,
@@ -268,35 +273,28 @@ class DBEntry:
                 self.uri = self._build_legacy_uri(options)
         if ll_interface._al_version.major >= 5:
             if urlparse(self.uri).path.lower() == "mdsplus":
-                self._setup_mdsplus()
+                self._setup_mdsplus(mode)
             status, ctx = ll_interface.begin_dataentry_action(self.uri, mode)
         if status != 0:
             raise RuntimeError(f"Error opening/creating database entry: {status=}")
         self._db_ctx = ALContext(ctx)
 
-    def _setup_mdsplus(self):
+    def _setup_mdsplus(self, mode):
         """Additional setup required for MDSPLUS backend"""
-        # Load the model directory of the IMAS version that we got instantiated with.
-        # This does not cover the case of reading an idstoplevel and only then finding
-        # out which version it is. But, I think that the model dir is not required if
-        # there is an existing file.
-        if self._dd_version or self._xml_path:
-            ids_path = mdsplus_model_dir(
-                version=self._dd_version, xml_file=self._xml_path
-            )
-        elif self._ids_factory._version:
-            ids_path = mdsplus_model_dir(version=self._ids_factory._version)
-        else:
-            # This doesn't actually matter much, since if we are auto-loading
-            # the backend version it is an existing file and we don't need
-            # the model (I think). If we are not auto-loading then one of
-            # the above two conditions should be true.
-            logger.warning(
-                "No backend version information available, not building MDSPlus model."
-            )
-            ids_path = None
-        if ids_path:
-            os.environ["ids_path"] = ids_path
+        # All open modes except for OPEN_PULSE might create a new Data Entry:
+        if mode != OPEN_PULSE:
+            # Building the MDS+ models is only required when creating a new Data Entry
+            if self._dd_version or self._xml_path:
+                ids_path = mdsplus_model_dir(
+                    version=self._dd_version, xml_file=self._xml_path
+                )
+            elif self._ids_factory._version:
+                ids_path = mdsplus_model_dir(version=self._ids_factory._version)
+            else:
+                # We should always have a version, but just in case:
+                raise MDSPlusModelError("Unknown Data Dictionary version")
+            if ids_path:
+                os.environ["ids_path"] = ids_path
 
         # Note: MDSPLUS model directory only uses the major version component of
         # IMAS_VERSION, so we'll take the first character of IMAS_VERSION, or fallback

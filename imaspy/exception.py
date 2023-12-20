@@ -35,6 +35,13 @@ class DataEntryException(Exception):
     """Error raised by DBEntry for unexpected data in the backend."""
 
 
+class MDSPlusModelError(Exception):
+    """Error raised when building MDS+ models."""
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(f"Error building MDSplus data model: {msg}")
+
+
 class CoordinateLookupError(Exception):
     """Error raised by IDSCoordinate.__getitem__ when a coordinate cannot be found."""
 

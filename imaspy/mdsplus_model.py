@@ -19,6 +19,7 @@ from importlib_resources import as_file, files
 import imaspy
 from imaspy.dd_helpers import get_saxon
 from imaspy.dd_zip import get_dd_xml, get_dd_xml_crc
+from imaspy.exception import MDSPlusModelError
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +162,7 @@ def mdsplus_model_dir(version=None, xml_file=None):
                     cache_dir_path,
                     os.listdir(cache_dir_path),
                 )
-                raise RuntimeError(
+                raise MDSPlusModelError(
                     "The IMASPy cache directory is corrupted. Please clean the"
                     f" cache directory ({cache_dir_path}) and try again."
                 )
@@ -192,9 +193,9 @@ def mdsplus_model_dir(version=None, xml_file=None):
             safe_replace(tmp_cache_dir_path, cache_dir_path)
 
             if not model_exists(cache_dir_path):
-                raise RuntimeError(
-                    "Unexpected error while generating MDSPlus model cache. \
-                    Please create a bug report."
+                raise MDSPlusModelError(
+                    "Unexpected error while generating MDSPlus model cache. "
+                    "Please create a bug report."
                 )
         except Exception as ee:
             logger.error("Error creating MDSPlus file")
@@ -279,7 +280,7 @@ def create_mdsplus_model(cache_dir_path: Path) -> None:
             ["jar", "tf", jarfile, "CompileTree", "mds/jtraverser/CompileTree"]
         ).decode("utf-8")
         if not compiletree_class:
-            raise RuntimeError(
+            raise MDSPlusModelError(
                 f"Error making MDSplus model in {cache_dir_path}: "
                 "Could not determine CompileTree class in jTraverser.jar."
             )
@@ -340,7 +341,7 @@ def jTraverser_jar() -> Path:
         jar_path = min(jars, key=lambda x: len(x.parts))
         return jar_path
     else:
-        raise RuntimeError("jTraverser.jar not found, cannot build MDSPlus models.")
+        raise MDSPlusModelError("jTraverser.jar not found. Is MDSplus-Java available?")
 
 
 def ensure_data_dir(user: str, tokamak: str, version: str, run: int) -> None:
