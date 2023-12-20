@@ -2,16 +2,17 @@
 # You should have received the IMASPy LICENSE file with this project.
 """ Main CLI entry point """
 
-import contextlib
-from pathlib import Path
 import sys
+from pathlib import Path
 
 import click
+import rich
 from packaging.version import Version
+from rich.progress import track
 
 import imaspy
-from imaspy import dd_zip
 import imaspy.imas_interface
+from imaspy import dd_zip
 
 
 @click.group("imaspy")
@@ -107,20 +108,19 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
 
     # Show progress bar?
     if quiet:
-        cm = contextlib.nullcontext(idss_with_occurrences)
+        iterator = idss_with_occurrences
     else:
-        cm = click.progressbar(idss_with_occurrences, label="Converting IDS")
+        iterator = track(idss_with_occurrences)
 
     # Convert all IDSs
-    with cm as bar:
-        for ids_name, occurrence in bar:
-            click.echo(f"Converting {ids_name}/{occurrence}...")
-            ids = entry_in.get(ids_name, occurrence, autoconvert=False)
-            # Explicitly convert instead of auto-converting during put. This is a bit
-            # slower, but gives better diagnostics:
-            ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
-            # Store in output entry:
-            entry_out.put(ids2, occurrence)
+    for ids_name, occurrence in iterator:
+        rich.print(f"Converting {ids_name}/{occurrence}...")
+        ids = entry_in.get(ids_name, occurrence, autoconvert=False)
+        # Explicitly convert instead of auto-converting during put. This is a bit
+        # slower, but gives better diagnostics:
+        ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
+        # Store in output entry:
+        entry_out.put(ids2, occurrence)
 
 
 if __name__ == "__main__":
