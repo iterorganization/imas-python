@@ -19,9 +19,9 @@ def filled_dbentry(backend, worker_id, tmp_path):
         entry.put(cp, i)
 
     for i in [0, 1, 3, 6]:
-        mag = entry.factory.magnetics()
+        mag = entry.factory.core_sources()
         mag.ids_properties.homogeneous_time = 0
-        mag.ids_properties.comment = f"magnetics occurrence {i}"
+        mag.ids_properties.comment = f"core_sources occurrence {i}"
         entry.put(mag, i)
 
     yield entry
@@ -33,18 +33,18 @@ def test_list_occurrences_no_path(filled_dbentry):
         occurrences = filled_dbentry.list_all_occurrences("core_profiles")
         assert occurrences == [0, 1, 2]
 
-        occurrences = filled_dbentry.list_all_occurrences("magnetics")
+        occurrences = filled_dbentry.list_all_occurrences("core_sources")
         assert occurrences == [0, 1, 3, 6]
 
-        assert filled_dbentry.list_all_occurrences("core_sources") == []
+        assert filled_dbentry.list_all_occurrences("magnetics") == []
 
     else:  # AL 5.0 or lower
         with pytest.raises(RuntimeError):
             filled_dbentry.list_all_occurrences("core_profiles")
         with pytest.raises(RuntimeError):
-            filled_dbentry.list_all_occurrences("magnetics")
-        with pytest.raises(RuntimeError):
             filled_dbentry.list_all_occurrences("core_sources")
+        with pytest.raises(RuntimeError):
+            filled_dbentry.list_all_occurrences("magnetics")
 
 
 def test_list_occurrences_with_path(backend, filled_dbentry):
@@ -61,22 +61,22 @@ def test_list_occurrences_with_path(backend, filled_dbentry):
             "core_profiles occurrence 2",
         ]
 
-        res = filled_dbentry.list_all_occurrences("magnetics", comment)
+        res = filled_dbentry.list_all_occurrences("core_sources", comment)
         assert res[0] == [0, 1, 3, 6]
         assert res[1] == [
-            "magnetics occurrence 0",
-            "magnetics occurrence 1",
-            "magnetics occurrence 3",
-            "magnetics occurrence 6",
+            "core_sources occurrence 0",
+            "core_sources occurrence 1",
+            "core_sources occurrence 3",
+            "core_sources occurrence 6",
         ]
 
-        res = filled_dbentry.list_all_occurrences("core_sources", comment)
+        res = filled_dbentry.list_all_occurrences("magnetics", comment)
         assert res == ([], [])
 
     else:  # AL 5.0 or lower
         with pytest.raises(RuntimeError):
             filled_dbentry.list_all_occurrences("core_profiles", comment)
         with pytest.raises(RuntimeError):
-            filled_dbentry.list_all_occurrences("magnetics", comment)
-        with pytest.raises(RuntimeError):
             filled_dbentry.list_all_occurrences("core_sources", comment)
+        with pytest.raises(RuntimeError):
+            filled_dbentry.list_all_occurrences("magnetics", comment)
