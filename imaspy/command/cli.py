@@ -115,7 +115,7 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
     with cm as bar:
         for ids_name, occurrence in bar:
             click.echo(f"Converting {ids_name}/{occurrence}...")
-            ids = entry_in.get(ids_name, occurrence)
+            ids = entry_in.get(ids_name, occurrence, autoconvert=False)
             # Explicitly convert instead of auto-converting during put. This is a bit
             # slower, but gives better diagnostics:
             ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
