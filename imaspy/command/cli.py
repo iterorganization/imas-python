@@ -51,6 +51,7 @@ def print_version():
 def print_ids(uri, ids, occurrence, print_all):
     """Pretty print the contents of an IDS.
 
+    \b
     uri         URI of the Data Entry (e.g. "imas:mdsplus?path=testdb")
     ids         Name of the IDS to print (e.g. "core_profiles")
     occurrence  Which occurrence to print (defaults to 0)
@@ -72,6 +73,7 @@ def print_ids(uri, ids, occurrence, print_all):
 def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
     """Convert an IDS to the target DD version.
 
+    \b
     uri_in      URI of the input Data Entry
     dd_version  Data dictionary version to convert to. Can also be the path to an
                 IDSDef.xml to convert to custom/unreleased DD versions.
