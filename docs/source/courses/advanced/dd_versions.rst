@@ -31,8 +31,8 @@ Exercise 1: The default DD version
         1.  Create an :py:class:`imaspy.IDSFactory() <imaspy.ids_factory.IDSFactory>`.
         2.  Print the version of the DD that is used.
         3.  Create an empty IDS with this IDSFactory (any IDS is fine) and print the
-            ``_version`` of the IDS. The ``_dd_version`` attribute of an IDS tells you
-            the Data Dictionary version of this IDS. What do you notice?
+            ``_dd_version`` of the IDS. The ``_dd_version`` attribute of an IDS tells
+            you the Data Dictionary version of this IDS. What do you notice?
         4.  Create an :py:class:`imaspy.DBEntry <imaspy.db_entry.DBEntry>`, you may use
             the :py:attr:`MEMORY_BACKEND <imaspy.ids_defs.MEMORY_BACKEND>`. Print the
             ``dd_version`` that is used. What do you notice?

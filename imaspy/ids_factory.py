@@ -101,3 +101,6 @@ class IDSFactory:
     def version(self) -> str:
         """Get the DD version used by this IDS factory"""
         return self._version
+
+    # dd_version is an alias for version
+    dd_version = version
