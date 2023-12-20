@@ -387,7 +387,7 @@ def _copy_structure(
                     msg = "Element %r changed type in the target IDS."
                 else:
                     msg = "Element %r does not exist in the target IDS."
-                logger.info(msg + " Data is not copied.", path)
+                logger.warning(msg + " Data is not copied.", path)
                 continue
             else:
                 target_item = IDSPath(rename_map.path[path]).goto(target)
