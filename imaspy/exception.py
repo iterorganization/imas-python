@@ -45,18 +45,18 @@ class IDSNameError(ValueError):
         super().__init__(f"IDS {ids_name!r} does not exist.{suggestions}")
 
 
-class DataEntryException(Exception):
+class DataEntryException(RuntimeError):
     """Error raised by DBEntry for unexpected data in the backend."""
 
 
-class MDSPlusModelError(Exception):
+class MDSPlusModelError(RuntimeError):
     """Error raised when building MDS+ models."""
 
     def __init__(self, msg: str) -> None:
         super().__init__(f"Error building MDSplus data model: {msg}")
 
 
-class LowlevelError(Exception):
+class LowlevelError(RuntimeError):
     """Error raised when lowlevel returns nonzero status"""
 
     def __init__(self, function: str, status: int):
