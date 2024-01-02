@@ -1,4 +1,4 @@
-import itertools
+import itertools  # python standard library iteration tools
 
 import imaspy
 import imaspy.training
