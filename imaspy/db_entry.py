@@ -7,7 +7,13 @@ from typing import Any, List, Optional, Tuple, overload
 from urllib.parse import urlparse
 
 import imaspy
-from imaspy.exception import ValidationError
+from imaspy.exception import (
+    DataEntryException,
+    IDSNameError,
+    LowlevelError,
+    MDSPlusModelError,
+    ValidationError,
+)
 from imaspy.ids_convert import dd_version_map_from_factories
 from imaspy.ids_defs import (
     ASCII_BACKEND,
@@ -178,6 +184,11 @@ class DBEntry:
             xml_path: Data dictionary definition XML file to use.
         """
         self._db_ctx: Optional[ALContext] = None
+        self._dd_version = dd_version
+        self._xml_path = xml_path
+        self._ids_factory = IDSFactory(dd_version, xml_path)
+        self._uses_mdsplus = False
+
         if args or kwargs:
             # uri and mode may be set as positional arguments in which case they
             # represent backend_id and db_name, though backend_id and/or db_name may
@@ -199,11 +210,6 @@ class DBEntry:
                 raise ValueError(f"Unknown mode {mode!r}, was expecting any of {modes}")
             self.open(self._OPEN_MODES[mode])
 
-        self._dd_version = dd_version
-        self._xml_path = xml_path
-        self._ids_factory = IDSFactory(dd_version, xml_path)
-        self._uses_mdsplus = False
-
     def _build_legacy_uri(self, options):
         if not self._legacy_init:
             raise RuntimeError(
@@ -220,7 +226,7 @@ class DBEntry:
             options if options is not None else "",
         )
         if status != 0:
-            raise RuntimeError("Error calling al_build_uri_from_legacy_parameters()")
+            raise LowlevelError("build URI from legacy parameters", status)
         return uri
 
     def __enter__(self):
@@ -247,12 +253,12 @@ class DBEntry:
     def _open_pulse(self, mode: int, options: Any) -> None:
         """Internal method implementing open()/create()."""
         if self._db_ctx is not None:
-            self.close()
+            raise RuntimeError("This DBEntry is already open")
         if self._legacy_init:
             if ll_interface._al_version.major < 5:
                 # AL4 compatibility
                 if self.backend_id == MDSPLUS_BACKEND:
-                    self._setup_mdsplus()
+                    self._setup_mdsplus(mode)
                 status, ctx = ll_interface.begin_pulse_action(
                     self.backend_id,
                     self.pulse,
@@ -262,41 +268,34 @@ class DBEntry:
                     self.data_version,
                 )
                 if status != 0:
-                    raise RuntimeError(f"Error calling begin_pulse_action(), {status=}")
+                    raise LowlevelError("begin pulse action", status)
                 status = ll_interface.open_pulse(ctx, mode, options)
             else:
                 self.uri = self._build_legacy_uri(options)
         if ll_interface._al_version.major >= 5:
             if urlparse(self.uri).path.lower() == "mdsplus":
-                self._setup_mdsplus()
+                self._setup_mdsplus(mode)
             status, ctx = ll_interface.begin_dataentry_action(self.uri, mode)
         if status != 0:
-            raise RuntimeError(f"Error opening/creating database entry: {status=}")
+            raise LowlevelError("opening/creating data entry", status)
         self._db_ctx = ALContext(ctx)
 
-    def _setup_mdsplus(self):
+    def _setup_mdsplus(self, mode):
         """Additional setup required for MDSPLUS backend"""
-        # Load the model directory of the IMAS version that we got instantiated with.
-        # This does not cover the case of reading an idstoplevel and only then finding
-        # out which version it is. But, I think that the model dir is not required if
-        # there is an existing file.
-        if self._dd_version or self._xml_path:
-            ids_path = mdsplus_model_dir(
-                version=self._dd_version, xml_file=self._xml_path
-            )
-        elif self._ids_factory._version:
-            ids_path = mdsplus_model_dir(version=self._ids_factory._version)
-        else:
-            # This doesn't actually matter much, since if we are auto-loading
-            # the backend version it is an existing file and we don't need
-            # the model (I think). If we are not auto-loading then one of
-            # the above two conditions should be true.
-            logger.warning(
-                "No backend version information available, not building MDSPlus model."
-            )
-            ids_path = None
-        if ids_path:
-            os.environ["ids_path"] = ids_path
+        # All open modes except for OPEN_PULSE might create a new Data Entry:
+        if mode != OPEN_PULSE:
+            # Building the MDS+ models is only required when creating a new Data Entry
+            if self._dd_version or self._xml_path:
+                ids_path = mdsplus_model_dir(
+                    version=self._dd_version, xml_file=self._xml_path
+                )
+            elif self._ids_factory._version:
+                ids_path = mdsplus_model_dir(version=self._ids_factory._version)
+            else:
+                # We should always have a version, but just in case:
+                raise MDSPlusModelError("Unknown Data Dictionary version")
+            if ids_path:
+                os.environ["ids_path"] = ids_path
 
         # Note: MDSPLUS model directory only uses the major version component of
         # IMAS_VERSION, so we'll take the first character of IMAS_VERSION, or fallback
@@ -319,7 +318,7 @@ class DBEntry:
         mode = ERASE_PULSE if erase else CLOSE_PULSE
         status = ll_interface.close_pulse(self._db_ctx.ctx, mode)
         if status != 0:
-            raise RuntimeError(f"Error closing database entry: {status=}")
+            raise LowlevelError("close data entry", status)
 
         ll_interface.end_action(self._db_ctx.ctx)
         self._db_ctx = None
@@ -496,7 +495,7 @@ class DBEntry:
             raise RuntimeError("Database entry is not opened, use open() first.")
         if lazy and (
             (self._legacy_init and self.backend_id == ASCII_BACKEND)
-            or (not self._legacy_init and self.uri.startswith("imas:ascii"))
+            or (not self._legacy_init and urlparse(self.uri).path.lower() == "ascii")
         ):
             raise RuntimeError("Lazy loading is not supported by the ASCII backend.")
         if lazy and destination:
@@ -513,13 +512,16 @@ class DBEntry:
             dd_version = read_ctx.read_data(
                 "ids_properties/version_put/data_dictionary", "", CHAR_DATA, 1
             )
-        if time_mode not in IDS_TIME_MODES:
-            raise RuntimeError(
-                f"Invalid Database Entry: Found invalid value '{time_mode}' for "
-                "ids_properties.homogeneous_time in IDS "
-                f"{ids_name}, occurrence {occurrence}."
-            )
 
+        if time_mode not in IDS_TIME_MODES:
+            # First check if we know about this IDS name, perhaps it was a typo?
+            if self._ids_factory.exists(ids_name):
+                # IDS exists, but is not available in the backend
+                raise DataEntryException(
+                    f"IDS {ids_name!r}, occurrence {occurrence} is empty."
+                )
+            else:
+                raise IDSNameError(ids_name, self._ids_factory)
         if not dd_version:
             logger.warning(
                 "Loaded IDS (%s, occurrence %s) does not specify a data dictionary "
@@ -527,12 +529,14 @@ class DBEntry:
                 ids_name,
                 occurrence,
             )
+
         # Ensure we have a destination
         if not destination:
             if autoconvert:  # store results in our DD version
                 destination = self._ids_factory.new(ids_name, _lazy=lazy)
             else:  # store results in on-disk DD version
                 destination = IDSFactory(dd_version).new(ids_name, _lazy=lazy)
+
         # Create a version conversion map, if needed
         nbc_map = None
         if dd_version and dd_version != destination._dd_version:
@@ -690,7 +694,7 @@ class DBEntry:
                 # No data yet on disk, so just put everything
                 is_slice = False
             elif db_time_mode != time_mode:
-                raise RuntimeError(
+                raise DataEntryException(
                     f"Cannot change homogeneous_time from {db_time_mode} to {time_mode}"
                 )
 
@@ -772,7 +776,7 @@ class DBEntry:
             raise RuntimeError("Database entry is not opened, use open() first.")
 
         try:
-            occurrence_list = list(ll_interface.get_occurrences(self._db_ctx, ids_name))
+            occurrence_list = self._db_ctx.list_all_occurrences(ids_name)
         except LLInterfaceError:
             # al_get_occurrences is not available in the lowlevel
             raise RuntimeError(

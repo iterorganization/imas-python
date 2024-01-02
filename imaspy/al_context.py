@@ -2,8 +2,9 @@
 # You should have received the IMASPy LICENSE file with this project.
 
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterator, List, Optional, Tuple, Union
 
+from imaspy.exception import LowlevelError
 from imaspy.ids_defs import (
     CLOSEST_INTERP,
     LINEAR_INTERP,
@@ -122,7 +123,7 @@ class ALContext:
         """Helper method for creating new contexts."""
         status, ctx, *rest = action(self.ctx, *args)
         if status != 0:
-            raise RuntimeError(f"Error calling {action.__name__}: {status=}")
+            raise LowlevelError(action.__name__, status)
         if rest:
             return ALContext(ctx), *rest
         return ALContext(ctx)
@@ -131,7 +132,7 @@ class ALContext:
         """Call ual_iterate_over_arraystruct with this context."""
         status = ll_interface.iterate_over_arraystruct(self.ctx, step)
         if status != 0:
-            raise RuntimeError(f"Error iterating over arraystruct: {status=}")
+            raise LowlevelError("iterate over arraystruct", status)
 
     def read_data(self, path: str, timebasepath: str, datatype: int, dim: int) -> Any:
         """Call ual_read_data with this context."""
@@ -139,20 +140,29 @@ class ALContext:
             self.ctx, path, timebasepath, datatype, dim
         )
         if status != 0:
-            raise RuntimeError(f"Error reading data at {path!r}: {status=}")
+            raise LowlevelError(f"read data at {path!r}", status)
         return data
 
     def delete_data(self, path: str) -> None:
         """Call ual_delete_data with this context."""
         status = ll_interface.delete_data(self.ctx, path)
         if status != 0:
-            raise RuntimeError(f"Error deleting data at {path!r}: {status=}")
+            raise LowlevelError(f"delete data at {path!r}", status)
 
     def write_data(self, path: str, timebasepath: str, data: Any) -> None:
         """Call ual_write_data with this context."""
         status = ll_interface.write_data(self.ctx, path, timebasepath, data)
         if status != 0:
-            raise RuntimeError(f"Error writing data at {path!r}: {status=}")
+            raise LowlevelError(f"write data at {path!r}: {status=}")
+
+    def list_all_occurrences(self, ids_name: str) -> List[int]:
+        """List all occurrences of this IDS."""
+        status, occurrences = ll_interface.get_occurrences(self.ctx, ids_name)
+        if status != 0:
+            raise LowlevelError(f"list occurrences for {ids_name!r}", status)
+        if occurrences is not None:
+            return list(occurrences)
+        return []
 
 
 class LazyALContext:

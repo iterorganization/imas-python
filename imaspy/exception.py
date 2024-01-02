@@ -1,8 +1,14 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+import difflib
 import logging
+from typing import TYPE_CHECKING, List
 
 import imaspy.imas_interface
+
+if TYPE_CHECKING:
+    from imaspy.ids_factory import IDSFactory
+
 
 logger = logging.getLogger(__name__)
 
@@ -14,16 +20,59 @@ else:
     ALException = None
 
 
+class UnknownDDVersion(ValueError):
+    """Error raised when an unknown DD version is specified."""
+
+    def __init__(self, version: str, available: List[str]) -> None:
+        close_matches = difflib.get_close_matches(version, available, n=1)
+        if close_matches:
+            suggestions = f"Did you mean {close_matches[0]!r}?"
+        else:
+            suggestions = f"Available versions are {', '.join(reversed(available))}"
+        super().__init__(
+            f"Data dictionary version {version!r} cannot be found. {suggestions}"
+        )
+
+
+class IDSNameError(ValueError):
+    """Error raised by DBEntry.get(_slice) when providing an invalid IDS name."""
+
+    def __init__(self, ids_name: str, factory: "IDSFactory") -> None:
+        suggestions = ""
+        close_matches = difflib.get_close_matches(ids_name, factory.ids_names(), n=1)
+        if close_matches:
+            suggestions = f" Did you mean {close_matches[0]!r}?"
+        super().__init__(f"IDS {ids_name!r} does not exist.{suggestions}")
+
+
+class DataEntryException(RuntimeError):
+    """Error raised by DBEntry for unexpected data in the backend."""
+
+
+class MDSPlusModelError(RuntimeError):
+    """Error raised when building MDS+ models."""
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(f"Error building MDSplus data model: {msg}")
+
+
+class LowlevelError(RuntimeError):
+    """Error raised when lowlevel returns nonzero status"""
+
+    def __init__(self, function: str, status: int):
+        super().__init__(
+            f"An Access Layer lowlevel operation ({function}) was unsuccessful "
+            f"({status=}). "
+            "More debug information should be available earlier in the program output."
+        )
+
+
 class CoordinateLookupError(Exception):
     """Error raised by IDSCoordinate.__getitem__ when a coordinate cannot be found."""
-
-    pass
 
 
 class ValidationError(Exception):
     """Error raised by IDSToplevel.validate() to indicate the IDS is not valid."""
-
-    pass
 
 
 class CoordinateError(ValidationError):

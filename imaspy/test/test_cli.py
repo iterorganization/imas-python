@@ -1,13 +1,13 @@
 from click.testing import CliRunner
 import pytest
 
-from importlib.metadata import version
+import imaspy
 from imaspy.command.cli import print_version
 
 
 @pytest.mark.cli
 def test_imaspy_version():
-    imaspy_version = version("imaspy")
+    imaspy_version = imaspy.__version__
     runner = CliRunner()
     result = runner.invoke(print_version)
     assert result.exit_code == 0

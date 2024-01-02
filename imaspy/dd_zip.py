@@ -29,7 +29,6 @@ with the `python setup.py build_DD` command, which is also performed on install
 if you have access to the ITER data-dictionary git repo.
 Reinstalling imaspy thus also will give you access to the latest DD versions.
 """
-import difflib
 import logging
 import os
 import re
@@ -42,10 +41,10 @@ from zipfile import ZipFile
 
 from importlib_resources import as_file, files
 from importlib_resources.abc import Traversable
-from packaging.version import InvalidVersion
-from packaging.version import Version as V
+from packaging.version import InvalidVersion, Version
 
 import imaspy
+from imaspy.exception import UnknownDDVersion
 
 logger = logging.getLogger(__name__)
 
@@ -77,12 +76,23 @@ def _generate_zipfile_locations() -> Iterator[Union[Path, Traversable]]:
     yield files(imaspy) / "assets" / zip_name
 
 
+def parse_dd_version(version: str) -> Version:
+    try:
+        return Version(version)
+    except InvalidVersion:
+        # This is probably a dev build of the DD, of which the version is obtained with
+        # `git describe` in the format X.Y.Z-<ncommits>-g<hash> with X.Y.Z the previous
+        # released version: try again after converting the first dash to a + and treat
+        # it like a `local` version specifier, which is recognized as newer.
+        # https://packaging.python.org/en/latest/specifications/version-specifiers/
+        return Version(version.replace("-", "+", 1))
+
+
 # Note: DD etrees don't consume a lot of memory, so we'll keep max 32 in memory
 _DD_CACHE_SIZE = 32
 ZIPFILE_LOCATIONS = list(_generate_zipfile_locations())
 
 
-@lru_cache(_DD_CACHE_SIZE)
 def dd_etree(version=None, xml_path=None):
     """Return the DD element tree corresponding to the provided dd_version or xml_file.
 
@@ -120,7 +130,12 @@ def dd_etree(version=None, xml_path=None):
     if not version and not xml_path:
         # Use latest available from
         version = latest_dd_version()
+    # Do the actual loading in a cached method:
+    return _load_etree(version, xml_path)
 
+
+@lru_cache(_DD_CACHE_SIZE)
+def _load_etree(version, xml_path):
     if xml_path:
         logger.info("Parsing data dictionary from file: %s", xml_path)
         tree = ET.parse(xml_path)
@@ -176,30 +191,23 @@ def dd_xml_versions() -> List[str]:
 
     def sort_key(version):
         try:
-            return V(version)
+            return parse_dd_version(version)
         except InvalidVersion:
             # Don't fail when a malformatted version is present in the DD zip
             logger.error(
                 f"Could not convert DD XML version {version} to a Version.", exc_info=1
             )
-            return V(0)
+            return Version(0)
 
     return sorted(_read_dd_versions(), key=sort_key)
 
 
 def get_dd_xml(version):
     """Read XML file for the given data dictionary version."""
-    dd_versions = _read_dd_versions()
+    dd_versions = dd_xml_versions()
     if version not in dd_versions:
-        suggestions = ""
-        close_matches = difflib.get_close_matches(version, dd_versions, n=1)
-        if close_matches:
-            suggestions = f" Did you mean {close_matches[0]!r}?"
-        raise ValueError(
-            f"Data dictionary version {version!r} cannot be found.{suggestions} "
-            f"Available versions are: {', '.join(reversed(dd_xml_versions()))}."
-        )
-    path, fname = dd_versions[version]
+        raise UnknownDDVersion(version, dd_versions)
+    path, fname = _read_dd_versions()[version]
     with _open_zipfile(path) as zipfile:
         return zipfile.read(fname)
 
@@ -215,7 +223,7 @@ def get_dd_xml_crc(version):
 
 def print_supported_version_warning(version):
     try:
-        if V(version) < imaspy.OLDEST_SUPPORTED_VERSION:
+        if parse_dd_version(version) < imaspy.OLDEST_SUPPORTED_VERSION:
             logger.warning(
                 "Version %s is below lowest supported version of %s.\
                 Proceed at your own risk.",

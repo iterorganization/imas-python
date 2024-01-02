@@ -1,6 +1,6 @@
 import pytest
 
-from imaspy.dd_zip import dd_etree, latest_dd_version
+from imaspy.dd_zip import latest_dd_version
 from imaspy.ids_factory import IDSFactory
 
 
@@ -24,16 +24,12 @@ def test_ids_factory_with_xml_path(ids_minimal):
 def test_ids_factory_latest(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("IMAS_VERSION", raising=False)
     monkeypatch.delenv("IMAS_PREFIX", raising=False)
-    dd_etree.cache_clear()
     factory = IDSFactory()
     assert factory._version == latest_dd_version()
-    dd_etree.cache_clear()
 
 
 def test_ids_factory_from_env(monkeypatch: pytest.MonkeyPatch):
     version = "3.35.0"
     monkeypatch.setenv("IMAS_VERSION", version)
-    dd_etree.cache_clear()
     factory = IDSFactory()
     assert factory._version == version
-    dd_etree.cache_clear()
