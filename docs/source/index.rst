@@ -20,20 +20,6 @@ It provides:
 - Checking of correctness at assign time, instead of at database write time
 - Dynamically created in-memory pre-filled data trees from DD XML specifications
 
-
-.. toctree::
-   :hidden:
-   :caption: Getting Started
-   :maxdepth: 2
-
-   self
-   installing
-   intro
-   api_overview
-   metadata
-   lazy_loading
-   mdsplus
-
 The README is best read on :src:`#imaspy`.
 
 
@@ -41,8 +27,22 @@ Manual
 ------
 
 .. toctree::
+   :caption: Getting Started
+   :maxdepth: 1
+
+   self
+   installing
+   intro
+   multi-dd
+   validation
+   resampling
+   metadata
+   lazy_loading
+   mdsplus
+
+.. toctree::
    :caption: IMASPy training courses
-   :maxdepth: 2
+   :maxdepth: 1
 
    courses/basic_user_training
    courses/advanced_user_training

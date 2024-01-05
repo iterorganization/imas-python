@@ -1,3 +1,5 @@
+.. _`multi-dd training`:
+
 Working with multiple data dictionary versions
 ==============================================
 

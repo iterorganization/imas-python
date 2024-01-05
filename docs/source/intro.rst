@@ -113,6 +113,8 @@ In IMASPy you do this as follows:
     >>> # now store the core_profiles IDS we just populated
     >>> dbentry.put(core_profiles)
 
+.. image:: imaspy_structure.png
+
 
 Load an IDS from disk
 '''''''''''''''''''''
