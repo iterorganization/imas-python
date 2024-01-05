@@ -29,15 +29,6 @@ class IDSStructArray(IDSBase):
     but contains references to IDSStructures
     """
 
-    # TODO: HLI compatibility
-    @staticmethod
-    def getAoSElement(self):
-        logger.warning(
-            "getAoSElement is deprecated, you should never need this", FutureWarning
-        )
-        return self._element_structure
-
-    # TODO: HLI compatibility `base_path_in`
     def __init__(self, parent: IDSBase, metadata: IDSMetadata):
         """Initialize IDSStructArray from XML specification
 
