@@ -33,6 +33,11 @@ pip install "`readlink -f dist/*.whl`[docs]"
 # Debugging:
 pip freeze
 
+# Enable sphinx options:
+# - `-W`: turn warnings into errors
+# - `-n`: nit-picky mode, warn about all missing references
+# - `--keep-going`: with -W, keep going when getting warnings
+export SPHINXOPTS='-W -n --keep-going'
+
 # Run sphinx to create the documentation
-export SPHINXOPTS='-W --keep-going'  # Treat all warnings as errors
 make -C docs clean html
