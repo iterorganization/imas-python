@@ -32,10 +32,11 @@ Linting and DD ZIP
     - ``ci/build_dd_zip.sh``
 
 Test with AL<version>
-    This runs all unit tests with pytest. There are multiple (at the time of writing 2)
+    This runs all unit tests with pytest. There are multiple (at the time of writing 3)
     Access Layer versions that we test against: AL4.11.7 (from SDCC module
-    ``IMAS/3.39.0-4.11.7-intel-2020b``) and AL5.0.0 (from SDCC module
-    ``IMAS/3.39.0-5.0.0-intel-2020b``).
+    ``IMAS/3.39.0-4.11.7-intel-2020b``), AL5.0.0 (from SDCC module
+    ``IMAS/3.39.0-5.0.0-intel-2020b``) and AL5.1.0 (from SDCC module
+    ``IMAS/3.40.0-5.1.0-intel-2020b``).
 
     The CI script executed in this job is ``ci/run_pytest.sh``, which expects the
     modules it needs to load as arguments.

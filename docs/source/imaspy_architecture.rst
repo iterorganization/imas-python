@@ -112,7 +112,7 @@ The following submodules and classes represent IDS nodes.
             >>> # Note: _dd_parent for this structure is different from its parent:
             >>> core_profiles.profiles_1d[0]._dd_parent
             <IDSStructure (IDS:core_profiles, ids_properties)>
-            >>> core_profiles.profiles_1d[0].time._parent
+            >>> core_profiles.profiles_1d[0].time._dd_parent
             <IDSStructure (IDS:core_profiles, profiles_1d[0])>
 
     -   ``_path`` gives the path to this IDS node, including Array of Structures
@@ -185,18 +185,18 @@ have any IDS child nodes instantiated:
     >>> import imaspy
     >>> # Create an empty IDS
     >>> cp = imaspy.IDSFactory().core_profiles()
-    >>> # Show which elements are already created, hiding private attributes:
+    >>> # Show which elements are already created:
     >>> list(cp.__dict__)
     ['_lazy', '_children', '_parent', 'metadata', '__doc__', '_lazy_context']
     >>> # When we request a child element, it is automatically created:
     >>> cp.time
     <IDSNumericArray (IDS:core_profiles, time, empty FLT_1D)>
-    >>> [child for child in cp.__dict__ if not child.startswith("_")]
+    >>> list(cp.__dict__)
     ['_lazy', '_children', '_parent', 'metadata', '__doc__', '_lazy_context',
      'time', '_toplevel']
 
-This improves performance by creating less python objects: in most use cases, only a
-subset of the nodes in an IDS will be used. These use cases benefit a lot from this lazy
+This improves performance by creating fewer python objects: in most use cases, only a
+subset of the nodes in an IDS will be used. These use cases benefit a lot from lazy
 instantiation.
 
 

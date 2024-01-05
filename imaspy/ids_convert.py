@@ -79,7 +79,14 @@ class NBCPathMap:
 # Expected typical use case is conversion between two versions only. With 74 IDSs
 # (DD 3.39.0) a cache of 128 items should be big enough.
 @lru_cache(maxsize=128)
+def _DDVersionMap(*args) -> "DDVersionMap":
+    return DDVersionMap(*args)
+
+
 class DDVersionMap:
+    """Mapping of an IDS between two Data Dictionary versions.
+    """
+
     RENAMED_DESCRIPTIONS = {"aos_renamed", "leaf_renamed", "structure_renamed"}
     STRUCTURE_TYPES = {"structure", "struct_array"}
 
@@ -291,7 +298,7 @@ def dd_version_map_from_factories(
         (factory2_version, factory2, factory1),
     )
     return (
-        DDVersionMap(ids_name, old_factory._etree, new_factory._etree, old_version),
+        _DDVersionMap(ids_name, old_factory._etree, new_factory._etree, old_version),
         old_factory is factory1,
     )
 
@@ -355,12 +362,12 @@ def convert_ids(
     )
 
     source_is_new = source_version > target_version
-    source_etree = toplevel._parent._etree
-    target_etree = target_ids._parent._etree
+    source_tree = toplevel._parent._etree
+    target_tree = target_ids._parent._etree
     if source_is_new:
-        version_map = DDVersionMap(ids_name, target_etree, source_etree, target_version)
+        version_map = _DDVersionMap(ids_name, target_tree, source_tree, target_version)
     else:
-        version_map = DDVersionMap(ids_name, source_etree, target_etree, source_version)
+        version_map = _DDVersionMap(ids_name, source_tree, target_tree, source_version)
 
     _copy_structure(toplevel, target_ids, deepcopy, source_is_new, version_map)
     logger.info("Conversion of IDS %s finished.", ids_name)
