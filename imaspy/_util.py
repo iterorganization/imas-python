@@ -110,7 +110,7 @@ def _make_tree(structure, hide_empty_nodes=True, *, tree=None):
 
     iterator = structure
     if hide_empty_nodes and isinstance(structure, IDSStructure):
-        iterator = structure._iter_nonempty()
+        iterator = structure.iter_nonempty_()
     for child in iterator:
         if isinstance(child, IDSPrimitive):
             if not child.has_value:

@@ -53,7 +53,7 @@ def visit_children(func, node, *, leaf_only=True, visit_empty=False):
         iterator = node
         if not visit_empty and isinstance(node, IDSStructure):
             # Only iterate over non-empty nodes
-            iterator = node._iter_nonempty()
+            iterator = node.iter_nonempty_()
 
         for child in iterator:
             visit_children(func, child, leaf_only=leaf_only, visit_empty=visit_empty)
