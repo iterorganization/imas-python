@@ -53,7 +53,7 @@ class ALContext:
             rwmode: read-only or read-write operation mode: ``READ_OP``/``WRITE_OP``
 
         Yields:
-            ctx: The created context.
+            The created context.
         """
         ctx = self._begin_action(ll_interface.begin_global_action, path, rwmode)
         try:
@@ -76,7 +76,7 @@ class ALContext:
                 ``UNDEFINED_INTERP`` for put_slice.
 
         Yields:
-            ctx: The created context.
+            The created context.
         """
         if interpolation_method not in INTERP_MODES:
             raise ValueError(
@@ -108,8 +108,7 @@ class ALContext:
             size: the size of the array of structures (only relevant when writing data)
 
         Yields:
-            ctx: The created context.
-            size: The size of the array of structures (only relevant when reading data)
+            The created context and the size of the array of structures.
         """
         ctx, size = self._begin_action(
             ll_interface.begin_arraystruct_action, path, timebase, size
@@ -269,8 +268,8 @@ class LazyALContext:
                 to just get the size of the AoS.
 
         Yields:
-            lazy_ctx: LazyALContext that can be used by the item within this AoS
-            size: number of items stored in this AoS
+            LazyALContext that can be used by the item within this AoS and the number of
+            items stored in this AoS.
         """
         with self.get_context() as ctx:
             with ctx.arraystruct_action(path, timebase, 0) as (new_ctx, size):

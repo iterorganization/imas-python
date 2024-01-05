@@ -12,7 +12,7 @@ Open an IMAS database entry
 
 IMAS explicitly separates the data on disk from the data in memory. To get
 started we load an existing IMAS data file from disk. The on-disk file
-is represented by an :class:`imaspy.DBEntry`, which we have to
+is represented by an :class:`imaspy.DBEntry <imaspy.db_entry.DBEntry>`, which we have to
 :meth:`~imaspy.db_entry.DBEntry.open()` to get a reference to the data file we
 will manipulate. The connection to the data file is kept intact until we
 :meth:`~imaspy.db_entry.DBEntry.close()` the file. Note that the on-disk file

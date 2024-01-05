@@ -29,6 +29,41 @@ see the Access Layer documentation for more details on the different backends.
 .. data:: UDA_BACKEND
 
     Identifier for the UDA backend.
+
+
+Time modes
+----------
+
+.. data:: IDS_TIME_MODE_HOMOGENEOUS
+
+    Use homogeneous time, all time coordinates refer to the toplevel ``time`` array.
+
+.. data:: IDS_TIME_MODE_HETEROGENEOUS
+
+    Use heterogeneous time, time coordinates refer to their local ``time`` array.
+
+.. data:: IDS_TIME_MODE_INDEPENDENT
+
+    Indicates that this IDS does not store time-dependent data.
+
+
+Interpolation modes
+-------------------
+
+.. data:: CLOSEST_INTERP
+
+    Interpolation method that returns the `closest` time slice in the original IDS (can
+    break causality as it can return data ahead of requested time).
+
+.. data:: PREVIOUS_INTERP
+
+    Interpolation method that returns the `previous` time slice if the requested time
+    does not exactly exist in the original IDS.
+
+.. data:: LINEAR_INTERP
+
+    Interpolation method that returns a linear interpolation between the existing slices
+    before and after the requested time.
 """
 
 import functools

@@ -163,6 +163,7 @@ class IDSPath:
         return hash(self._path)
 
     def items(self) -> Iterator[Tuple[str, _IndexType]]:
+        """``(part, index)`` iterator"""
         return zip(self.parts, self.indices)
 
     def goto(self, from_element: "IDSBase", *, from_root: bool = True) -> "IDSBase":

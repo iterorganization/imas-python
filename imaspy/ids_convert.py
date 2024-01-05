@@ -88,7 +88,9 @@ class DDVersionMap:
     """
 
     RENAMED_DESCRIPTIONS = {"aos_renamed", "leaf_renamed", "structure_renamed"}
+    """Supported ``nbc_description`` values for renames."""
     STRUCTURE_TYPES = {"structure", "struct_array"}
+    """Data dictionary ``data_type`` corresponding to structure-like types."""
 
     def __init__(
         self,

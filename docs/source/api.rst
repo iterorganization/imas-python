@@ -10,9 +10,9 @@ documentation.
 IMASPy IDS manipulation
 -------------------------
 
+.. currentmodule:: imaspy
+
 .. autosummary::
-   :toctree: generated/
-   :recursive:
 
    db_entry.DBEntry
    ids_factory.IDSFactory

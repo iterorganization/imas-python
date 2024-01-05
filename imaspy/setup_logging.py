@@ -7,7 +7,7 @@ import logging
 import os
 
 
-class PrettyFormatter(logging.Formatter):
+class _PrettyFormatter(logging.Formatter):
     """Logging Formatter to add colors and count warning / errors"""
 
     light_grey = "\x1b[90m"
@@ -49,7 +49,7 @@ def connect_formatter(logger):
     """Connect general formatter to given logger"""
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
-    ch.setFormatter(PrettyFormatter())
+    ch.setFormatter(_PrettyFormatter())
     logger.addHandler(ch)
 
 

@@ -30,10 +30,10 @@ def _initialize_training_db(DBEntry_cls):
 
 
 def get_training_db_entry() -> imaspy.DBEntry:
-    """Open and return an imaspy.DBEntry pointing to the training data."""
+    """Open and return an ``imaspy.DBEntry`` pointing to the training data."""
     return _initialize_training_db(imaspy.DBEntry)
 
 
-def get_training_imas_db_entry() -> imas.DBEntry:
-    """Open and return an imas.DBEntry pointing to the training data."""
+def get_training_imas_db_entry():
+    """Open and return an ``imas.DBEntry`` pointing to the training data."""
     return _initialize_training_db(imas.DBEntry)

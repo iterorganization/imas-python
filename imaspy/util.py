@@ -20,7 +20,7 @@ def visit_children(func, node, *, leaf_only=True, visit_empty=False):
     """Apply a function to node and its children
 
     IMASPy objects generally live in a tree structure. Similar to Pythons
-    :py:meth:`map`, this method can be used to apply a function to objects
+    :py:func:`map`, this method can be used to apply a function to objects
     within this tree structure.
 
     Args:

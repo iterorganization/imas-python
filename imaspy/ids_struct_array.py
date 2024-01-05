@@ -59,6 +59,7 @@ class IDSStructArray(IDSBase):
 
     @cached_property
     def coordinates(self):
+        """Coordinates of this array of structures."""
         return IDSCoordinates(self)
 
     def __deepcopy__(self, memo):
@@ -147,6 +148,10 @@ class IDSStructArray(IDSBase):
 
     @property
     def shape(self) -> Tuple[int]:
+        """Get the shape of the contained data.
+
+        This will always return a tuple: ``(len(self), )``.
+        """
         if self._lazy:
             self._load(None)
         return (len(self.value),)
