@@ -84,8 +84,7 @@ def _DDVersionMap(*args) -> "DDVersionMap":
 
 
 class DDVersionMap:
-    """Mapping of an IDS between two Data Dictionary versions.
-    """
+    """Mapping of an IDS between two Data Dictionary versions."""
 
     RENAMED_DESCRIPTIONS = {"aos_renamed", "leaf_renamed", "structure_renamed"}
     """Supported ``nbc_description`` values for renames."""
