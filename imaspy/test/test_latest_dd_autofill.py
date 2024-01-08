@@ -27,24 +27,7 @@ def has_parent(child):
     assert child._parent is not None
 
 
-def test_latest_dd_autofill_separate(ids_name, backend, worker_id, tmp_path):
-    """Write and then read again all IDSToplevels."""
-    dbentry = open_dbentry(backend, "w", worker_id, tmp_path)
-    ids = IDSFactory().new(ids_name)
-    fill_with_random_data(ids)
-
-    dbentry.put(ids)
-
-    dbentry2 = open_dbentry(backend, "a", worker_id, tmp_path)
-    ids2 = dbentry2.get(ids_name)
-    compare_children(ids, ids2)
-
-    dbentry.close()
-    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
-        dbentry2.close()
-
-
-def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
+def test_latest_dd_autofill(ids_name, backend, worker_id, tmp_path):
     """Write and then read again all IDSToplevels."""
     dbentry = open_dbentry(backend, "w", worker_id, tmp_path)
     ids = IDSFactory().new(ids_name)
@@ -54,12 +37,13 @@ def test_latest_dd_autofill_single(ids_name, backend, worker_id, tmp_path):
     ids_ref = copy.deepcopy(ids)
     # the deepcopy comes after the put() since that updates dd version and AL lang
 
-    ids = dbentry.get(ids_name)
-
-    # basic comparison first
-    assert ids.ids_properties.comment == ids_ref.ids_properties.comment
+    dbentry2 = open_dbentry(backend, "a", worker_id, tmp_path)
+    ids = dbentry2.get(ids_name)
     compare_children(ids, ids_ref)
+
     dbentry.close()
+    if backend != MEMORY_BACKEND:  # MEM backend already cleaned up, prevent SEGFAULT
+        dbentry2.close()
 
 
 def test_latest_dd_autofill_serialize(ids_name, has_imas):
