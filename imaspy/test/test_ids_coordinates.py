@@ -82,13 +82,13 @@ def test_coordinate_immutable():
 
 
 def test_format_refs():
-    core_profiles = IDSFactory(version="3.38.1").new("core_profiles")
+    core_profiles = IDSFactory(version="3.39.0").new("core_profiles")
     core_profiles.profiles_1d.resize(2)
     p1d = core_profiles.profiles_1d[1]
     refs = p1d.magnetic_shear.metadata.coordinate1.format_refs(p1d)
     assert refs == "`profiles_1d[1]/grid/rho_tor_norm`"
 
-    distributions = IDSFactory(version="3.38.1").new("distributions")
+    distributions = IDSFactory(version="3.39.0").new("distributions")
     distributions.distribution.resize(2)
     distributions.distribution[1].profiles_2d.resize(5)
     p2d = distributions.distribution[1].profiles_2d[2]
@@ -135,7 +135,7 @@ def test_coordinates(ids_minimal_types):
 
 
 def test_coordinates_with_core_profiles():
-    core_profiles = IDSFactory(version="3.38.1").new("core_profiles")
+    core_profiles = IDSFactory(version="3.39.0").new("core_profiles")
     with pytest.raises(ValueError):  # homogeneous_time not set
         core_profiles.profiles_1d.coordinates[0]
 
@@ -153,7 +153,7 @@ def test_coordinates_with_core_profiles():
 def test_coordinates_with_equilibrium():
     # Test error handling of a time-based coordinate outside our own timebasepath
     # https://jira.iter.org/browse/IMAS-4675
-    equilibrium = IDSFactory(version="3.38.1").new("equilibrium")
+    equilibrium = IDSFactory(version="3.39.0").new("equilibrium")
     equilibrium.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
     equilibrium.grids_ggd.resize(1)
     equilibrium.time_slice.resize(1)

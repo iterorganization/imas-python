@@ -5,7 +5,7 @@ from imaspy.ids_factory import IDSFactory
 
 
 def test_ids_factory_with_version():
-    IDSFactory(version="3.38.1")
+    IDSFactory(version="3.39.0")
 
 
 def test_ids_factory_with_invalid_version():

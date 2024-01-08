@@ -88,8 +88,20 @@ def parse_dd_version(version: str) -> Version:
         return Version(version.replace("-", "+", 1))
 
 
-# Note: DD etrees don't consume a lot of memory, so we'll keep max 32 in memory
-_DD_CACHE_SIZE = 32
+# Expected use case is one, maximum two DD versions
+# Cache is bigger than that: in pytest we currently use the following DD versions:
+#   - 3.22.0
+#   - 3.25.0
+#   - 3.28.0
+#   - 3.39.0
+#   - 4.0.0 (if available)
+#   - Environment default
+#   - IDS_fake_toplevel.xml
+#   - IDS_minimal.xml
+#   - IDS_minimal_2.xml
+#   - IDS_minimal_struct_array.xml
+#   - IDS_minimal_types.xml
+_DD_CACHE_SIZE = 8
 ZIPFILE_LOCATIONS = list(_generate_zipfile_locations())
 
 

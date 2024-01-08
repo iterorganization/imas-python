@@ -14,7 +14,7 @@ def validate_parent(node):
 
 
 def test_deepcopy():
-    factory = imaspy.IDSFactory("3.38.1")
+    factory = imaspy.IDSFactory()
     cp = factory.core_profiles()
     fill_with_random_data(cp)
 

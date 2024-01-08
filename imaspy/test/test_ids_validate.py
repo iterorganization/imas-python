@@ -41,7 +41,7 @@ def test_validate_time_mode():
 
 
 def test_validate_time_coordinate_homogeneous():
-    cp = IDSFactory("3.38.1").core_profiles()
+    cp = IDSFactory("3.39.0").core_profiles()
     cp.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     cp.time = np.array([1.0, 2.0])
     cp.profiles_1d.resize(2)
@@ -54,7 +54,7 @@ def test_validate_time_coordinate_homogeneous():
 
 
 def test_validate_time_coordinate_heterogeneous_core_profiles():
-    cp = IDSFactory("3.38.1").core_profiles()
+    cp = IDSFactory("3.39.0").core_profiles()
     cp.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
     cp.profiles_1d.resize(2)
     with pytest.raises(ValidationError):
@@ -67,7 +67,7 @@ def test_validate_time_coordinate_heterogeneous_core_profiles():
 
 
 def test_validate_time_mode_heterogeneous_pf_active():
-    pfa = IDSFactory("3.38.1").pf_active()
+    pfa = IDSFactory("3.39.0").pf_active()
     pfa.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
     pfa.coil.resize(1)
     pfa.coil[0].current.data = np.linspace(0, 1, 10)
@@ -87,7 +87,7 @@ def test_validate_time_mode_heterogeneous_pf_active():
 
 
 def test_validate_time_mode_independent():
-    cp = IDSFactory("3.38.1").core_profiles()
+    cp = IDSFactory("3.39.0").core_profiles()
     cp.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     cp.validate()
     cp.profiles_1d.resize(1)
@@ -96,7 +96,7 @@ def test_validate_time_mode_independent():
 
 
 def test_fixed_size_coordinates_two():
-    mag = IDSFactory("3.38.1").magnetics()
+    mag = IDSFactory("3.39.0").magnetics()
     mag.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
     mag.b_field_pol_probe.resize(1)
     mag.validate()
@@ -110,7 +110,7 @@ def test_fixed_size_coordinates_two():
 
 
 def test_fixed_size_coordinates_three():
-    wall = IDSFactory("3.38.1").wall()
+    wall = IDSFactory("3.39.0").wall()
     wall.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     wall.time = np.linspace(0, 1, 10)
     wall.global_quantities.electrons.particle_flux_from_wall = np.ones((3, 10))
@@ -165,7 +165,7 @@ def test_validate_indirect_coordinates():
 
 
 def test_validate_exclusive_references():
-    distr = IDSFactory("3.38.1").distributions()
+    distr = IDSFactory("3.39.0").distributions()
     distr.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     distr.time = np.array([1.0])
     distr.distribution.resize(1)
@@ -207,7 +207,7 @@ def test_validate_reference_or_fixed_size():
 
 
 def test_validate_coordinate_same_as():
-    ml = IDSFactory("3.38.1").mhd_linear()
+    ml = IDSFactory("3.39.0").mhd_linear()
     ml.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     ml.time = np.array([1.0])
     ml.time_slice.resize(1)
@@ -267,7 +267,7 @@ def test_validate_on_put(monkeypatch, env_value, should_validate, requires_imas)
 
 def test_validate_ignore_nested_aos():
     # Ignore coordinates inside an AoS outside our tree, see IMAS-4675
-    equilibrium = IDSFactory("3.38.1").equilibrium()
+    equilibrium = IDSFactory("3.39.0").equilibrium()
     equilibrium.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     equilibrium.time = np.array([1.0])
     equilibrium.time_slice.resize(1)
