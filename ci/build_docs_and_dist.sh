@@ -33,6 +33,9 @@ pip install "`readlink -f dist/*.whl`[docs]"
 # Debugging:
 pip freeze
 
+# DEBUG curl:
+curl -v -o objects.inv -m 30 https://packaging.pypa.io/en/stable/objects.inv
+
 # Enable sphinx options:
 # - `-W`: turn warnings into errors
 # - `-n`: nit-picky mode, warn about all missing references
