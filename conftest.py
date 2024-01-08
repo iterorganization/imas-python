@@ -26,9 +26,8 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_INDEPENDENT,
 )
 from imaspy.ids_factory import IDSFactory
-from imaspy.imas_interface import imas, has_imas as _has_imas, lowlevel, ll_interface
+from imaspy.imas_interface import has_imas as _has_imas, lowlevel, ll_interface
 from imaspy.db_entry import DBEntry
-from imaspy.test.test_helpers import open_dbentry
 
 
 logger = logging.getLogger(__name__)
@@ -57,7 +56,7 @@ _BACKENDS = {
 }
 
 
-@pytest.fixture(scope="session", params=_BACKENDS)
+@pytest.fixture(params=_BACKENDS)
 def backend(pytestconfig: pytest.Config, request: pytest.FixtureRequest):
     backends_provided = any(map(pytestconfig.getoption, _BACKENDS))
     if not _has_imas:
@@ -71,12 +70,12 @@ def backend(pytestconfig: pytest.Config, request: pytest.FixtureRequest):
     return _BACKENDS[request.param]
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def has_imas():
     return _has_imas
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def requires_imas():
     if not _has_imas:
         pytest.skip("No IMAS available")
@@ -97,7 +96,7 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize("ids_name", list(IDSFactory()))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def latest_factory():
     latest_version = latest_dd_version()
     default_factory = IDSFactory()
@@ -112,32 +111,32 @@ def latest_factory():
 
 
 # Fixtures for various assets
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def imaspy_assets():
     return importlib_resources.files("imaspy") / "assets"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def fake_toplevel_xml(imaspy_assets):
     return imaspy_assets / "IDS_fake_toplevel.xml"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def ids_minimal(imaspy_assets):
     return imaspy_assets / "IDS_minimal.xml"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def ids_minimal2(imaspy_assets):
     return imaspy_assets / "IDS_minimal_2.xml"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def ids_minimal_struct_array(imaspy_assets):
     return imaspy_assets / "IDS_minimal_struct_array.xml"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def ids_minimal_types(imaspy_assets):
     return imaspy_assets / "IDS_minimal_types.xml"
 
@@ -187,4 +186,3 @@ def log_lowlevel_calls(monkeypatch, requires_imas):
         if not al_function.startswith("_"):
             wrapper = _lowlevel_wrapper(getattr(ll_interface, al_function))
             monkeypatch.setattr(ll_interface, al_function, wrapper)
-        
