@@ -32,32 +32,28 @@ def randdims(ndims):
 
 
 def random_string():
-    return "".join(random.choice(BASE_STRING) for i in range(random.randint(0, 128)))
+    return "".join(random.choices(BASE_STRING, k=random.randint(0, 128)))
 
 
 def random_data(ids_type, ndims):
-    if ndims < 0:
-        raise NotImplementedError("Negative dimensions are not supported")
-
-    if ids_type == "STR":
+    if ids_type is IDSDataType.STR:
         if ndims == 0:
             return random_string()
         elif ndims == 1:
-            return [random_string() for i in range(random.randint(0, 3))]
+            return [random_string() for _ in range(random.randint(0, 3))]
         else:
             raise NotImplementedError(
-                "Strings of dimension 2 or higher " "are not supported"
+                "Strings of dimension 2 or higher are not supported"
             )
+    elif ids_type is IDSDataType.INT:
         return np.random.randint(0, 2**31 - 1, size=randdims(ndims), dtype=np.int32)
-    elif ids_type == "INT":
-        return np.random.randint(0, 2**31 - 1, size=randdims(ndims), dtype=np.int32)
-    elif ids_type == "FLT":
+    elif ids_type is IDSDataType.FLT:
         return np.random.random_sample(size=randdims(ndims))
-    elif ids_type == "CPX":
+    elif ids_type is IDSDataType.CPX:
         size = randdims(ndims)
         return np.random.random_sample(size) + 1j * np.random.random_sample(size)
     else:
-        logger.warn("Unknown data type %s requested to fill, ignoring", ids_type)
+        raise ValueError("Unknown data type %s requested to fill", ids_type)
 
 
 def fill_with_random_data(structure, max_children=3):
@@ -70,29 +66,27 @@ def fill_with_random_data(structure, max_children=3):
         structure: IDS object to fill
         max_children: The maximum amount of children to create for IDSStructArrays.
     """
+    is_toplevel = isinstance(structure, IDSToplevel)
     for child_name in structure._children:
+        if not is_toplevel and child_name == "time":
+            continue  # skip non-root time arrays when in HOMOGENEOUS_TIME
         child = structure[child_name]
 
-        if type(child) in [IDSStructure, IDSToplevel]:
+        if isinstance(child, IDSStructure):
             fill_with_random_data(child, max_children)
         elif isinstance(child, IDSStructArray):
-            if len(child.value) == 0:
-                n_children = min(child.metadata.maxoccur or max_children, max_children)
-                child.resize(n_children)
-                # choose which child will get the max number of grand-children
-                max_child = random.randrange(n_children)
-                for i, ch in enumerate(child.value):
-                    max_grand_children = max_children if i == max_child else 1
-                    fill_with_random_data(ch, max_grand_children)
+            n_children = min(child.metadata.maxoccur or max_children, max_children)
+            child.resize(n_children)
+            # choose which child will get the max number of grand-children
+            max_child = random.randrange(n_children)
+            for i, ch in enumerate(child.value):
+                max_grand_children = max_children if i == max_child else 1
+                fill_with_random_data(ch, max_grand_children)
         else:  # leaf node
             if child_name == "homogeneous_time":
                 child.value = IDS_TIME_MODE_HOMOGENEOUS
-            elif child_name == "time" and not isinstance(structure, IDSToplevel):
-                pass  # skip non-root time arrays when in HOMOGENEOUS_TIME
             else:
-                child.value = random_data(
-                    child.metadata.data_type.value, child.metadata.ndim
-                )
+                child.value = random_data(child.metadata.data_type, child.metadata.ndim)
 
 
 def maybe_set_random_value(primitive: IDSPrimitive, leave_empty=0.2) -> None:
@@ -110,7 +104,7 @@ def maybe_set_random_value(primitive: IDSPrimitive, leave_empty=0.2) -> None:
 
     ndim = primitive.metadata.ndim
     if ndim == 0:
-        primitive.value = random_data(primitive.metadata.data_type.value, ndim)
+        primitive.value = random_data(primitive.metadata.data_type, ndim)
         return
 
     shape = []
