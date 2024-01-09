@@ -60,11 +60,20 @@ convert IDSs using :py:func:`imaspy.convert_ids <imaspy.ids_convert.convert_ids>
 
 The DBEntry class automatically converts IDSs to the requested version:
 
-- When doing a ``put`` or ``put_slice``, the provided IDS is first converted to the
-  target version of the DBEntry and then put to disk.
-- When doing a ``get`` or ``get_slice``, the IDS is first read from disk in the version
-  as it was stored (by checking ``ids_properties/version_put/data_dictionary``) and then
-  converted to the requested target version.
+- When doing a ``put`` or ``put_slice``, the provided IDS is automatically converted to
+  the target version of the DBEntry when putting to disk.
+- When doing a ``get`` or ``get_slice``, the IDS is automatically converted from the
+  data dictionary version it was stored in (by checking
+  ``ids_properties/version_put/data_dictionary``) to the requested target version.
+  
+.. caution::
+
+  The automatic conversion doesn't provide feedback when data cannot be converted
+  between two versions of the data dictionary. Any incompatibilities between versions
+  are silently ignored.
+
+  Use the explicit :py:func:`imaspy.convert_ids <imaspy.ids_convert.convert_ids>` if you
+  need to know when any data cannot be converted.
 
 
 .. _`DD background`:
@@ -91,14 +100,18 @@ versions tagged in the data-dictionary git repository.
 Extending the DD set
 ''''''''''''''''''''
 
-A new command has been defined python setup.py build_DD which fetches new tags
-from git and builds IDSDef.zip
+Use the command ``python setup.py build_DD`` to build a new ``IDSDef.zip``. This
+fetches all tags from the data dictionary git repository and builds the ``IDSDef.zip``.
 
-The IDSDef.zip search paths have been expanded:
+IMASPy searches for an ``IDSDef.zip`` in the following locations:
 
-- ``$IMASPY_DDZIP`` (path to a zip file)
-- ``./IDSDef.zip``
-- ``~/.config/imaspy/IDSDef.zip`` (``$XDG_CONFIG_DIR``)
-- ``__file__/../assets/IDSDef.zip`` (provided with IMASPy)
+1.  The environment variable ``$IMASPY_DDZIP`` (path to a zip file)
+2.  The file ``./IDSDef.zip`` in the current working directory
+3.  In the local configuration folder: ``~/.config/imaspy/IDSDef.zip``, or
+    ``$XDG_CONFIG_DIR/imaspy/IDSDef.zip`` (if the environment variable
+    ``$XDG_CONFIG_DIR`` is set)
+4.  The zipfile bundled with the IMASPy installation: ``assets/IDSDef.zip``
 
-All paths are searched in order.
+All paths are searched in order when loading the definitions of a specific data
+dictionary version: the first zip file that contains the definitions of the requested
+version is used.
