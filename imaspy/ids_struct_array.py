@@ -1,7 +1,6 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
 """IDS StructArray represents an Array of Structures in the IDS tree.
-This contains references to :py:class:`IDSStructure`\\ s
 """
 
 import logging
@@ -30,15 +29,6 @@ class IDSStructArray(IDSBase):
     but contains references to IDSStructures
     """
 
-    # TODO: HLI compatibility
-    @staticmethod
-    def getAoSElement(self):
-        logger.warning(
-            "getAoSElement is deprecated, you should never need this", FutureWarning
-        )
-        return self._element_structure
-
-    # TODO: HLI compatibility `base_path_in`
     def __init__(self, parent: IDSBase, metadata: IDSMetadata):
         """Initialize IDSStructArray from XML specification
 
@@ -60,6 +50,7 @@ class IDSStructArray(IDSBase):
 
     @cached_property
     def coordinates(self):
+        """Coordinates of this array of structures."""
         return IDSCoordinates(self)
 
     def __deepcopy__(self, memo):
@@ -148,6 +139,10 @@ class IDSStructArray(IDSBase):
 
     @property
     def shape(self) -> Tuple[int]:
+        """Get the shape of the contained data.
+
+        This will always return a tuple: ``(len(self), )``.
+        """
         if self._lazy:
             self._load(None)
         return (len(self.value),)

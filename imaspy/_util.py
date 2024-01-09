@@ -1,9 +1,9 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
-
-# This file contains the implementation of all utility functions that need external
-# modules. Implementation has been removed from util.py to improve the performance of
-# `import imaspy`.
+"""This file contains the implementation of all utility functions that need external
+modules. Implementation has been removed from util.py to improve the performance of
+``import imaspy``.
+"""
 
 import copy
 import logging
@@ -110,7 +110,7 @@ def _make_tree(structure, hide_empty_nodes=True, *, tree=None):
 
     iterator = structure
     if hide_empty_nodes and isinstance(structure, IDSStructure):
-        iterator = structure._iter_nonempty()
+        iterator = structure.iter_nonempty_()
     for child in iterator:
         if isinstance(child, IDSPrimitive):
             if not child.has_value:

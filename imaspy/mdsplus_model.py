@@ -1,5 +1,7 @@
 # Helper functions to create MDSPlus reference models
 # and store them in a cache directory (.cache/imaspy/MDSPlus/name-HASH/)
+"""Module for generating and working with MDSplus models.
+"""
 
 import errno
 import getpass

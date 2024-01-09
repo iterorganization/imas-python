@@ -415,7 +415,8 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
     # "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
     "numpy": ("https://numpy.org/doc/stable", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy/reference", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    "packaging": ("https://packaging.pypa.io/en/stable/", None),
     # "numba": ("https://numba.pydata.org/numba-doc/latest", None),
     # "matplotlib": ("https://matplotlib.org", None),
     # "xarray": ("http://xarray.pydata.org/en/stable/", None),
@@ -425,6 +426,7 @@ intersphinx_mapping = {
     # "netcdf4": ("https://unidata.github.io/netcdf4-python/", None),  # netcdf4 does not have an intersphinx mapping
     # "jintrac": ("https://users.euro-fusion.org/pages/data-cmg/wiki/", None) Behind password, so cannot link there
 }
+intersphinx_timeout = 60  # Downloads time out after 1 minute
 
 # Configuration of sphinx.ext.graphviz
 # See https://www.sphinx-doc.org/en/master/usage/extensions/graphviz.html

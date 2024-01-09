@@ -1,5 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Tools for generating IDSs from a Data Dictionary version.
+"""
 
 from functools import partial
 import logging

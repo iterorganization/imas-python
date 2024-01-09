@@ -1,5 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Logic for interacting with IMAS Data Entries.
+"""
 
 import logging
 import os
@@ -437,9 +439,9 @@ class DBEntry:
             time_requested: Requested time slice
             interpolation_method: Interpolation method to use. Available options:
 
-                - :const:`~imas.imasdef.CLOSEST_INTERP`
-                - :const:`~imas.imasdef.PREVIOUS_INTERP`
-                - :const:`~imas.imasdef.LINEAR_INTERP`
+                - :const:`~imaspy.ids_defs.CLOSEST_INTERP`
+                - :const:`~imaspy.ids_defs.PREVIOUS_INTERP`
+                - :const:`~imaspy.ids_defs.LINEAR_INTERP`
 
             occurrence: Which occurrence of the IDS to read.
 

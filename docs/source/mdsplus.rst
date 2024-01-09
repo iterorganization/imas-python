@@ -1,3 +1,5 @@
+.. _`MDSplus in IMASPy`:
+
 MDSplus in IMASPy
 =================
 

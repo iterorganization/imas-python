@@ -44,21 +44,27 @@ class NBCPathMap:
     """Object mapping paths in one DD version to path, timebasepath and context path."""
 
     def __init__(self) -> None:
-        # Dictionary mapping the ids path
-        # - When no changes have occurred (which is assumed to be the default case), the
-        #   path is not present in the dictionary.
-        # - When an element is renamed it maps the old to the new name (and vice versa).
-        # - When an element does not exist in the other version, it is mapped to None.
         self.path: Dict[str, Optional[str]] = {}
+        """Dictionary mapping the ids path
 
-        # Map providing timebasepath for renamed elements
+        - When no changes have occurred (which is assumed to be the default case), the
+          path is not present in the dictionary.
+        - When an element is renamed it maps the old to the new name (and vice versa).
+        - When an element does not exist in the other version, it is mapped to None.
+        """
+
         self.tbp: Dict[str, str] = {}
+        """Map providing the timebasepath for renamed elements."""
 
-        # Map providing path relative to the nearest AoS for renamed elements
         self.ctxpath: Dict[str, str] = {}
+        """Map providing the lowlevel context path for renamed elements."""
 
-        # Set listing which paths had a type change (and therefore a None entry in path)
         self.type_change: Set[str] = set()
+        """Set of paths that had a type change.
+
+        Type changes are mapped to None in :py:attr:`path`, this ``set`` allows to
+        distinguish between a type change and a removed node.
+        """
 
     def __setitem__(self, path: str, value: Tuple[Optional[str], str, str]) -> None:
         self.path[path], self.tbp[path], self.ctxpath[path] = value
@@ -73,9 +79,17 @@ class NBCPathMap:
 # Expected typical use case is conversion between two versions only. With 74 IDSs
 # (DD 3.39.0) a cache of 128 items should be big enough.
 @lru_cache(maxsize=128)
+def _DDVersionMap(*args) -> "DDVersionMap":
+    return DDVersionMap(*args)
+
+
 class DDVersionMap:
+    """Mapping of an IDS between two Data Dictionary versions."""
+
     RENAMED_DESCRIPTIONS = {"aos_renamed", "leaf_renamed", "structure_renamed"}
+    """Supported ``nbc_description`` values for renames."""
     STRUCTURE_TYPES = {"structure", "struct_array"}
+    """Data dictionary ``data_type`` corresponding to structure-like types."""
 
     def __init__(
         self,
@@ -285,7 +299,7 @@ def dd_version_map_from_factories(
         (factory2_version, factory2, factory1),
     )
     return (
-        DDVersionMap(ids_name, old_factory._etree, new_factory._etree, old_version),
+        _DDVersionMap(ids_name, old_factory._etree, new_factory._etree, old_version),
         old_factory is factory1,
     )
 
@@ -349,12 +363,12 @@ def convert_ids(
     )
 
     source_is_new = source_version > target_version
-    source_etree = toplevel._parent._etree
-    target_etree = target_ids._parent._etree
+    source_tree = toplevel._parent._etree
+    target_tree = target_ids._parent._etree
     if source_is_new:
-        version_map = DDVersionMap(ids_name, target_etree, source_etree, target_version)
+        version_map = _DDVersionMap(ids_name, target_tree, source_tree, target_version)
     else:
-        version_map = DDVersionMap(ids_name, source_etree, target_etree, source_version)
+        version_map = _DDVersionMap(ids_name, source_tree, target_tree, source_version)
 
     _copy_structure(toplevel, target_ids, deepcopy, source_is_new, version_map)
     logger.info("Conversion of IDS %s finished.", ids_name)
@@ -379,7 +393,7 @@ def _copy_structure(
         version_map: Version map containing NBC renames.
     """
     rename_map = version_map.new_to_old if source_is_new else version_map.old_to_new
-    for item in source._iter_nonempty():
+    for item in source.iter_nonempty_():
         path = str(item.metadata.path)
         if path in rename_map:
             if rename_map.path[path] is None:

@@ -1,7 +1,6 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
-""" Represents a Top-level IDS (like NBI etc)
-* :py:class:`IDSToplevel`
+"""Represents a Top-level IDS (like ``core_profiles``, ``equilibrium``, etc)
 """
 
 import logging
@@ -70,7 +69,7 @@ class IDSToplevel(IDSStructure):
         """Save backend_version and backend_xml and build translation layer.
 
         Args:
-            parent: Parent of ``self``, an instance of :py:class:`IDSFactory`.
+            parent: Parent of ``self``.
             structure_xml: XML structure that defines this IDS toplevel.
             lazy: Whether this toplevel is used for a lazy-loaded get() or get_slice()
         """
@@ -260,7 +259,7 @@ class IDSToplevel(IDSStructure):
 
     def _validate(self):
         # Override to skip the self.metadata.type.is_dynamic check in IDSBase._validate
-        for child in self._iter_nonempty():
+        for child in self.iter_nonempty_():
             child._validate()
 
     @needs_imas
@@ -333,12 +332,6 @@ class IDSToplevel(IDSStructure):
         if db_entry is None:
             raise NotImplementedError()
         db_entry.put(self, occurrence)
-
-    @needs_imas
-    def partialGet(self, dataPath, occurrence=0):
-        raise NotImplementedError(
-            "{!s}.partialGet(dataPath, occurrence=0)".format(self)
-        )
 
     def __repr__(self):
         my_repr = f"<{type(self).__name__}"

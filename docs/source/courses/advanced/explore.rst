@@ -42,17 +42,8 @@ that are contained in this structure. See the following example:
     print()
     print("Core profiles contains the following non-empty elements:")
     # If you only want to loop over child nodes that have some data in them:
-    for filled_child_node in core_profiles._iter_nonempty():
+    for filled_child_node in core_profiles.iter_nonempty_():
         print("-", child_node.metadata.name)
-
-.. note::
-
-    :py:func:`IDSStructure._iter_nonempty
-    <imaspy.ids_structure.IDSStructure._iter_nonempty>` may look like a private
-    function, but it is part of the public API.
-
-    The function name starts with an underscore so it does not interfere with potential
-    names of children of the structure.
 
 
 Exercise 1: Explore structures

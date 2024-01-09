@@ -1,5 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Base class for all IDS nodes.
+"""
 
 import logging
 from typing import TYPE_CHECKING
@@ -21,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 class IDSBase:
     """The base class which unifies properties of structure, struct_array, toplevel
-    and primitive nodes (IDSPrimitive and IDSNumericArray)."""
+    and data nodes."""
 
     def __init__(self, parent: "IDSBase", metadata: IDSMetadata):
         """Setup basic properties for a tree node (leaf or non-leaf) such as
@@ -49,11 +51,6 @@ class IDSBase:
             - `ids.ids_properties.provenance[0]._dd_parent` is also `ids.ids_properties`
         """
         return self._parent
-
-    @cached_property
-    def _is_dynamic(self) -> bool:
-        """True if this element (or any parent) has type=dynamic"""
-        return self.metadata.type.is_dynamic or self._dd_parent._is_dynamic
 
     @property
     def _path(self) -> str:

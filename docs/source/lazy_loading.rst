@@ -3,8 +3,9 @@
 Lazy loading
 ============
 
-When reading data from a data entry (using :meth:`DBEntry.get`, or
-:meth:`DBEntry.get_slice`), by default all data is read immediately from the
+When reading data from a data entry (using :meth:`DBEntry.get
+<imaspy.db_entry.DBEntry.get>`, or :meth:`DBEntry.get_slice
+<imaspy.db_entry.DBEntry.get_slice>`), by default all data is read immediately from the
 lowlevel Access Layer backend. This may take a long time to complete if the data entry
 has a lot of data stored for the requested IDS.
 
@@ -17,7 +18,8 @@ Enable lazy loading of data
 ---------------------------
 
 You can enable lazy loading of data by supplying the keyword argument :code:`lazy=True`
-to :meth:`DBEntry.get`, or :meth:`DBEntry.get_slice`. The returned IDS
+to :meth:`DBEntry.get <imaspy.db_entry.DBEntry.get>`, or :meth:`DBEntry.get_slice
+<imaspy.db_entry.DBEntry.get_slice>`. The returned IDS
 object will fetch the data from the backend at the moment that you want to access it.
 See below example:
 

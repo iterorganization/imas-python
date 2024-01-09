@@ -1,5 +1,7 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Data Dictionary type handling functionality.
+"""
 
 from enum import Enum
 from functools import lru_cache
@@ -74,8 +76,8 @@ class IDSDataType(Enum):
             data_type: Data type string from the DD.
 
         Returns:
-            parsed_datatype: IDSDataType instance representing the parsed data type.
-            ndim: number of dimensions.
+            IDSDataType instance representing the parsed data type and number of
+            dimensions.
 
         Examples:
             >>> IDSDataType.parse("STR_1D")

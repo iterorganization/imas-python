@@ -1,3 +1,5 @@
+.. _`benchmarking IMASPY`:
+
 Benchmarking IMASPy
 ===================
 

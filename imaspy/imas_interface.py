@@ -7,6 +7,7 @@ This module tries to abstract away most API incompatibilities between the suppor
 Access Layer versions (for example the rename of _ual_lowlevel to _al_lowlevel).
 """
 import importlib
+import inspect
 import logging
 import time
 
@@ -57,17 +58,17 @@ class LowlevelInterface:
       all methods that exist in the imported lowlevel module.
     - If the lowlevel introduces new methods, we need to:
 
-        1.  Add a new method with the same name but prefix dropped (e.g. register_plugin
-            for lowlevel.al_register_plugin)
-        2.  The implementation of this method should provide a proper error message when
-            the method is called and the underlying lowlevel doesn't provide the
-            functionality. For instance ``raise self._minimal_version("5.0")``.
+      - Add a new method with the same name but prefix dropped (e.g. register_plugin
+        for lowlevel.al_register_plugin)
+      - The implementation of this method should provide a proper error message when
+        the method is called and the underlying lowlevel doesn't provide the
+        functionality. For instance ``raise self._minimal_version("5.0")``.
 
     - If the lowlevel drops methods, we need to update the implementation fo the method
       to provide a proper error message or a workaround.
     - Renamed methods (if this will ever happen) are perhaps best handled in the
-      __init__ by providing a mapping of new to old name, so far this was only relevant
-      for the ``ual_`` to ``al_`` rename.
+      ``__init__`` by providing a mapping of new to old name, so far this was only
+      relevant for the ``ual_`` to ``al_`` rename.
     """
 
     def __init__(self, lowlevel):
@@ -202,6 +203,12 @@ class LowlevelInterface:
     def get_al_version(self):
         return self._al_version_str
 
+
+# Dummy documentation for interface:
+for funcname in dir(LowlevelInterface):
+    func = getattr(LowlevelInterface, funcname)
+    if not funcname.startswith("_") and inspect.isfunction(func) and not func.__doc__:
+        func.__doc__ = f"Wrapper function for AL lowlevel method ``{funcname}``"
 
 ll_interface = LowlevelInterface(lowlevel)
 """IMASPy <-> IMAS lowlevel interface"""

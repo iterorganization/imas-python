@@ -1,6 +1,6 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
-""" Core of the IMASPy interpreted IDS metadata
+"""Core of the IMASPy interpreted IDS metadata
 """
 import re
 import types

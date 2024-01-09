@@ -1,10 +1,13 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Create a default log handler when IMASPy is imported.
+"""
+
 import logging
 import os
 
 
-class PrettyFormatter(logging.Formatter):
+class _PrettyFormatter(logging.Formatter):
     """Logging Formatter to add colors and count warning / errors"""
 
     light_grey = "\x1b[90m"
@@ -46,7 +49,7 @@ def connect_formatter(logger):
     """Connect general formatter to given logger"""
     ch = logging.StreamHandler()
     ch.setLevel(logging.DEBUG)
-    ch.setFormatter(PrettyFormatter())
+    ch.setFormatter(_PrettyFormatter())
     logger.addHandler(ch)
 
 

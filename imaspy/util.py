@@ -1,5 +1,8 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
+"""Collection of useful helper methods when working with IMASPy.
+"""
+
 
 import logging
 import re
@@ -17,7 +20,7 @@ def visit_children(func, node, *, leaf_only=True, visit_empty=False):
     """Apply a function to node and its children
 
     IMASPy objects generally live in a tree structure. Similar to Pythons
-    :py:meth:`map`, this method can be used to apply a function to objects
+    :py:func:`map`, this method can be used to apply a function to objects
     within this tree structure.
 
     Args:
@@ -50,7 +53,7 @@ def visit_children(func, node, *, leaf_only=True, visit_empty=False):
         iterator = node
         if not visit_empty and isinstance(node, IDSStructure):
             # Only iterate over non-empty nodes
-            iterator = node._iter_nonempty()
+            iterator = node.iter_nonempty_()
 
         for child in iterator:
             visit_children(func, child, leaf_only=leaf_only, visit_empty=visit_empty)
