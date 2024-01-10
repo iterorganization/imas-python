@@ -341,6 +341,11 @@ def convert_ids(
         factory: Existing IDSFactory to use for as target version.
         target: Use this IDSToplevel as target toplevel instead of creating one.
     """
+    if toplevel._lazy:
+        raise NotImplementedError(
+            "IDS conversion is not implemented for lazy-loaded IDSs"
+        )
+
     ids_name = toplevel.metadata.name
     if target is None:
         if factory is None:

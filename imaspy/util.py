@@ -16,7 +16,7 @@ from imaspy.ids_structure import IDSStructure
 logger = logging.getLogger(__name__)
 
 
-def visit_children(func, node, *, leaf_only=True, visit_empty=False):
+def visit_children(func, node, *, leaf_only=True, visit_empty=False, accept_lazy=False):
     """Apply a function to node and its children
 
     IMASPy objects generally live in a tree structure. Similar to Pythons
@@ -36,6 +36,9 @@ def visit_children(func, node, *, leaf_only=True, visit_empty=False):
             * ``False``: All nodes, including internal nodes
 
         visit_empty: When set to True, also apply the function to empty nodes.
+        accept_lazy: See documentation of :py:param:`iter_nonempty_()
+            <imaspy.ids_structure.IDSStructure.iter_nonempty_.accept_lazy>`. Only
+            relevant when :param:`visit_empty` is False.
 
     Example:
         .. code-block:: python
@@ -53,7 +56,7 @@ def visit_children(func, node, *, leaf_only=True, visit_empty=False):
         iterator = node
         if not visit_empty and isinstance(node, IDSStructure):
             # Only iterate over non-empty nodes
-            iterator = node.iter_nonempty_()
+            iterator = node.iter_nonempty_(accept_lazy=accept_lazy)
 
         for child in iterator:
             visit_children(func, child, leaf_only=leaf_only, visit_empty=visit_empty)
@@ -70,6 +73,10 @@ def resample(node, old_time, new_time, homogeneousTime=None, inplace=False, **kw
 
 def print_tree(structure, hide_empty_nodes=True):
     """Print the full tree of an IDS or IDS structure.
+
+    Caution:
+        With :py:param:`hide_empty_nodes` set to ``True``, lazy-loaded IDSs will only
+        show loaded nodes.
 
     Args:
         structure: IDS structure to print

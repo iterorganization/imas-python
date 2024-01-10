@@ -35,12 +35,45 @@ Caveats of lazy loaded IDSs
 
 Lazy loading of data may speed up your programs, but also comes with some limitations.
 
-1.  IMASPy **assumes** that the underlying data entry is not modified.
+1.  Some functionality is not implemented or works differently for lazy-loaded IDSs:
+
+    -   Iterating over non-empty nodes works differently, see API documentation:
+        :py:meth:`imaspy.ids_structure.IDSStructure.iter_nonempty_`.
+    -   :py:meth:`~imaspy.ids_structure.IDSStructure.has_value` is not implemented for
+        lazy-loaded structure elements.
+    -   :py:meth:`~imaspy.ids_toplevel.IDSToplevel.validate` will only validate loaded
+        data. Additional data might be loaded from the backend to validate coordinate
+        sizes.
+    -   :py:meth:`imaspy.util.print_tree` will only print data that is loaded when
+        :py:param:`~imaspy.util.print_tree.hide_empty_nodes` is ``True``.
+    -   :py:meth:`imaspy.util.visit_children`:
+
+        -   When :py:param:`~imaspy.util.visit_children.visit_empty` is ``False``
+            (default), this method uses
+            :py:meth:`~imaspy.ids_structure.IDSStructure.iter_nonempty_`. This raises an
+            error for lazy-loaded IDSs, unless you set
+            :py:param:`~imaspy.util.visit_children.accept_lazy` to ``True``.
+        -   When :py:param:`~imaspy.util.visit_children.visit_empty` is ``True``, this
+            will iteratively load `all` data from the backend. This is effectively a
+            full, but less efficient, ``get()``\ /\ ``get_slice()``. It will be faster
+            if you don't use lazy loading in this case.
+
+    -   IDS conversion through :py:meth:`imaspy.convert_ids
+        <imaspy.ids_convert.convert_ids>` is not implemented for lazy loaded IDSs. Note
+        that :ref:`Automatic conversion between DD versions` also applies when lazy
+        loading.
+    -   Lazy loaded IDSs are read-only, setting or changing values, resizing arrays of
+        structures, etc. is not allowed.
+    -   You cannot :py:meth:`~imaspy.db_entry.DBEntry.put`,
+        :py:meth:`~imaspy.db_entry.DBEntry.put_slice` or
+        :py:meth:`~imaspy.ids_toplevel.IDSToplevel.serialize` lazy-loaded IDSs. 
+
+2.  IMASPy **assumes** that the underlying data entry is not modified.
 
     When you (or another user) overwrite or add data to the same data entry, you may end
     up with a mix of old and new data in the lazy loaded IDS.
 
-2.  After you close the data entry, no new elements can be loaded.
+3.  After you close the data entry, no new elements can be loaded.
 
     >>> core_profiles = data_entry.get("core_profiles", lazy=True)
     >>> data_entry.close()
@@ -50,8 +83,6 @@ Lazy loading of data may speed up your programs, but also comes with some limita
     RuntimeError: Cannot lazy load the requested data: the data entry is no longer
     available for reading. Hint: did you close() the DBEntry?
 
-3.  IDSs that are lazy loaded are read-only, and you cannot :code:`put()` or
-    :code:`put_slice()` them.
 4.  Lazy loading has more overhead for reading data from the lowlevel: it is therefore
     more efficient to do a full :code:`get()` or :code:`get_slice()` when you intend to
     use most of the data stored in an IDS.
