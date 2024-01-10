@@ -137,8 +137,9 @@ class IDSStructure(IDSBase):
     def __deepcopy__(self, memo):
         copy = self.__class__(self._parent, self.metadata)
         for child in self._children:
-            child_copy = deepcopy(getattr(self, child))
-            setattr(copy, child, child_copy)
+            if child in self.__dict__:
+                child_copy = deepcopy(getattr(self, child), memo)
+                setattr(copy, child, child_copy)
         return copy
 
     def __dir__(self) -> List[str]:
