@@ -66,7 +66,9 @@ Lazy loading of data may speed up your programs, but also comes with some limita
         structures, etc. is not allowed.
     -   You cannot :py:meth:`~imaspy.db_entry.DBEntry.put`,
         :py:meth:`~imaspy.db_entry.DBEntry.put_slice` or
-        :py:meth:`~imaspy.ids_toplevel.IDSToplevel.serialize` lazy-loaded IDSs. 
+        :py:meth:`~imaspy.ids_toplevel.IDSToplevel.serialize` lazy-loaded IDSs.
+    -   Copying lazy-loaded IDSs (through :external:py:func:`copy.deepcopy`) is not
+        implemented.
 
 2.  IMASPy **assumes** that the underlying data entry is not modified.
 

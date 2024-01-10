@@ -135,6 +135,10 @@ class IDSStructure(IDSBase):
             attr.value = value
 
     def __deepcopy__(self, memo):
+        if self._lazy:
+            raise NotImplementedError(
+                "deepcopy is not implemented for lazy-loaded IDSs."
+            )
         copy = self.__class__(self._parent, self.metadata)
         for child in self._children:
             child_copy = deepcopy(getattr(self, child))
