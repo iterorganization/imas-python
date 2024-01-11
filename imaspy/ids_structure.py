@@ -71,12 +71,15 @@ class IDSStructure(IDSBase):
                 time should be something with a path attribute
             metadata: IDSMetadata describing the structure of the IDS
         """
-        # Note: __setattr__ needs _children defined, so first set to empty list to
-        # prevent infinite recursion when setting self.metadata in super().__init__
-        self._children = []
-        super().__init__(parent, metadata)
-        self._children = self.metadata._children
-        self._lazy_context = None
+        # Performance hack: bypass our __setattr__ implementation during __init__:
+        orig_setattr = IDSStructure.__setattr__
+        del IDSStructure.__setattr__
+        try:
+            super().__init__(parent, metadata)
+            self._children = self.metadata._children
+            self._lazy_context = None
+        finally:
+            IDSStructure.__setattr__ = orig_setattr
 
     def __getattr__(self, name):
         if name not in self._children:
