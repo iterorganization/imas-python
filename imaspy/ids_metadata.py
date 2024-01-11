@@ -56,8 +56,20 @@ class IDSType(Enum):
 # Perhaps the cache could be smaller, but that would be less efficient for the unit
 # tests...
 @lru_cache(maxsize=256)
-def get_toplevel_metadata(structure_xml):
-    return IDSMetadata(structure_xml, "", None)
+def get_toplevel_metadata(structure_xml: Element) -> "IDSMetadata":
+    """Build metadata tree of an IDS toplevel element.
+
+    Args:
+        structure_xml: XML element belonging to an IDS toplevel (e.g. core_profiles).
+    """
+    # Delete the custom __setattr__ so __init__ can assign values:
+    orig_setattr = IDSMetadata.__setattr__
+    del IDSMetadata.__setattr__
+    try:
+        return IDSMetadata(structure_xml, "", None)
+    finally:
+        # Always restore the custom __setattr__ to avoid accidental data changes
+        IDSMetadata.__setattr__ = orig_setattr
 
 
 class IDSMetadata:
@@ -74,6 +86,10 @@ class IDSMetadata:
         core_profiles = imaspy.IDSFactory().core_profiles()
         # Get the metadata of the time child of the profiles_1d array of structures
         p1d_time_meta = core_profiles.metadata["profiles_1d/time"]
+
+    Note:
+        This class should not be instantiated directly, use
+        :func:`get_toplevel_metadata` instead.
     """
 
     def __init__(
@@ -146,27 +162,33 @@ class IDSMetadata:
         if self._parent is not None:
             self._is_dynamic = self._is_dynamic or self._parent._is_dynamic
 
-        # Parse coordinates
-        coors = [IDSCoordinate("")] * self.ndim
-        coors_same_as = [IDSCoordinate("")] * self.ndim
-        for dim in range(self.ndim):
-            coor = f"coordinate{dim + 1}"
-            if coor in attrib:
-                coors[dim] = IDSCoordinate(attrib[coor])
-                setattr(self, coor, coors[dim])
-            if coor + "_same_as" in attrib:
-                coors_same_as[dim] = IDSCoordinate(attrib[coor + "_same_as"])
-                setattr(self, coor + "_same_as", coors_same_as[dim])
-        self.coordinates: "tuple[IDSCoordinate]" = tuple(coors)
+        self.coordinates: "tuple[IDSCoordinate]"
         """Tuple of coordinates of this node.
 
         ``coordinates[0]`` is the coordinate of the first dimension, etc."""
-        self.coordinates_same_as: "tuple[IDSCoordinate]" = tuple(coors_same_as)
+        self.coordinates_same_as: "tuple[IDSCoordinate]"
         """Indicates quantities which share the same coordinate in a given dimension,
         but the coordinate is not explicitly stored in the IDS."""
+        if self.ndim == 0:
+            self.coordinates = ()
+            self.coordinates_same_as = ()
+        else:
+            # Parse coordinates
+            coors = [IDSCoordinate("")] * self.ndim
+            coors_same_as = [IDSCoordinate("")] * self.ndim
+            for dim in range(self.ndim):
+                coor = f"coordinate{dim + 1}"
+                if coor in attrib:
+                    coors[dim] = IDSCoordinate(attrib[coor])
+                    setattr(self, coor, coors[dim])
+                if coor + "_same_as" in attrib:
+                    coors_same_as[dim] = IDSCoordinate(attrib[coor + "_same_as"])
+                    setattr(self, coor + "_same_as", coors_same_as[dim])
+            self.coordinates = tuple(coors)
+            self.coordinates_same_as = tuple(coors_same_as)
 
         # Parse alternative coordinates
-        self.alternative_coordinates: "tuple[IDSPath]" = tuple()
+        self.alternative_coordinates: "tuple[IDSPath]" = ()
         """Quantities that can be used as coordinate instead of this node."""
         if "alternative_coordinate1" in attrib:
             self.alternative_coordinates = tuple(
@@ -175,8 +197,8 @@ class IDSMetadata:
 
         # Store any remaining attributes from the DD XML
         for attr_name in attrib:
-            if not hasattr(self, attr_name):
-                setattr(self, attr_name, attrib[attr_name])
+            if attr_name not in self.__dict__ and not attr_name.startswith("_"):
+                self.__dict__[attr_name] = attrib[attr_name]
 
         # Cache children in a read-only dict
         ctx_path = "" if self.data_type is IDSDataType.STRUCT_ARRAY else self._ctx_path
@@ -187,16 +209,14 @@ class IDSMetadata:
             }
         )
 
-        # Prevent accidentally modifying attributes
-        self._init_done = True
-
     def __repr__(self) -> str:
         return f"<IDSMetadata for '{self.name}'>"
 
     def __setattr__(self, name: str, value: Any):
-        if hasattr(self, "_init_done"):
-            raise RuntimeError("Cannot set attribute: IDSMetadata is read-only.")
-        super().__setattr__(name, value)
+        raise RuntimeError("Cannot set attribute: IDSMetadata is read-only.")
+
+    def __delattr__(self, name: str):
+        raise RuntimeError("Cannot delete attribute: IDSMetadata is read-only.")
 
     def __copy__(self):
         return self  # IDSMetadata is immutable

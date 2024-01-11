@@ -31,6 +31,8 @@ def test_metadata_immutable(fake_structure_xml):
     meta = get_toplevel_metadata(fake_structure_xml)
     with pytest.raises(RuntimeError):
         meta.immutable = True
+    with pytest.raises(RuntimeError):
+        del meta.name
 
 
 def test_ids_type():
