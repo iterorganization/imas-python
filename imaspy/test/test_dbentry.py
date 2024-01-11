@@ -1,9 +1,10 @@
 import pytest
 
 import imaspy
+from imaspy.imas_interface import ll_interface, has_imas
 
 
-def test_dbentry_contextmanager():
+def test_dbentry_contextmanager(requires_imas):
     entry = imaspy.DBEntry(imaspy.ids_defs.MEMORY_BACKEND, "test", 1, 1)
     entry.create()
     ids = entry.factory.core_profiles()
@@ -20,8 +21,8 @@ def test_dbentry_contextmanager():
 
 
 @pytest.mark.skipif(
-    imaspy.imas_interface.ll_interface._al_version.major < 5,
-    reason="URI API not available for AL4",
+    not has_imas or ll_interface._al_version.major < 5,
+    reason="URI API not available",
 )
 def test_dbentry_contextmanager_uri(tmp_path):
     entry = imaspy.DBEntry(f"imas:ascii?path={tmp_path}/testdb", "w")
