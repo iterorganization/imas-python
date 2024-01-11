@@ -239,7 +239,9 @@ class IDSStructure(IDSBase):
         for child in self._children:
             if child in self.__dict__:
                 child_node = getattr(self, child)
-                if child_node.has_value:
+                if (  # IDSStructure.has_value is not implemented when lazy-loaded:
+                    self._lazy and isinstance(child_node, IDSStructure)
+                ) or child_node.has_value:
                     yield child_node
 
     def __iter__(self):
