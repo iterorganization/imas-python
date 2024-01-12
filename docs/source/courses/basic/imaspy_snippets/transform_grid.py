@@ -32,7 +32,8 @@ for time in input_times:
     eq.ids_properties.comment = "IMASPy training: transform coordinate system"
 
     p2d = eq.time_slice[0].profiles_2d[0]
-    r, z = p2d.grid.dim1, p2d.grid.dim2
+    # Get `.value` so we can plot the original values after the IDS node is overwritten
+    r, z = p2d.grid.dim1.value, p2d.grid.dim2.value
     r_axis = eq.time_slice[0].global_quantities.magnetic_axis.r
     z_axis = eq.time_slice[0].global_quantities.magnetic_axis.z
 
@@ -54,7 +55,8 @@ for time in input_times:
 
     # Interpolate all data nodes on the new grid
     for data_node in ["b_field_r", "b_field_z", "b_field_tor", "psi"]:
-        data = p2d[data_node]
+        # `.value` so we can plot the original values after the IDS node is overwritten
+        data = p2d[data_node].value
         interp = RegularGridInterpolator((r, z), data)
         new_data = interp(interpolation_points).reshape(grid_r.shape)
         p2d[data_node] = new_data
