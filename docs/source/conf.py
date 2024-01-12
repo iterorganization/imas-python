@@ -6,40 +6,25 @@ list see the documentation:
 https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
 
-# -- Path setup --------------------------------------------------------------
-
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-import sys
-
-print("python exec:", sys.executable)
-print("sys.path:", sys.path)
-
 import datetime
-from urllib.parse import (
-    urljoin,
-)
+import sys
+from urllib.parse import urljoin
 
 # Sphinx extention to format xarray/pandas summaries
 import sphinx_autosummary_accessors
-
 from jinja2.defaults import DEFAULT_FILTERS
-
-from pkg_resources import parse_version as V
-
+from packaging.version import Version
 
 import imaspy
 
 
+print("python exec:", sys.executable)
+print("sys.path:", sys.path)
+
 # -- Project information -----------------------------------------------------
 # The documented project’s name
 project = src_project = PROJECT = "IMASPy"
-
-# PROJECT_ID=10189354
 PACKAGE = "imaspy"
-PACKAGE_HOST = "gitlab"
 src_group = GROUP = "IMAS"
 
 # A copyright statement in the style '2008, Author Name'.
@@ -50,18 +35,12 @@ src_host = "git.iter.org"
 
 # Parse urls here for convenience, to be re-used
 
-# netCDF4 docs
-netcdf4_docs = "https://unidata.github.io/netcdf4-python/netCDF4/index.html"
-
 # ITER docs
 iter_projects = "https://git.iter.org/projects/"
 imas_repos = urljoin(iter_projects, "IMAS/")
 imex_repos = urljoin(iter_projects, "IMEX/")
 dd_url = urljoin(imas_repos, "repos/data-dictionary/")
 al_url = urljoin(imas_repos, "repos/access-layer/")
-al_cython_url = urljoin(imas_repos, "repos/al-cython/")
-al_python_hli_url = urljoin(imas_repos, "repos/al-python/")
-al_python_lib_url = urljoin(imas_repos, "repos/al-python-lib/")
 issue_url = jira_url = "https://jira.iter.org/browse/"
 
 # IMASPy
@@ -77,16 +56,12 @@ extlinks = {
     "src": (blob_url + "%s", f"{src_group}/{src_project}/%s"),
     "issue": (issue_url + "%s", "%s"),
     "merge": (mr_url + "%s", "!%s"),
-    "netcdf4": (netcdf4_docs + "%s", "netcdf4 %s"),
     "dd": (dd_url + "%s", "%s"),
     "al": (al_url + "%s", "%s"),
-    "al_cython": (al_cython_url + "%s", "%s"),
-    "al_hli": (al_python_hli_url + "%s", "%s"),
-    "al_lib": (al_python_lib_url + "%s", "%s"),
     "pypa": ("https://packaging.python.org/%s", None),
 }
 
-full_version = V(imaspy.__version__)
+full_version = Version(imaspy.__version__)
 
 # version: The major project version, used as the replacement for |version|.
 #   For example, for the Python documentation, this may be something like 2.6.
@@ -104,19 +79,11 @@ release = str(full_version)
 # ones.
 extensions = [
     "sphinx.ext.autodoc",  # To auto-generate docs from Python docstrings
-    # "sphinx.ext.autosectionlabel",  # Allow reference sections using its title
     "sphinx.ext.todo",  # Support for todo items
     "sphinx.ext.napoleon",  # Support for NumPy and Google style docstrings
     "sphinx.ext.intersphinx",  # Generate links to other documentation files
-    # 'sphinx.ext.coverage',  # numpy
-    # 'sphinx.ext.doctest',  # numpy
     "sphinx.ext.autosummary",  # For summarizing autodoc-generated files
     "sphinx.ext.extlinks",  # For shortening internal links
-    # "sphinx.ext.graphviz",  # Draw Graphs in docs
-    # 'sphinx.ext.ifconfig',  # numpy
-    # 'matplotlib.sphinxext.plot_directive',  # numpy
-    # 'IPython.sphinxext.ipythoGn_console_highlighting',  # numpy
-    # 'IPython.sphinxext.ipython_directive',  # numpy
     "sphinx.ext.mathjax",  # Render math as images
     "sphinx_immaterial",  # Sphinx immaterial theme
 ]
@@ -130,13 +97,6 @@ templates_path = ["_templates", sphinx_autosummary_accessors.templates_path]
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
-
-# The suffix of source filenames.
-source_suffix = {
-    ".rst": "restructuredtext",
-    ".txt": "markdown",
-    ".md": "markdown",
-}
 
 # The master toctree document.
 master_doc = "index"
@@ -222,6 +182,7 @@ html_theme_options = {
     ],
 }
 
+# Shorten Table Of Contents in API documentation
 object_description_options = [
     (".*", dict(include_fields_in_toc=False)),
     (".*parameter", dict(include_in_toc=False)),
@@ -307,132 +268,32 @@ htmlhelp_basename = "imaspy_doc"
 autodoc_typehints = "signature"
 
 
-# from recommonmark.transform import AutoStructify
-
-# app setup hook
-# def setup(app):
-#    # add a config value for `ifconfig` directives
-#    app.add_config_value('python_version_major', str(sys.version_info.major), 'env')
-#    app.add_lexer('NumPyC', NumPyLexer)
-#    app.add_config_value('recommonmark_config', {
-#        #'url_resolver': lambda url: 'http://' + url,#  a function that maps a existing relative position in the document to a http link
-#        'enable_auto_toc_tree': True,  # whether enable Auto Toc Tree feature.
-#        'auto_toc_tree_section': 'Contents',  # when enabled, Auto Toc Tree will only be enabled on section that matches the title.
-#        'enable_math': True,  # whether enable Math Formula
-#        'enable_inline_math': True,  # whether enable Inline Math
-#        'enable_eval_rst': False,  # whether Embed reStructuredText is enabled.
-#        'enable_auto_doc_ref': None,  # Depracated
-#    }, True)
-#    app.add_transform(AutoStructify)
-
-
 # Configuration of sphinx.ext.autosummary
 # https://www.sphinx-doc.org/en/master/usage/extensions/autosummary.html
 autosummary_generate = True
 
-# Configuration of recommonmark
-# See https://www.sphinx-doc.org/en/master/usage/markdown.html
 
 # Configuration of sphinx.ext.napoleon
+# https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
 # Support for NumPy and Google style docstrings
-# See https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
-# napoleon_include_init_with_doc = False # Handled by our Sphinx template
-# napoleon_include_private_with_doc = False # Handled by our Sphinx template
-# napoleon_include_special_with_doc = True
-# napoleon_use_admonition_for_examples = False
-# napoleon_use_admonition_for_notes = False
-# napoleon_use_admonition_for_references = False
-# napoleon_use_ivar = False
-# napoleon_use_param = True
-# napoleon_use_keyword = False
-# napoleon_use_rtype = True
-napoleon_preprocess_types = True
-napoleon_type_aliases = {
-    # general terms
-    "sequence": ":term:`sequence`",
-    "iterable": ":term:`iterable`",
-    "callable": ":py:func:`callable`",
-    "dict_like": ":term:`dict-like <mapping>`",
-    "dict-like": ":term:`dict-like <mapping>`",
-    "mapping": ":term:`mapping`",
-    "file-like": ":term:`file-like <file-like object>`",
-    # special terms
-    # 'same type as caller': '*same type as caller*',  # does not work, yet
-    # 'same type as values': '*same type as values*',  # does not work, yet
-    # stdlib type aliases
-    "MutableMapping": "~collections.abc.MutableMapping",
-    "sys.stdout": ":obj:`sys.stdout`",
-    "timedelta": "~datetime.timedelta",
-    "string": ":class:`string <str>`",
-    # numpy terms
-    "array_like": ":term:`array_like`",
-    "array-like": ":term:`array-like <array_like>`",
-    "scalar": ":term:`scalar`",
-    "array": ":term:`array`",
-    "hashable": ":term:`hashable <name>`",
-    # matplotlib terms
-    "color-like": ":py:func:`color-like <matplotlib.colors.is_color_like>`",
-    "matplotlib colormap name": ":doc:matplotlib colormap name <Colormap reference>",
-    "matplotlib axes object": ":py:class:`matplotlib axes object <matplotlib.axes.Axes>`",
-    "colormap": ":py:class:`colormap <matplotlib.colors.Colormap>`",
-    # objects without namespace
-    "DataArray": "~xarray.DataArray",
-    "Dataset": "~xarray.Dataset",
-    "Variable": "~xarray.Variable",
-    "ndarray": "~numpy.ndarray",
-    "MaskedArray": "~numpy.ma.MaskedArray",
-    "dtype": "~numpy.dtype",
-    "ComplexWarning": "~numpy.ComplexWarning",
-    "Index": "~pandas.Index",
-    "MultiIndex": "~pandas.MultiIndex",
-    "CategoricalIndex": "~pandas.CategoricalIndex",
-    "TimedeltaIndex": "~pandas.TimedeltaIndex",
-    "DatetimeIndex": "~pandas.DatetimeIndex",
-    "Series": "~pandas.Series",
-    "DataFrame": "~pandas.DataFrame",
-    "Categorical": "~pandas.Categorical",
-    "Path": "~~pathlib.Path",
-    # objects with abbreviated namespace (from pandas)
-    "pd.Index": "~pandas.Index",
-    "pd.NaT": "~pandas.NaT",
-    "pd.DataFrame": "~pandas.NaT",
-}  # TODO: From xarray, improve! New in 3.2
+# Allow PEP 526 attributes annotations in classes:
+napoleon_attr_annotations = True
 
-napoleon_attr_annotations = (
-    True  # Allow PEP 526 attributes annotations in classes. New in 3.4
-)
-
-# From xarray, huh?
-# napoleon_preprocess_types = True #From xarray, not in docs
-# numpydoc_class_members_toctree = True
-# numpydoc_show_class_members = False
 
 # Configuration of sphinx.ext.intersphinx
-# See https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
+# https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
-    # "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
     "numpy": ("https://numpy.org/doc/stable", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "packaging": ("https://packaging.pypa.io/en/stable/", None),
-    # "numba": ("https://numba.pydata.org/numba-doc/latest", None),
-    # "matplotlib": ("https://matplotlib.org", None),
-    # "xarray": ("http://xarray.pydata.org/en/stable/", None),
-    # "dask": ("https://docs.dask.org/en/latest", None),
-    # "cython": ("https://cython.readthedocs.io/", None),
-    # "gitpython": ("https://gitpython.readthedocs.io/en/stable", None),
-    # "netcdf4": ("https://unidata.github.io/netcdf4-python/", None),  # netcdf4 does not have an intersphinx mapping
-    # "jintrac": ("https://users.euro-fusion.org/pages/data-cmg/wiki/", None) Behind password, so cannot link there
 }
 intersphinx_timeout = 60  # Downloads time out after 1 minute
 
-# Configuration of sphinx.ext.graphviz
-# See https://www.sphinx-doc.org/en/master/usage/extensions/graphviz.html
-
 # Configuration of sphinx.ext.mathjax
-# See https://www.sphinx-doc.org/en/master/usage/extensions/math.html#module-sphinx.ext.mathjax
+# https://www.sphinx-doc.org/en/master/usage/extensions/math.html#module-sphinx.ext.mathjax
 
 
 def escape_underscores(string):
