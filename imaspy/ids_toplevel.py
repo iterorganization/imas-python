@@ -259,7 +259,8 @@ class IDSToplevel(IDSStructure):
 
     def _validate(self):
         # Override to skip the self.metadata.type.is_dynamic check in IDSBase._validate
-        for child in self.iter_nonempty_():
+        # accept_lazy=True: users are warned in IDSToplevel.validate()
+        for child in self.iter_nonempty_(accept_lazy=True):
             child._validate()
 
     @needs_imas

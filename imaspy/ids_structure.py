@@ -138,6 +138,10 @@ class IDSStructure(IDSBase):
             attr.value = value
 
     def __deepcopy__(self, memo):
+        if self._lazy:
+            raise NotImplementedError(
+                "deepcopy is not implemented for lazy-loaded IDSs."
+            )
         copy = self.__class__(self._parent, self.metadata)
         for child in self._children:
             child_copy = deepcopy(getattr(self, child))
@@ -163,20 +167,84 @@ class IDSStructure(IDSBase):
     @property
     def has_value(self) -> bool:
         """True if any of the children has a non-default value"""
+        if self._lazy:
+            raise NotImplementedError(
+                "`has_value` is not implemented for lazy-loaded structures."
+            )
         for _ in self.iter_nonempty_():
             return True
         return False
 
-    def iter_nonempty_(self) -> Generator[IDSBase, None, None]:
+    def iter_nonempty_(self, *, accept_lazy=False) -> Generator[IDSBase, None, None]:
         """Iterate over all child nodes with non-default value.
 
         Note:
             The name ends with an underscore so it won't clash with IDS child names.
+
+        Caution:
+            This method works differently for lazy-loaded IDSs.
+
+            By default, an error is raised when calling this method for lazy loaded
+            IDSs. You may set the keyword argument ``accept_lazy`` to ``True`` to
+            iterate over all `loaded` child nodes with a non-default value. See below
+            example for lazy-loaded IDSs.
+
+        Examples:
+
+            .. code-block:: python
+                :caption: ``iter_nonempty_`` for fully loaded IDSs
+
+                >>> import imaspy.training
+                >>> entry = imaspy.training.get_training_db_entry()
+                >>> cp = entry.get("core_profiles")
+                >>> list(cp.iter_nonempty_())
+                [
+                    <IDSStructure (IDS:core_profiles, ids_properties)>,
+                    <IDSStructArray (IDS:core_profiles, profiles_1d with 3 items)>,
+                    <IDSNumericArray (IDS:core_profiles, time, FLT_1D)>
+                    numpy.ndarray([  3.98722186, 432.93759781, 792.        ])
+                ]
+
+            .. code-block:: python
+                :caption: ``iter_nonempty_`` for lazy-loaded IDSs
+
+                >>> import imaspy.training
+                >>> entry = imaspy.training.get_training_db_entry()
+                >>> cp = entry.get("core_profiles", lazy=True)
+                >>> list(cp.iter_nonempty_())
+                RuntimeError: Iterating over non-empty nodes of a lazy loaded IDS will
+                skip nodes that are not loaded. Set accept_lazy=True to continue.
+                See the documentation for more information: [...]
+                >>> list(cp.iter_nonempty_(accept_lazy=True))
+                []
+                >>> # An empty list because nothing is loaded. Load `time`:
+                >>> cp.time
+                <IDSNumericArray (IDS:core_profiles, time, FLT_1D)>
+                numpy.ndarray([  3.98722186, 432.93759781, 792.        ])
+                >>> list(cp.iter_nonempty_(accept_lazy=True))
+                [<IDSNumericArray (IDS:core_profiles, time, FLT_1D)>
+                numpy.ndarray([  3.98722186, 432.93759781, 792.        ])]
+
+        Keyword Args:
+            accept_lazy: Accept that this method will only yield loaded nodes of a
+                lazy-loaded IDS. Non-empty nodes that have not been loaded from the
+                backend are not iterated over. See detailed explanation above.
         """
+        if self._lazy and not accept_lazy:
+            raise RuntimeError(
+                "Iterating over non-empty nodes of a lazy loaded IDS will skip nodes "
+                "that are not loaded. Set accept_lazy=True to continue. "
+                "See the documentation for more information: "
+                "https://sharepoint.iter.org/departments/POP/CM/IMDesign/"
+                "Code%20Documentation/IMASPy-doc/generated/imaspy.ids_structure."
+                "IDSStructure.html#imaspy.ids_structure.IDSStructure.iter_nonempty_"
+            )
         for child in self._children:
             if child in self.__dict__:
                 child_node = getattr(self, child)
-                if child_node.has_value:
+                if (  # IDSStructure.has_value is not implemented when lazy-loaded:
+                    self._lazy and isinstance(child_node, IDSStructure)
+                ) or child_node.has_value:
                     yield child_node
 
     def __iter__(self):
@@ -222,7 +290,8 @@ class IDSStructure(IDSBase):
         # Common validation logic
         super()._validate()
         # IDSStructure specific: validate child nodes
-        for child in self.iter_nonempty_():
+        # accept_lazy=True: users are warned in IDSToplevel.validate()
+        for child in self.iter_nonempty_(accept_lazy=True):
             child._validate()
 
     def _xxhash(self) -> bytes:
