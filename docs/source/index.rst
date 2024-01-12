@@ -39,6 +39,7 @@ Manual
    metadata
    lazy_loading
    mdsplus
+   configuring
 
 .. toctree::
    :caption: IMASPy training courses
