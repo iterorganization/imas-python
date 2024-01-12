@@ -13,7 +13,7 @@ def test_data_exists():
 
 
 @pytest.fixture
-def test_data():
+def test_data(requires_imas):
     db_entry = imaspy.training.get_training_db_entry()
     yield db_entry
     db_entry.close()
