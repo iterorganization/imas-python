@@ -238,7 +238,7 @@ class DBEntry:
             self.open()
         return self
 
-    def __exit__(self, ecx_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback):
         # Context manager protocol
         self.close()
 
