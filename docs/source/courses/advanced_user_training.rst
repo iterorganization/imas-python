@@ -24,3 +24,4 @@ you are familiar with the basic features of IMASPy, which are introduced in the
     advanced/explore
     advanced/dd_versions
     advanced/xarray
+    advanced/hashing

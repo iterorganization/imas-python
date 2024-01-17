@@ -169,3 +169,20 @@ def test_hash_ids():
         p1d.grid.rho_tor_norm = [1.0, 2.0]
         p1d.electrons.temperature = [1e6, 2e6]
     assert imaspy.util.calc_hash(cp.ids_properties) == b"3Fw\xab:w7K"
+
+
+def test_different_hashes():
+    eq = imaspy.IDSFactory().equilibrium()
+    eq.time_slice.resize(1)
+    eq.time_slice[0].profiles_2d.resize(1)
+    p2d = eq.time_slice[0].profiles_2d[0]
+    # Test that [[1.0, 2.0]] and [[1.0], [2.0]] get different hashes, while they have
+    # the same underlying data:
+    p2d.r = [[1.0, 2.0]]
+    bytes1 = p2d.r.tobytes(order="F")
+    hash1 = imaspy.util.calc_hash(p2d.r)
+    p2d.r = [[1.0], [2.0]]
+    bytes2 = p2d.r.tobytes(order="F")
+    hash2 = imaspy.util.calc_hash(p2d.r)
+    assert bytes1 == bytes2
+    assert hash1 != hash2
