@@ -216,12 +216,14 @@ def _run_data_dictionary(
         saxon_jar_path: The path to the saxon jar; Added to CLASSPATH and used
             to generate the DD
     """
+    env = os.environ.copy()
+    env["CLASSPATH"] = f"{saxon_jar_path}:{env.get('CLASSPATH', '')}"
     result = subprocess.run(
         args,
         bufsize=0,
         capture_output=True,
         cwd=os.getcwd() + "/data-dictionary",
-        env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
+        env=env,
         text=True,
     )
 
