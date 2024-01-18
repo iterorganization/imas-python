@@ -36,5 +36,4 @@ pip freeze
 rm -f junit.xml
 rm -rf htmlcov
 
-# Skipping "download_saxon" test: sourceforge.net seems to be blocked on the CI cluster
-pytest -n=auto --cov=imaspy --cov-report=term-missing --cov-report=html --junit-xml=junit.xml -k "not download_saxon"
+pytest -n=auto --cov=imaspy --cov-report=term-missing --cov-report=html --junit-xml=junit.xml

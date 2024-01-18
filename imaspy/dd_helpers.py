@@ -21,7 +21,7 @@ logger.setLevel(logging.INFO)
 _idsdef_zip_relpath = Path("imaspy/assets/IDSDef.zip")
 _build_dir = Path("build")
 _saxon_local_default_name = "saxon9he.jar"  # For pre-3.30.0 builds
-_saxon_regex = "saxon(.*).jar"  # Can be used in re.match
+_saxon_regex = "saxon((.(?!test|xqj))*).jar"  # Can be used in re.match
 
 
 def prepare_data_dictionaries():
@@ -142,7 +142,7 @@ def download_saxon():
     wrap this should probably manipulate either the name of this file, and/or
     the CLASSPATH"""
 
-    SAXON_PATH = "https://downloads.sourceforge.net/project/saxon/Saxon-HE/10/Java/SaxonHE10-3J.zip"  # noqa: E501
+    SAXON_PATH = "https://github.com/Saxonica/Saxon-HE/releases/download/SaxonHE10-9/SaxonHE10-9J.zip"  # noqa: E501
 
     resp = urlopen(SAXON_PATH, timeout=120.0)
     zipfile = ZipFile(BytesIO(resp.read()))
