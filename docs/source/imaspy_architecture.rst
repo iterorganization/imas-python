@@ -58,7 +58,7 @@ immutable.
         the same concept as `the "IDS Path syntax" in the Data Dictionary
         <https://git.iter.org/projects/IMAS/repos/data-dictionary/browse/html_documentation/utilities/IDS-path-syntax.md?at=refs%2Fheads%2Fdevelop%2F3>`__,
         they are not necessarily the same thing!
-        
+
         At the moment of writing this (January 2024), the IDS path definition in the
         Data Dictionary is not yet finalized.
         Be aware that the syntax of IMASPy's :py:class:`~imaspy.ids_path.IDSPath` may
