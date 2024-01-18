@@ -144,7 +144,7 @@ def download_saxon():
 
     SAXON_PATH = "https://downloads.sourceforge.net/project/saxon/Saxon-HE/10/Java/SaxonHE10-3J.zip"  # noqa: E501
 
-    resp = urlopen(SAXON_PATH)
+    resp = urlopen(SAXON_PATH, timeout=120.0)
     zipfile = ZipFile(BytesIO(resp.read()))
     # Zipfile has a list of the ZipInfos. Look inside for a Saxon jar
     for file in zipfile.filelist:
