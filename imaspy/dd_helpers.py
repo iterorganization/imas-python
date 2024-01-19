@@ -15,8 +15,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 from typing import Tuple, Sequence, Union
 
 
-logger = logging.getLogger("imaspy")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 _idsdef_zip_relpath = Path("imaspy/assets/IDSDef.zip")
 _build_dir = Path("build")
@@ -216,12 +215,14 @@ def _run_data_dictionary(
         saxon_jar_path: The path to the saxon jar; Added to CLASSPATH and used
             to generate the DD
     """
+    env = os.environ.copy()
+    env["CLASSPATH"] = f"{saxon_jar_path}:{env.get('CLASSPATH', '')}"
     result = subprocess.run(
         args,
         bufsize=0,
         capture_output=True,
         cwd=os.getcwd() + "/data-dictionary",
-        env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]},
+        env=env,
         text=True,
     )
 
@@ -232,6 +233,13 @@ def _run_data_dictionary(
         logger.warning("stdout = '%s'", result.stdout.strip())
         logger.warning("stderr = '%s'", result.stderr.strip())
         logger.warning("continuing without DD version %s", tag)
+    else:
+        logger.debug(
+            "Successful make for DD %s.\n-- Make stdout --\n%s\n-- Make stderr --\n%s",
+            tag,
+            result.stdout,
+            result.stderr,
+        )
     return result.returncode
 
 
