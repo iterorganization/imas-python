@@ -145,7 +145,7 @@ Exercise 1: Using coordinates
 
         2.  Load the training data for the ``equilibrium`` IDS.
 
-            a.  What is the coordinate of ``time_slice[0]/profiles_2d[0]``?
+            a.  What is the coordinate of ``time_slice[0]/profiles_2d``?
             b.  What are the coordinates of ``time_slice[0]/profiles_2d[0]/b_field_r``?
 
     .. md-tab-item:: Solution
