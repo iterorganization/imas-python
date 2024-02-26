@@ -80,6 +80,17 @@ try to find this repository elsewhere, and do a `git fetch --tags`.
 
 Alternatively you could try to obtain an `IDSDef.zip` and place it in `~/.config/imaspy/`.
 
+Test your installation by trying
+
+```bash
+python -c "import imaspy; factory = imaspy.IDSFactory()"
+```
+If the following error is raised:
+```bash
+RuntimeError: Could not find any data dictionary definitions. 
+```
+Ensure that you have the necessary packages. You can do this by entering `build_DD` in the command line. Missing packages can include among others: [GitPython](https://github.com/gitpython-developers/GitPython), and Java.
+
 ## How to use
 
 ```python
