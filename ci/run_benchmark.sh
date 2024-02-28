@@ -26,7 +26,7 @@ source venv/bin/activate
 
 # Install asv and imaspy
 pip install --upgrade pip setuptools wheel
-pip install asv virtualenv .
+pip install virtualenv .[test]
 
 # Generate MDS+ models cache
 python -c 'import imaspy; print(imaspy.mdsplus_model.mdsplus_model_dir(version=imaspy.IDSFactory().version))'
