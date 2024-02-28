@@ -1,4 +1,5 @@
 """A minimal testcase loading an IDS file and checking that the structure built is ok"""
+
 import numpy as np
 
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
