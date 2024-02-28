@@ -212,7 +212,7 @@ def inspect_impl(ids_node, hide_empty_nodes):
 
         for child in sorted(child_nodes):
             value = getattr(ids_node, child)
-            if not value.has_value and hide_empty_nodes:
+            if hide_empty_nodes and not value.has_value:
                 continue
             key_text = Text.assemble((child, "inspect.attr"), (" =", "inspect.equals"))
             child_table.add_row(key_text, Pretty(value))
