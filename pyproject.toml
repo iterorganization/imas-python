@@ -82,7 +82,7 @@ test = [
     "pytest-xdist",
     "pytest-randomly",
     "matplotlib",
-    "asv",
+    "asv == 0.6.1",
     # virtualenv is a dependency of asv
     "virtualenv",
     # Pint and xarray are used in training snippets
