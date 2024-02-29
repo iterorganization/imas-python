@@ -1,7 +1,6 @@
 import os
 
 import matplotlib
-import imas
 import imaspy.training
 
 # To avoid possible display issues when Matplotlib uses a non-GUI backend
@@ -16,9 +15,9 @@ import matplotlib.pyplot as plt
 entry = imaspy.training.get_training_db_entry()
 
 # Read n_e profile and the associated normalised toroidal flux coordinate at
-t = 443 # seconds
+t = 443  # seconds
 
-cp = entry.get_slice("core_profiles", t, imas.imasdef.CLOSEST_INTERP)
+cp = entry.get_slice("core_profiles", t, imaspy.ids_defs.CLOSEST_INTERP)
 
 # profiles_1d should only contain the requested slice
 assert len(cp.profiles_1d) == 1
