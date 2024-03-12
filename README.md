@@ -89,7 +89,8 @@ If the following error is raised:
 ```bash
 RuntimeError: Could not find any data dictionary definitions. 
 ```
-Ensure that you have the necessary packages. You can do this by entering `build_DD` in the command line. Missing packages can include among others: [GitPython](https://github.com/gitpython-developers/GitPython), and Java.
+Ensure that you have the necessary packages. You can do this by entering `build_DD` in the command line.
+Missing packages can include among others: [GitPython](https://github.com/gitpython-developers/GitPython), and Java.
 
 ## How to use
 
