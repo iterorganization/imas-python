@@ -23,7 +23,7 @@ python -m venv venv
 . venv/bin/activate
 
 # Install and run linters
-pip install --upgrade black flake8
+pip install --upgrade 'black >=24,<25' flake8
 
 black --check imaspy
 flake8 imaspy
