@@ -79,6 +79,8 @@ definitions at runtime.
     These definitions can be loaded from an ``IDSDef.zip`` or from a custom XML file.
 
 
+.. _imaspy_architecture/IDS_nodes:
+
 IDS nodes
 ---------
 
