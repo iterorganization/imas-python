@@ -734,14 +734,14 @@ class DBEntry:
             _delete_children(ids.metadata, write_ctx, "")
 
     @overload
-    def list_all_occurrences(self, ids_name: str, node_path: None = None) -> List[int]:
-        ...
+    def list_all_occurrences(
+        self, ids_name: str, node_path: None = None
+    ) -> List[int]: ...
 
     @overload
     def list_all_occurrences(
         self, ids_name: str, node_path: str
-    ) -> Tuple[List[int], List[IDSBase]]:
-        ...
+    ) -> Tuple[List[int], List[IDSBase]]: ...
 
     def list_all_occurrences(self, ids_name, node_path=None):
         """List all non-empty occurrences of an IDS

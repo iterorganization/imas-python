@@ -1,6 +1,7 @@
 import imaspy.util
 
 from imaspy.test.test_helpers import fill_consistent
+from imaspy.training import get_training_db_entry
 
 
 def test_inspect():
@@ -12,6 +13,11 @@ def test_inspect():
     imaspy.util.inspect(cp.profiles_1d[1])  # IDSStructure inside array
     imaspy.util.inspect(cp.profiles_1d[1].grid)  # IDSStructure inside array
     imaspy.util.inspect(cp.profiles_1d[1].grid.rho_tor_norm)  # IDSPrimitive
+
+
+def test_inspect_lazy():
+    cp = get_training_db_entry().get("core_profiles", lazy=True)
+    imaspy.util.inspect(cp)
 
 
 def test_print_tree():
