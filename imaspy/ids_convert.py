@@ -410,8 +410,16 @@ def _copy_structure(
                 continue
             else:
                 target_item = IDSPath(rename_map.path[path]).goto(target)
-        else:  # Must exist in the target if path is not recorded in the map
-            target_item = target[item.metadata.name]
+        else:
+            try:
+                target_item = target[item.metadata.name]
+            except AttributeError:
+                # In exceptional cases the item does not exist in the target. Example:
+                # neutron_diagnostic IDS between DD 3.40.1 and 3.41.0. has renamed
+                # synthetic_signals/fusion_power -> fusion_power. The synthetic_signals
+                # structure no longer exists but we need to descend into it to get the
+                # total_neutron_flux.
+                target_item = target
 
         if isinstance(item, IDSStructArray):
             size = len(item)
