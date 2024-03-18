@@ -157,12 +157,12 @@ class DDVersionMap:
             else:
                 old_path = previous_name
             # Apply any parent AoS/structure rename
-            for parent in iter_parents(old_path):
+            # Loop in reverse order to find the closest parent which was renamed:
+            for parent in reversed(list(iter_parents(old_path))):
                 parent_rename = self.new_to_old.path.get(parent)
                 if parent_rename:
                     if new_paths[parent].get("data_type") in self.STRUCTURE_TYPES:
-                        old_path = parent_rename + old_path[i_slash:]
-                        # We currently only support a single parent structure rename!
+                        old_path = old_path.replace(parent, parent_rename, 1)
                         break
             return old_path
 
