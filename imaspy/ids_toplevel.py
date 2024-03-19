@@ -43,17 +43,23 @@ def _serializer_tmpdir() -> str:
     return "/dev/shm" if os.path.exists("/dev/shm") else "."
 
 
-def _create_serialization_dbentry(filepath: str) -> "DBEntry":
+def _create_serialization_dbentry(filepath: str, dd_version: str) -> "DBEntry":
     """Create a temporary DBEntry for use in the ASCII serialization protocol."""
     from imaspy.db_entry import DBEntry  # Local import to avoid circular imports
 
     if ll_interface._al_version.major == 4:  # AL4 compatibility
-        dbentry = DBEntry(ASCII_BACKEND, "serialize", 1, 1, "serialize")
+        dbentry = DBEntry(
+            ASCII_BACKEND, "serialize", 1, 1, "serialize", dd_version=dd_version
+        )
         dbentry.create(options=f"-fullpath {filepath}")
         return dbentry
     else:  # AL5
         path = Path(filepath)
-        return DBEntry(f"imas:ascii?path={path.parent};filename={path.name}", "w")
+        return DBEntry(
+            f"imas:ascii?path={path.parent};filename={path.name}",
+            "w",
+            dd_version=dd_version,
+        )
 
 
 class IDSToplevel(IDSStructure):
@@ -144,7 +150,7 @@ class IDSToplevel(IDSStructure):
         if protocol == ASCII_SERIALIZER_PROTOCOL:
             tmpdir = _serializer_tmpdir()
             filepath = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
-            dbentry = _create_serialization_dbentry(filepath)
+            dbentry = _create_serialization_dbentry(filepath, self._dd_version)
             dbentry.put(self)
             dbentry.close()
 
@@ -177,7 +183,7 @@ class IDSToplevel(IDSStructure):
                 with open(filepath, "wb") as f:
                     f.write(data[1:])
                 # Temporarily open an ASCII backend for deserialization from tmpfile
-                dbentry = _create_serialization_dbentry(filepath)
+                dbentry = _create_serialization_dbentry(filepath, self._dd_version)
                 dbentry.get(self.metadata.name, destination=self)
                 dbentry.close()
             finally:
