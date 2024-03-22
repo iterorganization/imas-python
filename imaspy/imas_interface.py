@@ -26,7 +26,7 @@ except ImportError:
     # Fallback for AL 4.x or 5.0/5.1
     try:
         tic = time.time()
-        # Don't directly `import imas`: code analyzers will break on the huge code base...
+        # Don't directly `import imas`: code analyzers will break on the huge code base
         imas = importlib.import_module("imas")
         logger.info(
             "Successfully imported `imas` (took %.3f seconds)", time.time() - tic
