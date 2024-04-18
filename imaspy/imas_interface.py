@@ -19,8 +19,9 @@ logger = logging.getLogger(__name__)
 # Import the Access Layer module
 has_imas = True
 try:
-    # First try to import al_lowlevel, which is available since AL 5.2
-    from al_lowlevel import imasdef, _al_lowlevel as lowlevel
+    # First try to import imas_core, which is available since AL 5.2
+    from imas_core import _al_lowlevel as lowlevel
+    from imas_core import imasdef
 
 except ImportError:
     # Fallback for AL 4.x or 5.0/5.1
@@ -32,9 +33,9 @@ except ImportError:
             "Successfully imported `imas` (took %.3f seconds)", time.time() - tic
         )
         try:
-            lowlevel = imas._ual_lowlevel
+            lowlevel = imas._al_lowlevel  # AL 5.0/5.1
         except AttributeError:
-            lowlevel = imas._al_lowlevel
+            lowlevel = imas._ual_lowlevel  # AL 4.x
         imasdef = imas.imasdef
 
     except ImportError as exc:
