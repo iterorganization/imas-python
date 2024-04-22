@@ -211,7 +211,7 @@ def fill_consistent(structure: IDSStructure):
 
         else:  # IDSPrimitive
             coordinates = child.metadata.coordinates
-            if str(child.metadata.path) == "ids_properties/homogeneous_time":
+            if child.metadata.path_string == "ids_properties/homogeneous_time":
                 pass  # We already set homogeneous_time
             elif child.has_value:
                 pass  # Already encountered somewhere
@@ -279,7 +279,7 @@ def compare_children(st1, st2, deleted_paths=set()):
             for ch1, ch2 in zip(child1.value, child2.value):
                 compare_children(ch1, ch2, deleted_paths=deleted_paths)
         else:  # leaf node
-            path = str(child1.metadata.path)
+            path = child1.metadata.path_string
             if "_error_" in path:
                 # No duplicated entries for _error_upper, _error_lower and _error_index
                 path = path[: path.find("_error_")]

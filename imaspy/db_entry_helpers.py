@@ -154,7 +154,7 @@ def _put_children(
         if time_mode == IDS_TIME_MODE_INDEPENDENT and element.metadata.type.is_dynamic:
             continue  # skip dynamic data when in time independent mode
 
-        path = str(element.metadata.path)
+        path = element.metadata.path_string
         if nbc_map and path in nbc_map:
             if nbc_map.path[path] is None:
                 continue  # element does not exist in the on-disk DD version
