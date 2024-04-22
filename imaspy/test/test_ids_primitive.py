@@ -4,8 +4,8 @@ import pprint
 
 import numpy as np
 
-from imaspy.util import visit_children
 from imaspy.ids_primitive import IDSPrimitive
+from imaspy.util import visit_children
 
 # As the IDSPrimitive class generally should not be used on its own. Instead we
 # take a very well defined toplevel, initialize it, and do our tests on the

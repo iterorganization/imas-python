@@ -1,7 +1,7 @@
-from imaspy.ids_path import IDSPath
-from imaspy.ids_factory import IDSFactory
-
 import pytest
+
+from imaspy.ids_factory import IDSFactory
+from imaspy.ids_path import IDSPath
 
 
 def test_path_cache():

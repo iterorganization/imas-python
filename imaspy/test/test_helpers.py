@@ -4,13 +4,12 @@ import string
 
 import numpy as np
 
-# TODO: import these from imaspy (i.e. expose them publicly?)
-from imaspy.ids_data_type import IDSDataType
 from imaspy.db_entry import DBEntry
+from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import (
     ASCII_BACKEND,
-    IDS_TIME_MODE_HOMOGENEOUS,
     IDS_TIME_MODE_HETEROGENEOUS,
+    IDS_TIME_MODE_HOMOGENEOUS,
     IDS_TIME_MODE_INDEPENDENT,
 )
 from imaspy.ids_metadata import IDSType

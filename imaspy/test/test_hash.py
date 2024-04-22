@@ -1,6 +1,6 @@
 import struct
-import numpy as np
 
+import numpy as np
 import pytest
 from xxhash import xxh3_64_digest
 

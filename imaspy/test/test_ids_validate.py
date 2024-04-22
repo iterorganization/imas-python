@@ -4,11 +4,11 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from imaspy import IDSFactory, DBEntry
+from imaspy import DBEntry, IDSFactory
 from imaspy.exception import ValidationError
 from imaspy.ids_defs import (
-    IDS_TIME_MODE_HOMOGENEOUS,
     IDS_TIME_MODE_HETEROGENEOUS,
+    IDS_TIME_MODE_HOMOGENEOUS,
     IDS_TIME_MODE_INDEPENDENT,
     MEMORY_BACKEND,
 )

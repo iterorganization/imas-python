@@ -5,7 +5,7 @@
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any, Tuple, Union, List, Iterator, Dict
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Tuple, Union
 
 if TYPE_CHECKING:  # Prevent circular imports
     from imaspy.ids_base import IDSBase

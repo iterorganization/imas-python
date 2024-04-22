@@ -2,8 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from imaspy.dd_helpers import find_saxon_classpath, download_saxon
-
+from imaspy.dd_helpers import download_saxon, find_saxon_classpath
 
 # TODO: Write tests!
 # def prepare_data_dictionaries():

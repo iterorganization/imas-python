@@ -4,8 +4,8 @@
 import numpy as np
 
 import imaspy
-from imaspy.ids_factory import IDSFactory
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
+from imaspy.ids_factory import IDSFactory
 
 
 def test_single_resample_inplace():

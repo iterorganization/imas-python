@@ -6,9 +6,9 @@ from unittest.mock import MagicMock
 import pytest
 
 from imaspy.ids_convert import (
-    dd_version_map_from_factories,
     _get_ctxpath,
     _get_tbp,
+    dd_version_map_from_factories,
     iter_parents,
 )
 from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HETEROGENEOUS, MEMORY_BACKEND

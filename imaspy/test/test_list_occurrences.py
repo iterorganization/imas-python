@@ -1,5 +1,5 @@
-from packaging.version import Version
 import pytest
+from packaging.version import Version
 
 import imaspy
 from imaspy.imas_interface import ll_interface

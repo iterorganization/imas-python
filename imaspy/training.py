@@ -3,8 +3,9 @@
 """Functions that are useful for the IMASPy training courses.
 """
 
-from importlib_resources import files
 from unittest.mock import patch
+
+from importlib_resources import files
 
 import imaspy
 from imaspy.imas_interface import imas

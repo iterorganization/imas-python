@@ -8,11 +8,11 @@ from typing import Optional
 import numpy as np
 
 from imaspy.al_context import ALContext, LazyALContext
+from imaspy.ids_base import IDSBase
 from imaspy.ids_convert import NBCPathMap
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_INDEPENDENT
 from imaspy.ids_metadata import IDSMetadata
-from imaspy.ids_base import IDSBase
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 

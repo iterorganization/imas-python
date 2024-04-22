@@ -11,8 +11,8 @@ import pytest
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     CLOSEST_INTERP,
-    IDS_TIME_MODE_HOMOGENEOUS,
     IDS_TIME_MODE_HETEROGENEOUS,
+    IDS_TIME_MODE_HOMOGENEOUS,
     MDSPLUS_BACKEND,
 )
 from imaspy.ids_factory import IDSFactory

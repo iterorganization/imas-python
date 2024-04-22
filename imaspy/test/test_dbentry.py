@@ -1,7 +1,7 @@
 import pytest
 
 import imaspy
-from imaspy.imas_interface import ll_interface, has_imas
+from imaspy.imas_interface import has_imas, ll_interface
 
 
 def test_dbentry_contextmanager(requires_imas):

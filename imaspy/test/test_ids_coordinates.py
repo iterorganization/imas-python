@@ -1,9 +1,9 @@
-from imaspy.ids_coordinates import IDSCoordinate
-from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_HETEROGENEOUS
-from imaspy.ids_factory import IDSFactory
-
 import numpy as np
 import pytest
+
+from imaspy.ids_coordinates import IDSCoordinate
+from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_HOMOGENEOUS
+from imaspy.ids_factory import IDSFactory
 
 
 def test_coordinate_cache():

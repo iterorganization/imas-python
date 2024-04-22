@@ -4,11 +4,12 @@
 """
 
 import copy
-from functools import lru_cache
 import logging
-from xml.etree.ElementTree import Element, ElementTree
-from packaging.version import Version, InvalidVersion
+from functools import lru_cache
 from typing import Dict, Iterator, Optional, Set, Tuple
+from xml.etree.ElementTree import Element, ElementTree
+
+from packaging.version import InvalidVersion, Version
 
 from imaspy.dd_zip import parse_dd_version
 from imaspy.ids_factory import IDSFactory
@@ -16,7 +17,6 @@ from imaspy.ids_path import IDSPath
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
-
 
 logger = logging.getLogger(__name__)
 
