@@ -4,19 +4,21 @@
 """
 
 import copy
-from functools import lru_cache
 import logging
+from functools import lru_cache
+from typing import Callable, Dict, Iterator, Optional, Set, Tuple
 from xml.etree.ElementTree import Element, ElementTree
-from packaging.version import Version, InvalidVersion
-from typing import Dict, Iterator, Optional, Set, Tuple
+
+from packaging.version import InvalidVersion, Version
 
 from imaspy.dd_zip import parse_dd_version
+from imaspy.ids_base import IDSBase
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_path import IDSPath
+from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
-
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,7 @@ class NBCPathMap:
         self.ctxpath: Dict[str, str] = {}
         """Map providing the lowlevel context path for renamed elements."""
 
-        self.type_change: Set[str] = set()
+        self.type_change: Dict[str, Optional[Callable]] = {}
         """Set of paths that had a type change.
 
         Type changes are mapped to None in :py:attr:`path`, this ``set`` allows to
@@ -122,11 +124,31 @@ class DDVersionMap:
         Returns:
             True iff the data type of both items are the same.
         """
-        if new_item.get("data_type") != old_item.get("data_type"):
-            new_path = new_item.get("path")
-            old_path = old_item.get("path")
-            assert new_path is not None
-            assert old_path is not None
+        new_data_type = new_item.get("data_type")
+        old_data_type = old_item.get("data_type")
+        if new_data_type == old_data_type:
+            return True
+
+        # Data type changed, record in type_change sets
+        new_path = new_item.get("path")
+        old_path = old_item.get("path")
+        assert new_path is not None
+        assert old_path is not None
+
+        # Check if we (maybe) support this type change
+        data_types = sorted([new_data_type, old_data_type])
+        if data_types == ["struct_array", "structure"]:
+            self.new_to_old.type_change[new_path] = _type_changed_structure_aos
+            self.old_to_new.type_change[old_path] = _type_changed_structure_aos
+        elif data_types in (
+            ["INT_0D", "INT_1D"],
+            ["FLT_0D", "FLT_1D"],
+            ["CPX_0D", "CPX_1D"],
+            ["STR_0D", "STR_1D"],
+        ):
+            self.new_to_old.type_change[new_path] = _type_changed_0d_1d_data
+            self.old_to_new.type_change[old_path] = _type_changed_0d_1d_data
+        else:
             logger.debug(
                 "Data type of %s changed from %s to %s. This change is not "
                 "supported by IMASPy: no conversion will be done.",
@@ -135,9 +157,9 @@ class DDVersionMap:
                 new_item.get("data_type"),
             )
             self.new_to_old.path[new_path] = None
-            self.new_to_old.type_change.add(new_path)
+            self.new_to_old.type_change[new_path] = None
             self.old_to_new.path[old_path] = None
-            self.old_to_new.type_change.add(old_path)
+            self.old_to_new.type_change[old_path] = None
             return False
         return True
 
@@ -227,6 +249,8 @@ class DDVersionMap:
                                 npath = path.replace(old_path, new_path, 1)
                                 if npath in new_path_set:
                                     add_rename(path, npath)
+            elif nbc_description == "type_changed":
+                pass  # We will handle this (if possible) in self._check_data_type
             else:  # Ignore unknown NBC changes
                 log_args = (nbc_description, new_path)
                 logger.error("Ignoring unsupported NBC change: %r for %r.", *log_args)
@@ -399,7 +423,7 @@ def _copy_structure(
     """
     rename_map = version_map.new_to_old if source_is_new else version_map.old_to_new
     for item in source.iter_nonempty_():
-        path = str(item.metadata.path)
+        path = item.metadata.path_string
         if path in rename_map:
             if rename_map.path[path] is None:
                 if path in rename_map.type_change:
@@ -420,6 +444,13 @@ def _copy_structure(
                 # structure no longer exists but we need to descend into it to get the
                 # total_neutron_flux.
                 target_item = target
+            if path in rename_map.type_change:
+                # Handle type change
+                new_items = rename_map.type_change[path](item, target_item)
+                if new_items is None:
+                    continue  # handled
+                else:
+                    item, target_item = new_items
 
         if isinstance(item, IDSStructArray):
             size = len(item)
@@ -436,3 +467,62 @@ def _copy_structure(
                 target_item.value = copy.copy(item.value)
             else:
                 target_item.value = item.value
+
+
+# Type changed handlers
+def _type_changed_structure_aos(
+    source_node: IDSBase, target_node: IDSBase
+) -> Optional[Tuple[IDSStructure, IDSStructure]]:
+    """Handle changed type, structure to array of structures (or vice versa): IMAS-5170.
+
+    Args:
+        source_node: data source (must be IDSStructure or IDSStructArray)
+        target_node: data target (must be IDSStructArray or IDSStructure)
+
+    Returns:
+        (source_node, target_node): new source and target node to continue copying, or
+            None if no copying needs to be done.
+    """
+    if isinstance(source_node, IDSStructure):
+        # Structure to AOS is always supported
+        assert isinstance(target_node, IDSStructArray)
+        target_node.resize(1)
+        return source_node, target_node[0]
+    assert isinstance(source_node, IDSStructArray)
+    assert len(source_node) > 0  # empty AoS should not be provided as source_node
+    assert isinstance(target_node, IDSStructure)
+    if len(source_node) == 1:
+        # AoS to Structure is supported when the AOS has size 1
+        return source_node[0], target_node
+    # source_node has more than 1 element, this is not supported:
+    logger.warning(
+        "Element %r changed type in the target IDS and has more than 1 item. "
+        "Data is not copied.",
+        source_node.metadata.path_string,
+    )
+    return None
+
+
+def _type_changed_0d_1d_data(
+    source_node: IDSPrimitive, target_node: IDSPrimitive
+) -> None:
+    """Handle changed type, 0D to 1D (or vice versa): IMAS-5170.
+
+    Note: underlying data type (INT, FLT, CPX or STR) should not change.
+
+    Args:
+        source_node: Data source
+        target_node: Data target
+    """
+    if source_node.metadata.ndim == 0:
+        # 0D to 1D is always supported
+        target_node.value = [source_node.value]
+    elif len(source_node) == 1:
+        # 1D to 0D is only supported when 1 item is present
+        target_node.value = source_node[0]
+    else:
+        logger.warning(
+            "Element %r changed type in the target IDS and has more than 1 item. "
+            "Data is not copied.",
+            source_node.metadata.path_string,
+        )

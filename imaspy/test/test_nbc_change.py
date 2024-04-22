@@ -26,6 +26,60 @@ def debug_log(caplog):
     caplog.set_level(logging.DEBUG, "imaspy.ids_convert")
 
 
+def test_nbc_structure_to_aos(caplog):
+    # coils_non_axisymmetric/coil/conductor/cross_section was a structure in 3.39.0 and
+    # is an AoS in 3.40.0 and later:
+    ids = IDSFactory("3.39.0").new("coils_non_axisymmetric")
+    ids.coil.resize(1)
+    ids.coil[0].conductor.resize(1)
+    ids.coil[0].conductor[0].cross_section.delta_r = [1.0]
+
+    # Note: there is no corresponding attribute in DD 3.40.0, so this will just resize
+    # the cross_section AoS to 1...
+    ids_340 = convert_ids(ids, "3.40.0")
+    assert len(ids_340.coil[0].conductor[0].cross_section) == 1
+
+    # The reverse operation has nothing to copy, just ensure it works okay
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        convert_ids(ids_340, "3.39.0")
+    assert len(caplog.record_tuples) == 0
+
+    # Conversion reports a warning when the AOS has size >1
+    ids_340.coil[0].conductor[0].cross_section.resize(2)
+    with caplog.at_level(logging.WARNING):
+        convert_ids(ids_340, "3.39.0")
+    assert len(caplog.record_tuples) == 1
+    assert caplog.record_tuples[0][:2] == ("imaspy.ids_convert", logging.WARNING)
+
+
+def test_nbc_0d_to_1d(caplog):
+    # channel/filter_spectrometer/radiance_calibration in spectrometer visible changed
+    # from FLT_0D to FLT_1D in DD 3.39.0
+    ids = IDSFactory("3.32.0").spectrometer_visible()
+    ids.channel.resize(1)
+    ids.channel[0].filter_spectrometer.radiance_calibration = 1.0
+
+    # Convert to 3.39.0, when type changed to FLT_1D
+    ids_339 = convert_ids(ids, "3.39.0")
+    assert np.array_equal(
+        ids_339.channel[0].filter_spectrometer.radiance_calibration, [1.0]
+    )
+
+    # Convert back
+    ids_back = convert_ids(ids_339, "3.32.0")
+    assert ids_back.channel[0].filter_spectrometer.radiance_calibration == 1.0
+
+    # This is not supported
+    ids_339.channel[0].filter_spectrometer.radiance_calibration = [1.0, 2.0]
+    caplog.clear()
+    with caplog.at_level(logging.WARNING):
+        ids_back = convert_ids(ids_339, "3.32.0")
+    assert not ids_back.channel[0].filter_spectrometer.radiance_calibration.has_value
+    assert len(caplog.record_tuples) == 1
+    assert caplog.record_tuples[0][:2] == ("imaspy.ids_convert", logging.WARNING)
+
+
 def test_nbc_change_aos_renamed():
     """Test renamed AoS in pulse_schedule: ec/antenna -> ec/launcher.
 
