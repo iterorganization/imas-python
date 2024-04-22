@@ -1,6 +1,6 @@
 import os
-from pathlib import Path
 import runpy
+from pathlib import Path
 
 import pytest
 

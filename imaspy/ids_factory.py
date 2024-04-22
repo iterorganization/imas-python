@@ -3,14 +3,13 @@
 """Tools for generating IDSs from a Data Dictionary version.
 """
 
-from functools import partial
 import logging
+from functools import partial
 from typing import Any, Iterable, Iterator, List, Optional
 
 from imaspy import dd_zip
 from imaspy.exception import IDSNameError
 from imaspy.ids_toplevel import IDSToplevel
-
 
 logger = logging.getLogger(__name__)
 

@@ -3,8 +3,8 @@ data dictionary version.
 """
 
 import copy
-from imaspy.ids_defs import MEMORY_BACKEND
 
+from imaspy.ids_defs import MEMORY_BACKEND
 from imaspy.ids_factory import IDSFactory
 from imaspy.test.test_helpers import (
     compare_children,

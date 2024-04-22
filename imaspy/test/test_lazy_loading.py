@@ -1,17 +1,17 @@
 import random
-from unittest.mock import patch, DEFAULT
+from unittest.mock import DEFAULT, patch
 
 import pytest
 
 from imaspy.db_entry import DBEntry
 from imaspy.ids_defs import (
-    IDS_TIME_MODE_HETEROGENEOUS,
-    PREVIOUS_INTERP,
     ASCII_BACKEND,
+    IDS_TIME_MODE_HETEROGENEOUS,
     MEMORY_BACKEND,
+    PREVIOUS_INTERP,
 )
 from imaspy.ids_factory import IDSFactory
-from imaspy.imas_interface import lowlevel, ll_interface
+from imaspy.imas_interface import ll_interface, lowlevel
 from imaspy.test.test_helpers import compare_children, fill_consistent, open_dbentry
 
 

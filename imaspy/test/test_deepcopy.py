@@ -1,9 +1,9 @@
 import copy
 
 import imaspy
-from imaspy.ids_structure import IDSStructure
 from imaspy.ids_struct_array import IDSStructArray
-from imaspy.test.test_helpers import fill_with_random_data, compare_children
+from imaspy.ids_structure import IDSStructure
+from imaspy.test.test_helpers import compare_children, fill_with_random_data
 
 
 def validate_parent(node):

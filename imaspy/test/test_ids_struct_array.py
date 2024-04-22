@@ -1,6 +1,6 @@
-from copy import deepcopy
 import logging
 import pprint
+from copy import deepcopy
 
 import pytest
 

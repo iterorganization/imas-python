@@ -1,5 +1,4 @@
 import imaspy.util
-
 from imaspy.test.test_helpers import fill_consistent
 from imaspy.training import get_training_db_entry
 

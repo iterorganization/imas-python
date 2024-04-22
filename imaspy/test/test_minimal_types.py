@@ -1,11 +1,11 @@
 # A minimal testcase loading an IDS file and checking that the structure built is ok
-from numbers import Number, Complex, Real, Integral
+from numbers import Complex, Integral, Number, Real
 
 import numpy as np
 import pytest
 
-from imaspy.ids_factory import IDSFactory
 from imaspy.ids_data_type import IDSDataType
+from imaspy.ids_factory import IDSFactory
 
 
 @pytest.fixture

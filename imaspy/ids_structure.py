@@ -11,8 +11,8 @@ from typing import Generator, List
 from xxhash import xxh3_64
 
 from imaspy.al_context import LazyALContext
-from imaspy.ids_metadata import IDSDataType, IDSMetadata
 from imaspy.ids_base import IDSBase
+from imaspy.ids_metadata import IDSDataType, IDSMetadata
 from imaspy.ids_path import IDSPath
 from imaspy.ids_primitive import (
     IDSComplex0D,

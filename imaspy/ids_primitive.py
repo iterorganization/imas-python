@@ -18,10 +18,10 @@ except ImportError:
 import numpy as np
 from xxhash import xxh3_64, xxh3_64_digest
 
+from imaspy.ids_base import IDSBase
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_metadata import IDSMetadata
-from imaspy.ids_base import IDSBase
 
 logger = logging.getLogger(__name__)
 

@@ -2,8 +2,8 @@
 data dictionary version.
 """
 
-from imaspy.ids_factory import IDSFactory
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
+from imaspy.ids_factory import IDSFactory
 from imaspy.test.test_helpers import open_dbentry
 
 

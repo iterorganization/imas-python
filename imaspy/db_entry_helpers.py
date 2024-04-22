@@ -8,11 +8,11 @@ from typing import Optional
 import numpy as np
 
 from imaspy.al_context import ALContext, LazyALContext
+from imaspy.ids_base import IDSBase
 from imaspy.ids_convert import NBCPathMap
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_INDEPENDENT
 from imaspy.ids_metadata import IDSMetadata
-from imaspy.ids_base import IDSBase
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 
@@ -154,7 +154,7 @@ def _put_children(
         if time_mode == IDS_TIME_MODE_INDEPENDENT and element.metadata.type.is_dynamic:
             continue  # skip dynamic data when in time independent mode
 
-        path = str(element.metadata.path)
+        path = element.metadata.path_string
         if nbc_map and path in nbc_map:
             if nbc_map.path[path] is None:
                 continue  # element does not exist in the on-disk DD version

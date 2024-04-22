@@ -5,7 +5,6 @@ import numpy as np
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, MEMORY_BACKEND
 from imaspy.test.test_helpers import open_dbentry, randdims
 
-
 TEST_DATA = {
     "str_0d": "test",
     "str_1d": ["test0", "test1"],

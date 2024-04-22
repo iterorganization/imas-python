@@ -4,8 +4,8 @@ import copy
 import pprint
 
 import pytest
-from imaspy.ids_factory import IDSFactory
 
+from imaspy.ids_factory import IDSFactory
 from imaspy.ids_structure import IDSStructure
 
 

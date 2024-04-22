@@ -5,8 +5,8 @@ import logging
 import pytest
 
 import imaspy
-from imaspy.ids_metadata import IDSType
 from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS, IDS_TIME_MODE_INDEPENDENT
+from imaspy.ids_metadata import IDSType
 
 
 def test_ids_valid_type():

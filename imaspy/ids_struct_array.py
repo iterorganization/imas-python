@@ -15,9 +15,9 @@ except ImportError:
 from xxhash import xxh3_64
 
 from imaspy.al_context import LazyALContext
+from imaspy.ids_base import IDSBase
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_metadata import IDSMetadata
-from imaspy.ids_base import IDSBase
 
 logger = logging.getLogger(__name__)
 

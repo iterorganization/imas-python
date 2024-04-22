@@ -3,19 +3,17 @@
 """Logic for interpreting coordinates in an IDS.
 """
 
-from contextlib import contextmanager
 import logging
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
-from imaspy.exception import CoordinateError, CoordinateLookupError, ValidationError
 
+from imaspy.exception import CoordinateError, CoordinateLookupError, ValidationError
 from imaspy.ids_data_type import IDSDataType
-from imaspy.ids_defs import (
-    IDS_TIME_MODE_HOMOGENEOUS as HOMOGENEOUS_TIME,
-    IDS_TIME_MODE_HETEROGENEOUS as HETEROGENEOUS_TIME,
-    EMPTY_FLOAT,
-)
+from imaspy.ids_defs import EMPTY_FLOAT
+from imaspy.ids_defs import IDS_TIME_MODE_HETEROGENEOUS as HETEROGENEOUS_TIME
+from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS as HOMOGENEOUS_TIME
 from imaspy.ids_path import IDSPath
 
 if TYPE_CHECKING:  # Prevent circular imports

@@ -1,5 +1,5 @@
-from click.testing import CliRunner
 import pytest
+from click.testing import CliRunner
 
 import imaspy
 from imaspy.command.cli import print_version

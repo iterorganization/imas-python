@@ -5,12 +5,19 @@
 
 from enum import Enum
 from functools import lru_cache
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 import numpy as np
 
-from imaspy.ids_defs import EMPTY_INT, EMPTY_FLOAT, EMPTY_COMPLEX
-from imaspy.ids_defs import INTEGER_DATA, DOUBLE_DATA, COMPLEX_DATA, CHAR_DATA
+from imaspy.ids_defs import (
+    CHAR_DATA,
+    COMPLEX_DATA,
+    DOUBLE_DATA,
+    EMPTY_COMPLEX,
+    EMPTY_FLOAT,
+    EMPTY_INT,
+    INTEGER_DATA,
+)
 
 
 class IDSDataType(Enum):

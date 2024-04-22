@@ -121,3 +121,6 @@ parentdir_prefix = ""
 [tool.black]
 # Exclude versioneer-generated file
 extend-exclude = "imaspy/_version.py"
+
+[tool.isort]
+profile = "black"

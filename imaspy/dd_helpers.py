@@ -7,13 +7,13 @@ import os
 import re
 import shutil
 import subprocess
-from packaging.version import Version as V
 from io import BytesIO
 from pathlib import Path
+from typing import Sequence, Tuple, Union
 from urllib.request import urlopen
 from zipfile import ZIP_DEFLATED, ZipFile
-from typing import Tuple, Sequence, Union
 
+from packaging.version import Version as V
 
 logger = logging.getLogger(__name__)
 
