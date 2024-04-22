@@ -83,7 +83,9 @@ class IDSStructure(IDSBase):
 
     def __getattr__(self, name):
         if name not in self._children:
-            raise AttributeError(f"'{self.__class__}' object has no attribute '{name}'")
+            raise AttributeError(
+                f"IDS structure '{self._path}' has no attribute '{name}'"
+            )
         # Create child node
         child_meta = self._children[name]
         child = get_node_type(child_meta.data_type, child_meta.ndim)(self, child_meta)
@@ -102,7 +104,7 @@ class IDSStructure(IDSBase):
         want to always bypass this mechanism (I know I do!)
         """
         # Skip logic for any value that is not a child IDS node
-        if key.startswith("_") or key not in self._children:
+        if key.startswith("_"):
             return super().__setattr__(key, value)
 
         # This will raise an attribute error when there is no child named 'key', fine?

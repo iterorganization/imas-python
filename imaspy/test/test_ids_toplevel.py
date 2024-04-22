@@ -9,6 +9,7 @@ import pytest
 
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_toplevel import IDSToplevel
+from imaspy.test.test_helpers import compare_children, fill_with_random_data
 
 
 @pytest.fixture
@@ -43,3 +44,12 @@ def test_metadata_attribute_not_exists(ids):
 
 def test_pretty_print(ids):
     assert pprint.pformat(ids) == "<IDSToplevel (IDS:gyrokinetics)>"
+
+
+def test_serialize_nondefault_dd_version():
+    ids = IDSFactory("3.31.0").core_profiles()
+    fill_with_random_data(ids)
+    data = ids.serialize()
+    ids2 = IDSFactory("3.31.0").core_profiles()
+    ids2.deserialize(data)
+    compare_children(ids, ids2)

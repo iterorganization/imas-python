@@ -157,12 +157,12 @@ class DDVersionMap:
             else:
                 old_path = previous_name
             # Apply any parent AoS/structure rename
-            for parent in iter_parents(old_path):
+            # Loop in reverse order to find the closest parent which was renamed:
+            for parent in reversed(list(iter_parents(old_path))):
                 parent_rename = self.new_to_old.path.get(parent)
                 if parent_rename:
                     if new_paths[parent].get("data_type") in self.STRUCTURE_TYPES:
-                        old_path = parent_rename + old_path[i_slash:]
-                        # We currently only support a single parent structure rename!
+                        old_path = old_path.replace(parent, parent_rename, 1)
                         break
             return old_path
 
@@ -410,8 +410,16 @@ def _copy_structure(
                 continue
             else:
                 target_item = IDSPath(rename_map.path[path]).goto(target)
-        else:  # Must exist in the target if path is not recorded in the map
-            target_item = target[item.metadata.name]
+        else:
+            try:
+                target_item = target[item.metadata.name]
+            except AttributeError:
+                # In exceptional cases the item does not exist in the target. Example:
+                # neutron_diagnostic IDS between DD 3.40.1 and 3.41.0. has renamed
+                # synthetic_signals/fusion_power -> fusion_power. The synthetic_signals
+                # structure no longer exists but we need to descend into it to get the
+                # total_neutron_flux.
+                target_item = target
 
         if isinstance(item, IDSStructArray):
             size = len(item)
