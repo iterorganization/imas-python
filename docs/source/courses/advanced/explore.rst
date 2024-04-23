@@ -105,6 +105,9 @@ Some methods and properties are defined for all data nodes and arrays of structu
     Get access to the coordinate values. See the :ref:`Using metadata` lesson for more
     details.
 
+.. seealso::
+    You can find more details on IDS data node related classes and methods in the IMASPy Architecture documentation:
+    :ref:`imaspy_architecture/IDS_nodes`
 
 Apply a function to all nodes in an IDS
 '''''''''''''''''''''''''''''''''''''''
@@ -135,6 +138,12 @@ Exercise 2: Explore data nodes
             non-empty nodes in the equilbrium IDS.
         4.  Update your function such that it skips scalar (0D) IDS nodes. Apply the
             updated function to the equilibrium IDS.
+
+        .. hint::
+            :collapsible:
+            
+            Review IMASPy Architecture documentation for data node methods:
+            :ref:`imaspy_architecture/IDS_nodes`
 
     .. md-tab-item:: Solution
 

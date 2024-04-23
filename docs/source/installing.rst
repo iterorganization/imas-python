@@ -54,7 +54,7 @@ will need some extra dependencies to run the test suite and build documentation.
 
 .. code-block:: bash
 
-    pip install -e .[test, docs]
+    pip install -e .[test,docs]
 
 Test your installation by trying
 
