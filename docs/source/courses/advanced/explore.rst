@@ -106,7 +106,7 @@ Some methods and properties are defined for all data nodes and arrays of structu
     details.
 
 .. seealso::
-    You can find more details on IDS data node related classes and methods in the IMASPy Archtitecture documentation:
+    You can find more details on IDS data node related classes and methods in the IMASPy Architecture documentation:
     :ref:`imaspy_architecture/IDS_nodes`
 
 Apply a function to all nodes in an IDS
