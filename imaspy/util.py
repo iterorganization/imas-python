@@ -6,7 +6,7 @@
 
 import logging
 import re
-from typing import List, Union
+from typing import Callable, Iterator, List, Union
 
 from imaspy.ids_base import IDSBase
 from imaspy.ids_metadata import IDSMetadata
@@ -16,7 +16,14 @@ from imaspy.ids_structure import IDSStructure
 logger = logging.getLogger(__name__)
 
 
-def visit_children(func, node, *, leaf_only=True, visit_empty=False, accept_lazy=False):
+def visit_children(
+    func: Callable,
+    node: IDSBase,
+    *,
+    leaf_only: bool = True,
+    visit_empty: bool = False,
+    accept_lazy: bool = False,
+) -> None:
     """Apply a function to node and its children
 
     IMASPy objects generally live in a tree structure. Similar to Pythons
@@ -25,9 +32,9 @@ def visit_children(func, node, *, leaf_only=True, visit_empty=False, accept_lazy
 
     Args:
         func: Function to apply to each selected node.
-        node: Node that function ``func`` will be applied to.
+        node: Node that function :param:`func` will be applied to.
             The function will be applied to the node itself and
-            all its descendants, depending on `leaf_only`.
+            all its descendants, depending on :param:`leaf_only`.
 
     Keyword Args:
         leaf_only: Apply function to:
@@ -45,21 +52,81 @@ def visit_children(func, node, *, leaf_only=True, visit_empty=False, accept_lazy
 
             # Print all filled leaf nodes in a given IMASPy IDSToplevel
             visit_children(print, toplevel)
+
+    See Also:
+        :func:`tree_iter` for the iterator variant of this method.
     """
-    if isinstance(node, IDSPrimitive):  # Leaf node
+    for node in tree_iter(
+        node,
+        leaf_only=leaf_only,
+        visit_empty=visit_empty,
+        accept_lazy=accept_lazy,
+        include_node=True,
+    ):
         func(node)
 
-    else:
-        if not leaf_only:
-            func(node)
 
-        iterator = node
-        if not visit_empty and isinstance(node, IDSStructure):
-            # Only iterate over non-empty nodes
-            iterator = node.iter_nonempty_(accept_lazy=accept_lazy)
+def tree_iter(
+    node: IDSBase,
+    *,
+    leaf_only: bool = True,
+    visit_empty: bool = False,
+    accept_lazy: bool = False,
+    include_node: bool = False,
+) -> Iterator[IDSBase]:
+    """Tree iterator for IMASPy structures.
 
-        for child in iterator:
-            visit_children(func, child, leaf_only=leaf_only, visit_empty=visit_empty)
+    Iterate (depth-first) through the whole subtree of an IMASPy structure.
+
+    Args:
+        node: Node to start iterating from.
+
+    Keyword Args:
+        leaf_only: Iterate over:
+
+            * ``True``: Only leaf nodes, not internal nodes
+            * ``False``: All nodes, including internal nodes
+
+        visit_empty: When set to True, iterate over empty nodes.
+        accept_lazy: See documentation of :py:param:`iter_nonempty_()
+            <imaspy.ids_structure.IDSStructure.iter_nonempty_.accept_lazy>`. Only
+            relevant when :param:`visit_empty` is False.
+        include_node: When set to True the iterator will include the provided node (if
+            the node is not a leaf node, it is included only when :param:`leaf_only` is
+            False).
+
+    Example:
+        .. code-block:: python
+
+            # Iterate over all filled leaf nodes in a given IMASPy IDSToplevel
+            for node in tree_iter(toplevel):
+                print(node)
+
+    See Also:
+        :func:`visit_children` for the functional variant of this method.
+    """
+    if include_node and (not leaf_only or isinstance(node, IDSPrimitive)):
+        yield node
+    if not isinstance(node, IDSPrimitive):
+        yield from _tree_iter(node, leaf_only, visit_empty, accept_lazy)
+
+
+def _tree_iter(
+    node: IDSStructure, leaf_only: bool, visit_empty: bool, accept_lazy: bool
+) -> Iterator[IDSBase]:
+    """Implement :func:`tree_iter` recursively."""
+    iterator = node
+    if not visit_empty and isinstance(node, IDSStructure):
+        # Only iterate over non-empty nodes
+        iterator = node.iter_nonempty_(accept_lazy=accept_lazy)
+
+    for child in iterator:
+        if isinstance(child, IDSPrimitive):
+            yield child
+        else:
+            if not leaf_only:
+                yield child
+            yield from _tree_iter(child, leaf_only, visit_empty, accept_lazy)
 
 
 def resample(node, old_time, new_time, homogeneousTime=None, inplace=False, **kwargs):
