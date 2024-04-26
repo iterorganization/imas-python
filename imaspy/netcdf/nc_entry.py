@@ -15,6 +15,7 @@ from imaspy.ids_factory import IDSFactory
 from imaspy.ids_metadata import IDSType
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.netcdf.ids2nc import ids2nc
+from imaspy.netcdf.nc2ids import nc2ids
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +114,10 @@ class NCEntry:
                 nc_entry = NCEntry("path/to/data.nc", "r")
                 core_profiles = nc_entry.get("core_profiles")
         """
-        raise NotImplementedError()
+        ids = self._ids_factory.new(ids_name)
+        group = self._dataset[f"{ids_name}/{occurrence}"]
+        nc2ids(group, ids)
+        return ids
 
     def put(self, ids: IDSToplevel, occurrence: int = 0) -> None:
         """Write the contents of an IDS into this netCDF file.
