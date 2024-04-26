@@ -37,12 +37,12 @@ class NCMetadata:
         """Mapping of paths to dimension names."""
         self.coordinates: Dict[str, List[str]] = {}
         """Mapping of paths to coordinate variable names."""
+        self.aos: Dict[str, str] = {}
+        """Mapping of paths to their nearest AoS parent."""
 
         # Temporary variables for parsing coordinates
         #   Pending coordinate references
         self._pending = {}  # (path, dimension): (coordinate_path, coordinate_dimension)
-        #   Map paths to their nearest array of structures
-        self._aos = {}  # path: aos_path
         #   Dimensions before tensorization
         self._ut_dims = {}  # path: [dim1, dim2, ...]
         #   Coordinates before tensorization
@@ -59,7 +59,7 @@ class NCMetadata:
             ) from None
         self._tensorize_dimensions()
         # Delete temporary variables
-        del self._pending, self._aos, self._ut_dims, self._ut_coords
+        del self._pending, self._ut_dims, self._ut_coords
 
         # Sanity check:
         assert len(self.dimensions) == len(set(self.dimensions))
@@ -118,7 +118,7 @@ class NCMetadata:
         """Recursively parse DD coordinates."""
         for child in metadata._children.values():
             if parent_aos:
-                self._aos[child.path_string] = parent_aos
+                self.aos[child.path_string] = parent_aos
             if child.data_type is IDSDataType.STRUCTURE:
                 self._parse(child, parent_aos, aos_level)
             elif child.ndim:
@@ -256,7 +256,7 @@ class NCMetadata:
         """
         for path in self._ut_dims:
             aos_dims = aos_coords = []
-            aos = self._aos.get(path)
+            aos = self.aos.get(path)
             if aos is not None:
                 # Note: by construction of self._ut_dims, we know that ancestor AOSs are
                 # always handled before their children. self.dimensions[aos] must

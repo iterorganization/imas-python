@@ -6,6 +6,7 @@
 from typing import Iterator, Tuple
 
 import netCDF4
+import numpy
 
 from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
@@ -56,6 +57,8 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
     # Keep track of filled data
     filled_data = {}  # path: {aos_indices: node}
 
+    nd_dimensions = {i: group.createDimension(f"{i}D", i) for i in range(1, 7)}
+
     # homogeneous_time boolean
     homogeneous_time = ids.ids_properties.homogeneous_time == 1
 
@@ -88,9 +91,9 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
 
         # Create variable
         var = group.createVariable(
-            metadata.path_string.replace("/", "."),
+            path.replace("/", "."),
             dtype,
-            ncmeta.get_dimensions(metadata.path_string, homogeneous_time),
+            ncmeta.get_dimensions(path, homogeneous_time),
             compression=None if dtype is str else "zlib",
             complevel=1,
         )
@@ -99,26 +102,58 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
         if metadata.units:
             var.units = metadata.units
         var.documentation = metadata.documentation
-        coordinates = ncmeta.get_coordinates(metadata.path_string, homogeneous_time)
+        coordinates = ncmeta.get_coordinates(path, homogeneous_time)
         if coordinates:
             var.coordinates = coordinates
 
         # Fill variable
-        if var.ndim == 0:
-            # Directly set scalar values
+        aos_dims = []
+        if path in ncmeta.aos:
+            aos_dims = ncmeta.get_dimensions(ncmeta.aos[path], homogeneous_time)
+
+        if len(aos_dims) == 0:
+            # Directly set untensorized values
             assert len(filled_data[path]) == 1
             var[()] = filled_data[path][()].value
+            var.shape = "full"
 
         else:
             # Tensorize in-memory
+            ndim = metadata.ndim
+            shapes = numpy.zeros(
+                [used_dimensions[dim] for dim in aos_dims] + [ndim],
+                dtype=numpy.int32,
+            )
+
             # TODO: depending on the data, tmp_var may be HUGE, we may need a more
             # efficient assignment algorithm for large and/or irregular data
             var.set_auto_mask(False)
             tmp_var = var[()]
             for aos_coords, node in filled_data[path].items():
-                coords = aos_coords if metadata.ndim == 0 else aos_coords + (...,)
+                coords = aos_coords if ndim == 0 else aos_coords + (...,)
                 tmp_var[coords] = node.value
+                if ndim:
+                    shapes[coords] = node.shape
 
             # So the following assignment is more efficient
             var[()] = tmp_var
             del tmp_var
+
+            # Check if fully tensorized
+            if ndim == 0 or numpy.array_equiv(shapes, var.shape[-ndim:]):
+                # Full storage
+                # FIXME: decide on attribute name and contents
+                var.shape = "full"
+            else:
+                var.shape = f"sparse {var.name}.shape"
+                shape_var = group.createVariable(
+                    path.replace("/", ".") + ".shape",
+                    shapes.dtype,
+                    aos_dims + (nd_dimensions[ndim],),
+                    compression="zlib",
+                    complevel=1,
+                )
+                coordinates = ncmeta.get_coordinates(ncmeta.aos[path], homogeneous_time)
+                if coordinates:
+                    shape_var.coordinates = coordinates
+                shape_var[:] = shapes
