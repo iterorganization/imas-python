@@ -6,7 +6,6 @@
 from typing import Iterator, Tuple
 
 import netCDF4
-import numpy
 
 from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
@@ -115,7 +114,7 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
             # TODO: depending on the data, tmp_var may be HUGE, we may need a more
             # efficient assignment algorithm for large and/or irregular data
             var.set_auto_mask(False)
-            tmp_var = numpy.full(var.shape, numpy.nan)
+            tmp_var = var[()]
             for aos_coords, node in filled_data[path].items():
                 coords = aos_coords if metadata.ndim == 0 else aos_coords + (...,)
                 tmp_var[coords] = node.value
