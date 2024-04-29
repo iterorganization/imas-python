@@ -10,6 +10,17 @@ from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_metadata import IDSMetadata
 
 
+def _get_aos_label_coordinates(metadata: IDSMetadata) -> List[str]:
+    """Extract label coordinates from an Array of Structures metadata."""
+    coordinates = []
+    for child_name in ("name", "identifier", "label"):
+        if child_name in metadata._children:
+            label_meta = metadata._children[child_name]
+            if label_meta.data_type is IDSDataType.STR and label_meta.ndim == 0:
+                coordinates.append(label_meta.path_string.replace("/", "."))
+    return coordinates
+
+
 class NCMetadata:
     """NCMetadata contains additional netCDF metadata for an IDS data structure.
 
@@ -198,6 +209,9 @@ class NCMetadata:
                         # path as dimension name:
                         dim_name = f"{dim_name}:{i}"
                     is_time_dimension = metadata.name == "time"
+                    if metadata.data_type is IDSDataType.STRUCT_ARRAY:
+                        # Check if name/identifier/label exists
+                        coordinates.extend(_get_aos_label_coordinates(metadata))
 
             elif len(coord.references) == 1:
                 # ------ CASE 3: refers to another quantity in the DD ------

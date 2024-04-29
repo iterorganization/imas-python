@@ -3,6 +3,7 @@
 """NetCDF IO support for IMASPy. Requires [netcdf] extra dependencies.
 """
 
+from collections.abc import Container
 from typing import Iterator, Tuple
 
 import netCDF4
@@ -22,6 +23,14 @@ default_fillvals = {
     IDSDataType.FLT: netCDF4.default_fillvals["f8"],
     IDSDataType.CPX: netCDF4.default_fillvals["f8"] * (1 - 1j),
 }
+
+
+def filter_coordinates(coordinates: str, filled_variables: Container):
+    return " ".join(
+        coordinate
+        for coordinate in coordinates.split(" ")
+        if coordinate in filled_variables
+    )
 
 
 def nc_tree_iter(
@@ -87,6 +96,7 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
         group.createDimension(dimension, size)
 
     # Loop over the IDS another time to store the data
+    filled_variables = {path.replace("/", ".") for path in filled_data}
     for path in filled_data:
         metadata = ids.metadata[path]
 
@@ -113,7 +123,7 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
         var.documentation = metadata.documentation
         coordinates = ncmeta.get_coordinates(path, homogeneous_time)
         if coordinates:
-            var.coordinates = coordinates
+            var.coordinates = filter_coordinates(coordinates, filled_variables)
 
         # Fill variable
         aos_dims = []
@@ -170,5 +180,7 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
                 )
                 coordinates = ncmeta.get_coordinates(ncmeta.aos[path], homogeneous_time)
                 if coordinates:
-                    shape_var.coordinates = coordinates
+                    shape_var.coordinates = filter_coordinates(
+                        coordinates, filled_variables
+                    )
                 shape_var[:] = shapes
