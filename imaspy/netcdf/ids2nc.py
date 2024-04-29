@@ -56,8 +56,8 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
     used_dimensions = {}  # dim_name: size
     # Keep track of filled data
     filled_data = {}  # path: {aos_indices: node}
-
-    nd_dimensions = {i: group.createDimension(f"{i}D", i) for i in range(1, 7)}
+    # Generic ND dimensions for use in `shape` variables
+    nd_dimensions = {}  # i: Dimension
 
     # homogeneous_time boolean
     homogeneous_time = ids.ids_properties.homogeneous_time == 1
@@ -90,8 +90,9 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
         assert dtype is not None
 
         # Create variable
+        var_name = path.replace("/", ".")
         var = group.createVariable(
-            path.replace("/", "."),
+            var_name,
             dtype,
             ncmeta.get_dimensions(path, homogeneous_time),
             compression=None if dtype is str else "zlib",
@@ -120,6 +121,8 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
         else:
             # Tensorize in-memory
             ndim = metadata.ndim
+            # Note: Access Layer API also allows maximum int32 to describe sizes
+            # TODO: allow more efficient storage when max sizes fit in int8 or int16?
             shapes = numpy.zeros(
                 [used_dimensions[dim] for dim in aos_dims] + [ndim],
                 dtype=numpy.int32,
@@ -145,9 +148,13 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
                 # FIXME: decide on attribute name and contents
                 var.shape = "full"
             else:
+                # FIXME: decide on attribute name and contents
                 var.shape = f"sparse {var.name}.shape"
+
+                if ndim not in nd_dimensions:
+                    nd_dimensions[ndim] = group.createDimension(f"{ndim}D", ndim)
                 shape_var = group.createVariable(
-                    path.replace("/", ".") + ".shape",
+                    var_name + ".shape",
                     shapes.dtype,
                     aos_dims + (nd_dimensions[ndim],),
                     compression="zlib",
