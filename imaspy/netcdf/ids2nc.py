@@ -16,6 +16,13 @@ from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
 from imaspy.netcdf.nc_metadata import NCMetadata
 
+default_fillvals = {
+    IDSDataType.INT: netCDF4.default_fillvals["i4"],
+    IDSDataType.STR: "",
+    IDSDataType.FLT: netCDF4.default_fillvals["f8"],
+    IDSDataType.CPX: netCDF4.default_fillvals["f8"] * (1 - 1j),
+}
+
 
 def nc_tree_iter(
     node: IDSStructure, aos_index: Tuple[int, ...] = ()
@@ -97,6 +104,7 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
             ncmeta.get_dimensions(path, homogeneous_time),
             compression=None if dtype is str else "zlib",
             complevel=1,
+            fill_value=default_fillvals[metadata.data_type],
         )
 
         # Fill attributes:
