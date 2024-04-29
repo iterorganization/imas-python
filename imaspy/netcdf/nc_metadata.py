@@ -197,6 +197,7 @@ class NCMetadata:
                         # This variable is >1D after tensorization, so we cannot use our
                         # path as dimension name:
                         dim_name = f"{dim_name}:{i}"
+                    is_time_dimension = metadata.name == "time"
 
             elif len(coord.references) == 1:
                 # ------ CASE 3: refers to another quantity in the DD ------
@@ -204,6 +205,7 @@ class NCMetadata:
                     # Coordinate is inside this AoS (and must be 0D): create dimension
                     # E.g. core_profiles IDS: profiles_1d -> profiles_1d/time
                     dim_name = ".".join(coord.references[0].parts)
+                    is_time_dimension = coord.is_time_coordinate
 
                 else:
                     # Put reference in pending to be resolved in second pass
@@ -218,7 +220,7 @@ class NCMetadata:
                 )
 
             dimensions.append(dim_name)
-            if dim_name is not None and coord.is_time_coordinate:
+            if dim_name is not None and is_time_dimension:
                 # Record time dimension
                 self.time_dimensions.add(dim_name)
 
