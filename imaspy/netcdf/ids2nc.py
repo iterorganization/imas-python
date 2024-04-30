@@ -21,7 +21,7 @@ default_fillvals = {
     IDSDataType.INT: netCDF4.default_fillvals["i4"],
     IDSDataType.STR: "",
     IDSDataType.FLT: netCDF4.default_fillvals["f8"],
-    IDSDataType.CPX: netCDF4.default_fillvals["f8"] * (1 - 1j),
+    IDSDataType.CPX: netCDF4.default_fillvals["f8"] * (1 + 1j),
 }
 
 
@@ -133,7 +133,12 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
         if len(aos_dims) == 0:
             # Directly set untensorized values
             assert len(filled_data[path]) == 1
-            var[()] = filled_data[path][()].value
+            node = filled_data[path][()]
+            if node.shape == var.shape:
+                var[()] = node.value
+            else:
+                var[tuple(map(slice, node.shape))] = node.value
+            # FIXME: decide on attribute name and contents
             var.shape = "full"
 
         else:
@@ -151,10 +156,11 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
             var.set_auto_mask(False)
             tmp_var = var[()]
             for aos_coords, node in filled_data[path].items():
-                coords = aos_coords if ndim == 0 else aos_coords + (...,)
-                tmp_var[coords] = node.value
                 if ndim:
-                    shapes[coords] = node.shape
+                    tmp_var[aos_coords + tuple(map(slice, node.shape))] = node.value
+                    shapes[aos_coords + (...,)] = node.shape
+                else:
+                    tmp_var[aos_coords] = node.value
 
             # So the following assignment is more efficient
             var[()] = tmp_var
