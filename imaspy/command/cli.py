@@ -24,6 +24,8 @@ import imaspy
 from imaspy import dd_zip, imas_interface
 from imaspy.exception import UnknownDDVersion
 
+logger = logging.getLogger(__name__)
+
 
 def setup_rich_log_handler(quiet: bool):
     # Disable default imaspy log handler
@@ -42,6 +44,7 @@ def setup_rich_log_handler(quiet: bool):
 
 
 def _excepthook(type_, value, tb):
+    logger.debug("Suppressed traceback:", exc_info=(type_, value, tb))
     # Only display the last traceback frame:
     if tb is not None:
         while tb.tb_next:
