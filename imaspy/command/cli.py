@@ -10,7 +10,14 @@ import click
 from packaging.version import Version
 from rich import console, traceback
 from rich.logging import RichHandler
-from rich.progress import Progress
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TaskProgressColumn,
+    TextColumn,
+    TimeElapsedColumn,
+)
 
 import imaspy
 from imaspy import dd_zip, imas_interface
@@ -138,22 +145,29 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
             idss_with_occurrences.append((ids_name, occurrence))
 
     # Convert all IDSs
-    with Progress(disable=quiet) as progress:
+    columns = (
+        TimeElapsedColumn(),
+        BarColumn(),
+        TaskProgressColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        SpinnerColumn("simpleDots", style="[white]"),
+    )
+    with Progress(*columns, disable=quiet) as progress:
         task = progress.add_task("Converting", total=len(idss_with_occurrences) * 3)
 
         for ids_name, occurrence in idss_with_occurrences:
             name = f"{ids_name}/{occurrence}"
 
-            progress.update(task, description=f"Reading {name}...")
+            progress.update(task, description=f"Reading [green]{name}")
             ids = entry_in.get(ids_name, occurrence, autoconvert=False)
 
-            progress.update(task, description=f"Converting {name}...", advance=1)
+            progress.update(task, description=f"Converting [green]{name}", advance=1)
             # Explicitly convert instead of auto-converting during put. This is a bit
             # slower, but gives better diagnostics:
             ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
 
             # Store in output entry:
-            progress.update(task, description=f"Storing {name}...", advance=1)
+            progress.update(task, description=f"Storing [green]{name}", advance=1)
             entry_out.put(ids2, occurrence)
 
             # Update progress bar
