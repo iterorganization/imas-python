@@ -73,6 +73,8 @@ class IDSCoordinate:
                             f"Ignoring invalid coordinate specifier {spec}",
                             exc_info=True,
                         )
+            elif spec.startswith("IDS:"):
+                pass  # Coordinate is in another IDS, we don't handle that
             elif spec:
                 try:
                     refs.append(IDSPath(spec))
