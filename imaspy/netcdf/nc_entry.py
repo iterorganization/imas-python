@@ -199,7 +199,7 @@ class NCEntry:
         """
         occurrence_list = []
         if ids_name in self._dataset.groups:
-            for group in self._dataset[ids_name]:
+            for group in self._dataset[ids_name].groups:
                 try:
                     occurrence_list.append(int(group))
                 except ValueError:
