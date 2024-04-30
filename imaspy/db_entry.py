@@ -377,7 +377,7 @@ class DBEntry:
         autoconvert: bool = True,
         destination: Optional[IDSToplevel] = None,
     ) -> IDSToplevel:
-        """Read the contents of the an IDS into memory.
+        """Read the contents of an IDS into memory.
 
         This method fetches an IDS in its entirety, with all time slices it may contain.
         See :meth:`get_slice` for reading a specific time slice.
@@ -746,9 +746,7 @@ class DBEntry:
     def list_all_occurrences(self, ids_name, node_path=None):
         """List all non-empty occurrences of an IDS
 
-        When using AL 5.1 or later, this will request the occurrences from the backend.
-        In earlier versions of the Access Layer, IMASPy will attempt to determine which
-        occurrences are filled.
+        Note: this is only available with Access Layer core version 5.1 or newer.
 
         Args:
             ids_name: name of the IDS (e.g. "magnetics", "core_profiles" or
