@@ -57,6 +57,14 @@ def _excepthook(type_, value, tb):
     console.Console(stderr=True).print(rich_tb)
 
 
+def _DBEntry(uri: str, mode: str, **kwargs):
+    if uri.endswith(".nc") and not uri.startswith("imas:"):
+        from imaspy.netcdf.nc_entry import NCEntry
+
+        return NCEntry(uri, mode, **kwargs)
+    return imaspy.DBEntry(uri, mode, **kwargs)
+
+
 @click.group("imaspy", invoke_without_command=True, no_args_is_help=True)
 def cli():
     """IMASPy command line interface.
@@ -123,7 +131,7 @@ def print_ids(uri, ids, occurrence, print_all):
     min_version_guard(Version("5.0"))
     setup_rich_log_handler(False)
 
-    with imaspy.DBEntry(uri, "r") as dbentry:
+    with _DBEntry(uri, "r") as dbentry:
         ids_obj = dbentry.get(ids, occurrence, autoconvert=False)
         imaspy.util.print_tree(ids_obj, not print_all)
 
@@ -168,8 +176,8 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet, timeit):
 
     # Use an ExitStack to avoid three nested with-statements
     with ExitStack() as stack:
-        entry_in = stack.enter_context(imaspy.DBEntry(uri_in, "r"))
-        entry_out = stack.enter_context(imaspy.DBEntry(uri_out, "x", **version_params))
+        entry_in = stack.enter_context(_DBEntry(uri_in, "r"))
+        entry_out = stack.enter_context(_DBEntry(uri_out, "x", **version_params))
 
         # First build IDS/occurrence list so we can show a decent progress bar
         ids_list = [ids] if ids != "*" else entry_out.factory.ids_names()
