@@ -4,6 +4,7 @@
 
 import logging
 import sys
+from contextlib import ExitStack
 from pathlib import Path
 
 import click
@@ -96,9 +97,9 @@ def print_ids(uri, ids, occurrence, print_all):
     min_version_guard(Version("5.0"))
     setup_rich_log_handler(False)
 
-    dbentry = imaspy.DBEntry(uri, "r")
-    ids_obj = dbentry.get(ids, occurrence, autoconvert=False)
-    imaspy.util.print_tree(ids_obj, not print_all)
+    with imaspy.DBEntry(uri, "r") as dbentry:
+        ids_obj = dbentry.get(ids, occurrence, autoconvert=False)
+        imaspy.util.print_tree(ids_obj, not print_all)
 
 
 @cli.command("convert")
@@ -128,31 +129,32 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
     else:
         raise UnknownDDVersion(dd_version, dd_zip.dd_xml_versions())
 
-    entry_in = imaspy.DBEntry(uri_in, "r")
-    # Set dd_version/xml_path, so the IDSs are converted to this version during put()
-    # Use "x" to prevent accidentally overwriting existing Data Entries
-    entry_out = imaspy.DBEntry(uri_out, "x", **version_params)
+    # Use an ExitStack to avoid three nested with-statements
+    with ExitStack() as stack:
+        entry_in = stack.enter_context(imaspy.DBEntry(uri_in, "r"))
+        entry_out = stack.enter_context(imaspy.DBEntry(uri_out, "x", **version_params))
 
-    # First build IDS/occurrence list so we can show a decent progress bar
-    ids_list = [ids] if ids != "*" else entry_out.factory.ids_names()
-    idss_with_occurrences = []
-    for ids_name in ids_list:
-        if occurrence == -1:
-            idss_with_occurrences.extend(
-                (ids_name, occ) for occ in entry_in.list_all_occurrences(ids_name)
-            )
-        else:
-            idss_with_occurrences.append((ids_name, occurrence))
+        # First build IDS/occurrence list so we can show a decent progress bar
+        ids_list = [ids] if ids != "*" else entry_out.factory.ids_names()
+        idss_with_occurrences = []
+        for ids_name in ids_list:
+            if occurrence == -1:
+                idss_with_occurrences.extend(
+                    (ids_name, occ) for occ in entry_in.list_all_occurrences(ids_name)
+                )
+            else:
+                idss_with_occurrences.append((ids_name, occurrence))
 
-    # Convert all IDSs
-    columns = (
-        TimeElapsedColumn(),
-        BarColumn(),
-        TaskProgressColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        SpinnerColumn("simpleDots", style="[white]"),
-    )
-    with Progress(*columns, disable=quiet) as progress:
+        # Convert all IDSs
+        columns = (
+            TimeElapsedColumn(),
+            BarColumn(),
+            TaskProgressColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            SpinnerColumn("simpleDots", style="[white]"),
+        )
+        progress = stack.enter_context(Progress(*columns, disable=quiet))
+
         task = progress.add_task("Converting", total=len(idss_with_occurrences) * 3)
 
         for ids_name, occurrence in idss_with_occurrences:
