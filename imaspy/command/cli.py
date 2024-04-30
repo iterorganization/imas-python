@@ -22,6 +22,7 @@ from rich.progress import (
 
 import imaspy
 from imaspy import dd_zip, imas_interface
+from imaspy.command.timer import Timer
 from imaspy.exception import UnknownDDVersion
 
 logger = logging.getLogger(__name__)
@@ -112,14 +113,15 @@ def print_ids(uri, ids, occurrence, print_all):
 @click.option("--ids", default="*", help="Specify which IDS to convert")
 @click.option("--occurrence", default=-1, help="Specify which occurrence to convert")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress progress output")
-def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
+@click.option("--timeit", is_flag=True, help="Show timing information")
+def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet, timeit):
     """Convert an IDS to the target DD version.
 
     \b
-    uri_in      URI of the input Data Entry
+    uri_in      URI of the input Data Entry.
     dd_version  Data dictionary version to convert to. Can also be the path to an
-                IDSDef.xml to convert to custom/unreleased DD versions.
-    uri_out     URI of the output Data Entry
+                IDSDef.xml to convert to a custom/unreleased DD version.
+    uri_out     URI of the output Data Entry.
     """
     min_version_guard(Version("5.1"))
     setup_rich_log_handler(quiet)
@@ -158,13 +160,16 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
         )
         progress = stack.enter_context(Progress(*columns, disable=quiet))
         task = progress.add_task("Converting", total=len(idss_with_occurrences) * 3)
+        # Create timer for timing get/convert/put
+        timer = Timer("Operation", "IDS/occurrence")
 
         # Convert all IDSs
         for ids_name, occurrence in idss_with_occurrences:
             name = f"[bold green]{ids_name}[/][green]/{occurrence}[/]"
 
             progress.update(task, description=f"Reading {name}")
-            ids = entry_in.get(ids_name, occurrence, autoconvert=False)
+            with timer("Get", name):
+                ids = entry_in.get(ids_name, occurrence, autoconvert=False)
 
             progress.update(task, description=f"Converting {name}", advance=1)
             # Explicitly convert instead of auto-converting during put. This is a bit
@@ -172,14 +177,20 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
             if ids._dd_version == entry_out.dd_version:
                 ids2 = ids
             else:
-                ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
+                with timer("Convert", name):
+                    ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
 
             # Store in output entry:
             progress.update(task, description=f"Storing {name}", advance=1)
-            entry_out.put(ids2, occurrence)
+            with timer("Put", name):
+                entry_out.put(ids2, occurrence)
 
             # Update progress bar
             progress.update(task, advance=1)
+
+    # Display timing information
+    if timeit:
+        console.Console().print(timer.get_table("Time required per IDS"))
 
 
 if __name__ == "__main__":
