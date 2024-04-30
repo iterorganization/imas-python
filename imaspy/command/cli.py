@@ -148,7 +148,7 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
             else:
                 idss_with_occurrences.append((ids_name, occurrence))
 
-        # Convert all IDSs
+        # Create progress bar and task
         columns = (
             TimeElapsedColumn(),
             BarColumn(),
@@ -157,16 +157,16 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
             SpinnerColumn("simpleDots", style="[white]"),
         )
         progress = stack.enter_context(Progress(*columns, disable=quiet))
-
         task = progress.add_task("Converting", total=len(idss_with_occurrences) * 3)
 
+        # Convert all IDSs
         for ids_name, occurrence in idss_with_occurrences:
-            name = f"{ids_name}/{occurrence}"
+            name = f"[bold green]{ids_name}[/][green]/{occurrence}[/]"
 
-            progress.update(task, description=f"Reading [green]{name}")
+            progress.update(task, description=f"Reading {name}")
             ids = entry_in.get(ids_name, occurrence, autoconvert=False)
 
-            progress.update(task, description=f"Converting [green]{name}", advance=1)
+            progress.update(task, description=f"Converting {name}", advance=1)
             # Explicitly convert instead of auto-converting during put. This is a bit
             # slower, but gives better diagnostics:
             if ids._dd_version == entry_out.dd_version:
@@ -175,7 +175,7 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
                 ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
 
             # Store in output entry:
-            progress.update(task, description=f"Storing [green]{name}", advance=1)
+            progress.update(task, description=f"Storing {name}", advance=1)
             entry_out.put(ids2, occurrence)
 
             # Update progress bar
