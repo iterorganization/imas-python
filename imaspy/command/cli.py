@@ -164,7 +164,10 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet):
             progress.update(task, description=f"Converting [green]{name}", advance=1)
             # Explicitly convert instead of auto-converting during put. This is a bit
             # slower, but gives better diagnostics:
-            ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
+            if ids._dd_version == entry_out.dd_version:
+                ids2 = ids
+            else:
+                ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
 
             # Store in output entry:
             progress.update(task, description=f"Storing [green]{name}", advance=1)
