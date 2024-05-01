@@ -50,6 +50,8 @@ class NCMetadata:
         """Mapping of paths to coordinate variable names."""
         self.aos: Dict[str, str] = {}
         """Mapping of paths to their nearest AoS parent."""
+        self.paths: List[str] = []
+        """List of all paths."""
 
         # Temporary variables for parsing coordinates
         #   Pending coordinate references
@@ -128,6 +130,7 @@ class NCMetadata:
     ) -> None:
         """Recursively parse DD coordinates."""
         for child in metadata._children.values():
+            self.paths.append(child.path_string)
             if parent_aos:
                 self.aos[child.path_string] = parent_aos
             if child.data_type is IDSDataType.STRUCTURE:
@@ -203,7 +206,7 @@ class NCMetadata:
                     dim_name = metadata.path_string.replace("/", ".")
                     if (
                         aos_level + metadata.ndim != 1
-                        and metadata.data_type is not IDSDataType.STRUCT_ARRAY
+                        or metadata.data_type is IDSDataType.STRUCT_ARRAY
                     ):
                         # This variable is >1D after tensorization, so we cannot use our
                         # path as dimension name:

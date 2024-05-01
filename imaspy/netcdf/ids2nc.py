@@ -11,7 +11,7 @@ import numpy
 
 from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
-from imaspy.ids_primitive import IDSPrimitive
+from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
@@ -33,6 +33,55 @@ def filter_coordinates(coordinates: str, filled_variables: Container):
     )
 
 
+def create_variable(
+    group: netCDF4.Group,
+    metadata: IDSMetadata,
+    ncmeta: NCMetadata,
+    homogeneous_time: bool,
+) -> netCDF4.Variable:
+    """Create a new variable for the quantity described by metadata.
+
+    Args:
+        group: netCDF4 group to create the variable in.
+        metadata: IDSMetadata describing the variable.
+        ncmeta: NetCDF metadata for the IDS.
+        homogeneous_time: True iff the IDS uses homogeneous time coordinates.
+
+    Returns:
+        The created variable.
+    """
+    path = metadata.path_string
+    var_name = path.replace("/", ".")
+
+    if metadata.data_type in (IDSDataType.STRUCTURE, IDSDataType.STRUCT_ARRAY):
+        # Create a 0D dummy variable for the metadata
+        var = group.createVariable(var_name, "S1", ())
+
+    else:
+        # Determine datatype
+        dtype = metadata.data_type.numpy_dtype
+        if dtype is None and metadata.data_type == IDSDataType.STR:
+            dtype = str
+        assert dtype is not None
+
+        # Create variable
+        var = group.createVariable(
+            var_name,
+            dtype,
+            ncmeta.get_dimensions(path, homogeneous_time),
+            compression=None if dtype is str else "zlib",
+            complevel=1,
+            fill_value=default_fillvals[metadata.data_type],
+        )
+
+    # Fill common attributes:
+    var.documentation = metadata.documentation
+    if metadata.units:
+        var.units = metadata.units
+
+    return var
+
+
 def nc_tree_iter(
     node: IDSStructure, aos_index: Tuple[int, ...] = ()
 ) -> Iterator[Tuple[Tuple[int, ...], IDSBase]]:
@@ -45,16 +94,12 @@ def nc_tree_iter(
         (aos_index, node) for all filled leaf nodes and array of structures nodes.
     """
     for child in node.iter_nonempty_():
+        yield (aos_index, child)
         if isinstance(child, IDSStructArray):
-            yield (aos_index, child)
             for i in range(len(child)):
                 yield from nc_tree_iter(child[i], aos_index + (i,))
-
         elif isinstance(child, IDSStructure):
             yield from nc_tree_iter(child, aos_index)
-
-        else:
-            yield (aos_index, child)
 
 
 def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
@@ -69,124 +114,121 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
     ncmeta = NCMetadata(ids.metadata)
 
     # Keep track of used dimensions, and the maximum size
-    used_dimensions = {}  # dim_name: size
-    # Keep track of filled data
-    filled_data = {}  # path: {aos_indices: node}
-    # Generic ND dimensions for use in `shape` variables
-    nd_dimensions = {}  # i: Dimension
-
+    dimension_size = {}  # dim_name: size
+    # Keep track of filled data per path
+    filled_data = {path: {} for path in ncmeta.paths}  # path: {aos_indices: node}
     # homogeneous_time boolean
     homogeneous_time = ids.ids_properties.homogeneous_time == 1
 
     # Loop over the IDS to calculate the dimensions sizes
     for aos_index, node in nc_tree_iter(ids):
         dimensions = ncmeta.get_dimensions(node.metadata.path_string, homogeneous_time)
-        if node.metadata.ndim:
-            shape = node.shape
-            for i in range(-node.metadata.ndim, 0):
-                dim_name = dimensions[i]
-                used_dimensions[dim_name] = max(
-                    used_dimensions.get(dim_name, 0), shape[i]
-                )
-        if isinstance(node, IDSPrimitive):
-            filled_data.setdefault(node.metadata.path_string, {})[aos_index] = node
+        ndim = node.metadata.ndim
+        if ndim:
+            for dim_name, size in zip(dimensions[-ndim:], node.shape):
+                dimension_size[dim_name] = max(dimension_size.get(dim_name, 0), size)
+        filled_data[node.metadata.path_string][aos_index] = node
+    # Remove entries without data:
+    filled_data = {path: data for path, data in filled_data.items() if data}
+    filled_variables = {path.replace("/", ".") for path in filled_data}
 
     # Create NC dimensions
-    for dimension, size in used_dimensions.items():
+    for dimension, size in dimension_size.items():
         group.createDimension(dimension, size)
+    # Generic ND dimensions for use in `shape` variables, don't create yet
+    nd_dimensions = {}  # i: Dimension
 
     # Loop over the IDS another time to store the data
-    filled_variables = {path.replace("/", ".") for path in filled_data}
     for path in filled_data:
         metadata = ids.metadata[path]
+        var = create_variable(group, metadata, ncmeta, homogeneous_time)
 
-        # Determine datatype
-        dtype = metadata.data_type.numpy_dtype
-        if dtype is None and metadata.data_type == IDSDataType.STR:
-            dtype = str
-        assert dtype is not None
+        # We don't store (sparsity) data for structures
+        if metadata.data_type is IDSDataType.STRUCTURE:
+            continue
 
-        # Create variable
-        var_name = path.replace("/", ".")
-        var = group.createVariable(
-            var_name,
-            dtype,
-            ncmeta.get_dimensions(path, homogeneous_time),
-            compression=None if dtype is str else "zlib",
-            complevel=1,
-            fill_value=default_fillvals[metadata.data_type],
-        )
-
-        # Fill attributes:
-        if metadata.units:
-            var.units = metadata.units
-        var.documentation = metadata.documentation
-        coordinates = ncmeta.get_coordinates(path, homogeneous_time)
-        if coordinates:
-            var.coordinates = filter_coordinates(coordinates, filled_variables)
-
-        # Fill variable
+        # Determine if we need to store shapes (applicable for data variables and AOS)
+        data = filled_data[path]
+        ndim = metadata.ndim
         aos_dims = []
         if path in ncmeta.aos:
             aos_dims = ncmeta.get_dimensions(ncmeta.aos[path], homogeneous_time)
 
         if len(aos_dims) == 0:
-            # Directly set untensorized values
-            assert len(filled_data[path]) == 1
+            # Data is not tensorized
+            sparse = False
+
+        else:
+            # Data is tensorized, determine if it is homogeneously shaped
+            shapes_shape = [dimension_size[dim] for dim in aos_dims]
+            if ndim:
+                shapes_shape.append(ndim)
+            # Note: Access Layer API also allows maximum int32 to describe sizes
+            # TODO: allow more efficient storage when sizes fit in int8 or int16?
+            shapes = numpy.zeros(shapes_shape, dtype=numpy.int32)
+
+            if ndim:
+                for aos_coords, node in data.items():
+                    shapes[aos_coords] = node.shape
+                full_shape = [
+                    dimension_size[dim]
+                    for dim in ncmeta.get_dimensions(path, homogeneous_time)[-ndim:]
+                ]
+                sparse = not numpy.array_equiv(shapes, full_shape)
+
+            else:  # 0D variables don't have a shape:
+                for aos_coords in data.keys():
+                    shapes[aos_coords] = 1
+                sparse = not shapes.all()
+
+        # Store sparsity metadata
+        if sparse and ndim:
+            # Store shape array
+            if ndim not in nd_dimensions:
+                nd_dimensions[ndim] = group.createDimension(f"{ndim}D", ndim)
+            shape_var = group.createVariable(
+                path.replace("/", ".") + ":shape",
+                shapes.dtype,
+                aos_dims + (nd_dimensions[ndim],),
+                # compression="zlib",
+                # complevel=1,
+            )
+            shape_var[()] = shapes
+            var.sparse = f"Sparse data, data shapes are stored in {shape_var.name}"
+        elif sparse:
+            var.sparse = "Sparse data, missing data is filled with _FillValue"
+
+        # We don't store data for arrays of structures
+        if metadata.data_type is IDSDataType.STRUCT_ARRAY:
+            continue
+
+        # Store coordinate metadata
+        coordinates = ncmeta.get_coordinates(path, homogeneous_time)
+        if coordinates:
+            var.coordinates = filter_coordinates(coordinates, filled_variables)
+
+        # Fill variable
+        if len(aos_dims) == 0:  # Directly set untensorized values
             node = filled_data[path][()]
             if node.shape == var.shape:
                 var[()] = node.value
             else:
                 var[tuple(map(slice, node.shape))] = node.value
-            # FIXME: decide on attribute name and contents
-            var.shape = "full"
 
-        else:
-            # Tensorize in-memory
-            ndim = metadata.ndim
-            # Note: Access Layer API also allows maximum int32 to describe sizes
-            # TODO: allow more efficient storage when max sizes fit in int8 or int16?
-            shapes = numpy.zeros(
-                [used_dimensions[dim] for dim in aos_dims] + [ndim],
-                dtype=numpy.int32,
-            )
-
+        else:  # Tensorize in-memory
+            var.set_auto_mask(False)
             # TODO: depending on the data, tmp_var may be HUGE, we may need a more
             # efficient assignment algorithm for large and/or irregular data
-            var.set_auto_mask(False)
             tmp_var = var[()]
-            for aos_coords, node in filled_data[path].items():
-                if ndim:
+
+            # Fill tmp_var:
+            if ndim:
+                for aos_coords, node in data.items():
                     tmp_var[aos_coords + tuple(map(slice, node.shape))] = node.value
-                    shapes[aos_coords + (...,)] = node.shape
-                else:
+            else:
+                for aos_coords, node in data.items():
                     tmp_var[aos_coords] = node.value
 
-            # So the following assignment is more efficient
+            # Assign data to variable
             var[()] = tmp_var
             del tmp_var
-
-            # Check if fully tensorized
-            if ndim == 0 or numpy.array_equiv(shapes, var.shape[-ndim:]):
-                # Full storage
-                # FIXME: decide on attribute name and contents
-                var.shape = "full"
-            else:
-                # FIXME: decide on attribute name and contents
-                var.shape = f"sparse {var.name}.shape"
-
-                if ndim not in nd_dimensions:
-                    nd_dimensions[ndim] = group.createDimension(f"{ndim}D", ndim)
-                shape_var = group.createVariable(
-                    var_name + ".shape",
-                    shapes.dtype,
-                    aos_dims + (nd_dimensions[ndim],),
-                    compression="zlib",
-                    complevel=1,
-                )
-                coordinates = ncmeta.get_coordinates(ncmeta.aos[path], homogeneous_time)
-                if coordinates:
-                    shape_var.coordinates = filter_coordinates(
-                        coordinates, filled_variables
-                    )
-                shape_var[:] = shapes
