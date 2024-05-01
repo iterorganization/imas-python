@@ -133,14 +133,17 @@ class NCMetadata:
             self.paths.append(child.path_string)
             if parent_aos:
                 self.aos[child.path_string] = parent_aos
+
             if child.data_type is IDSDataType.STRUCTURE:
                 self._parse(child, parent_aos, aos_level)
             elif child.ndim:
                 self._parse_dimensions(child, aos_level)
                 if child.data_type is IDSDataType.STRUCT_ARRAY:
                     self._parse(child, child.path_string, aos_level + 1)
-            else:
+            elif parent_aos:
+                # These 0D items will have dimensions after tensorizing
                 self._ut_dims[child.path_string] = []
+            # 0D items without a parent AOS don't have dimensions: we don't store them
 
     def _parse_dimensions(self, metadata: IDSMetadata, aos_level: int) -> None:
         """Parse dimensions and auxiliary coordinates from DD coordinate metadata.
