@@ -190,7 +190,21 @@ class NCMetadata:
         -   Time dimensions and coordinate names are recorded separately. When using
             homogeneous_time, all time coordinates point to the root ``time`` quantity
             instead of the quantity recorded in the coordinate properties.
+        -   Error bars of quantities (quantities whose name ends in ``_error_upper`` or
+            ``_error_lower``) always share the dimensions of the quantities they belong
+            to.
         """
+        path = metadata.path_string
+        # Handle errorbar quantities
+        if path.endswith("_error_upper") or path.endswith("_error_lower"):
+            self._ut_dims[path] = [None] * metadata.ndim
+            # Note: only works because _error_upper/_error_lower both have length 12
+            coordinate_path = path[:-12]
+            for i in range(metadata.ndim):
+                self._pending[(path, i)] = (coordinate_path, i)
+            return
+
+        # Handle regular nodes
         dimensions = []
         coordinates = []
         for i, coord in enumerate(metadata.coordinates):
@@ -201,18 +215,18 @@ class NCMetadata:
                     # ------ CASE 2: coordinate is same as another ------
                     # Put reference in pending to be resolved in second pass
                     coordinate_path = "/".join(same_as.references[0].parts)
-                    self._pending[(metadata.path_string, i)] = (coordinate_path, i)
+                    self._pending[(path, i)] = (coordinate_path, i)
 
                 else:
                     # ------ CASE 1: coordinate is an index ------
                     # Create a new dimension
-                    dim_name = metadata.path_string.replace("/", ".")
+                    dim_name = path.replace("/", ".")
                     if (
                         aos_level + metadata.ndim != 1
                         or metadata.data_type is IDSDataType.STRUCT_ARRAY
                     ):
-                        # This variable is >1D after tensorization, so we cannot use our
-                        # path as dimension name:
+                        # This variable is >1D after tensorization, or it is an AoS,
+                        # so we cannot use our path as dimension name: add suffix
                         dim_name = f"{dim_name}:{i}"
                     is_time_dimension = metadata.name == "time"
                     if metadata.data_type is IDSDataType.STRUCT_ARRAY:
@@ -230,7 +244,7 @@ class NCMetadata:
                 else:
                     # Put reference in pending to be resolved in second pass
                     coordinate_path = "/".join(coord.references[0].parts)
-                    self._pending[(metadata.path_string, i)] = (coordinate_path, 0)
+                    self._pending[(path, i)] = (coordinate_path, 0)
                     coordinates.append(coordinate_path.replace("/", "."))
 
             else:
@@ -245,9 +259,9 @@ class NCMetadata:
                 self.time_dimensions.add(dim_name)
 
         # Store untensorized dimensions and coordinates
-        self._ut_dims[metadata.path_string] = dimensions
+        self._ut_dims[path] = dimensions
         if coordinates:
-            self._ut_coords[metadata.path_string] = coordinates
+            self._ut_coords[path] = coordinates
 
     def _resolve_pending(self):
         """Resolve all pending dimension references."""
