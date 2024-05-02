@@ -9,7 +9,7 @@ from pathlib import Path
 
 import click
 from packaging.version import Version
-from rich import console, traceback
+from rich import box, console, traceback
 from rich.logging import RichHandler
 from rich.progress import (
     BarColumn,
@@ -19,11 +19,14 @@ from rich.progress import (
     TextColumn,
     TimeElapsedColumn,
 )
+from rich.table import Table
 
 import imaspy
+import imaspy.imas_interface
 from imaspy import dd_zip, imas_interface
 from imaspy.command.timer import Timer
 from imaspy.exception import UnknownDDVersion
+from imaspy.imas_interface import ll_interface
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +57,15 @@ def _excepthook(type_, value, tb):
     console.Console(stderr=True).print(rich_tb)
 
 
-@click.group("imaspy", invoke_without_command=True)
+@click.group("imaspy", invoke_without_command=True, no_args_is_help=True)
 def cli():
+    """IMASPy command line interface.
+
+    Please use one of the available commands listed below. You can get help for each
+    command by executing:
+
+        imaspy <command> --help
+    """
     # Limit the traceback to 1 item: avoid scaring CLI users with long traceback prints
     # and let them focus on the actual error message
     sys.excepthook = _excepthook
@@ -75,11 +85,23 @@ def min_version_guard(al_version: Version):
 
 @cli.command("version")
 def print_version():
-    """Print the version number of IMASPy."""
-    click.echo(imaspy.__version__)
+    """Print version information of IMASPy."""
+    cons = console.Console()
+    grid = Table(title="IMASPy version info", show_header=False, title_style="bold")
+    grid.box = box.HORIZONTALS
+    if cons.size.width > 120:
+        grid.width = 120
+    grid.add_row("IMASPy version:", imaspy.__version__)
+    grid.add_section()
+    grid.add_row("Default data dictionary version:", imaspy.IDSFactory().dd_version)
+    dd_versions = ", ".join(imaspy.dd_zip.dd_xml_versions())
+    grid.add_row("Available data dictionary versions:", dd_versions)
+    grid.add_section()
+    grid.add_row("Access Layer core version:", ll_interface.get_al_version() or "N/A")
+    console.Console().print(grid)
 
 
-@cli.command("print")
+@cli.command("print", no_args_is_help=True)
 @click.argument("uri")
 @click.argument("ids")
 @click.argument("occurrence", default=0)
@@ -94,9 +116,9 @@ def print_ids(uri, ids, occurrence, print_all):
     """Pretty print the contents of an IDS.
 
     \b
-    uri         URI of the Data Entry (e.g. "imas:mdsplus?path=testdb")
-    ids         Name of the IDS to print (e.g. "core_profiles")
-    occurrence  Which occurrence to print (defaults to 0)
+    uri         URI of the Data Entry (e.g. "imas:mdsplus?path=testdb").
+    ids         Name of the IDS to print (e.g. "core_profiles").
+    occurrence  Which occurrence to print (defaults to 0).
     """
     min_version_guard(Version("5.0"))
     setup_rich_log_handler(False)
@@ -106,16 +128,26 @@ def print_ids(uri, ids, occurrence, print_all):
         imaspy.util.print_tree(ids_obj, not print_all)
 
 
-@cli.command("convert")
+@cli.command("convert", no_args_is_help=True)
 @click.argument("uri_in")
 @click.argument("dd_version")
 @click.argument("uri_out")
-@click.option("--ids", default="*", help="Specify which IDS to convert")
-@click.option("--occurrence", default=-1, help="Specify which occurrence to convert")
-@click.option("--quiet", "-q", is_flag=True, help="Suppress progress output")
-@click.option("--timeit", is_flag=True, help="Show timing information")
+@click.option(
+    "--ids",
+    default="*",
+    help="Specify which IDS to convert. \
+If not provided, all IDSs in the data entry are converted.",
+)
+@click.option("--occurrence", default=-1, help="Specify which occurrence to convert.")
+@click.option("--quiet", "-q", is_flag=True, help="Suppress progress output.")
+@click.option("--timeit", is_flag=True, help="Show timing information.")
 def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet, timeit):
-    """Convert an IDS to the target DD version.
+    """Convert a Data Entry (or a single IDS) to the target DD version.
+
+    Provide a different backend to URI_OUT than URI_IN to convert between backends.
+    For example:
+
+        imaspy convert imas:mdsplus?path=db-in 3.41.0 imas:hdf5?path=db-out
 
     \b
     uri_in      URI of the input Data Entry.
