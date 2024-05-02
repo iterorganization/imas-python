@@ -17,7 +17,6 @@ from packaging.version import Version
 
 import imaspy
 
-
 print("python exec:", sys.executable)
 print("sys.path:", sys.path)
 
@@ -86,6 +85,7 @@ extensions = [
     "sphinx.ext.extlinks",  # For shortening internal links
     "sphinx.ext.mathjax",  # Render math as images
     "sphinx_immaterial",  # Sphinx immaterial theme
+    "sphinx_click",  # Document CLI
 ]
 
 todo_include_todos = True
@@ -300,6 +300,34 @@ def escape_underscores(string):
     return string.replace("_", r"\_")
 
 
+def sphinx_click_process_description(app, ctx, lines):
+    # Replace contents from lines with a code-block:
+    if not lines:
+        return
+    newlines = [
+        ".. code-block:: text",
+        "",
+    ]
+    for line in lines:
+        if line.startswith("| "):
+            line = line[2:]
+        newlines.append("  " + line)
+    lines[:] = newlines
+
+
+def sphinx_click_process_arguments(app, ctx, lines):
+    # Clear all output: arguments are documented in the description text
+    lines[:] = []
+
+
+def sphinx_click_process_usage(app, ctx, lines):
+    lines.insert(0, ".. rubric:: Usage")
+
+
 def setup(app):
     DEFAULT_FILTERS["escape_underscores"] = escape_underscores
     app.add_css_file("imaspy.css")
+    # Customize output of sphinx-click
+    app.connect("sphinx-click-process-arguments", sphinx_click_process_arguments)
+    app.connect("sphinx-click-process-description", sphinx_click_process_description)
+    app.connect("sphinx-click-process-usage", sphinx_click_process_usage)

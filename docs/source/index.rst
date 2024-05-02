@@ -40,6 +40,7 @@ Manual
    lazy_loading
    mdsplus
    configuring
+   cli
 
 .. toctree::
    :caption: IMASPy training courses

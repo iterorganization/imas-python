@@ -75,6 +75,7 @@ docs = [
     "sphinx>=6.0.0,<7.0.0",
     "sphinx-autosummary-accessors>=0.1.2",
     "sphinx-immaterial",
+    "sphinx-click",
 ]
 test = [
     "pytest>=5.4.1",
