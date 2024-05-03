@@ -237,7 +237,8 @@ class NCMetadata:
                     ):
                         # This variable is >1D after tensorization, or it is an AoS,
                         # so we cannot use our path as dimension name: add suffix
-                        dim_name = f"{dim_name}:{i}"
+                        suffix = "ijklmn"[i]
+                        dim_name = f"{dim_name}:{suffix}"
                     is_time_dimension = metadata.name == "time"
                     if metadata.data_type is IDSDataType.STRUCT_ARRAY:
                         # Check if name/identifier/label exists
