@@ -1,9 +1,13 @@
+from typing import Iterator, List, Tuple
+
 import netCDF4
 
+from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
+from imaspy.netcdf.nc_metadata import NCMetadata
 
 
 def split_on_aos(metadata: IDSMetadata):
@@ -22,42 +26,89 @@ def split_on_aos(metadata: IDSMetadata):
     return paths[::-1]
 
 
-def aos_iter(structure: IDSStructure, paths, sizes, index):
-    path, *paths = paths
-    size, *sizes = sizes
+IndexedNode = Tuple[Tuple[int, ...], IDSBase]
 
+
+def tree_iter(structure: IDSStructure, metadata: IDSMetadata) -> Iterator[IndexedNode]:
+    paths = split_on_aos(metadata)
+    if len(paths) == 1:
+        yield (), structure[paths[0]]
+    else:
+        yield from _tree_iter(structure, paths, ())
+
+
+def _tree_iter(
+    structure: IDSStructure, paths: List[str], curindex: Tuple[int, ...]
+) -> Iterator[IndexedNode]:
+    path, *paths = paths
     aos = structure[path]
-    if len(aos) != size:
-        aos.resize(size, keep=True)
 
     if len(paths) == 1:
         path = paths[0]
-        for i in range(size):
-            yield index + (i,), aos[i][path]
+        for i, node in enumerate(aos):
+            yield curindex + (i,), node[path]
 
     else:
-        for i in range(size):
-            yield from aos_iter(aos[i], paths, sizes, index + (i,))
+        for i, node in enumerate(aos):
+            yield from _tree_iter(node, paths, curindex + (i,))
 
 
 def nc2ids(group: netCDF4.Group, ids: IDSToplevel):
-    var_names = sorted(group.variables)
+    var_names = list(group.variables)
+    # FIXME: ensure that var_names are sorted properly
+    # Current assumption is that creation-order is fine
+    homogeneous_time = group["ids_properties.homogeneous_time"][()] == 1
+    ncmeta = NCMetadata(ids.metadata)
+
     for var_name in var_names:
-        try:
-            metadata = ids.metadata[var_name]
-        except KeyError:
-            continue  # Assume shape variable: ignore for now
+        if var_name.endswith(":shape"):
+            continue  # TODO: validate that this is used
+
+        # FIXME: error handling:
+        metadata = ids.metadata[var_name]
+
+        # TODO: validate metadata (units, etc.) conforms to DD?
+
+        if metadata.data_type is IDSDataType.STRUCTURE:
+            continue  # This only contains DD metadata we already know
+
+        var = group[var_name]
+        if metadata.data_type is IDSDataType.STRUCT_ARRAY:
+            if "sparse" in var.ncattrs():
+                shapes = group[var_name + ":shape"]
+                for index, node in tree_iter(ids, metadata):
+                    node.resize(shapes[index][0])
+
+            else:
+                # FIXME: extract dimension name from nc file?
+                dim = ncmeta.get_dimensions(metadata.path_string, homogeneous_time)[-1]
+                size = group.dimensions[dim].size
+                for _, node in tree_iter(ids, metadata):
+                    node.resize(size)
+
+            continue
 
         # FIXME: this may be a gigantic array, not required for sparse data
         # FIXME: this may be a masked array when not all values are filled
         var = group[var_name]
         data = var[()]
+        data
 
-        paths = split_on_aos(metadata)
-        if len(paths) == 1:
-            ids[paths[0]].value = data
+        if metadata.path_string not in ncmeta.aos:
+            # Shortcut for assigning untensorized data
+            ids[metadata.path] = data
+
+        elif "sparse" in var.ncattrs():
+            if metadata.ndim:
+                shapes = group[var_name + ":shape"]
+                for index, node in tree_iter(ids, metadata):
+                    shape = shapes[index]
+                    if all(shape):
+                        node.value = data[index + tuple(map(slice, shapes[index]))]
+            else:
+                for index, node in tree_iter(ids, metadata):
+                    node.value = data[index]
 
         else:
-            sizes = var.shape[: len(paths) - 1]
-            for index, item in aos_iter(ids, paths, sizes, ()):
-                item.value = data[index]
+            for index, node in tree_iter(ids, metadata):
+                node.value = data[index]
