@@ -210,7 +210,10 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
         # Fill variable
         if len(aos_dims) == 0:  # Directly set untensorized values
             node = filled_data[path][()]
-            if node.shape == var.shape:
+            if metadata.data_type is IDSDataType.STR and metadata.ndim == 1:
+                for i in range(len(node)):
+                    var[i] = node[i]
+            elif node.shape == var.shape:
                 var[()] = node.value
             else:
                 var[tuple(map(slice, node.shape))] = node.value
