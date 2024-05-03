@@ -10,6 +10,7 @@ from typing import Optional
 from netCDF4 import Dataset
 
 import imaspy
+from imaspy.ids_convert import convert_ids
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, IDS_TIME_MODES
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_metadata import IDSType
@@ -56,9 +57,20 @@ class NCEntry:
         self._dataset = Dataset(filename, mode, format="NETCDF4", **kwargs)
 
         if self._dataset.dimensions or self._dataset.variables or self._dataset.groups:
-            pass  # TODO: check if this is a valid IMAS netCDF file
+            if "data_dictionary_version" not in self._dataset.ncattrs():
+                raise RuntimeError(
+                    "Invalid netCDF file: `data_dictionary_version` missing"
+                )
+            dataset_dd_version = self._dataset.data_dictionary_version
+            if dataset_dd_version == self.dd_version:
+                self._dataset_ids_factory = self._ids_factory
+            else:
+                self._dataset_ids_factory = IDSFactory(dataset_dd_version)
+            # TODO: check if this is a valid IMAS netCDF file
+
         else:
             # Looks like this is an empty file, let's set global attributes
+            self._dataset_ids_factory = self._ids_factory
             self._dataset.Conventions = "IMAS"
             self._dataset.data_dictionary_version = self._ids_factory.dd_version
 
@@ -103,7 +115,15 @@ class NCEntry:
 
         Keyword Args:
             lazy: FIXME: not implemented yet
-            autoconvert: FIXME: not implemented yet
+            autoconvert: Automatically convert IDSs.
+
+                If enabled (default), a call to ``get()`` will return an IDS from the
+                Data Dictionary version attached to this Data Entry. Data is
+                automatically converted between the on-disk version and the in-memory
+                version.
+
+                When set to ``False``, the IDS will be returned in the DD version it was
+                stored in.
 
         Returns:
             The loaded IDS.
@@ -114,9 +134,14 @@ class NCEntry:
                 nc_entry = NCEntry("path/to/data.nc", "r")
                 core_profiles = nc_entry.get("core_profiles")
         """
-        ids = self._ids_factory.new(ids_name)
+        if lazy:
+            raise NotImplementedError("Lazy loading is not yet implemented")
+        ids = self._dataset_ids_factory.new(ids_name)
         group = self._dataset[f"{ids_name}/{occurrence}"]
         nc2ids(group, ids)
+
+        if autoconvert and self._ids_factory is not self._dataset_ids_factory:
+            return convert_ids(ids, factory=self._ids_factory)
         return ids
 
     def put(self, ids: IDSToplevel, occurrence: int = 0) -> None:
@@ -133,7 +158,6 @@ class NCEntry:
                 ...  # fill the pf_active IDS here
                 nc_entry.put(ids)
         """
-
         ids_name = ids.metadata.name
         # netCDF4 limitation: cannot overwrite existing groups
         if ids_name in self._dataset.groups:
@@ -148,6 +172,9 @@ class NCEntry:
         disable_validate = os.environ.get("IMAS_AL_DISABLE_VALIDATE")
         if not disable_validate or disable_validate == "0":
             ids.validate()
+
+        # TODO: conversion?
+        assert ids._dd_version == self._dataset_ids_factory.dd_version
 
         # Verify homogeneous_time is set
         time_mode = ids.ids_properties.homogeneous_time
