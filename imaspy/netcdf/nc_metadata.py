@@ -209,9 +209,19 @@ class NCMetadata:
         coordinates = []
         for i, coord in enumerate(metadata.coordinates):
             dim_name = None
-            if not coord.references:
+            if coord.has_alternatives:
+                # ------ CASE 3: refers to multiple other quantities in the DD ------
+                raise NotImplementedError(
+                    "Alternative coordinates are not yet supported"
+                )
+
+            elif not coord.references:
                 same_as = metadata.coordinates_same_as[i]
-                if same_as.references:
+                if same_as.has_alternatives:
+                    raise NotImplementedError(
+                        "Alternative coordinates are not yet supported"
+                    )
+                elif same_as.references:
                     # ------ CASE 2: coordinate is same as another ------
                     # Put reference in pending to be resolved in second pass
                     coordinate_path = "/".join(same_as.references[0].parts)
@@ -246,12 +256,6 @@ class NCMetadata:
                     coordinate_path = "/".join(coord.references[0].parts)
                     self._pending[(path, i)] = (coordinate_path, 0)
                     coordinates.append(coordinate_path.replace("/", "."))
-
-            else:
-                # ------ CASE 3: refers to multiple other quantities in the DD ------
-                raise NotImplementedError(
-                    "Alternative coordinates are not yet supported"
-                )
 
             dimensions.append(dim_name)
             if dim_name is not None and is_time_dimension:
