@@ -44,3 +44,27 @@ def test_dict_like_setitem():
     provenance_copy.node.resize(1)
     provenance_copy.node[0].path = "test"
     cp["ids_properties/provenance/node"] = provenance_copy.node
+
+
+def test_structure_eq():
+    cp1 = IDSFactory("3.39.0").core_profiles()
+    cp2 = IDSFactory("3.39.0").core_profiles()
+
+    assert cp1 != 1
+    assert cp1 != "1"
+    assert cp1 != cp1.time
+
+    assert cp1 == cp2
+    assert cp1.ids_properties == cp2.ids_properties
+    cp1.ids_properties.comment = "x"
+    assert cp1 != cp2
+    assert cp1.ids_properties != cp2.ids_properties
+    cp2.ids_properties.comment = "x"
+    assert cp1 == cp2
+    assert cp1.ids_properties == cp2.ids_properties
+    cp2.ids_properties.homogeneous_time = 1
+    assert cp1 != cp2
+    assert cp1.ids_properties != cp2.ids_properties
+    cp1.ids_properties.homogeneous_time = 1
+    assert cp1 == cp2
+    assert cp1.ids_properties == cp2.ids_properties

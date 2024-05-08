@@ -4,6 +4,7 @@ from copy import deepcopy
 
 import pytest
 
+from imaspy.ids_factory import IDSFactory
 from imaspy.ids_struct_array import IDSStructArray
 
 
@@ -66,3 +67,23 @@ def test_path_non_indexable_parent(caplog, fake_filled_toplevel):
         assert wv._path == "wavevector[?]"
         assert len(caplog.records) == 1
         assert caplog.records[0].levelname == "WARNING"
+
+
+def test_struct_array_eq():
+    cp1 = IDSFactory("3.39.0").core_profiles()
+    cp2 = IDSFactory("3.39.0").core_profiles()
+
+    assert cp1.profiles_1d != 1
+    assert cp1.profiles_1d != "profiles_1d"
+
+    assert cp1.profiles_1d == cp2.profiles_1d
+    cp1.profiles_1d.resize(1)
+    assert cp1.profiles_1d != cp2.profiles_1d
+    cp2.profiles_1d.resize(2)
+    assert cp1.profiles_1d != cp2.profiles_1d
+    cp1.profiles_1d.resize(2)
+    assert cp1.profiles_1d == cp2.profiles_1d
+    cp1.profiles_1d[0].time = 1
+    assert cp1.profiles_1d != cp2.profiles_1d
+    cp2.profiles_1d[0].time = 1
+    assert cp1.profiles_1d == cp2.profiles_1d
