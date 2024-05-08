@@ -62,6 +62,8 @@ class IDSStructArray(IDSBase):
         return copy
 
     def __eq__(self, other) -> bool:
+        if self is other:
+            return True
         if not isinstance(other, IDSStructArray):
             return False
         # Equal if same size and all contained structures are the same

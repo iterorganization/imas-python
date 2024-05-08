@@ -155,6 +155,8 @@ class IDSStructure(IDSBase):
         return sorted(set(object.__dir__(self)).union(self._children))
 
     def __eq__(self, other) -> bool:
+        if self is other:
+            return True
         if not isinstance(other, IDSStructure):
             return False
         from imaspy.util import idsdiffgen  # local import to avoid circular import
