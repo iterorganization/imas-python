@@ -7,6 +7,7 @@ modules. Implementation has been removed from util.py to improve the performance
 
 import copy
 import logging
+from difflib import Match, SequenceMatcher
 from typing import Union
 
 import numpy
@@ -28,7 +29,7 @@ from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.util import visit_children
+from imaspy.util import idsdiffgen, visit_children
 
 logger = logging.getLogger(__name__)
 
@@ -220,3 +221,40 @@ def inspect_impl(ids_node, hide_empty_nodes):
         renderables.append(Panel(child_table, title="Child nodes", style="cyan"))
 
     rich.print(Panel.fit(Group(*renderables), title=title, border_style="scope.border"))
+
+
+def idsdiff_impl(struct1: IDSStructure, struct2: IDSStructure) -> None:
+    diff_table = Table("Value in structure 1", "Value in structure 2")
+
+    for description, child1, child2 in idsdiffgen(struct1, struct2):
+        if not isinstance(child1, IDSBase) and not isinstance(child2, IDSBase):
+            txt1 = f"{description}: {child1}"
+            txt2 = f"{description}: {child2}"
+        else:
+            txt1 = "-" if child1 is None else repr(child1)
+            txt2 = "-" if child2 is None else repr(child2)
+
+        seqmat = SequenceMatcher()
+        seqmat.set_seqs(txt1, txt2)
+
+        out1 = Text()
+        out2 = Text()
+        prevmatch = Match(0, 0, 0)
+        for match in seqmat.get_matching_blocks():
+            if match.a > prevmatch.a + prevmatch.size:
+                out1.append(txt1[prevmatch.a + prevmatch.size : match.a], "bold red")
+            if match.b > prevmatch.b + prevmatch.size:
+                out2.append(txt2[prevmatch.b + prevmatch.size : match.b], "bold green")
+            out1.append(txt1[match.a : match.a + match.size])
+            out2.append(txt2[match.b : match.b + match.size])
+            prevmatch = match
+        out1.append(txt1[match.a + match.size :], style="bold red")
+        out2.append(txt2[match.b + match.size :], style="bold green")
+
+        diff_table.add_row(out1, out2)
+        diff_table.add_section()
+
+    if diff_table.row_count:
+        rich.print(diff_table)
+    else:
+        rich.print("Structures", struct1, "and", struct2, "are identical")
