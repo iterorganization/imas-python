@@ -147,12 +147,18 @@ def idsdiff(struct1: IDSStructure, struct2: IDSStructure) -> None:
 Difference = Tuple[str, Any, Any]
 
 
-def idsdiffgen(struct1: IDSStructure, struct2: IDSStructure) -> Iterator[Difference]:
+def idsdiffgen(
+    struct1: IDSStructure, struct2: IDSStructure, *, accept_lazy=False
+) -> Iterator[Difference]:
     """Generate differences between two structures.
 
     Args:
         struct1: IDS or structure within an IDS.
         struct2: IDS or structure within an IDS to compare against :param:`struct1`.
+
+    Keyword Args:
+        accept_lazy: See documentation of :py:param:`iter_nonempty_()
+            <imaspy.ids_structure.IDSStructure.iter_nonempty_.accept_lazy>`.
 
     Yields:
         (description_or_path, node1, node2): tuple describing a difference:
@@ -181,25 +187,37 @@ def idsdiffgen(struct1: IDSStructure, struct2: IDSStructure) -> Iterator[Differe
         )
 
     # Continue with recursively comparing values
-    yield from _idsdiffgen(struct1, struct2)
+    yield from _idsdiffgen(struct1, struct2, accept_lazy=accept_lazy)
 
 
-def _idsdiffgen(struct1: IDSStructure, struct2: IDSStructure) -> Iterator[Difference]:
-    children1 = {child.metadata.name: child for child in struct1.iter_nonempty_()}
-    children2 = {child.metadata.name: child for child in struct2.iter_nonempty_()}
+def _idsdiffgen(
+    struct1: IDSStructure, struct2: IDSStructure, *, accept_lazy=False
+) -> Iterator[Difference]:
+    children1 = {
+        child.metadata.name: child
+        for child in struct1.iter_nonempty_(accept_lazy=accept_lazy)
+    }
+    children2 = {
+        child.metadata.name: child
+        for child in struct2.iter_nonempty_(accept_lazy=accept_lazy)
+    }
 
     for childname, child1 in children1.items():
         child2 = children2.pop(childname, None)
         if child2 is None:
-            yield (child1.metadata.path_string, child1, None)
+            if isinstance(child1, IDSStructure):
+                for child in tree_iter(child1, accept_lazy=accept_lazy):
+                    yield (child.metadata.path_string, child, None)
+            else:
+                yield (child1.metadata.path_string, child1, None)
 
         elif isinstance(child1, IDSPrimitive) and isinstance(child2, IDSPrimitive):
-            if not numpy.array_equal(child1, child2):
+            if not numpy.array_equal(child1.value, child2.value):
                 yield (child1.metadata.path_string, child1, child2)
 
         elif isinstance(child1, IDSStructure) and isinstance(child2, IDSStructure):
             # Check recursively
-            yield from _idsdiffgen(child1, child2)
+            yield from _idsdiffgen(child1, child2, accept_lazy=accept_lazy)
 
         elif isinstance(child1, IDSStructArray) and isinstance(child2, IDSStructArray):
             # Compare sizes
@@ -207,13 +225,17 @@ def _idsdiffgen(struct1: IDSStructure, struct2: IDSStructure) -> Iterator[Differ
                 yield (child1.metadata.path_string, child1, child2)
             # Recursively compare child structures
             for c1, c2 in zip(child1, child2):
-                yield from _idsdiffgen(c1, c2)
+                yield from _idsdiffgen(c1, c2, accept_lazy=accept_lazy)
 
         else:
             yield (f"Incompatible types for {child1.metadata.path}", child1, child2)
 
     for child2 in children2.values():
-        yield (child2.metadata.path_string, None, child2)
+        if isinstance(child2, IDSStructure):
+            for child in tree_iter(child2):
+                yield (child.metadata.path_string, None, child)
+        else:
+            yield (child2.metadata.path_string, None, child2)
 
 
 def resample(node, old_time, new_time, homogeneousTime=None, inplace=False, **kwargs):

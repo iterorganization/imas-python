@@ -92,7 +92,7 @@ def test_idsdiffgen():
     cp2.ids_properties.homogeneous_time = 1
     diff = list(idsdiffgen(cp1, cp2))
     assert len(diff) == 1
-    assert diff[0] == ("ids_properties", None, cp2.ids_properties)
+    assert diff[0] == ("ids_properties/homogeneous_time", None, 1)
 
     # Test different values
     cp1.ids_properties.homogeneous_time = 2
