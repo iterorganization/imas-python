@@ -1,7 +1,14 @@
 import imaspy
 from imaspy.test.test_helpers import fill_consistent
 from imaspy.training import get_training_db_entry
-from imaspy.util import find_paths, inspect, print_metadata_tree, print_tree, tree_iter
+from imaspy.util import (
+    find_paths,
+    idsdiffgen,
+    inspect,
+    print_metadata_tree,
+    print_tree,
+    tree_iter,
+)
 
 
 def test_tree_iter():
@@ -61,3 +68,69 @@ def test_find_paths():
     cp = imaspy.IDSFactory("3.39.0").new("core_profiles")
     matches = find_paths(cp, "(^|/)time$")
     assert matches == ["profiles_1d/time", "profiles_2d/time", "time"]
+
+
+def test_idsdiffgen():
+    factory1 = imaspy.IDSFactory("3.39.0")
+    factory2 = imaspy.IDSFactory("3.32.0")
+    cp1 = factory1.new("core_profiles")
+    cp2 = factory2.new("core_profiles")
+    eq1 = factory1.new("equilibrium")
+
+    # Test different DD versions
+    diff = list(idsdiffgen(cp1, cp2))
+    assert len(diff) == 1
+    assert diff[0][1:] == ("3.39.0", "3.32.0")
+
+    # Test different IDSs
+    diff = list(idsdiffgen(cp1, eq1))
+    assert len(diff) == 1
+    assert diff[0][1:] == ("core_profiles", "equilibrium")
+
+    cp2 = factory1.new("core_profiles")
+    # Test different structures
+    cp2.ids_properties.homogeneous_time = 1
+    diff = list(idsdiffgen(cp1, cp2))
+    assert len(diff) == 1
+    assert diff[0] == ("ids_properties/homogeneous_time", None, 1)
+
+    # Test different values
+    cp1.ids_properties.homogeneous_time = 2
+    diff = list(idsdiffgen(cp1, cp2))
+    assert len(diff) == 1
+    assert diff[0] == ("ids_properties/homogeneous_time", 2, 1)
+
+    cp1.ids_properties.homogeneous_time = 1
+    # Test missing values
+    cp1.time = [1.0, 2.0]
+    diff = list(idsdiffgen(cp1, cp2))
+    assert len(diff) == 1
+    assert diff[0] == ("time", cp1.time, None)
+
+    # Test different array values
+    cp2.time = [2.0, 1.0]
+    diff = list(idsdiffgen(cp1, cp2))
+    assert len(diff) == 1
+    assert diff[0] == ("time", cp1.time, cp2.time)
+
+    cp2.time = cp1.time
+    # Test different AoS lengths
+    cp1.profiles_1d.resize(1)
+    cp2.profiles_1d.resize(2)
+    diff = list(idsdiffgen(cp1, cp2))
+    assert len(diff) == 1
+    assert diff[0] == ("profiles_1d", cp1.profiles_1d, cp2.profiles_1d)
+
+    # Test different values inside AoS
+    cp2.profiles_1d.resize(1)
+    cp1.profiles_1d[0].time = -1
+    cp2.profiles_1d[0].time = 0
+    diff = list(idsdiffgen(cp1, cp2))
+    assert len(diff) == 1
+    assert diff[0] == ("profiles_1d/time", -1, 0)
+
+
+def test_idsdiff():
+    # Test the diff rendering for two sample IDSs
+    entry = imaspy.training.get_training_db_entry()
+    imaspy.util.idsdiff(entry.get("core_profiles"), entry.get("equilibrium"))

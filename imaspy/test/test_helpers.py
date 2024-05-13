@@ -13,11 +13,11 @@ from imaspy.ids_defs import (
     IDS_TIME_MODE_INDEPENDENT,
 )
 from imaspy.ids_metadata import IDSType
-from imaspy.ids_primitive import IDSPrimitive
+from imaspy.ids_primitive import IDSPrimitive, IDSString1D
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.util import visit_children
+from imaspy.util import idsdiffgen, visit_children
 
 logger = logging.getLogger(__name__)
 
@@ -264,36 +264,30 @@ def unset_coordinate(coordinate):
     visit_children(callback, parent)
 
 
-def compare_children(st1, st2, deleted_paths=set()):
+def compare_children(st1, st2, deleted_paths=set(), accept_lazy=False):
     """Perform a deep compare of two structures using asserts.
 
     All paths in ``deleted_paths`` are asserted that they are deleted in st2.
     """
-    for child1, child2 in zip(st1, st2):
-        assert child1.metadata.name == child2.metadata.name
-        assert type(child1) is type(child2)
-
-        if type(child1) in [IDSStructure, IDSToplevel]:
-            compare_children(child1, child2, deleted_paths=deleted_paths)
-        elif isinstance(child1, IDSStructArray):
-            for ch1, ch2 in zip(child1.value, child2.value):
-                compare_children(ch1, ch2, deleted_paths=deleted_paths)
-        else:  # leaf node
-            path = child1.metadata.path_string
-            if "_error_" in path:
-                # No duplicated entries for _error_upper, _error_lower and _error_index
-                path = path[: path.find("_error_")]
+    for description, node1, node2 in idsdiffgen(st1, st2, accept_lazy=accept_lazy):
+        if node1 is not None:
+            # Check if this is a deleted path
+            path = node1.metadata.path_string
+            # No duplicate entries for _error_upper, _error_lower and _error_index
+            path = path.partition("_error_")[0]
             if path in deleted_paths:
-                assert not child2.has_value
-            elif isinstance(child1.value, (list, np.ndarray)):
-                one = np.asarray(child1.value)
-                two = np.asarray(child2.value)
-                # Workaround for https://jira.iter.org/browse/IMAS-4948:
-                assert one.size == two.size or (child1 + child2 == [""])
-                if one.size > 0 and two.size > 0:
-                    assert np.array_equal(one, two)
-            else:
-                assert child1.value == child2.value
+                assert node2 is None
+                continue
+            # Workaround for https://jira.iter.org/browse/IMAS-4948:
+            if isinstance(node1, IDSString1D):
+                assert (
+                    node1 == node2
+                    or (node1 == [""] and not node2)
+                    or (node2 == [""] and not node1)
+                )
+                continue
+        # Not a deleted path
+        assert False, ("Unequal nodes", node1, node2)
 
 
 def open_dbentry(

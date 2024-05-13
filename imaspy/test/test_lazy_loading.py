@@ -11,6 +11,7 @@ from imaspy.ids_defs import (
     PREVIOUS_INTERP,
 )
 from imaspy.ids_factory import IDSFactory
+from imaspy.ids_primitive import IDSPrimitive
 from imaspy.imas_interface import ll_interface, lowlevel
 from imaspy.test.test_helpers import compare_children, fill_consistent, open_dbentry
 
@@ -61,8 +62,15 @@ def test_lazy_loading_distributions_random(backend, worker_id, tmp_path):
     fill_consistent(ids)
     dbentry.put(ids)
 
+    def iterate(structure):
+        for child in structure:
+            if not isinstance(child, IDSPrimitive):
+                iterate(child)
+
     lazy_ids = dbentry.get("distributions", lazy=True)
-    compare_children(ids, lazy_ids)
+    # Iterate over whole IDS to force-load everything
+    iterate(lazy_ids)
+    compare_children(ids, lazy_ids, accept_lazy=True)
 
     dbentry.close()
 

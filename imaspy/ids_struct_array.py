@@ -61,6 +61,14 @@ class IDSStructArray(IDSBase):
             copy.value.append(value_copy)
         return copy
 
+    def __eq__(self, other) -> bool:
+        if self is other:
+            return True
+        if not isinstance(other, IDSStructArray):
+            return False
+        # Equal if same size and all contained structures are the same
+        return len(self) == len(other) and all(a == b for a, b in zip(self, other))
+
     def _set_lazy_context(self, ctx: LazyALContext, path: str, timebase: str) -> None:
         """Called by DBEntry during a lazy get/get_slice.
 

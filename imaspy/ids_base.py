@@ -67,8 +67,9 @@ class IDSBase:
         parent_path = self._parent._path
         my_path = self.metadata.name
         if isinstance(self._parent, IDSStructArray):
-            if self in self._parent.value:
-                index = self._parent.value.index(self)
+            for index, item in enumerate(self._parent):
+                if item is self:
+                    break
             else:
                 # This happens when we ask the path of a struct_array
                 # child that does not have a proper parent anymore

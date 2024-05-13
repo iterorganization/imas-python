@@ -154,6 +154,17 @@ class IDSStructure(IDSBase):
     def __dir__(self) -> List[str]:
         return sorted(set(object.__dir__(self)).union(self._children))
 
+    def __eq__(self, other) -> bool:
+        if self is other:
+            return True
+        if not isinstance(other, IDSStructure):
+            return False
+        from imaspy.util import idsdiffgen  # local import to avoid circular import
+
+        for _ in idsdiffgen(self, other):
+            return False  # Not equal if there is any difference
+        return True  # Equal when there are no differences
+
     def _set_lazy_context(self, ctx: LazyALContext) -> None:
         """Called by DBEntry during a lazy get/get_slice.
 
