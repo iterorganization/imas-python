@@ -3,12 +3,12 @@
 """Functions that are useful for the IMASPy training courses.
 """
 
+import importlib
 from unittest.mock import patch
 
 from importlib_resources import files
 
 import imaspy
-from imaspy.imas_interface import imas
 
 
 def _initialize_training_db(DBEntry_cls):
@@ -37,4 +37,5 @@ def get_training_db_entry() -> imaspy.DBEntry:
 
 def get_training_imas_db_entry():
     """Open and return an ``imas.DBEntry`` pointing to the training data."""
+    imas = importlib.import_module("imas")
     return _initialize_training_db(imas.DBEntry)

@@ -17,29 +17,36 @@ logger = logging.getLogger(__name__)
 
 
 # Import the Access Layer module
+has_imas = True
 try:
-    tic = time.time()
-    # Don't directly `import imas`: code analyzers will break on the huge code base...
-    imas = importlib.import_module("imas")
-    logger.info("Successfully imported `imas` (took %.3f seconds)", time.time() - tic)
+    # First try to import imas_core, which is available since AL 5.2
+    from imas_core import _al_lowlevel as lowlevel
+    from imas_core import imasdef
 
-except ImportError as exc:
-    imas = None
-    has_imas = False
-    imasdef = None
-    lowlevel = None
-    logger.critical(
-        "Module 'imas' could not be imported: %s. Some functionality is not available.",
-        exc,
-    )
-
-else:  # `import imas` successful
-    has_imas = True
+except ImportError:
+    # Fallback for AL 4.x or 5.0/5.1
     try:
-        lowlevel = imas._ual_lowlevel
-    except AttributeError:
-        lowlevel = imas._al_lowlevel
-    imasdef = imas.imasdef
+        tic = time.time()
+        # Don't directly `import imas`: code analyzers will break on the huge code base
+        imas = importlib.import_module("imas")
+        logger.info(
+            "Successfully imported `imas` (took %.3f seconds)", time.time() - tic
+        )
+        try:
+            lowlevel = imas._al_lowlevel  # AL 5.0/5.1
+        except AttributeError:
+            lowlevel = imas._ual_lowlevel  # AL 4.x
+        imasdef = imas.imasdef
+
+    except ImportError as exc:
+        imas = None
+        has_imas = False
+        imasdef = None
+        lowlevel = None
+        logger.critical(
+            "Could not import 'imas': %s. Some functionality is not available.",
+            exc,
+        )
 
 
 class LLInterfaceError(RuntimeError):
