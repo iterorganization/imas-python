@@ -107,7 +107,9 @@ def nc2ids(group: netCDF4.Group, ids: IDSToplevel):
                         node.value = data[index + tuple(map(slice, shapes[index]))]
             else:
                 for index, node in tree_iter(ids, metadata):
-                    node.value = data[index]
+                    value = data[index]
+                    if value != getattr(var, "_FillValue", None):
+                        node.value = data[index]
 
         else:
             for index, node in tree_iter(ids, metadata):
