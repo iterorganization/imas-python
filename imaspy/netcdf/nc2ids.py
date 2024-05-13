@@ -60,6 +60,10 @@ def nc2ids(group: netCDF4.Group, ids: IDSToplevel):
     homogeneous_time = group["ids_properties.homogeneous_time"][()] == 1
     ncmeta = NCMetadata(ids.metadata)
 
+    # Never return masked arrays, they're slow and we'll handle most of the unset values
+    # through the `:shape` arrays
+    group.set_auto_mask(False)
+
     for var_name in var_names:
         if var_name.endswith(":shape"):
             continue  # TODO: validate that this is used
@@ -67,7 +71,7 @@ def nc2ids(group: netCDF4.Group, ids: IDSToplevel):
         # FIXME: error handling:
         metadata = ids.metadata[var_name]
 
-        # TODO: validate metadata (units, etc.) conforms to DD?
+        # TODO: validate metadata (data type, units, etc.) conforms to DD
 
         if metadata.data_type is IDSDataType.STRUCTURE:
             continue  # This only contains DD metadata we already know
@@ -75,7 +79,7 @@ def nc2ids(group: netCDF4.Group, ids: IDSToplevel):
         var = group[var_name]
         if metadata.data_type is IDSDataType.STRUCT_ARRAY:
             if "sparse" in var.ncattrs():
-                shapes = group[var_name + ":shape"]
+                shapes = group[var_name + ":shape"][()]
                 for index, node in tree_iter(ids, metadata):
                     node.resize(shapes[index][0])
 
@@ -89,10 +93,8 @@ def nc2ids(group: netCDF4.Group, ids: IDSToplevel):
             continue
 
         # FIXME: this may be a gigantic array, not required for sparse data
-        # FIXME: this may be a masked array when not all values are filled
         var = group[var_name]
         data = var[()]
-        data
 
         if metadata.path_string not in ncmeta.aos:
             # Shortcut for assigning untensorized data
@@ -100,10 +102,10 @@ def nc2ids(group: netCDF4.Group, ids: IDSToplevel):
 
         elif "sparse" in var.ncattrs():
             if metadata.ndim:
-                shapes = group[var_name + ":shape"]
+                shapes = group[var_name + ":shape"][()]
                 for index, node in tree_iter(ids, metadata):
                     shape = shapes[index]
-                    if all(shape):
+                    if shape.all():
                         node.value = data[index + tuple(map(slice, shapes[index]))]
             else:
                 for index, node in tree_iter(ids, metadata):
