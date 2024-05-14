@@ -232,7 +232,7 @@ def _idsdiffgen(
 
     for child2 in children2.values():
         if isinstance(child2, IDSStructure):
-            for child in tree_iter(child2):
+            for child in tree_iter(child2, accept_lazy=accept_lazy):
                 yield (child.metadata.path_string, None, child)
         else:
             yield (child2.metadata.path_string, None, child2)
