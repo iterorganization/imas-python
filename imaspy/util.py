@@ -213,7 +213,14 @@ def _idsdiffgen(
 
         elif isinstance(child1, IDSPrimitive) and isinstance(child2, IDSPrimitive):
             if not numpy.array_equal(child1.value, child2.value):
-                yield (child1.metadata.path_string, child1, child2)
+                try:
+                    # NaN are equal: but this is not supported for all types
+                    eq = numpy.array_equal(child1.value, child2.value, equal_nan=True)
+                except TypeError:
+                    # TypeError is raised when child1/child2 are not float or complex
+                    eq = False
+                if not eq:
+                    yield (child1.metadata.path_string, child1, child2)
 
         elif isinstance(child1, IDSStructure) and isinstance(child2, IDSStructure):
             # Check recursively
