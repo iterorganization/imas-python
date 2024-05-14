@@ -325,7 +325,8 @@ class IDSNumeric0D(IDSPrimitive):
         if isinstance(value, np.ndarray) and value.ndim == 0:
             value = value.item()  # Unpack 0D numpy arrays
         cast_value = self.metadata.data_type.python_type(value)
-        if cast_value != value:
+        # nan != nan, so we need the second check to not complain when assigning a nan
+        if cast_value != value and not (np.isnan(cast_value) and np.isnan(value)):
             logger.info(_CONVERT_MSG, type(value), self)
         return cast_value
 

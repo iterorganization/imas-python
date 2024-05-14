@@ -101,3 +101,9 @@ def test_visit_children_internal_nodes(fake_filled_toplevel):
     assert nodes[6] is fake_filled_toplevel.wavevector[0].eigenmode[0]
     assert nodes[7] == 10
     assert np.array_equal(nodes[8], zero_to_two_pi)
+
+
+def test_assign_nan(fake_filled_toplevel, caplog):
+    with caplog.at_level("DEBUG"):
+        fake_filled_toplevel.wavevector[0].radial_component_norm = float("nan")
+    assert len(caplog.records) == 0
