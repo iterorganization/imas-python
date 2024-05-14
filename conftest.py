@@ -6,29 +6,29 @@
 # - IDS name parametrization (and corresponding command line options)
 # - Fixtures that are useful across test modules
 
-from copy import deepcopy
 import functools
 import logging
 import os
+from copy import deepcopy
 from pathlib import Path
 
-from packaging.version import Version
 import importlib_resources
-import pytest
 import numpy as np
+import pytest
+from packaging.version import Version
 
+from imaspy.db_entry import DBEntry
 from imaspy.dd_zip import dd_etree, latest_dd_version
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     HDF5_BACKEND,
+    IDS_TIME_MODE_INDEPENDENT,
     MDSPLUS_BACKEND,
     MEMORY_BACKEND,
-    IDS_TIME_MODE_INDEPENDENT,
 )
 from imaspy.ids_factory import IDSFactory
-from imaspy.imas_interface import has_imas as _has_imas, lowlevel, ll_interface
-from imaspy.db_entry import DBEntry
-
+from imaspy.imas_interface import has_imas as _has_imas
+from imaspy.imas_interface import ll_interface, lowlevel
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -148,9 +148,7 @@ def fake_structure_xml(fake_toplevel_xml):
 
 
 @pytest.fixture
-def fake_filled_toplevel(
-    fake_toplevel_xml: Path, worker_id: str, tmp_path: Path
-) -> DBEntry:
+def fake_filled_toplevel(fake_toplevel_xml: Path, worker_id: str, tmp_path: Path):
     """A very specifically filled smallish toplevel"""
     factory = IDSFactory(xml_path=fake_toplevel_xml)
     top = factory.new("gyrokinetics")
