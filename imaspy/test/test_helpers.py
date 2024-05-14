@@ -278,14 +278,14 @@ def compare_children(st1, st2, deleted_paths=set(), accept_lazy=False):
             if path in deleted_paths:
                 assert node2 is None
                 continue
-            # Workaround for https://jira.iter.org/browse/IMAS-4948:
-            if isinstance(node1, IDSString1D):
-                assert (
-                    node1 == node2
-                    or (node1 == [""] and not node2)
-                    or (node2 == [""] and not node1)
-                )
-                continue
+        # Workaround for https://jira.iter.org/browse/IMAS-4948:
+        if isinstance(node1, IDSString1D) or isinstance(node2, IDSString1D):
+            assert (
+                node1 == node2
+                or (node1 == [""] and not node2)
+                or (node2 == [""] and not node1)
+            )
+            continue
         # Not a deleted path
         assert False, ("Unequal nodes", node1, node2)
 
