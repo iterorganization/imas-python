@@ -81,13 +81,12 @@ class ValidationError(Exception):
 class CoordinateError(ValidationError):
     """Error raised by ids.validate() to indicate a coordinate check has failed."""
 
-    def __init__(self, element_path, dimension, shape, expected_size, coor_path):
+    def __init__(self, node, dimension, expected_size, coor_path):
         """Create a new CoordinateError
 
         Args:
-            element_path: path of the element with incorrect size
+            node: IDSBase object that this coordinate error is raised for
             dimension: (0-based) dimension with incorrect size
-            shape: shape of element (e.g. ``(2, 4)``)
             expected_size: size of the coordinate for the specified dimension
             coor_path: path of the coordinate, may be None when a coordinate is of fixed
                 size (e.g. ``1...3``)
@@ -100,5 +99,5 @@ class CoordinateError(ValidationError):
         else:
             details = f"dimension {dimension + 1} must have size {expected_size}."
         super().__init__(
-            f"Element `{element_path}` has incorrect shape {shape}: {details}"
+            f"Element `{node._path}` has incorrect shape {node.shape}: {details}"
         )

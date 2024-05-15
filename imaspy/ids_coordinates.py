@@ -281,9 +281,9 @@ class IDSCoordinates:
         See also:
             :py:meth:`imaspy.ids_toplevel.IDSToplevel.validate`.
         """
-        shape = self._node.shape
-        metadata = self._node.metadata
-        path = self._node._path
+        node = self._node
+        shape = node.shape
+        metadata = node.metadata
 
         # Validate coordinate
         for dim in range(metadata.ndim):
@@ -300,7 +300,7 @@ class IDSCoordinates:
                     # test_validate_reference_or_fixed_size) we continue checking the
                     # references below.
                     # If only size is specified, the dimension is not the correct size:
-                    raise CoordinateError(path, dim, shape, coordinate.size, None)
+                    raise CoordinateError(node, dim, coordinate.size, None)
 
             # Validate references
             assert coordinate.references
@@ -313,12 +313,14 @@ class IDSCoordinates:
                 if coordinate.size:
                     # other_element may be a numpy array when coordinate = "path OR
                     # 1...1" and path is unset
-                    raise CoordinateError(path, dim, shape, coordinate.size, None)
+                    raise CoordinateError(node, dim, coordinate.size, None)
                 # Otherwise, this is a dynamic AoS with heterogeneous_time, verify that
                 # none of the values are EMPTY_FLOAT
                 if EMPTY_FLOAT in other_element:
                     (n,) = np.where(other_element == EMPTY_FLOAT)
-                    raise ValidationError(f"Coordinate `{path}[{n[0]}]/time` is empty.")
+                    raise ValidationError(
+                        f"Coordinate `{node._path}[{n[0]}]/time` is empty."
+                    )
 
             with self._capture_goto_errors(dim, coordinate) as captured:
                 # other_element may (incorrectly) be a struct in older DD versions
@@ -327,7 +329,7 @@ class IDSCoordinates:
                 continue  # Ignored error, continue to next dimension
             if shape[dim] != expected_size:
                 other_path = other_element._path
-                raise CoordinateError(path, dim, shape, expected_size, other_path)
+                raise CoordinateError(node, dim, expected_size, other_path)
 
         # Validate coordinate_same_as
         for dim in range(metadata.ndim):
@@ -344,7 +346,7 @@ class IDSCoordinates:
             expected_size = other_element.shape[dim]
             if shape[dim] != expected_size:
                 other_path = other_element._path
-                raise CoordinateError(path, dim, shape, expected_size, other_path)
+                raise CoordinateError(node, dim, expected_size, other_path)
 
     @contextmanager
     def _capture_goto_errors(self, dim, coordinate):
