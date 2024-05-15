@@ -56,6 +56,14 @@ class IDSBase:
     def _path(self) -> str:
         """Build relative path from the toplevel to the node
 
+        Caution:
+            Determining the path is relatively expensive in large, nested Arrays of
+            Structures: the calculation of the index suffix is O(N) in the size of the
+            AoS.
+
+            Usage of _path is (and should remain) limited to "interactive" use cases
+            (like in :mod:`imaspy.util` and ``__repr__``) or when reporting errors.
+
         Examples:
             - ``ids.ids_properties.creation_data._path`` is
               ``"ids_properties/creation_date"``
