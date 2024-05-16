@@ -150,13 +150,16 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
         # Determine if we need to store shapes (applicable for data variables and AOS)
         data = filled_data[path]
         ndim = metadata.ndim
-        aos_dims = []
+        aos_dims = ()
         if path in ncmeta.aos:
             aos_dims = ncmeta.get_dimensions(ncmeta.aos[path], homogeneous_time)
 
         if len(aos_dims) == 0:
             # Data is not tensorized
-            sparse = False
+            node = filled_data[path][()]
+            sparse = node.shape != var.shape
+            if sparse:
+                shapes = numpy.array(node.shape, dtype=numpy.int32)
 
         else:
             # Data is tensorized, determine if it is homogeneously shaped
@@ -213,7 +216,7 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
             if metadata.data_type is IDSDataType.STR and metadata.ndim == 1:
                 for i in range(len(node)):
                     var[i] = node[i]
-            elif node.shape == var.shape:
+            elif not sparse:
                 var[()] = node.value
             else:
                 var[tuple(map(slice, node.shape))] = node.value

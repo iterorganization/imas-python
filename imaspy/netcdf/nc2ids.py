@@ -96,11 +96,7 @@ def nc2ids(group: netCDF4.Group, ids: IDSToplevel):
         var = group[var_name]
         data = var[()]
 
-        if metadata.path_string not in ncmeta.aos:
-            # Shortcut for assigning untensorized data
-            ids[metadata.path] = data
-
-        elif "sparse" in var.ncattrs():
+        if "sparse" in var.ncattrs():
             if metadata.ndim:
                 shapes = group[var_name + ":shape"][()]
                 for index, node in tree_iter(ids, metadata):
@@ -112,6 +108,10 @@ def nc2ids(group: netCDF4.Group, ids: IDSToplevel):
                     value = data[index]
                     if value != getattr(var, "_FillValue", None):
                         node.value = data[index]
+
+        elif metadata.path_string not in ncmeta.aos:
+            # Shortcut for assigning untensorized data
+            ids[metadata.path] = data
 
         else:
             for index, node in tree_iter(ids, metadata):

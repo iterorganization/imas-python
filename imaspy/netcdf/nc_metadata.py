@@ -118,7 +118,7 @@ class NCMetadata:
                 ``ids_properties.homogeneous_time`` should be set to ``1``.
         """
         if path not in self.dimensions:
-            return []
+            return ()
 
         if not homogeneous_time:
             return tuple(self.dimensions[path])
