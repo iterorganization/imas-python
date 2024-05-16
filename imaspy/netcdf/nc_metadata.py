@@ -6,6 +6,7 @@
 from functools import lru_cache
 from typing import Dict, List, Optional, Set, Tuple
 
+from imaspy.ids_coordinates import IDSCoordinate
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_metadata import IDSMetadata
 
@@ -60,9 +61,12 @@ class NCMetadata:
         self._ut_dims = {}  # path: [dim1, dim2, ...]
         #   Coordinates before tensorization
         self._ut_coords = {}  # path: [coor1, coor2, ...]
+        # Alternative coordinates
+        self._alternatives = {}  # path: [alt1, alt2, ...]
 
         # Parse the whole metadata tree
         self._parse(ids_metadata, None, 0)
+        self._merge_alternatives()
         try:
             self._resolve_pending()
         except RecursionError:
@@ -72,7 +76,7 @@ class NCMetadata:
             ) from None
         self._tensorize_dimensions()
         # Delete temporary variables
-        del self._pending, self._ut_dims, self._ut_coords
+        del self._pending, self._ut_dims, self._ut_coords, self._alternatives
 
         # Sanity check:
         assert len(self.dimensions) == len(set(self.dimensions))
@@ -210,16 +214,15 @@ class NCMetadata:
         for i, coord in enumerate(metadata.coordinates):
             dim_name = None
             if coord.has_alternatives:
-                # ------ CASE 3: refers to multiple other quantities in the DD ------
-                raise NotImplementedError(
-                    "Alternative coordinates are not yet supported"
-                )
+                # ------ CASE 4: refers to multiple other quantities in the DD ------
+                coordinate_path = self._handle_alternatives(coord)
+                self._pending[(path, i)] = (coordinate_path, 0)
 
             elif not coord.references:
                 same_as = metadata.coordinates_same_as[i]
                 if same_as.has_alternatives:
                     raise NotImplementedError(
-                        "Alternative coordinates are not yet supported"
+                        "Alternative same_as coordinates are not yet supported"
                     )
                 elif same_as.references:
                     # ------ CASE 2: coordinate is same as another ------
@@ -263,10 +266,40 @@ class NCMetadata:
                 # Record time dimension
                 self.time_dimensions.add(dim_name)
 
+        # Handle DDv4 alternative coordinates
+        if metadata.alternative_coordinates:
+            self._alternatives.setdefault(metadata.path_string, []).extend(
+                "/".join(ref.parts) for ref in metadata.alternative_coordinates
+            )
+
         # Store untensorized dimensions and coordinates
         self._ut_dims[path] = dimensions
         if coordinates:
             self._ut_coords[path] = coordinates
+
+    def _handle_alternatives(self, coord: IDSCoordinate) -> str:
+        """Handle alternative coordinates. Return main coordinate path."""
+        if coord.size is not None:
+            raise NotImplementedError(
+                "Alternative coordinates with fixed size are not yet supported"
+            )
+        main, *others = ["/".join(ref.parts) for ref in coord.references]
+        if main in self._alternatives:
+            self._alternatives[main].extend(others)
+        else:
+            self._alternatives[main] = others
+        return main
+
+    def _merge_alternatives(self) -> None:
+        """Merge all alternative coordinates to use the same dimension."""
+        for path, alternatives in self._alternatives.items():
+            for alternative in alternatives:
+                assert len(self._ut_dims[alternative]) == 1
+                if self._ut_dims[alternative][0] is None:
+                    assert self._pending[(alternative, 0)] == (path, 0)
+                else:
+                    self._ut_dims[alternative][0] = None
+                    self._pending[(alternative, 0)] = (path, 0)
 
     def _resolve_pending(self):
         """Resolve all pending dimension references."""
