@@ -10,6 +10,7 @@ import logging
 import numpy as np
 import pytest
 
+from imaspy.db_entry import DBEntry
 from imaspy.ids_convert import convert_ids
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, MEMORY_BACKEND
 from imaspy.ids_factory import IDSFactory
@@ -57,6 +58,7 @@ def test_nbc_0d_to_1d(caplog):
     # channel/filter_spectrometer/radiance_calibration in spectrometer visible changed
     # from FLT_0D to FLT_1D in DD 3.39.0
     ids = IDSFactory("3.32.0").spectrometer_visible()
+    ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     ids.channel.resize(1)
     ids.channel[0].filter_spectrometer.radiance_calibration = 1.0
 
@@ -78,6 +80,19 @@ def test_nbc_0d_to_1d(caplog):
     assert not ids_back.channel[0].filter_spectrometer.radiance_calibration.has_value
     assert len(caplog.record_tuples) == 1
     assert caplog.record_tuples[0][:2] == ("imaspy.ids_convert", logging.WARNING)
+
+    # Test implicit conversion during get / put
+    entry_339 = DBEntry("imas:memory?path=/", "w", dd_version="3.39.0")
+    entry_339.put(ids)  # implicit conversion during put()
+    ids_339 = entry_339.get("spectrometer_visible")
+    assert not ids_339.channel[0].filter_spectrometer.radiance_calibration.has_value
+
+    entry_332 = DBEntry("imas:memory?path=/", "r", dd_version="3.32.0")
+    ids_back = entry_332.get("spectrometer_visible")  # implicit conversion back
+    assert not ids_back.channel[0].filter_spectrometer.radiance_calibration.has_value
+
+    # Note: closing entry_332 as well results in a double free, so we don't
+    entry_339.close()
 
 
 def test_nbc_change_aos_renamed():

@@ -39,6 +39,8 @@ def _get_children(
                 continue  # element does not exist in the on-disk DD version
             new_path = nbc_map.ctxpath[path]
             timebase = nbc_map.tbp[path]
+        elif nbc_map and path in nbc_map.type_change:
+            continue  # we don't handle type changes when converting implicitly
         else:
             new_path = child_meta._ctx_path
             timebase = child_meta.timebasepath
@@ -95,6 +97,8 @@ def _get_child(child: IDSBase, ctx: LazyALContext):
             return  # element does not exist in the on-disk DD version
         new_path = nbc_map.ctxpath[path]
         timebase = nbc_map.tbp[path]
+    elif nbc_map and path in nbc_map.type_change:
+        return  # we don't handle type changes when converting implicitly
     else:
         new_path = child_meta._ctx_path
         timebase = child_meta.timebasepath
@@ -160,6 +164,8 @@ def _put_children(
                 continue  # element does not exist in the on-disk DD version
             new_path = nbc_map.ctxpath[path]
             timebase = nbc_map.tbp[path]
+        elif nbc_map and path in nbc_map.type_change:
+            continue  # we don't handle type changes when converting implicitly
         else:
             new_path = element.metadata._ctx_path
             timebase = element.metadata.timebasepath

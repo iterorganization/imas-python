@@ -76,6 +76,46 @@ The DBEntry class automatically converts IDSs to the requested version:
   need to know when any data cannot be converted.
 
 
+Supported conversions
+'''''''''''''''''''''
+
+The following table shows which conversions are supported by the automatic and
+explicit conversion mechanisms.
+
+.. csv-table::
+  :header: , Explicit conversion, Automatic conversion
+  
+  Renames [#rename]_, Yes, Yes
+  Type change: structure to array of structure (or reverse), Yes [#aos]_, No [#ignore_type_change]_
+  Type change: INT_0D to INT_1D (or reverse), Yes [#0d1d]_, No [#ignore_type_change]_
+  Type change: FLT_0D to FLT_1D (or reverse), Yes [#0d1d]_, No [#ignore_type_change]_
+  Type change: CPX_0D to CPX_1D (or reverse), Yes [#0d1d]_, No [#ignore_type_change]_
+  Type change: STR_0D to STR_1D (or reverse), Yes [#0d1d]_, No [#ignore_type_change]_
+  Other type changes, No [#ignore_type_change]_, No [#ignore_type_change]_
+
+.. [#rename] Quantities which have been renamed between the two DD versions. For
+  example, the ``ec/beam`` Array of Structures in the ``pulse_schedule`` IDS,
+  was named ``ec/antenna`` before DD version ``3.26.0`` and ``ec/launcher``
+  between versions ``3.26.0`` and ``3.40.0``.
+
+.. [#aos] Conversion from a structure to an array of structures is handled by
+  resizing the Array of Structures to size 1, and copying the values inside the
+  source structure to the target Array of Structures.
+
+  The reverse is supported when the size of the Array of Structures is 1. A
+  warning is logged if more than 1 AoS element is present.
+
+.. [#0d1d] Conversion from a 0D type to a 1D type is handled by creating a 1D
+  array with 1 element with the value of the original 0D node. For example,
+  converting the FLT_0D ``1.23`` to a FLT_1D results in the numpy array
+  ``[1.23]``.
+
+  The reverse is supported when the size of the 1D array is 1. A warning is
+  logged if the 1D array has more elements.
+
+.. [#ignore_type_change] These type changes are not supported. Quantities in the
+    destination IDS will remain empty.
+
 .. _`DD background`:
 
 Background information
