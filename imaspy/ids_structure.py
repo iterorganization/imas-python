@@ -96,7 +96,7 @@ class IDSStructure(IDSBase):
         # Create child node
         child_meta = self._children[name]
         child = get_node_type(child_meta.data_type, child_meta.ndim)(self, child_meta)
-        super().__setattr__(name, child)  # bypass setattr logic below: avoid recursion
+        self.__dict__[name] = child  # bypass setattr logic below: avoid recursion
         if self._lazy:  # lazy load the child
             from imaspy.db_entry_helpers import _get_child
 
