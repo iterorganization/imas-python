@@ -30,7 +30,9 @@ class IDSBase:
     # cases for a DBEntry.get()!
     # The following attributes should be set in a derived class's __init__():
     _parent: "IDSBase"
+    """Parent object of this IDS node"""
     metadata: IDSMetadata
+    """Metadata of this IDS node"""
 
     @property
     def _time_mode(self) -> int:
