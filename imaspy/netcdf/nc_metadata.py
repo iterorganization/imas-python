@@ -213,6 +213,7 @@ class NCMetadata:
         coordinates = []
         for i, coord in enumerate(metadata.coordinates):
             dim_name = None
+            # TODO: logic can be simplified (merge yes/no alternatives?)
             if coord.has_alternatives:
                 # ------ CASE 4: refers to multiple other quantities in the DD ------
                 coordinate_path = self._handle_alternatives(coord)
@@ -221,9 +222,9 @@ class NCMetadata:
             elif not coord.references:
                 same_as = metadata.coordinates_same_as[i]
                 if same_as.has_alternatives:
-                    raise NotImplementedError(
-                        "Alternative same_as coordinates are not yet supported"
-                    )
+                    coordinate_path = self._handle_alternatives(same_as)
+                    self._pending[(path, i)] = (coordinate_path, i)
+
                 elif same_as.references:
                     # ------ CASE 2: coordinate is same as another ------
                     # Put reference in pending to be resolved in second pass
@@ -284,10 +285,11 @@ class NCMetadata:
                 "Alternative coordinates with fixed size are not yet supported"
             )
         main, *others = ["/".join(ref.parts) for ref in coord.references]
-        if main in self._alternatives:
-            self._alternatives[main].extend(others)
-        else:
-            self._alternatives[main] = others
+        if others:
+            if main in self._alternatives:
+                self._alternatives[main].extend(others)
+            else:
+                self._alternatives[main] = others
         return main
 
     def _merge_alternatives(self) -> None:
