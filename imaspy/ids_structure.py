@@ -78,6 +78,9 @@ class IDSStructure(IDSBase):
         # Performance hack: bypass our __setattr__ implementation during __init__:
         dct = self.__dict__
         dct["_parent"] = parent
+        # parent._lazy is undefined for IDSToplevel, but then _lazy is already set
+        if "_lazy" not in dct:
+            dct["_lazy"] = parent._lazy
         dct["metadata"] = metadata
         if metadata.documentation:
             dct["__doc__"] = metadata.documentation

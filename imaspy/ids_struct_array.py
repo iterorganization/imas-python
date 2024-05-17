@@ -38,6 +38,7 @@ class IDSStructArray(IDSBase):
             metadata: IDSMetadata describing the structure of the IDS
         """
         self._parent = parent
+        self._lazy = parent._lazy
         self.metadata = metadata
         if metadata.documentation:
             self.__doc__ = metadata.documentation
