@@ -143,6 +143,8 @@ class IDSMetadata:
         """Units of this IDS node. For example ``"m.s^-2"``."""
         if self.units == "as_parent" and parent_meta is not None:
             self.units = parent_meta.units
+        self.documentation = attrib.get("documentation", None)
+        """Data dictionary-provided documentation for this IDS node."""
 
         # timebasepath is not always defined in the DD XML, mainly not for struct_arrays
         # Also, when it is defined, it may not be correct (DD 3.39.0)

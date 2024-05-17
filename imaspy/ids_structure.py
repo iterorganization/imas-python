@@ -6,7 +6,8 @@
 import logging
 from copy import deepcopy
 from functools import lru_cache
-from typing import Generator, List
+from types import MappingProxyType
+from typing import Generator, List, Optional
 
 from xxhash import xxh3_64
 
@@ -58,6 +59,9 @@ class IDSStructure(IDSBase):
     IDSStructArrays
     """
 
+    _children: MappingProxyType[str, IDSMetadata]
+    _lazy_context: Optional[LazyALContext]
+
     def __init__(self, parent: IDSBase, metadata: IDSMetadata):
         """Initialize IDSStructure from XML specification
 
@@ -72,14 +76,14 @@ class IDSStructure(IDSBase):
             metadata: IDSMetadata describing the structure of the IDS
         """
         # Performance hack: bypass our __setattr__ implementation during __init__:
-        orig_setattr = IDSStructure.__setattr__
-        del IDSStructure.__setattr__
-        try:
-            super().__init__(parent, metadata)
-            self._children = self.metadata._children
-            self._lazy_context = None
-        finally:
-            IDSStructure.__setattr__ = orig_setattr
+        dct = self.__dict__
+        dct["_parent"] = parent
+        dct["metadata"] = metadata
+        if metadata.documentation:
+            dct["__doc__"] = metadata.documentation
+
+        dct["_children"] = metadata._children
+        dct["_lazy_context"] = None
 
     def __getattr__(self, name):
         if name not in self._children:

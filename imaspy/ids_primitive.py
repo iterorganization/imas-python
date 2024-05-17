@@ -72,7 +72,10 @@ class IDSPrimitive(IDSBase):
             parent: Parent node of this leaf
             metadata: IDSMetadata that describes this IDSPrimitive
         """
-        super().__init__(parent, metadata)
+        self._parent = parent
+        self.metadata = metadata
+        if metadata.documentation:
+            self.__doc__ = metadata.documentation
 
         self.__value = None
 

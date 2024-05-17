@@ -25,14 +25,12 @@ class IDSBase:
     """The base class which unifies properties of structure, struct_array, toplevel
     and data nodes."""
 
-    def __init__(self, parent: "IDSBase", metadata: IDSMetadata):
-        """Setup basic properties for a tree node (leaf or non-leaf) such as
-        name, _parent, _backend_name etc."""
-        self._parent = parent
-        self.metadata = metadata
-        dd_doc = getattr(self.metadata, "documentation", None)
-        if dd_doc:
-            self.__doc__ = dd_doc
+    # Since a lot of IDSBase objects are constructed, the overhead of implementing
+    # __init__() in this class is quite significant: 5-10% runtime in some
+    # cases for a DBEntry.get()!
+    # The following attributes should be set in a derived class's __init__():
+    _parent: "IDSBase"
+    metadata: IDSMetadata
 
     @property
     def _time_mode(self) -> int:

@@ -37,7 +37,10 @@ class IDSStructArray(IDSBase):
                 time should be something with a path attribute
             metadata: IDSMetadata describing the structure of the IDS
         """
-        super().__init__(parent, metadata)
+        self._parent = parent
+        self.metadata = metadata
+        if metadata.documentation:
+            self.__doc__ = metadata.documentation
 
         # Initialize with an 0-length list
         self.value = []
