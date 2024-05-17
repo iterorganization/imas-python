@@ -4,7 +4,7 @@
 """
 
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Callable, Iterator, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Iterator, List, Optional, Tuple
 
 from imaspy.exception import LowlevelError
 from imaspy.ids_defs import (
@@ -55,11 +55,13 @@ class ALContext:
         Yields:
             The created context.
         """
-        ctx = self._begin_action(ll_interface.begin_global_action, path, rwmode)
+        status, ctx = ll_interface.begin_global_action(self.ctx, path, rwmode)
+        if status != 0:
+            raise LowlevelError("global_action", status)
         try:
-            yield ctx
+            yield ALContext(ctx)
         finally:
-            ll_interface.end_action(ctx.ctx)
+            ll_interface.end_action(ctx)
 
     @contextmanager
     def slice_action(
@@ -83,17 +85,19 @@ class ALContext:
                 "get_slice called with unexpected interpolation method: "
                 f"{interpolation_method}"
             )
-        ctx = self._begin_action(
-            ll_interface.begin_slice_action,
+        status, ctx = ll_interface.begin_slice_action(
+            self.ctx,
             path,
             rwmode,
             time_requested,
             interpolation_method,
         )
+        if status != 0:
+            raise LowlevelError("slice_action", status)
         try:
-            yield ctx
+            yield ALContext(ctx)
         finally:
-            ll_interface.end_action(ctx.ctx)
+            ll_interface.end_action(ctx)
 
     @contextmanager
     def arraystruct_action(
@@ -110,24 +114,15 @@ class ALContext:
         Yields:
             The created context and the size of the array of structures.
         """
-        ctx, size = self._begin_action(
-            ll_interface.begin_arraystruct_action, path, timebase, size
+        status, ctx, size = ll_interface.begin_arraystruct_action(
+            self.ctx, path, timebase, size
         )
-        try:
-            yield ctx, size
-        finally:
-            ll_interface.end_action(ctx.ctx)
-
-    def _begin_action(
-        self, action: Callable, *args: Any
-    ) -> Union["ALContext", Tuple["ALContext", Any]]:
-        """Helper method for creating new contexts."""
-        status, ctx, *rest = action(self.ctx, *args)
         if status != 0:
-            raise LowlevelError(action.__name__, status)
-        if rest:
-            return ALContext(ctx), *rest
-        return ALContext(ctx)
+            raise LowlevelError("arraystruct_action", status)
+        try:
+            yield ALContext(ctx), size
+        finally:
+            ll_interface.end_action(ctx)
 
     def iterate_over_arraystruct(self, step: int) -> None:
         """Call ual_iterate_over_arraystruct with this context."""
