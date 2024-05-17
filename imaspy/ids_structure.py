@@ -59,7 +59,7 @@ class IDSStructure(IDSBase):
     IDSStructArrays
     """
 
-    _children: MappingProxyType[str, IDSMetadata]
+    _children: "MappingProxyType[str, IDSMetadata]"
     _lazy_context: Optional[LazyALContext]
 
     def __init__(self, parent: IDSBase, metadata: IDSMetadata):
