@@ -82,12 +82,14 @@ def test_nbc_0d_to_1d(caplog):
     assert caplog.record_tuples[0][:2] == ("imaspy.ids_convert", logging.WARNING)
 
     # Test implicit conversion during get / put
-    entry_339 = DBEntry("imas:memory?path=/", "w", dd_version="3.39.0")
+    entry_339 = DBEntry(MEMORY_BACKEND, "test", 1, 1, dd_version="3.39.0")
+    entry_339.create()
     entry_339.put(ids)  # implicit conversion during put()
     ids_339 = entry_339.get("spectrometer_visible")
     assert not ids_339.channel[0].filter_spectrometer.radiance_calibration.has_value
 
-    entry_332 = DBEntry("imas:memory?path=/", "r", dd_version="3.32.0")
+    entry_332 = DBEntry(MEMORY_BACKEND, "test", 1, 1, dd_version="3.32.0")
+    entry_332.open()
     ids_back = entry_332.get("spectrometer_visible")  # implicit conversion back
     assert not ids_back.channel[0].filter_spectrometer.radiance_calibration.has_value
 
