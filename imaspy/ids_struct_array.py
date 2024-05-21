@@ -198,11 +198,14 @@ class IDSStructArray(IDSBase):
             self.value = []
         cur = len(self.value)
         if nbelt > cur:
-            new_els = []
-            for _ in range(nbelt - cur):
-                new_el = self._element_structure
-                new_els.append(new_el)
-            self.append(new_els)
+            # Create new structures to fill this AoS with
+            from imaspy.ids_structure import IDSStructure
+
+            new_els = [IDSStructure(self, self.metadata) for _ in range(nbelt - cur)]
+            if cur:
+                self.value.extend(new_els)
+            else:
+                self.value = new_els
         elif nbelt < cur:
             self.value = self.value[:nbelt]
         else:  # nbelt == cur
