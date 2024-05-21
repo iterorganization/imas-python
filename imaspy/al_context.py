@@ -45,6 +45,7 @@ class ALContext:
             ctx: Context identifier returned by the AL
         """
         self.ctx = ctx
+        """Context identifier"""
 
     def __enter__(self) -> "ALContext":
         return self
@@ -166,6 +167,7 @@ class ALArrayStructContext(ALContext):
         """
         self.ctx = ctx
         self.size = size
+        """AoS size"""
 
     def __enter__(self):
         return self, self.size
