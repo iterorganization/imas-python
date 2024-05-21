@@ -44,29 +44,30 @@ class ALContext:
         """
         self.ctx = ctx
 
-    @contextmanager
-    def global_action(self, path: str, rwmode: int) -> Iterator["ALContext"]:
+    def __enter__(self) -> "ALContext":
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        ll_interface.end_action(self.ctx)
+
+    def global_action(self, path: str, rwmode: int) -> "ALContext":
         """Begin a new global action for use in a ``with`` context.
 
         Args:
             path: access layer path for this global action: ``<idsname>[/<occurrence>]``
             rwmode: read-only or read-write operation mode: ``READ_OP``/``WRITE_OP``
 
-        Yields:
+        Returns:
             The created context.
         """
         status, ctx = ll_interface.begin_global_action(self.ctx, path, rwmode)
         if status != 0:
             raise LowlevelError("global_action", status)
-        try:
-            yield ALContext(ctx)
-        finally:
-            ll_interface.end_action(ctx)
+        return ALContext(ctx)
 
-    @contextmanager
     def slice_action(
         self, path: str, rwmode: int, time_requested: float, interpolation_method: int
-    ) -> Iterator["ALContext"]:
+    ) -> "ALContext":
         """Begin a new slice action for use in a ``with`` context.
 
         Args:
@@ -77,7 +78,7 @@ class ALContext:
                 ``LINEAR_INTERP`` or ``PREVIOUS_INTERP`` for get_slice;
                 ``UNDEFINED_INTERP`` for put_slice.
 
-        Yields:
+        Returns:
             The created context.
         """
         if interpolation_method not in INTERP_MODES:
@@ -94,15 +95,11 @@ class ALContext:
         )
         if status != 0:
             raise LowlevelError("slice_action", status)
-        try:
-            yield ALContext(ctx)
-        finally:
-            ll_interface.end_action(ctx)
+        return ALContext(ctx)
 
-    @contextmanager
     def arraystruct_action(
         self, path: str, timebase: str, size: int
-    ) -> Iterator[Tuple["ALContext", int]]:
+    ) -> "ALArrayStructContext":
         """Begin a new arraystruct action for use in a ``with`` context.
 
         Args:
@@ -111,24 +108,15 @@ class ALContext:
                 non-dynamic array of structures)
             size: the size of the array of structures (only relevant when writing data)
 
-        Yields:
-            The created context and the size of the array of structures.
+        Returns:
+            The created context.
         """
         status, ctx, size = ll_interface.begin_arraystruct_action(
             self.ctx, path, timebase, size
         )
         if status != 0:
             raise LowlevelError("arraystruct_action", status)
-        try:
-            yield ALContext(ctx), size
-        finally:
-            ll_interface.end_action(ctx)
-
-    def iterate_over_arraystruct(self, step: int) -> None:
-        """Call ual_iterate_over_arraystruct with this context."""
-        status = ll_interface.iterate_over_arraystruct(self.ctx, step)
-        if status != 0:
-            raise LowlevelError("iterate over arraystruct", status)
+        return ALArrayStructContext(ctx, size)
 
     def read_data(self, path: str, timebasepath: str, datatype: int, dim: int) -> Any:
         """Call ual_read_data with this context."""
@@ -159,6 +147,29 @@ class ALContext:
         if occurrences is not None:
             return list(occurrences)
         return []
+
+
+class ALArrayStructContext(ALContext):
+    """Helper class that wraps contexts created through al_begin_arraystruct_action."""
+
+    def __init__(self, ctx, size):
+        """Construct a new ALContext object
+
+        Args:
+            ctx: Context identifier returned by the AL
+            size: size of the AoS returned by the AL
+        """
+        self.ctx = ctx
+        self.size = size
+
+    def __enter__(self):
+        return self, self.size
+
+    def iterate_over_arraystruct(self, step: int) -> None:
+        """Call ual_iterate_over_arraystruct with this context."""
+        status = ll_interface.iterate_over_arraystruct(self.ctx, step)
+        if status != 0:
+            raise LowlevelError("iterate over arraystruct", status)
 
 
 class LazyALContext:
