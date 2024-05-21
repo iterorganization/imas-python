@@ -64,9 +64,7 @@ def _get_children(
             _get_children(element, ctx, time_mode, nbc_map)
 
         else:  # Data elements
-            ndim = child_meta.ndim
-            if data_type is IDSDataType.STR:
-                ndim += 1  # STR_0D is a 1D CHARACTER type...
+            ndim = child_meta._al_ndim
             data = ctx.read_data(new_path, timebase, data_type.al_type, ndim)
             if not (
                 # Empty arrays and STR_1D
@@ -114,9 +112,7 @@ def _get_child(child: IDSBase, ctx: LazyALContext):
         child._set_lazy_context(ctx)
 
     else:  # Data elements
-        ndim = child_meta.ndim
-        if data_type is IDSDataType.STR:
-            ndim += 1  # STR_0D is a 1D CHARACTER type...
+        ndim = child_meta._al_ndim
         with ctx.get_context() as real_ctx:
             data = real_ctx.read_data(new_path, timebase, data_type.al_type, ndim)
         if not (

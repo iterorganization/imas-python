@@ -243,6 +243,8 @@ class IDSMetadata:
 
         # Cache node type
         self._node_type: Type = _type_map[self.data_type, self.ndim]
+        # AL expects ndim of STR types to be one more (STR_0D is 1D array of chars)
+        self._al_ndim = self.ndim + (self.data_type is IDSDataType.STR)
 
     def __repr__(self) -> str:
         return f"<IDSMetadata for '{self.name}'>"
