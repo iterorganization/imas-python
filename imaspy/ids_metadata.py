@@ -6,7 +6,7 @@ import re
 import types
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Optional
+from typing import Any, Dict, Optional, Tuple, Type
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_coordinates import IDSCoordinate
@@ -62,6 +62,32 @@ def get_toplevel_metadata(structure_xml: Element) -> "IDSMetadata":
     Args:
         structure_xml: XML element belonging to an IDS toplevel (e.g. core_profiles).
     """
+    if not _type_map:
+        from imaspy.ids_primitive import (
+            IDSComplex0D,
+            IDSFloat0D,
+            IDSInt0D,
+            IDSNumericArray,
+            IDSString0D,
+            IDSString1D,
+        )
+        from imaspy.ids_struct_array import IDSStructArray
+        from imaspy.ids_structure import IDSStructure
+        from imaspy.ids_toplevel import IDSToplevel
+
+        _type_map[(None, 0)] = IDSToplevel
+        _type_map[(IDSDataType.STRUCTURE, 0)] = IDSStructure
+        _type_map[(IDSDataType.STRUCT_ARRAY, 1)] = IDSStructArray
+        _type_map[(IDSDataType.STR, 0)] = IDSString0D
+        _type_map[(IDSDataType.STR, 1)] = IDSString1D
+        _type_map[(IDSDataType.INT, 0)] = IDSInt0D
+        _type_map[(IDSDataType.FLT, 0)] = IDSFloat0D
+        _type_map[(IDSDataType.CPX, 0)] = IDSComplex0D
+        for dim in range(1, 7):
+            _type_map[(IDSDataType.INT, dim)] = IDSNumericArray
+            _type_map[(IDSDataType.FLT, dim)] = IDSNumericArray
+            _type_map[(IDSDataType.CPX, dim)] = IDSNumericArray
+
     # Delete the custom __setattr__ so __init__ can assign values:
     orig_setattr = IDSMetadata.__setattr__
     del IDSMetadata.__setattr__
@@ -70,6 +96,10 @@ def get_toplevel_metadata(structure_xml: Element) -> "IDSMetadata":
     finally:
         # Always restore the custom __setattr__ to avoid accidental data changes
         IDSMetadata.__setattr__ = orig_setattr
+
+
+_type_map: Dict[Tuple[IDSDataType, int], Type] = {}
+"""Map of IDSDataType and ndim to IDSBase implementation class."""
 
 
 class IDSMetadata:
@@ -210,6 +240,9 @@ class IDSMetadata:
                 for xml_child in structure_xml
             }
         )
+
+        # Cache node type
+        self._node_type: Type = _type_map[self.data_type, self.ndim]
 
     def __repr__(self) -> str:
         return f"<IDSMetadata for '{self.name}'>"

@@ -5,7 +5,6 @@
 
 import logging
 from copy import deepcopy
-from functools import lru_cache
 from types import MappingProxyType
 from typing import Generator, List, Optional
 
@@ -15,39 +14,10 @@ from imaspy.al_context import LazyALContext
 from imaspy.ids_base import IDSBase
 from imaspy.ids_metadata import IDSDataType, IDSMetadata
 from imaspy.ids_path import IDSPath
-from imaspy.ids_primitive import (
-    IDSComplex0D,
-    IDSFloat0D,
-    IDSInt0D,
-    IDSNumericArray,
-    IDSPrimitive,
-    IDSString0D,
-    IDSString1D,
-)
+from imaspy.ids_primitive import IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 
 logger = logging.getLogger(__name__)
-
-
-@lru_cache(maxsize=None)
-def get_node_type(data_type: IDSDataType, ndim: int):
-    if data_type is IDSDataType.STRUCTURE:
-        return IDSStructure
-    if data_type is IDSDataType.STRUCT_ARRAY:
-        return IDSStructArray
-    if data_type is IDSDataType.STR:
-        if ndim == 0:
-            return IDSString0D
-        else:
-            return IDSString1D
-    if ndim == 0:
-        if data_type is IDSDataType.FLT:
-            return IDSFloat0D
-        if data_type is IDSDataType.INT:
-            return IDSInt0D
-        if data_type is IDSDataType.CPX:
-            return IDSComplex0D
-    return IDSNumericArray
 
 
 class IDSStructure(IDSBase):
@@ -95,7 +65,7 @@ class IDSStructure(IDSBase):
             )
         # Create child node
         child_meta = self._children[name]
-        child = get_node_type(child_meta.data_type, child_meta.ndim)(self, child_meta)
+        child = child_meta._node_type(self, child_meta)
         self.__dict__[name] = child  # bypass setattr logic below: avoid recursion
         if self._lazy:  # lazy load the child
             from imaspy.db_entry_helpers import _get_child
