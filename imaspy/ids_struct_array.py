@@ -122,12 +122,6 @@ class IDSStructArray(IDSBase):
         struct = IDSStructure(self, self.metadata)
         return struct
 
-    def __setattr__(self, key, value):
-        object.__setattr__(self, key, value)
-
-    def __getattr__(self, key):
-        return object.__getattribute__(self, key)
-
     def __getitem__(self, item):
         # value is a list, so the given item should be convertable to integer
         # TODO: perhaps we should allow slices as well?
