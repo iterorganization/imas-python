@@ -36,6 +36,8 @@ class ALContext:
     - Context managers for creating and automatically ending AL actions
     """
 
+    __slots__ = ["ctx"]
+
     def __init__(self, ctx: int) -> None:
         """Construct a new ALContext object
 
@@ -152,6 +154,9 @@ class ALContext:
 class ALArrayStructContext(ALContext):
     """Helper class that wraps contexts created through al_begin_arraystruct_action."""
 
+    # Note: slot for "ctx" is defined in ALContext, only declare /additional/ slots:
+    __slots__ = ["size"]
+
     def __init__(self, ctx, size):
         """Construct a new ALContext object
 
@@ -194,6 +199,16 @@ class LazyALContext:
     When constructing a LazyALContext, you need to supply either the ``dbentry`` and
     ``nbc_map``, or a ``parent_ctx``.
     """
+
+    __slots__ = [
+        "dbentry",
+        "dbentry_ctx",
+        "parent_ctx",
+        "method",
+        "args",
+        "nbc_map",
+        "time_mode",
+    ]
 
     def __init__(
         self,
