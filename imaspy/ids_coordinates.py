@@ -150,6 +150,8 @@ class IDSCoordinates:
         IDSNumericArray("/core_profiles/time", array([], dtype=float64))
     """
 
+    __slots__ = ["_node"]
+
     def __init__(self, node: "IDSBase") -> None:
         self._node = node
 

@@ -11,7 +11,7 @@ from typing import Generator, List, Optional
 from xxhash import xxh3_64
 
 from imaspy.al_context import LazyALContext
-from imaspy.ids_base import IDSBase
+from imaspy.ids_base import IDSBase, IDSDoc
 from imaspy.ids_metadata import IDSDataType, IDSMetadata
 from imaspy.ids_path import IDSPath
 from imaspy.ids_primitive import IDSPrimitive
@@ -29,16 +29,12 @@ class IDSStructure(IDSBase):
     IDSStructArrays
     """
 
+    __doc__ = IDSDoc(__doc__)
     _children: "MappingProxyType[str, IDSMetadata]"
     _lazy_context: Optional[LazyALContext]
 
     def __init__(self, parent: IDSBase, metadata: IDSMetadata):
-        """Initialize IDSStructure from XML specification
-
-        Initializes in-memory an IDSStructure. The XML should contain
-        all direct descendants of the node. To avoid duplication,
-        none of the XML structure is saved directly, so this transformation
-        might be irreversible.
+        """Initialize IDSStructure from metadata specification
 
         Args:
             parent: Parent structure. Can be anything, but at database write
@@ -52,8 +48,6 @@ class IDSStructure(IDSBase):
         if "_lazy" not in dct:
             dct["_lazy"] = parent._lazy
         dct["metadata"] = metadata
-        if metadata.documentation:
-            dct["__doc__"] = metadata.documentation
 
         dct["_children"] = metadata._children
         dct["_lazy_context"] = None

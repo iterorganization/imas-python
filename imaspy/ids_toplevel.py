@@ -9,12 +9,8 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-try:
-    from functools import cached_property
-except ImportError:
-    from cached_property import cached_property
-
 from imaspy.exception import ValidationError
+from imaspy.ids_base import IDSDoc
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     ASCII_SERIALIZER_PROTOCOL,
@@ -69,6 +65,7 @@ class IDSToplevel(IDSStructure):
     IF a quantity is filled, the coordinates of that quantity must be filled as well
     """
 
+    __doc__ = IDSDoc(__doc__)
     _path = ""  # Path to ourselves without the IDS name and slashes
 
     def __init__(self, parent: "IDSFactory", structure_xml, lazy=False):
@@ -345,7 +342,7 @@ class IDSToplevel(IDSStructure):
         my_repr += f" (IDS:{self.metadata.name})>"
         return my_repr
 
-    @cached_property
+    @property
     def _toplevel(self) -> "IDSToplevel":
         """Return ourselves"""
         # Used to cut off recursive call

@@ -7,15 +7,10 @@ import logging
 from copy import deepcopy
 from typing import Optional, Tuple
 
-try:
-    from functools import cached_property
-except ImportError:
-    from cached_property import cached_property
-
 from xxhash import xxh3_64
 
 from imaspy.al_context import LazyALContext
-from imaspy.ids_base import IDSBase
+from imaspy.ids_base import IDSBase, IDSDoc
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_metadata import IDSMetadata
 
@@ -29,6 +24,9 @@ class IDSStructArray(IDSBase):
     but contains references to IDSStructures
     """
 
+    __doc__ = IDSDoc(__doc__)
+    __slots__ = ["_parent", "_lazy", "metadata", "value", "_lazy_ctx", "_lazy_paths"]
+
     def __init__(self, parent: IDSBase, metadata: IDSMetadata):
         """Initialize IDSStructArray from XML specification
 
@@ -40,19 +38,17 @@ class IDSStructArray(IDSBase):
         self._parent = parent
         self._lazy = parent._lazy
         self.metadata = metadata
-        if metadata.documentation:
-            self.__doc__ = metadata.documentation
 
-        # Initialize with an 0-length list
-        self.value = []
+        # Initialize with an 0-length list or None when lazy loading
+        self.value = None if self._lazy else []
+        """"""
 
         # Lazy loading context, only applicable when self._lazy is True
         # When lazy loading, all items in self.value are None until they are requested
-        self._lazy_loaded = False  # Marks if we already loaded our size
-        self._lazy_context: Optional[LazyALContext] = None
+        self._lazy_ctx: Optional[LazyALContext] = None
         self._lazy_paths = ("", "")  # path, timebasepath
 
-    @cached_property
+    @property
     def coordinates(self):
         """Coordinates of this array of structures."""
         return IDSCoordinates(self)
@@ -78,7 +74,7 @@ class IDSStructArray(IDSBase):
 
         Set the context that we can use for retrieving our size and children.
         """
-        self._lazy_context = ctx
+        self._lazy_ctx = ctx
         self._lazy_paths = (path, timebase)
 
     def _load(self, item: Optional[int]) -> None:
@@ -89,22 +85,21 @@ class IDSStructArray(IDSBase):
                 loaded from the lowlevel.
         """
         assert self._lazy
-        assert self._lazy_context
-        if self._lazy_loaded:
+        assert self._lazy_ctx
+        if self.value is not None:  # We already loaded our size
             if item is None:
                 return
             if self.value[item] is not None:
                 return  # item is already loaded
         # Load requested data from the backend
-        manager = self._lazy_context.lazy_arraystruct_action(*self._lazy_paths, item)
+        manager = self._lazy_ctx.lazy_arraystruct_action(*self._lazy_paths, item)
         with manager as (new_ctx, size):
             # Note: we can be a bit more efficient here by recognizing that the returned
             # LazyALContext (new_ctx) for different items is essentially the same,
             # except for the requested item number. It would need some work to get
             # right, so keep the logic like this unless we find it to be a bottleneck.
-            if not self._lazy_loaded:
+            if self.value is None:
                 self.value = [None] * size
-                self._lazy_loaded = True
             assert len(self.value) == size
 
             if item is not None:

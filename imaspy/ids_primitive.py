@@ -10,15 +10,10 @@ from copy import deepcopy
 from numbers import Complex, Integral, Number, Real
 from typing import Tuple
 
-try:
-    from functools import cached_property
-except ImportError:
-    from cached_property import cached_property
-
 import numpy as np
 from xxhash import xxh3_64, xxh3_64_digest
 
-from imaspy.ids_base import IDSBase
+from imaspy.ids_base import IDSBase, IDSDoc
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_metadata import IDSMetadata
@@ -65,6 +60,9 @@ class IDSPrimitive(IDSBase):
     Lives entirely in-memory until 'put' into a database.
     """
 
+    __doc__ = IDSDoc(__doc__)
+    __slots__ = ["_parent", "metadata", "__value"]
+
     def __init__(self, parent: IDSBase, metadata: IDSMetadata):
         """Initialize IDSPrimitive
 
@@ -74,12 +72,15 @@ class IDSPrimitive(IDSBase):
         """
         self._parent = parent
         self.metadata = metadata
-        if metadata.documentation:
-            self.__doc__ = metadata.documentation
 
         self.__value = None
 
-    @cached_property
+    @property
+    def _lazy(self):
+        """Whether this IDS Node is part of a lazy-loaded IDSToplevel"""
+        return self._parent._lazy
+
+    @property
     def coordinates(self):
         """Coordinates belonging to this quantity."""
         return IDSCoordinates(self)
@@ -270,6 +271,9 @@ def _cast_str(node, value):
 class IDSString0D(IDSPrimitive):
     """IDSPrimitive specialization for STR_0D."""
 
+    __doc__ = IDSDoc(__doc__)
+    __slots__ = ()
+
     _cast_value = _cast_str
 
     def __str__(self):
@@ -284,6 +288,9 @@ class IDSString0D(IDSPrimitive):
 
 class IDSString1D(IDSPrimitive):
     """IDSPrimitive specialization for STR_1D."""
+
+    __doc__ = IDSDoc(__doc__)
+    __slots__ = ()
 
     def __getattr__(self, name):
         # Forward this getattr call to our actual value
@@ -324,6 +331,9 @@ class IDSString1D(IDSPrimitive):
 class IDSNumeric0D(IDSPrimitive):
     """Abstract base class for INT_0D, FLT_0D and CPX_0D."""
 
+    __doc__ = IDSDoc(__doc__)
+    __slots__ = ()
+
     def _cast_value(self, value):
         if isinstance(value, np.ndarray) and value.ndim == 0:
             value = value.item()  # Unpack 0D numpy arrays
@@ -336,6 +346,9 @@ class IDSNumeric0D(IDSPrimitive):
 
 class IDSComplex0D(IDSNumeric0D, Complex):
     """IDSPrimitive specialization for CPX_0D."""
+
+    __doc__ = IDSDoc(__doc__)
+    __slots__ = ()
 
     def __complex__(self) -> complex:
         return self.value
@@ -357,6 +370,9 @@ class IDSComplex0D(IDSNumeric0D, Complex):
 
 class IDSFloat0D(IDSNumeric0D, Real):
     """IDSPrimitive specialization for FLT_0D."""
+
+    __doc__ = IDSDoc(__doc__)
+    __slots__ = ()
 
     def __float__(self) -> float:
         return self.value
@@ -383,6 +399,9 @@ class IDSFloat0D(IDSNumeric0D, Real):
 class IDSInt0D(IDSNumeric0D, Integral):
     """IDSPrimitive specialization for INT_0D."""
 
+    __doc__ = IDSDoc(__doc__)
+    __slots__ = ()
+
     def __int__(self):
         return self.value
 
@@ -404,6 +423,9 @@ class IDSInt0D(IDSNumeric0D, Integral):
 
 class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
     """IDSPrimitive specialization for ND numeric types (wrapping ``numpy.ndarray``)."""
+
+    __doc__ = IDSDoc(__doc__)
+    __slots__ = ()
 
     # One might also consider adding the built-in list type to this
     # list, to support operations like np.add(array_like, list)
