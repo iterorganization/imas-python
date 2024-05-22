@@ -59,8 +59,8 @@ class NCMetadata:
         self._pending = {}  # (path, dimension): (coordinate_path, coordinate_dimension)
         #   Dimensions before tensorization
         self._ut_dims = {}  # path: [dim1, dim2, ...]
-        #   Coordinates before tensorization
-        self._ut_coords = {}  # path: [coor1, coor2, ...]
+        #   Coordinates for each dimension
+        self._dim_coordinates = {}  # dimension: [coor1, coor2, ...]
         # Alternative coordinates
         self._alternatives = {}  # path: [alt1, alt2, ...]
 
@@ -76,7 +76,7 @@ class NCMetadata:
             ) from None
         self._tensorize_dimensions()
         # Delete temporary variables
-        del self._pending, self._ut_dims, self._ut_coords, self._alternatives
+        del self._pending, self._ut_dims, self._dim_coordinates, self._alternatives
 
         # Sanity check:
         assert len(self.dimensions) == len(set(self.dimensions))
@@ -210,31 +210,36 @@ class NCMetadata:
 
         # Handle regular nodes
         dimensions = []
-        coordinates = []
         for i, coord in enumerate(metadata.coordinates):
             dim_name = None
-            # TODO: logic can be simplified (merge yes/no alternatives?)
-            if coord.has_alternatives:
-                # ------ CASE 4: refers to multiple other quantities in the DD ------
-                coordinate_path = self._handle_alternatives(coord)
-                self._pending[(path, i)] = (coordinate_path, 0)
+            if coord.references:
+                # ------ CASE 3 or 4: refers to other quantities ------
+                if metadata.path.is_ancestor_of(coord.references[0]):
+                    # Coordinate is inside this AoS (and must be 0D): create dimension
+                    # E.g. core_profiles IDS: profiles_1d -> profiles_1d/time
+                    dim_name = ".".join(coord.references[0].parts)
+                    is_time_dimension = coord.is_time_coordinate
+                    coordinates = [dim_name]
 
-            elif not coord.references:
+                else:
+                    main_coord_path = self._handle_alternatives(coord)
+                    self._pending[(path, i)] = (main_coord_path, 0)
+
+            else:
                 same_as = metadata.coordinates_same_as[i]
-                if same_as.has_alternatives:
-                    coordinate_path = self._handle_alternatives(same_as)
-                    self._pending[(path, i)] = (coordinate_path, i)
-
-                elif same_as.references:
+                if same_as.references:
                     # ------ CASE 2: coordinate is same as another ------
-                    # Put reference in pending to be resolved in second pass
-                    coordinate_path = "/".join(same_as.references[0].parts)
-                    self._pending[(path, i)] = (coordinate_path, i)
+                    # There currently is no case with alternative coordinate_same_as,
+                    # if this ever changes we need to think how to handle this...
+                    assert len(same_as.references) == 1
+                    main_coord_path = self._handle_alternatives(same_as)
+                    self._pending[(path, i)] = (main_coord_path, i)
 
                 else:
                     # ------ CASE 1: coordinate is an index ------
                     # Create a new dimension
                     dim_name = path.replace("/", ".")
+                    coordinates = [dim_name]
                     if (
                         aos_level + metadata.ndim != 1
                         or metadata.data_type is IDSDataType.STRUCT_ARRAY
@@ -246,44 +251,32 @@ class NCMetadata:
                     is_time_dimension = metadata.name == "time"
                     if metadata.data_type is IDSDataType.STRUCT_ARRAY:
                         # Check if name/identifier/label exists
-                        coordinates.extend(_get_aos_label_coordinates(metadata))
-
-            elif len(coord.references) == 1:
-                # ------ CASE 3: refers to another quantity in the DD ------
-                if metadata.path.is_ancestor_of(coord.references[0]):
-                    # Coordinate is inside this AoS (and must be 0D): create dimension
-                    # E.g. core_profiles IDS: profiles_1d -> profiles_1d/time
-                    dim_name = ".".join(coord.references[0].parts)
-                    is_time_dimension = coord.is_time_coordinate
-
-                else:
-                    # Put reference in pending to be resolved in second pass
-                    coordinate_path = "/".join(coord.references[0].parts)
-                    self._pending[(path, i)] = (coordinate_path, 0)
-                    coordinates.append(coordinate_path.replace("/", "."))
+                        coordinates = _get_aos_label_coordinates(metadata)
 
             dimensions.append(dim_name)
-            if dim_name is not None and is_time_dimension:
-                # Record time dimension
-                self.time_dimensions.add(dim_name)
+            if dim_name is not None:
+                if is_time_dimension:
+                    # Record time dimension
+                    self.time_dimensions.add(dim_name)
+                # Record coordinates for this dimension
+                self._dim_coordinates[dim_name] = coordinates
 
         # Handle DDv4 alternative coordinates
         if metadata.alternative_coordinates:
+            # Record for _merge_alternatives()
             self._alternatives.setdefault(metadata.path_string, []).extend(
                 "/".join(ref.parts) for ref in metadata.alternative_coordinates
             )
+            # Add alternatives to the coordinates for this dimension
+            self._dim_coordinates[dim_name].extend(
+                ".".join(ref.parts) for ref in metadata.alternative_coordinates
+            )
 
-        # Store untensorized dimensions and coordinates
+        # Store untensorized dimensions
         self._ut_dims[path] = dimensions
-        if coordinates:
-            self._ut_coords[path] = coordinates
 
     def _handle_alternatives(self, coord: IDSCoordinate) -> str:
         """Handle alternative coordinates. Return main coordinate path."""
-        if coord.size is not None:
-            raise NotImplementedError(
-                "Alternative coordinates with fixed size are not yet supported"
-            )
         main, *others = ["/".join(ref.parts) for ref in coord.references]
         if others:
             if main in self._alternatives:
@@ -295,13 +288,23 @@ class NCMetadata:
     def _merge_alternatives(self) -> None:
         """Merge all alternative coordinates to use the same dimension."""
         for path, alternatives in self._alternatives.items():
+            # Alternatives are only applicable for 1D nodes
+            assert len(self._ut_dims[path]) == 1
             for alternative in alternatives:
+                # Alternatives are only applicable for 1D nodes
                 assert len(self._ut_dims[alternative]) == 1
                 if self._ut_dims[alternative][0] is None:
                     assert self._pending[(alternative, 0)] == (path, 0)
                 else:
                     self._ut_dims[alternative][0] = None
                     self._pending[(alternative, 0)] = (path, 0)
+
+            # Update coordinates
+            dim_name = self._ut_dims[path][0]
+            alternative_coordinates = {alt.replace("/", ".") for alt in alternatives}
+            # Only add items not already present
+            alternative_coordinates.difference_update(self._dim_coordinates[dim_name])
+            self._dim_coordinates[dim_name].extend(alternative_coordinates)
 
     def _resolve_pending(self):
         """Resolve all pending dimension references."""
@@ -331,14 +334,24 @@ class NCMetadata:
         their ancestor Array of Structures.
         """
         for path in self._ut_dims:
-            aos_dims = aos_coords = []
+            aos_dims = coordinates = []
             aos = self.aos.get(path)
             if aos is not None:
                 # Note: by construction of self._ut_dims, we know that ancestor AOSs are
                 # always handled before their children. self.dimensions[aos] must
                 # therefore exist:
                 aos_dims = self.dimensions[aos]
-                aos_coords = self.coordinates.get(aos, [])
+                coordinates = self.coordinates.get(aos, []).copy()
             self.dimensions[path] = aos_dims + self._ut_dims[path]
-            if aos_coords or path in self._ut_coords:
-                self.coordinates[path] = aos_coords + self._ut_coords.get(path, [])
+
+            # Set auxiliary coordinates
+            metadata = self.ids_metadata[path]
+            for coord, dim_name in zip(metadata.coordinates, self._ut_dims[path]):
+                if coord.references:
+                    coordinates.extend(self._dim_coordinates[dim_name])
+
+            if metadata.data_type is IDSDataType.STRUCT_ARRAY:
+                # Check if name/identifier/label exists
+                coordinates.extend(_get_aos_label_coordinates(metadata))
+            if coordinates:
+                self.coordinates[path] = coordinates
