@@ -301,10 +301,12 @@ class NCMetadata:
 
             # Update coordinates
             dim_name = self._ut_dims[path][0]
-            alternative_coordinates = {alt.replace("/", ".") for alt in alternatives}
+            alternative_coordinates = [alt.replace("/", ".") for alt in alternatives]
             # Only add items not already present
-            alternative_coordinates.difference_update(self._dim_coordinates[dim_name])
-            self._dim_coordinates[dim_name].extend(alternative_coordinates)
+            coordinates = self._dim_coordinates[dim_name]
+            for alt in alternative_coordinates:
+                if alt not in coordinates:
+                    coordinates.append(alt)
 
     def _resolve_pending(self):
         """Resolve all pending dimension references."""
