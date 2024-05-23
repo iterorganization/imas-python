@@ -138,7 +138,9 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
     # Generic ND dimensions for use in `shape` variables, don't create yet
     nd_dimensions = {}  # i: Dimension
 
-    # Loop over the IDS another time to store the data
+    path_shapes = {}
+
+    # Loop over the IDS another time to create variables and determine sparsity
     for path in filled_data:
         metadata = ids.metadata[path]
         var = create_variable(group, metadata, ncmeta, homogeneous_time)
@@ -196,7 +198,7 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
                 # compression="zlib",
                 # complevel=1,
             )
-            shape_var[()] = shapes
+            path_shapes[path] = shapes
             var.sparse = f"Sparse data, data shapes are stored in {shape_var.name}"
         elif sparse:
             var.sparse = "Sparse data, missing data is filled with _FillValue"
@@ -209,6 +211,33 @@ def ids2nc(ids: IDSToplevel, group: netCDF4.Group):
         coordinates = ncmeta.get_coordinates(path, homogeneous_time)
         if coordinates:
             var.coordinates = filter_coordinates(coordinates, filled_variables)
+
+    # Ensure variables and metadata are synchronized with HDF5 file
+    group.sync()
+
+    # Loop over the IDS another time to store the data
+    for path in filled_data:
+        metadata = ids.metadata[path]
+
+        # We don't store (sparsity) data for structures
+        if metadata.data_type is IDSDataType.STRUCTURE:
+            continue
+
+        if path in path_shapes:
+            # Store sparse shape:
+            shape_var = group[path.replace("/", ".") + ":shape"]
+            shape_var[()] = path_shapes.pop(path)
+
+        # We don't store data for arrays of structures
+        if metadata.data_type is IDSDataType.STRUCT_ARRAY:
+            continue
+
+        var = group[path.replace("/", ".")]
+        data = filled_data[path]
+        ndim = metadata.ndim
+        aos_dims = ()
+        if path in ncmeta.aos:
+            aos_dims = ncmeta.get_dimensions(ncmeta.aos[path], homogeneous_time)
 
         # Fill variable
         if len(aos_dims) == 0:  # Directly set untensorized values
