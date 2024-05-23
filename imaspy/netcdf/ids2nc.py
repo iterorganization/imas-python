@@ -215,10 +215,7 @@ class IDS2NC:
         """Filter the coordinates list from NCMetadata to filled variables only."""
         return " ".join(
             coordinate
-            # FIXME: update get_coordinates to return a list of str!
-            for coordinate in self.ncmeta.get_coordinates(
-                path, self.homogeneous_time
-            ).split(" ")
+            for coordinate in self.ncmeta.get_coordinates(path, self.homogeneous_time)
             if coordinate in self.filled_variables
         )
 

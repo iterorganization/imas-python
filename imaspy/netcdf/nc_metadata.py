@@ -89,8 +89,8 @@ class NCMetadata:
         # Add cache for public API
         self.get_dimensions = lru_cache(maxsize=None)(self.get_dimensions)
 
-    def get_coordinates(self, path: str, homogeneous_time: bool) -> str:
-        """Get the coordinate string (adhering to CF conventions) for a netCDF variable.
+    def get_coordinates(self, path: str, homogeneous_time: bool) -> Tuple[str]:
+        """Get the coordinates (adhering to CF conventions) for a netCDF variable.
 
         Args:
             path: Data Dictionary path to the variable, e.g. ``ids_properties/comment``.
@@ -98,13 +98,13 @@ class NCMetadata:
                 ``ids_properties.homogeneous_time`` should be set to ``1``.
         """
         if path not in self.coordinates:
-            return ""
+            return ()
 
         if not homogeneous_time:
-            return " ".join(self.coordinates[path])
+            return tuple(self.coordinates[path])
 
         # Replace inhomogeneous time coordinates with root time:
-        return " ".join(
+        return tuple(
             "time" if coord in self.time_coordinates else coord
             for coord in self.coordinates[path]
         )

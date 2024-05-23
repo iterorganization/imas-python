@@ -28,13 +28,19 @@ def test_aos_label_coordinates():
     pfa = NCMetadata(IDSFactory("3.39.0").pf_active().metadata)
 
     assert cp.get_dimensions("profiles_1d/ion", True) == ("time", "profiles_1d.ion:i")
-    assert cp.get_coordinates("profiles_1d/ion", True) == "time profiles_1d.ion.label"
+    assert cp.get_coordinates("profiles_1d/ion", True) == (
+        "time",
+        "profiles_1d.ion.label",
+    )
 
     assert pfa.get_dimensions("coil", True) == ("coil:i",)
-    assert pfa.get_coordinates("coil", True) == "coil.name coil.identifier"
+    assert pfa.get_coordinates("coil", True) == ("coil.name", "coil.identifier")
     assert pfa.get_dimensions("coil/element", True) == ("coil:i", "coil.element:i")
     assert pfa.get_coordinates("coil/element", True) == (
-        "coil.name coil.identifier coil.element.name coil.element.identifier"
+        "coil.name",
+        "coil.identifier",
+        "coil.element.name",
+        "coil.element.identifier",
     )
 
 
@@ -48,10 +54,10 @@ def test_time_mode():
     assert cp.get_dimensions("global_quantities/ip", True) == ("time",)
     assert cp.get_dimensions("global_quantities/ip", False) == ("time",)
 
-    assert cp.get_coordinates("time", True) == ""
-    assert cp.get_coordinates("time", False) == ""
-    assert cp.get_coordinates("global_quantities/ip", True) == "time"
-    assert cp.get_coordinates("global_quantities/ip", False) == "time"
+    assert cp.get_coordinates("time", True) == ()
+    assert cp.get_coordinates("time", False) == ()
+    assert cp.get_coordinates("global_quantities/ip", True) == ("time",)
+    assert cp.get_coordinates("global_quantities/ip", False) == ("time",)
 
     # Dynamic array of structures
     assert cp.get_dimensions("profiles_1d", True) == ("time",)
@@ -59,12 +65,12 @@ def test_time_mode():
     assert cp.get_dimensions("profiles_1d/grid/rho_tor", True)[0] == "time"
     assert cp.get_dimensions("profiles_1d/grid/rho_tor", False)[0] == "profiles_1d.time"
 
-    assert cp.get_coordinates("profiles_1d", True) == "time"
-    assert cp.get_coordinates("profiles_1d", False) == "profiles_1d.time"
+    assert cp.get_coordinates("profiles_1d", True) == ("time",)
+    assert cp.get_coordinates("profiles_1d", False) == ("profiles_1d.time",)
     coors = cp.get_coordinates("profiles_1d/grid/rho_tor", True)
-    assert coors == "time profiles_1d.grid.rho_tor_norm"
+    assert coors == ("time", "profiles_1d.grid.rho_tor_norm")
     coors = cp.get_coordinates("profiles_1d/grid/rho_tor", False)
-    assert coors == "profiles_1d.time profiles_1d.grid.rho_tor_norm"
+    assert coors == ("profiles_1d.time", "profiles_1d.grid.rho_tor_norm")
 
     # Sibling time nodes
     assert mag.get_dimensions("flux_loop/flux/data", True) == ("flux_loop:i", "time")
@@ -72,9 +78,9 @@ def test_time_mode():
     assert dims == ("flux_loop:i", "flux_loop.flux.time:i")
 
     coors = mag.get_coordinates("flux_loop/flux/data", True)
-    assert coors == "flux_loop.name flux_loop.identifier time"
+    assert coors == ("flux_loop.name", "flux_loop.identifier", "time")
     coors = mag.get_coordinates("flux_loop/flux/data", False)
-    assert coors == "flux_loop.name flux_loop.identifier flux_loop.flux.time"
+    assert coors == ("flux_loop.name", "flux_loop.identifier", "flux_loop.flux.time")
 
 
 def test_dd3_alternative_coordinates():
@@ -90,12 +96,12 @@ def test_dd3_alternative_coordinates():
 
     # Auxiliary coordinates list all, including the alternatives
     assert distr.get_coordinates("distribution/profiles_2d/density", True) == (
-        "time "
-        "distribution.profiles_2d.grid.r "
-        "distribution.profiles_2d.grid.rho_tor_norm "
-        "distribution.profiles_2d.grid.z "
-        "distribution.profiles_2d.grid.theta_geometric "
-        "distribution.profiles_2d.grid.theta_straight"
+        "time",
+        "distribution.profiles_2d.grid.r",
+        "distribution.profiles_2d.grid.rho_tor_norm",
+        "distribution.profiles_2d.grid.z",
+        "distribution.profiles_2d.grid.theta_geometric",
+        "distribution.profiles_2d.grid.theta_straight",
     )
 
 
@@ -109,14 +115,14 @@ def test_dd4_alternative_coordinates():
 
     # Auxiliary coordinates list all, including the alternatives
     assert cp.get_coordinates("profiles_1d/j_tor", True) == (
-        "time "
-        "profiles_1d.grid.rho_tor_norm "
-        "profiles_1d.grid.rho_tor "
-        "profiles_1d.grid.psi "
-        "profiles_1d.grid.volume "
-        "profiles_1d.grid.area "
-        "profiles_1d.grid.surface "
-        "profiles_1d.grid.rho_pol_norm"
+        "time",
+        "profiles_1d.grid.rho_tor_norm",
+        "profiles_1d.grid.rho_tor",
+        "profiles_1d.grid.psi",
+        "profiles_1d.grid.volume",
+        "profiles_1d.grid.area",
+        "profiles_1d.grid.surface",
+        "profiles_1d.grid.rho_pol_norm",
     )
 
 
@@ -128,7 +134,7 @@ def test_coordinate_same_as():
     assert dims == ("frame.surface_temperature:i", "frame.surface_temperature:j")
 
     # coordinate_same_as shouldn't become auxiliary coordinates
-    assert cir.get_coordinates("calibration/transmission_barrel", True) == ""
+    assert cir.get_coordinates("calibration/transmission_barrel", True) == ()
 
 
 def test_tensorization():
@@ -148,4 +154,4 @@ def test_tensorization():
     coors = eq.get_coordinates(
         "grids_ggd/grid/space/objects_per_dimension/object/geometry", False
     )
-    assert coors == "grids_ggd.time"
+    assert coors == ("grids_ggd.time",)
