@@ -78,7 +78,10 @@ class IDS2NC:
         self.determine_data_shapes()
         self.create_dimensions()
         self.create_variables()
-        # self.group.sync()  # TODO: figure out if needed
+        # Synchronize variables to disk
+        # This is not strictly required (automatically done by netCDF4 when needed), but
+        # by separating it we get more meaningful profiling statistics
+        self.group.sync()
         self.store_data()
 
     def collect_filled_data(self) -> None:
