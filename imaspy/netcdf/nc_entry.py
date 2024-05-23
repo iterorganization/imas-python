@@ -15,7 +15,7 @@ from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, IDS_TIME_MODES
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_metadata import IDSType
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.netcdf.ids2nc import ids2nc
+from imaspy.netcdf.ids2nc import IDS2NC
 from imaspy.netcdf.nc2ids import nc2ids
 
 logger = logging.getLogger(__name__)
@@ -198,7 +198,7 @@ class NCEntry:
             version_put.data_dictionary = self._ids_factory._version
             version_put.access_layer_language = "imaspy " + imaspy.__version__
 
-        ids2nc(ids, group)
+        IDS2NC(ids, group).run()
 
     def list_all_occurrences(self, ids_name, node_path=None):
         """List all non-empty occurrences of an IDS
