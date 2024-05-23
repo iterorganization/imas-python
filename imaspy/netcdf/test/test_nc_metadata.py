@@ -23,6 +23,21 @@ def test_get_aos_label_coordinates():
     assert _get_aos_label_coordinates(pfa.metadata["coil.element"]) == expected
 
 
+def test_aos_label_coordinates():
+    cp = NCMetadata(IDSFactory("3.39.0").core_profiles().metadata)
+    pfa = NCMetadata(IDSFactory("3.39.0").pf_active().metadata)
+
+    assert cp.get_dimensions("profiles_1d/ion", True) == ("time", "profiles_1d.ion:i")
+    assert cp.get_coordinates("profiles_1d/ion", True) == "time profiles_1d.ion.label"
+
+    assert pfa.get_dimensions("coil", True) == ("coil:i",)
+    assert pfa.get_coordinates("coil", True) == "coil.name coil.identifier"
+    assert pfa.get_dimensions("coil/element", True) == ("coil:i", "coil.element:i")
+    assert pfa.get_coordinates("coil/element", True) == (
+        "coil.name coil.identifier coil.element.name coil.element.identifier"
+    )
+
+
 def test_time_mode():
     cp = NCMetadata(IDSFactory("3.39.0").core_profiles().metadata)
     mag = NCMetadata(IDSFactory("3.39.0").magnetics().metadata)
@@ -103,3 +118,34 @@ def test_dd4_alternative_coordinates():
         "profiles_1d.grid.surface "
         "profiles_1d.grid.rho_pol_norm"
     )
+
+
+def test_coordinate_same_as():
+    cir = NCMetadata(IDSFactory("3.39.0").camera_ir().metadata)
+
+    # Both dimensions have coordinate_same_as set:
+    dims = cir.get_dimensions("calibration/transmission_barrel", True)
+    assert dims == ("frame.surface_temperature:i", "frame.surface_temperature:j")
+
+    # coordinate_same_as shouldn't become auxiliary coordinates
+    assert cir.get_coordinates("calibration/transmission_barrel", True) == ""
+
+
+def test_tensorization():
+    eq = NCMetadata(IDSFactory("3.39.0").equilibrium().metadata)
+
+    assert eq.get_dimensions(
+        "grids_ggd/grid/space/objects_per_dimension/object/geometry", False
+    ) == (
+        "grids_ggd.time",
+        "grids_ggd.grid:i",
+        "grids_ggd.grid.space:i",
+        "grids_ggd.grid.space.objects_per_dimension:i",
+        "grids_ggd.grid.space.objects_per_dimension.object:i",
+        "grids_ggd.grid.space.objects_per_dimension.object.geometry:i",
+    )
+
+    coors = eq.get_coordinates(
+        "grids_ggd/grid/space/objects_per_dimension/object/geometry", False
+    )
+    assert coors == "grids_ggd.time"
