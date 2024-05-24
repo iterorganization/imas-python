@@ -192,7 +192,9 @@ class IDS2NC:
                 var.units = metadata.units
 
             if metadata.data_type is not IDSDataType.STRUCT_ARRAY:
-                var.coordinates = self.filter_coordinates(path)
+                coordinates = self.filter_coordinates(path)
+                if coordinates:
+                    var.coordinates = coordinates
 
             # Sparsity and :shape array
             if path in self.shapes:
@@ -208,10 +210,17 @@ class IDS2NC:
                     dimensions = get_dimensions(
                         self.ncmeta.aos.get(path), self.homogeneous_time
                     ) + (f"{metadata.ndim}D",)
-                    self.group.createVariable(
+                    shape_var = self.group.createVariable(
                         shape_name,
                         SHAPE_DTYPE,
                         dimensions,
+                    )
+                    doc_indices = ",".join(chr(ord("i") + i) for i in range(3))
+                    shape_var.documentation = (
+                        f"Shape information for {var_name}.\n"
+                        f"{shape_name}[{doc_indices},:] describes the shape of filled "
+                        f"data of {var_name}[{doc_indices},...]. Data outside this "
+                        "shape is unset (i.e. filled with _Fillvalue)."
                     )
 
     def filter_coordinates(self, path: str) -> str:
