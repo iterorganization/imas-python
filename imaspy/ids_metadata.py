@@ -63,30 +63,7 @@ def get_toplevel_metadata(structure_xml: Element) -> "IDSMetadata":
         structure_xml: XML element belonging to an IDS toplevel (e.g. core_profiles).
     """
     if not _type_map:
-        from imaspy.ids_primitive import (
-            IDSComplex0D,
-            IDSFloat0D,
-            IDSInt0D,
-            IDSNumericArray,
-            IDSString0D,
-            IDSString1D,
-        )
-        from imaspy.ids_struct_array import IDSStructArray
-        from imaspy.ids_structure import IDSStructure
-        from imaspy.ids_toplevel import IDSToplevel
-
-        _type_map[(None, 0)] = IDSToplevel
-        _type_map[(IDSDataType.STRUCTURE, 0)] = IDSStructure
-        _type_map[(IDSDataType.STRUCT_ARRAY, 1)] = IDSStructArray
-        _type_map[(IDSDataType.STR, 0)] = IDSString0D
-        _type_map[(IDSDataType.STR, 1)] = IDSString1D
-        _type_map[(IDSDataType.INT, 0)] = IDSInt0D
-        _type_map[(IDSDataType.FLT, 0)] = IDSFloat0D
-        _type_map[(IDSDataType.CPX, 0)] = IDSComplex0D
-        for dim in range(1, 7):
-            _type_map[(IDSDataType.INT, dim)] = IDSNumericArray
-            _type_map[(IDSDataType.FLT, dim)] = IDSNumericArray
-            _type_map[(IDSDataType.CPX, dim)] = IDSNumericArray
+        _build_type_map()
 
     # Delete the custom __setattr__ so __init__ can assign values:
     orig_setattr = IDSMetadata.__setattr__
@@ -100,6 +77,37 @@ def get_toplevel_metadata(structure_xml: Element) -> "IDSMetadata":
 
 _type_map: Dict[Tuple[IDSDataType, int], Type] = {}
 """Map of IDSDataType and ndim to IDSBase implementation class."""
+
+
+def _build_type_map():
+    """Populate _type_map.
+
+    This must be done in a separate function to avoid circular imports.
+    """
+    from imaspy.ids_primitive import (
+        IDSComplex0D,
+        IDSFloat0D,
+        IDSInt0D,
+        IDSNumericArray,
+        IDSString0D,
+        IDSString1D,
+    )
+    from imaspy.ids_struct_array import IDSStructArray
+    from imaspy.ids_structure import IDSStructure
+    from imaspy.ids_toplevel import IDSToplevel
+
+    _type_map[(None, 0)] = IDSToplevel
+    _type_map[(IDSDataType.STRUCTURE, 0)] = IDSStructure
+    _type_map[(IDSDataType.STRUCT_ARRAY, 1)] = IDSStructArray
+    _type_map[(IDSDataType.STR, 0)] = IDSString0D
+    _type_map[(IDSDataType.STR, 1)] = IDSString1D
+    _type_map[(IDSDataType.INT, 0)] = IDSInt0D
+    _type_map[(IDSDataType.FLT, 0)] = IDSFloat0D
+    _type_map[(IDSDataType.CPX, 0)] = IDSComplex0D
+    for dim in range(1, 7):
+        _type_map[(IDSDataType.INT, dim)] = IDSNumericArray
+        _type_map[(IDSDataType.FLT, dim)] = IDSNumericArray
+        _type_map[(IDSDataType.CPX, dim)] = IDSNumericArray
 
 
 class IDSMetadata:
