@@ -4,6 +4,7 @@ import netCDF4
 
 from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
+from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
@@ -57,7 +58,9 @@ def nc2ids(group: netCDF4.Group, ids: IDSToplevel):
     var_names = list(group.variables)
     # FIXME: ensure that var_names are sorted properly
     # Current assumption is that creation-order is fine
-    homogeneous_time = group["ids_properties.homogeneous_time"][()] == 1
+    homogeneous_time = (
+        group["ids_properties.homogeneous_time"][()] == IDS_TIME_MODE_HOMOGENEOUS
+    )
     ncmeta = NCMetadata(ids.metadata)
 
     # Never return masked arrays, they're slow and we'll handle most of the unset values

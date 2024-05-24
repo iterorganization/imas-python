@@ -180,12 +180,10 @@ class NCMetadata:
                 indicate that there are alternatives for itself. This is expressed as
                 ``alternative_coordinate1=quantity1;quantity2;...``.
 
-                This case is not yet implemented.
-
         4.  Coordinate refers to multiple other quantities in the DD.
 
             This is expressed in the Data Dictionary as ``coordinateX=quantity1 OR
-            quantity2 [OR ...]``. This case is not yet implemented.
+            quantity2 [OR ...]``.
 
         Notes:
 

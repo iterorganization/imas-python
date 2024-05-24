@@ -10,6 +10,7 @@ import numpy
 
 from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
+from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
@@ -54,6 +55,12 @@ class IDS2NC:
     """Class responsible for storing an IDS to a NetCDF file."""
 
     def __init__(self, ids: IDSToplevel, group: netCDF4.Group) -> None:
+        """Initialize IDS2NC converter.
+
+        Args:
+            ids: IDSToplevel to store in the netCDF group
+            group: Empty netCDF group to store the IDS in.
+        """
         self.ids = ids
         """IDS to store."""
         self.group = group
@@ -67,7 +74,9 @@ class IDS2NC:
         """Map of IDS paths to filled data nodes."""
         self.filled_variables = set()
         """Set of filled IDS variables"""
-        self.homogeneous_time = ids.ids_properties.homogeneous_time == 1
+        self.homogeneous_time = (
+            ids.ids_properties.homogeneous_time == IDS_TIME_MODE_HOMOGENEOUS
+        )
         """True iff the IDS time mode is homogeneous."""
         self.shapes = {}
         """Map of IDS paths to data shape arrays."""
@@ -270,6 +279,8 @@ class IDS2NC:
                     var[()] = node.value
                 else:
                     # Data is sparse, so we set a slice
+                    # var[tuple(map(slice, node.shape))] is equivalent to doing
+                    # var[:node.shape[0], :node.shape[1], (etc.)]
                     var[tuple(map(slice, node.shape))] = node.value
 
             else:
