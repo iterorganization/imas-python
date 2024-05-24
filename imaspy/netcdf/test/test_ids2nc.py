@@ -137,3 +137,30 @@ def test_filter_coordinates(group):
     ids.coil[1].identifier = "aab7b42a-5646-4f0a-8173-283a57b3a801"
     IDS2NC(ids, group.createGroup("3")).run()
     assert group["3/coil.resistance"].coordinates == "coil.name coil.identifier"
+
+
+def test_ancillary_variables(group):
+    ids = IDSFactory("3.39.0").core_profiles()
+
+    ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    ids.time = [1.0]
+    ids.profiles_1d.resize(1)
+
+    ids.profiles_1d[0].grid.rho_tor_norm = [0.0, 0.5, 1.0]
+    ids.profiles_1d[0].j_tor = [1e2, 1e3, 1e4]
+    ids.profiles_1d[0].j_tor_error_upper = [1e-1, 1e0, 1e1]
+    ids.profiles_1d[0].j_total = [1e2, 1e3, 1e4]
+    ids.profiles_1d[0].j_total_error_upper = [2e-1, 2e0, 2e1]
+    ids.profiles_1d[0].j_total_error_lower = [1e-1, 1e0, 1e1]
+
+    IDS2NC(ids, group).run()
+
+    assert not hasattr(group["profiles_1d.grid.rho_tor_norm"], "ancillary_variables")
+    assert (
+        group["profiles_1d.j_tor"].ancillary_variables
+        == "profiles_1d.j_tor_error_upper"
+    )
+    assert (
+        group["profiles_1d.j_total"].ancillary_variables
+        == "profiles_1d.j_total_error_upper profiles_1d.j_total_error_lower"
+    )

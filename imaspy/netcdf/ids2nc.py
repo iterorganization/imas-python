@@ -191,6 +191,14 @@ class IDS2NC:
             if metadata.units:
                 var.units = metadata.units
 
+            ancillary_variables = " ".join(
+                error_var
+                for error_var in [f"{var_name}_error_upper", f"{var_name}_error_lower"]
+                if error_var in self.filled_variables
+            )
+            if ancillary_variables:
+                var.ancillary_variables = ancillary_variables
+
             if metadata.data_type is not IDSDataType.STRUCT_ARRAY:
                 coordinates = self.filter_coordinates(path)
                 if coordinates:
