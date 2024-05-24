@@ -4,12 +4,7 @@
 """
 
 import logging
-from typing import TYPE_CHECKING
-
-try:
-    from functools import cached_property
-except ImportError:
-    from cached_property import cached_property
+from typing import TYPE_CHECKING, Optional, Type
 
 from imaspy.exception import ValidationError
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT
@@ -29,10 +24,15 @@ class IDSBase:
     # __init__() in this class is quite significant: 5-10% runtime in some
     # cases for a DBEntry.get()!
     # The following attributes should be set in a derived class's __init__():
+    __slots__ = ()  # _parent and metadata should be slots in derived classes as well!
     _parent: "IDSBase"
     """Parent object of this IDS node"""
     metadata: IDSMetadata
     """Metadata of this IDS node"""
+
+    # _lazy is defined on all derived classes
+    _lazy: bool
+    """True iff this IDS lazy-loads its data"""
 
     @property
     def _time_mode(self) -> int:
@@ -92,18 +92,10 @@ class IDSBase:
             my_path = parent_path + "/" + my_path
         return my_path
 
-    @cached_property
-    def _lazy(self):
-        """Whether this IDSMixin is part of a lazy-loaded IDSToplevel"""
-        return self._parent._lazy
-
-    @cached_property
+    @property
     def _version(self):
         """Return the data dictionary version of this in-memory structure."""
-        # As each Mixin (e.g. "data node") should have a parent, we just have to
-        # check its parent.
-        if hasattr(self, "_parent"):
-            return self._parent._version
+        return self._parent._version
 
     def _build_repr_start(self) -> str:
         """Build the start of the string derived classes need for their repr.
@@ -116,7 +108,7 @@ class IDSBase:
         my_repr += f" {self._path}"
         return my_repr
 
-    @cached_property
+    @property
     def _toplevel(self) -> "IDSToplevel":
         """Return the toplevel instance this node belongs to"""
         return self._parent._toplevel
@@ -137,3 +129,21 @@ class IDSBase:
                     f"Dynamic variable {self.metadata.path} is allocated, but time "
                     "mode is IDS_TIME_MODE_INDEPENDENT."
                 )
+
+
+class IDSDoc:
+    """Helper class to show DD documentation on IDS objects.
+
+    This object implements the descriptor protocol, see:
+    https://docs.python.org/3/howto/descriptor.html.
+    """
+
+    def __init__(self, original_doc: str) -> None:
+        self.original_doc = original_doc
+
+    def __get__(
+        self, instance: Optional[IDSBase], owner: Optional[Type[IDSBase]] = None
+    ) -> str:
+        if instance is None:
+            return self.original_doc  # class-level
+        return instance.metadata.documentation or self.original_doc  # instance-level
