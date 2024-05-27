@@ -26,4 +26,4 @@ from . import (
     util,
 )
 
-OLDEST_SUPPORTED_VERSION = _V("3.21.1")
+OLDEST_SUPPORTED_VERSION = _V("3.22.0")
