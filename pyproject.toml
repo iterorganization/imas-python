@@ -77,7 +77,7 @@ docs = [
     "sphinx-immaterial",
     "sphinx-click",
 ]
-imas-core = [ "imas-core@git+ssh://git@git.iter.org/imas/al-core.git@develop" ]
+imas-core = [ "imas-core@git+ssh://git@git.iter.org/imas/al-core.git@main" ]
 test = [
     "pytest>=5.4.1",
     "pytest-cov>=0.6",
