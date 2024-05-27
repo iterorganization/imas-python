@@ -42,6 +42,7 @@ Manual
    identifiers
    configuring
    cli
+   netcdf
 
 .. toctree::
    :caption: IMASPy training courses
