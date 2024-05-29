@@ -23,6 +23,11 @@ try:
     from imas_core import _al_lowlevel as lowlevel
     from imas_core import imasdef
 
+    # Enable throwing exceptions from the _al_lowlevel interface
+    enable_exceptions = getattr(lowlevel, "imas_core_config_enable_exceptions", None)
+    if enable_exceptions:
+        enable_exceptions()
+
 except ImportError:
     # Fallback for AL 4.x or 5.0/5.1
     try:
