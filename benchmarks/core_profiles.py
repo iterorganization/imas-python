@@ -1,15 +1,16 @@
 import datetime
+import importlib
 import os
 from pathlib import Path
-from unittest.mock import patch
 
 import numpy as np
 
-import imas
 import imaspy
 
 from .utils import available_backends, available_slicing_backends
 
+# Don't directly import imas: code analyzers break on the huge code base
+imas = importlib.import_module("imas")
 
 hlis = ["imas", "imaspy"]
 available_serializers = [imas.imasdef.ASCII_SERIALIZER_PROTOCOL]
@@ -117,7 +118,7 @@ class Get:
 class LazyGet:
     params = [[True, False], available_slicing_backends]
     param_names = ["lazy", "backend"]
-    
+
     def setup(self, lazy, backend):
         self.dbentry = create_dbentry("imaspy", backend)
         core_profiles = factory["imaspy"].core_profiles()
@@ -126,9 +127,7 @@ class LazyGet:
 
     def time_lazy_get(self, lazy, backend):
         cp = self.dbentry.get("core_profiles", lazy=lazy)
-        electron_temperatures = np.array([
-            prof_1d.electrons.temperature for prof_1d in cp.profiles_1d
-        ])
+        np.array([prof_1d.electrons.temperature for prof_1d in cp.profiles_1d])
 
 
 class Generate:
