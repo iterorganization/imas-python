@@ -1,3 +1,4 @@
+import importlib
 import logging
 import uuid
 
@@ -10,26 +11,33 @@ from imaspy.imas_interface import ll_interface, lowlevel
 def backend_exists(backend):
     """Tries to detect if the lowlevel has support for the given backend."""
     random_db = str(uuid.uuid4())
-    dbentry = imaspy.DBEntry(backend, random_db, 1, 1)
-    try:
-        # open() raises an exception when there is no support for the backend
-        # when there is support, but the entry cannot be opened, it only gives a
-        # negative return value.
-        # A bit weird (and subject to change per
-        # https://jira.iter.org/browse/IMAS-4671), but we can use it nicely here
-        dbentry.open()
-    except Exception as exc:
-        if ll_interface._al_version < Version("5"):
+    if ll_interface._al_version < Version("5"):
+        imas = importlib.import_module("imas")
+        dbentry = imas.DBEntry(backend, random_db, 1, 1)
+        try:
+            # open() raises an exception when there is no support for the backend
+            # when there is support, but the entry cannot be opened, it only gives a
+            # negative return value.
+            # A bit weird (and subject to change per
+            # https://jira.iter.org/browse/IMAS-4671), but we can use it nicely here
+            dbentry.open()
+        except Exception as exc:
             if "Error calling ual_begin_pulse_action" in str(exc):
                 return False
             raise
-        else:
+        return True
+
+    else:
+        dbentry = imaspy.DBEntry(backend, random_db, 1, 1)
+        try:
+            dbentry.open()
+        except Exception as exc:
             if "backend is not available" in str(exc):
                 return False
             elif isinstance(exc, lowlevel.ImasCoreBackendException):
                 return True
-        raise
-    return True
+            raise
+        return True
 
 
 # Note: UDA backend is not used for benchmarking
