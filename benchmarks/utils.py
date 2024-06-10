@@ -1,18 +1,21 @@
 import importlib
 import logging
 import uuid
+from pathlib import Path
 
 from packaging.version import Version
 
 import imaspy
 from imaspy.imas_interface import ll_interface, lowlevel
 
+# Don't directly import imas: code analyzers break on the huge code base
+imas = importlib.import_module("imas")
+
 
 def backend_exists(backend):
     """Tries to detect if the lowlevel has support for the given backend."""
     random_db = str(uuid.uuid4())
     if ll_interface._al_version < Version("5"):
-        imas = importlib.import_module("imas")
         dbentry = imas.DBEntry(backend, random_db, 1, 1)
         try:
             # open() raises an exception when there is no support for the backend
@@ -60,3 +63,26 @@ available_slicing_backends = [
     for backend in available_backends
     if backend != imaspy.ids_defs.ASCII_BACKEND
 ]
+
+hlis = ["imas", "imaspy"]
+DBEntry = {
+    "imas": imas.DBEntry,
+    "imaspy": imaspy.DBEntry,
+}
+factory = {
+    "imas": imas,
+    "imaspy": imaspy.IDSFactory(),
+}
+available_serializers = [imaspy.ids_defs.ASCII_SERIALIZER_PROTOCOL]
+
+
+def create_dbentry(hli, backend):
+    path = Path.cwd() / f"DB-{hli}-{backend}"
+    path.mkdir(exist_ok=True)
+    if backend == imas.imasdef.MDSPLUS_BACKEND:
+        # Need to ensure that the MDS+ data folder exists:
+        (path / "benchmark" / "3" / "0").mkdir(parents=True, exist_ok=True)
+    dbentry = DBEntry[hli](backend, "benchmark", 1, 1, str(path))
+    options = f"-prefix {path}/" if backend == imas.imasdef.ASCII_BACKEND else None
+    dbentry.create(options=options)
+    return dbentry

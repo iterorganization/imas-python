@@ -1,27 +1,11 @@
 import datetime
-import importlib
 import os
 
 import numpy as np
 
 import imaspy
-from benchmarks.core_profiles import create_dbentry
 
-from .utils import available_backends
-
-# Don't directly import imas: code analyzers break on the huge code base
-imas = importlib.import_module("imas")
-
-hlis = ["imas", "imaspy"]
-DBEntry = {
-    "imas": imas.DBEntry,
-    "imaspy": imaspy.DBEntry,
-}
-factory = {
-    "imas": imas,
-    "imaspy": imaspy.IDSFactory(),
-}
-
+from .utils import available_backends, create_dbentry, factory, hlis
 
 N_POINTS = 600  # number of random R,Z points
 N_LINES = 1200  # number of random lines in R,Z plane
