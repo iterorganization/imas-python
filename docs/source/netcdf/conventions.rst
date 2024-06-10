@@ -1,3 +1,5 @@
+.. _`IMAS conventions for the netCDF data format`:
+
 ===========================================
 IMAS conventions for the netCDF data format
 ===========================================
