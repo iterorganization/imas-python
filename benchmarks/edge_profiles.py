@@ -23,9 +23,9 @@ factory = {
 }
 
 
-N_POINTS = 3000  # number of random R,Z points
-N_LINES = 6000  # number of random lines in R,Z plane
-N_SURFACES = 3000  # number of random surfaces in R,Z plane
+N_POINTS = 600  # number of random R,Z points
+N_LINES = 1200  # number of random lines in R,Z plane
+N_SURFACES = 600  # number of random surfaces in R,Z plane
 TIME = np.linspace(0, 1, 20)
 
 
@@ -95,7 +95,12 @@ def fill_ggd(edge_profiles, times):
     obp.object[0].nodes = np.array([1, 2], dtype=np.int32)
     obp.object[0].measure = 2 * np.pi
 
-    # TODO grid subsets
+    grid.grid_subset.resize(3)
+    for i in range(3):
+        subset = grid.grid_subset[i]
+        subset.identifier.name = ["nodes", "edges", "cells"][i]
+        subset.identifier.index = [1, 2, 5][i]
+        subset.dimension = [1, 2, 3][i]
 
     # Time for filling random data
     edge_profiles.ggd.resize(len(times))
@@ -103,7 +108,23 @@ def fill_ggd(edge_profiles, times):
         ggd = edge_profiles.ggd[i]
         ggd.time = t
 
-        # TODO: store random data in GGD
+        ggd.ion.resize(1)
+        for i, quantity in enumerate(
+            [
+                ggd.electrons.temperature,
+                ggd.electrons.density,
+                ggd.electrons.pressure,
+                ggd.ion[0].temperature,
+                ggd.ion[0].density,
+                ggd.ion[0].pressure,
+            ]
+        ):
+            quantity.resize(1)
+            quantity[0].grid_index = 1
+            subset = i % 3
+            quantity[0].grid_subset_index = subset + 1
+            size = [N_POINTS, N_LINES, N_SURFACES][subset]
+            quantity[0].values = np.random.random_sample(size)
 
 
 class Get:
