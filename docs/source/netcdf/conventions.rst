@@ -237,7 +237,7 @@ The following attributes can be present on the netCDF variables:
     .. seealso:: https://docs.unidata.ucar.edu/netcdf-c/current/attribute_conventions.html
 
 
-IDS metadata and proveNaNce
+IDS metadata and provenance
 ===========================
 
 TODO
