@@ -3,6 +3,7 @@
 """Logic for interacting with IMAS Data Entries.
 """
 
+import gc
 import logging
 import os
 from typing import Any, List, Optional, Tuple, overload
@@ -563,7 +564,13 @@ class DBEntry:
             if lazy:
                 destination._set_lazy_context(read_ctx)
             else:
+                # Get may create LOTS of new objects. Temporarily disable Python's
+                # garbage collector to speed up the get:
+                gc_enabled = gc.isenabled()
+                gc.disable()
                 _get_children(destination, read_ctx, time_mode, nbc_map)
+                if gc_enabled:
+                    gc.enable()
 
         return destination
 
