@@ -165,7 +165,7 @@ class ALArrayStructContext(ALContext):
     """Helper class that wraps contexts created through al_begin_arraystruct_action."""
 
     # Note: slot for "ctx" is defined in ALContext, only declare /additional/ slots:
-    __slots__ = ["size"]
+    __slots__ = ["size", "curindex"]
 
     def __init__(self, ctx, size):
         """Construct a new ALContext object
@@ -177,15 +177,27 @@ class ALArrayStructContext(ALContext):
         self.ctx = ctx
         self.size = size
         """AoS size"""
+        self.curindex = 0
+        """Current iteration index of this AoS context"""
 
     def __enter__(self):
         return self, self.size
 
     def iterate_over_arraystruct(self, step: int) -> None:
-        """Call ual_iterate_over_arraystruct with this context."""
+        """Call al_iterate_over_arraystruct with this context."""
         status = ll_interface.iterate_over_arraystruct(self.ctx, step)
         if status != 0:
             raise LowlevelError("iterate over arraystruct", status)
+        self.curindex += step
+
+    def iterate_to_index(self, index: int) -> None:
+        """Call al_iterate_over_arraystruct to iterate to the provided index."""
+        step = index - self.curindex
+        if step:
+            status = ll_interface.iterate_over_arraystruct(self.ctx, step)
+            if status != 0:
+                raise LowlevelError("iterate over arraystruct", status)
+            self.curindex = index
 
 
 class LazyALContext:
@@ -305,39 +317,35 @@ class LazyALContext:
             (path, rwmode, time_requested, interpolation_method),
         )
 
-    def lazy_arraystruct_action(
-        self, path: str, timebase: str, item: Optional[int]
-    ) -> Tuple[Optional["LazyALContext"], int]:
-        """Perform an arraystruct action on this lazy AL context.
+    def arraystruct_action(
+        self, path: str, timebase: str, size: int
+    ) -> "LazyALArrayStructContext":
+        """Lazily start an arraystruct action."""
+        return LazyALArrayStructContext(
+            self, ALContext.arraystruct_action, (path, timebase, size)
+        )
 
-        Constructs the actual ALContext to obtain the size of the stored AoS, and yields
-        a new LazyALContext for the given item.
 
-        Args:
-            path: relative access layer path within this context
-            timebase: path to the timebase for this coordinate (an empty string for
-                non-dynamic array of structures)
-            item: index of the item to construct the new lazy context for. May be None
-                to just get the size of the AoS.
+class LazyALArrayStructContext(LazyALContext):
+    """Subclass for lazy array struct contexts."""
 
-        Yields:
-            LazyALContext that can be used by the item within this AoS and the number of
-            items stored in this AoS.
-        """
-        ctx = self.get_context()
-        with ctx.arraystruct_action(path, timebase, 0) as (new_ctx, size):
-            args = (path, timebase, item)
-            lazy_ctx = None
-            if item is not None:
-                lazy_ctx = LazyALContext(self, self._get_aos_context, args)
-            return (lazy_ctx, size)
+    __slots__ = ()
+    # We're sure that this returns an AlArrayStructContext
+    get_context: Callable[..., ALArrayStructContext]
 
-    def _get_aos_context(
-        self, ctx: ALContext, path: str, timebase: str, item: Optional[int]
-    ) -> ALContext:
-        """Helper method that iterates to the provided item."""
-        new_ctx = ctx.arraystruct_action(path, timebase, 0)
-        size = new_ctx.size
-        assert 0 <= item < size
-        new_ctx.iterate_over_arraystruct(item)
-        return new_ctx
+    def iterate_to_index(self, index: int) -> "LazyALArrayStructChildContext":
+        """Return a lazy context that can be used by the child structure at index."""
+        return LazyALArrayStructChildContext(self, None, (index,))
+
+
+class LazyALArrayStructChildContext(LazyALContext):
+    """Subclass that allows an array of structures child structure to read data."""
+
+    __slots__ = ()
+    parent_ctx: LazyALArrayStructContext
+
+    def get_context(self) -> ALContext:
+        # Override get_context to iterate to the correct index
+        context = self.parent_ctx.get_context()
+        context.iterate_to_index(self.args[0])
+        return context
