@@ -92,22 +92,21 @@ class IDSStructArray(IDSBase):
             if self.value[item] is not None:
                 return  # item is already loaded
         # Load requested data from the backend
-        manager = self._lazy_ctx.lazy_arraystruct_action(*self._lazy_paths, item)
-        with manager as (new_ctx, size):
-            # Note: we can be a bit more efficient here by recognizing that the returned
-            # LazyALContext (new_ctx) for different items is essentially the same,
-            # except for the requested item number. It would need some work to get
-            # right, so keep the logic like this unless we find it to be a bottleneck.
-            if self.value is None:
-                self.value = [None] * size
-            assert len(self.value) == size
+        new_ctx, size = self._lazy_ctx.lazy_arraystruct_action(*self._lazy_paths, item)
+        # Note: we can be a bit more efficient here by recognizing that the returned
+        # LazyALContext (new_ctx) for different items is essentially the same,
+        # except for the requested item number. It would need some work to get
+        # right, so keep the logic like this unless we find it to be a bottleneck.
+        if self.value is None:
+            self.value = [None] * size
+        assert len(self.value) == size
 
-            if item is not None:
-                # Create the requested item
-                from imaspy.ids_structure import IDSStructure
+        if item is not None:
+            # Create the requested item
+            from imaspy.ids_structure import IDSStructure
 
-                element = self.value[item] = IDSStructure(self, self.metadata)
-                element._set_lazy_context(new_ctx)
+            element = self.value[item] = IDSStructure(self, self.metadata)
+            element._set_lazy_context(new_ctx)
 
     @property
     def _element_structure(self):

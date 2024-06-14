@@ -3,6 +3,8 @@
 """Object-oriented interface to the IMAS lowlevel.
 """
 
+import logging
+import weakref
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Iterator, List, Optional, Tuple
 
@@ -27,6 +29,9 @@ if TYPE_CHECKING:
     from imaspy.ids_convert import NBCPathMap
 
 
+logger = logging.getLogger(__name__)
+
+
 class ALContext:
     """Helper class that wraps Access Layer contexts.
 
@@ -36,7 +41,7 @@ class ALContext:
     - Context managers for creating and automatically ending AL actions
     """
 
-    __slots__ = ["ctx"]
+    __slots__ = ["ctx", "__weakref__"]
 
     def __init__(self, ctx: int) -> None:
         """Construct a new ALContext object
@@ -151,6 +156,10 @@ class ALContext:
             return list(occurrences)
         return []
 
+    def close(self):
+        """Close this ALContext."""
+        ll_interface.end_action(self.ctx)
+
 
 class ALArrayStructContext(ALContext):
     """Helper class that wraps contexts created through al_begin_arraystruct_action."""
@@ -210,6 +219,7 @@ class LazyALContext:
         "args",
         "nbc_map",
         "time_mode",
+        "context",
     ]
 
     def __init__(
@@ -238,9 +248,10 @@ class LazyALContext:
             time_mode = parent_ctx.time_mode
         self.time_mode = time_mode
         """Time mode used by the IDS being lazy loaded."""
+        self.context = None
+        """Potential weak reference to opened context."""
 
-    @contextmanager
-    def get_context(self) -> Iterator[ALContext]:
+    def get_context(self) -> ALContext:
         """Create and yield the actual ALContext."""
         if self.dbentry._db_ctx is not self.dbentry_ctx:
             raise RuntimeError(
@@ -248,15 +259,35 @@ class LazyALContext:
                 "available for reading. Hint: did you close() the DBEntry?"
             )
 
+        # Try to retrieve context from the cache
+        ctx = self.context and self.context()  # dereference weakref.ref if it exists
+        if ctx:
+            # Close all sub-contexts still alive in the cache
+            cache = self.dbentry._lazy_ctx_cache
+            while cache and cache[-1] is not ctx:
+                cache.pop().close()
+            if not cache or cache[-1] is not ctx:
+                logger.warning(
+                    "Found an empty AL context cache: This should not happen, please "
+                    "report this bug to the IMASPy developers."
+                )
+            else:
+                return ctx
+
         if self.parent_ctx:
             # First convert our parent LazyALContext to an actual ALContext
-            with self.parent_ctx.get_context() as parent:
-                # Now we can create our ALContext:
-                with self.method(parent, *self.args) as ctx:
-                    yield ctx
+            parent = self.parent_ctx.get_context()
+            # Now we can create our ALContext:
+            ctx = self.method(parent, *self.args)
+            # Add context to the cache and store a weak reference to it
+            self.dbentry._lazy_ctx_cache.append(ctx)
+            self.context = weakref.ref(ctx)
+            return ctx
+            # Note that we do not close the ctx, that happens when it is evicted
+            # from the cache
 
         else:
-            yield self.dbentry_ctx
+            return self.dbentry_ctx
 
     @contextmanager
     def global_action(self, path: str, rwmode: int) -> Iterator["LazyALContext"]:
@@ -274,10 +305,9 @@ class LazyALContext:
             (path, rwmode, time_requested, interpolation_method),
         )
 
-    @contextmanager
     def lazy_arraystruct_action(
         self, path: str, timebase: str, item: Optional[int]
-    ) -> Iterator[Tuple[Optional["LazyALContext"], int]]:
+    ) -> Tuple[Optional["LazyALContext"], int]:
         """Perform an arraystruct action on this lazy AL context.
 
         Constructs the actual ALContext to obtain the size of the stored AoS, and yields
@@ -294,20 +324,20 @@ class LazyALContext:
             LazyALContext that can be used by the item within this AoS and the number of
             items stored in this AoS.
         """
-        with self.get_context() as ctx:
-            with ctx.arraystruct_action(path, timebase, 0) as (new_ctx, size):
-                args = (path, timebase, item)
-                lazy_ctx = None
-                if item is not None:
-                    lazy_ctx = LazyALContext(self, self._get_aos_context, args)
-                yield (lazy_ctx, size)
+        ctx = self.get_context()
+        with ctx.arraystruct_action(path, timebase, 0) as (new_ctx, size):
+            args = (path, timebase, item)
+            lazy_ctx = None
+            if item is not None:
+                lazy_ctx = LazyALContext(self, self._get_aos_context, args)
+            return (lazy_ctx, size)
 
-    @contextmanager
     def _get_aos_context(
         self, ctx: ALContext, path: str, timebase: str, item: Optional[int]
-    ) -> Iterator["LazyALContext"]:
-        """Helper method that iterates to the provided item and yields the ALContext."""
-        with ctx.arraystruct_action(path, timebase, 0) as (new_ctx, size):
-            assert 0 <= item < size
-            new_ctx.iterate_over_arraystruct(item)
-            yield new_ctx
+    ) -> ALContext:
+        """Helper method that iterates to the provided item."""
+        new_ctx = ctx.arraystruct_action(path, timebase, 0)
+        size = new_ctx.size
+        assert 0 <= item < size
+        new_ctx.iterate_over_arraystruct(item)
+        return new_ctx

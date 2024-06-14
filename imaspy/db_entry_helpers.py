@@ -113,8 +113,7 @@ def _get_child(child: IDSBase, ctx: LazyALContext):
 
     else:  # Data elements
         ndim = child_meta._al_ndim
-        with ctx.get_context() as real_ctx:
-            data = real_ctx.read_data(new_path, timebase, data_type.al_type, ndim)
+        data = ctx.get_context().read_data(new_path, timebase, data_type.al_type, ndim)
         if not (
             # Empty arrays and STR_1D
             data is None
