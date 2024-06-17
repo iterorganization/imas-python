@@ -35,8 +35,11 @@ def prepare_data_dictionaries():
     saxon_jar_path = get_saxon()
     repo: Repo = get_data_dictionary_repo()
     if repo:
+        newest_version_and_tag = (V("0"), None)
         for tag in repo.tags:
+            version_and_tag = (V(str(tag)), tag)
             if V(str(tag)) > V("3.21.1"):
+                newest_version_and_tag = max(newest_version_and_tag, version_and_tag)
                 logger.debug("Building data dictionary version %s", tag)
                 build_data_dictionary(repo, tag, saxon_jar_path)
 
@@ -52,6 +55,11 @@ def prepare_data_dictionaries():
         ) as dd_zip:
             for filename in _build_dir.glob("[0-9]*.xml"):
                 arcname = Path("data-dictionary").joinpath(*filename.parts[1:])
+                dd_zip.write(filename, arcname=arcname)
+            # Include identifiers from latest tag in zip file
+            repo.git.checkout(newest_version_and_tag[1], force=True)
+            for filename in Path("data-dictionary").glob("*/*identifier.xml"):
+                arcname = Path("identifiers").joinpath(*filename.parts[1:])
                 dd_zip.write(filename, arcname=arcname)
 
 
