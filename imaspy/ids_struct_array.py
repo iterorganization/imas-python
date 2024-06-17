@@ -12,6 +12,7 @@ from xxhash import xxh3_64
 from imaspy.al_context import LazyALContext
 from imaspy.ids_base import IDSBase, IDSDoc
 from imaspy.ids_coordinates import IDSCoordinates
+from imaspy.ids_identifiers import IDSIdentifier
 from imaspy.ids_metadata import IDSMetadata
 
 logger = logging.getLogger(__name__)
@@ -131,7 +132,10 @@ class IDSStructArray(IDSBase):
         if self._lazy:
             raise ValueError("Lazy-loaded IDSs are read-only.")
         list_idx = int(item)
-        self.value[list_idx] = value
+        if isinstance(value, (IDSIdentifier, str, int)):
+            self.value[list_idx]._assign_identifier(value)
+        else:  # FIXME: check if value is of the correct class
+            self.value[list_idx] = value
 
     def __len__(self) -> int:
         if self._lazy:

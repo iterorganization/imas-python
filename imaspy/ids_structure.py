@@ -6,12 +6,13 @@
 import logging
 from copy import deepcopy
 from types import MappingProxyType
-from typing import Generator, List, Optional
+from typing import Generator, List, Optional, Union
 
 from xxhash import xxh3_64
 
 from imaspy.al_context import LazyALContext
 from imaspy.ids_base import IDSBase, IDSDoc
+from imaspy.ids_identifiers import IDSIdentifier
 from imaspy.ids_metadata import IDSDataType, IDSMetadata
 from imaspy.ids_path import IDSPath
 from imaspy.ids_primitive import IDSPrimitive
@@ -67,6 +68,25 @@ class IDSStructure(IDSBase):
             _get_child(child, self._lazy_context)
         return child
 
+    def _assign_identifier(self, value: Union[IDSIdentifier, str, int]) -> None:
+        identifier_enum = self.metadata.identifier_enum
+        if identifier_enum is None:
+            raise TypeError("FIXME: errmsg")
+        if isinstance(value, IDSIdentifier):
+            if not isinstance(value, identifier_enum):
+                raise TypeError(
+                    f"Assigning incorrect identifier. {value} is a "
+                    f"{type(value).__name__}, was expecting a "
+                    f"{identifier_enum.__name__}"
+                )
+        elif isinstance(value, int):
+            value = identifier_enum(value)
+        else:  # value is a string
+            value = identifier_enum[value]
+        self.name = value.name
+        self.index = value.index
+        self.description = value.description
+
     def __setattr__(self, key, value):
         """
         'Smart' setting of attributes. To be able to warn the user on imaspy
@@ -82,6 +102,9 @@ class IDSStructure(IDSBase):
         attr = getattr(self, key)
 
         if isinstance(attr, IDSStructure):
+            if isinstance(value, (IDSIdentifier, str, int)):
+                return attr._assign_identifier(value)
+
             if not isinstance(value, IDSStructure):
                 raise TypeError(
                     f"Trying to set structure field {key} with non-structure."
