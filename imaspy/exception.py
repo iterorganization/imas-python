@@ -26,14 +26,14 @@ else:
 class UnknownDDVersion(ValueError):
     """Error raised when an unknown DD version is specified."""
 
-    def __init__(self, version: str, available: List[str]) -> None:
+    def __init__(self, version: str, available: List[str], note: str = "") -> None:
         close_matches = difflib.get_close_matches(version, available, n=1)
         if close_matches:
             suggestions = f"Did you mean {close_matches[0]!r}?"
         else:
             suggestions = f"Available versions are {', '.join(reversed(available))}"
         super().__init__(
-            f"Data dictionary version {version!r} cannot be found. {suggestions}"
+            f"Data dictionary version {version!r} cannot be found. {suggestions}{note}"
         )
 
 

@@ -10,9 +10,9 @@ from typing import Any, List, Optional, Tuple, overload
 from urllib.parse import urlparse
 
 import imaspy
-from imaspy import dd_zip
 from imaspy.al_context import ALContext, LazyALContext
 from imaspy.db_entry_helpers import _delete_children, _get_children, _put_children
+from imaspy.dd_zip import dd_xml_versions
 from imaspy.exception import (
     DataEntryException,
     IDSNameError,
@@ -553,22 +553,17 @@ class DBEntry:
                 ids_name,
                 occurrence,
             )
-        elif dd_version not in dd_zip.dd_xml_versions():
+        elif dd_version != self.dd_version and dd_version not in dd_xml_versions():
             if ignore_unknown_dd_version:
                 logger.info("Ignoring unknown data dictionary version %s", dd_version)
                 dd_version = None
             else:
-                exception = UnknownDDVersion(dd_version, dd_zip.dd_xml_versions())
                 note = (
-                    "You may set the get/get_slice parameter "
+                    "\nYou may set the get/get_slice parameter "
                     "ignore_unknown_dd_version=True to ignore this and get an IDS in "
                     f"the default DD version ({self.factory.dd_version})"
                 )
-                try:
-                    # Python 3.11 or newer
-                    exception.add_note(note)
-                except TypeError:  # Python 3.10 or older
-                    exception.args = (f"{exception.args[0]}\n{note}",)
+                raise UnknownDDVersion(dd_version, dd_xml_versions(), note)
 
         # Ensure we have a destination
         if not destination:
