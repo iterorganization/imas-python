@@ -71,7 +71,11 @@ class IDSStructure(IDSBase):
     def _assign_identifier(self, value: Union[IDSIdentifier, str, int]) -> None:
         identifier_enum = self.metadata.identifier_enum
         if identifier_enum is None:
-            raise TypeError("FIXME: errmsg")
+            raise TypeError(
+                f"Cannot assign {value!r} to {self!r}. This structure is not an "
+                "identifier, or the Data Dictionary does not define the "
+                "identifier options."
+            )
         if isinstance(value, IDSIdentifier):
             if not isinstance(value, identifier_enum):
                 raise TypeError(
@@ -82,7 +86,12 @@ class IDSStructure(IDSBase):
         elif isinstance(value, int):
             value = identifier_enum(value)
         else:  # value is a string
-            value = identifier_enum[value]
+            try:
+                value = identifier_enum[value]
+            except KeyError:
+                raise ValueError(
+                    f"{value!r} is not a valid {identifier_enum.__name__}"
+                ) from None
         self.name = value.name
         self.index = value.index
         self.description = value.description
@@ -152,7 +161,7 @@ class IDSStructure(IDSBase):
         if self is other:
             return True
         if not isinstance(other, IDSStructure):
-            return False
+            return NotImplemented
         from imaspy.util import idsdiffgen  # local import to avoid circular import
 
         for _ in idsdiffgen(self, other):

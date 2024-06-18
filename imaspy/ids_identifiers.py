@@ -1,8 +1,11 @@
+import logging
 from enum import Enum
 from typing import Iterable, List, Type
 from xml.etree.ElementTree import fromstring
 
 from imaspy import dd_zip
+
+logger = logging.getLogger(__name__)
 
 
 class IDSIdentifier(Enum):
@@ -16,6 +19,30 @@ class IDSIdentifier(Enum):
         """Unique index for this identifier value."""
         self.description = description
         """Description for this identifier value."""
+
+    def __eq__(self, other):
+        if self is other:
+            return True
+        try:
+            other_name = str(other.name)
+            other_index = int(other.index)
+            other_description = str(other.description)
+        except (AttributeError, TypeError, ValueError):
+            # Attribute doesn't exist, or failed to convert
+            return NotImplemented
+        # Index must match
+        if other_index == self.index:
+            # Name may be left empty
+            if other_name == self.name or other_name == "":
+                # Description doesn't have to match, though we will warn when it doesn't
+                if other_description != self.description and other_description != "":
+                    logger.warning(
+                        "Description of %r doesn't match identifier description %r",
+                        other.description,
+                        self.description,
+                    )
+                return True
+        return False
 
     @classmethod
     def from_xml(cls, identifier_name, xml) -> Type["IDSIdentifier"]:
