@@ -1,3 +1,8 @@
+# This file is part of IMASPy.
+# You should have received the IMASPy LICENSE file with this project.
+"""IMASPy module to support Data Dictionary identifiers.
+"""
+
 import logging
 from enum import Enum
 from typing import Iterable, List, Type
@@ -9,6 +14,8 @@ logger = logging.getLogger(__name__)
 
 
 class IDSIdentifier(Enum):
+    """Base class for all identifier enums."""
+
     def __new__(self, value: int, description: str):
         obj = object.__new__(self)
         obj._value_ = value
@@ -37,7 +44,7 @@ class IDSIdentifier(Enum):
                 # Description doesn't have to match, though we will warn when it doesn't
                 if other_description != self.description and other_description != "":
                     logger.warning(
-                        "Description of %r doesn't match identifier description %r",
+                        "Description of %r does not match identifier description %r",
                         other.description,
                         self.description,
                     )
@@ -45,7 +52,7 @@ class IDSIdentifier(Enum):
         return False
 
     @classmethod
-    def from_xml(cls, identifier_name, xml) -> Type["IDSIdentifier"]:
+    def _from_xml(cls, identifier_name, xml) -> Type["IDSIdentifier"]:
         element = fromstring(xml)
         enum_values = {}
         for int_element in element.iterfind("int"):
@@ -64,13 +71,14 @@ class IDSIdentifier(Enum):
         return enum
 
 
-class IDSIdentifiers:
+class _IDSIdentifiers:
+    """Support class to list and get identifier objects."""
 
     def __getattr__(self, name) -> Type[IDSIdentifier]:
         if name not in self.identifiers:
             raise AttributeError(f"Unknown identifier name: {name}")
         xml = dd_zip.get_identifier_xml(name)
-        identifier = IDSIdentifier.from_xml(name, xml)
+        identifier = IDSIdentifier._from_xml(name, xml)
         setattr(self, name, identifier)
         return identifier
 
@@ -87,4 +95,25 @@ class IDSIdentifiers:
         return dd_zip.dd_identifiers()
 
 
-identifiers = IDSIdentifiers()
+identifiers = _IDSIdentifiers()
+"""Object to list and get identifiers.
+
+Example:
+    .. code-block:: python
+
+        from imaspy import identifiers
+        # List all identifier names
+        for identifier_name in identifiers.identifiers:
+            print(identifier_name)
+        # Get a specific identifier
+        csid = identifiers.core_source_identifier
+        # Get and print information of an identifier value
+        print(csid.total)
+        print(csid.total.index)
+        print(csid.total.description)
+
+        # Item access is also possible
+        print(identifiers["edge_source_identifier"])
+
+.. seealso:: :ref:`Identifiers`
+"""

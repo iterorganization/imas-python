@@ -285,6 +285,17 @@ class IDSMetadata:
 
     @property
     def identifier_enum(self) -> Optional[Type[IDSIdentifier]]:
+        """The identifier enum for this IDS node (if available).
+
+        This property is an identifier enum (a subclass of
+        :py:class:`imaspy.ids_identifiers.IDSIdentifier`) if this node represents an
+        identifier, and the Data Dictionary defines the allowed identifier values.
+
+        This property is ``None`` when this node is not an identifier, or the Data
+        Dictionary does not define the allowed identifier values.
+
+        .. seealso:: :ref:`Identifiers`
+        """
         doc_identifier = getattr(self, "doc_identifier", None)
         if not doc_identifier:
             return None

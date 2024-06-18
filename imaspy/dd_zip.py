@@ -240,7 +240,7 @@ def dd_xml_versions() -> List[str]:
 def dd_identifiers() -> List[str]:
     """Parse IDSDef.zip to find available identifiers"""
 
-    return list(_read_identifiers())
+    return sorted(_read_identifiers())
 
 
 def get_dd_xml(version):

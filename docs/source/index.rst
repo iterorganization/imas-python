@@ -39,6 +39,7 @@ Manual
    metadata
    lazy_loading
    mdsplus
+   identifiers
    configuring
    cli
 
