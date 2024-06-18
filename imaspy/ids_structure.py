@@ -161,7 +161,7 @@ class IDSStructure(IDSBase):
         if self is other:
             return True
         if not isinstance(other, IDSStructure):
-            return NotImplemented
+            return False if isinstance(other, IDSBase) else NotImplemented
         from imaspy.util import idsdiffgen  # local import to avoid circular import
 
         for _ in idsdiffgen(self, other):
