@@ -127,7 +127,7 @@ class DDVersionMap:
         """
         new_data_type = new_item.get("data_type")
         old_data_type = old_item.get("data_type")
-        if new_data_type == old_data_type:
+        if IDSDataType.parse(new_data_type) == IDSDataType.parse(old_data_type):
             return True
 
         # Data type changed, record in type_change sets
