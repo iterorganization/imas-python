@@ -6,9 +6,11 @@
 import copy
 import logging
 from functools import lru_cache
+from pathlib import Path
 from typing import Callable, Dict, Iterator, Optional, Set, Tuple
 from xml.etree.ElementTree import Element, ElementTree
 
+import numpy
 from packaging.version import InvalidVersion, Version
 
 from imaspy.dd_zip import parse_dd_version
@@ -62,12 +64,25 @@ class NBCPathMap:
         self.ctxpath: Dict[str, str] = {}
         """Map providing the lowlevel context path for renamed elements."""
 
-        self.type_change: Dict[str, Optional[Callable]] = {}
-        """Set of paths that had a type change.
+        self.type_change: Dict[str, Optional[Callable[[IDSBase, IDSBase], None]]] = {}
+        """Dictionary of paths that had a type change.
 
-        Type changes are mapped to None in :py:attr:`path`, this ``set`` allows to
+        Type changes are mapped to None in :py:attr:`path`, this ``dict`` allows to
         distinguish between a type change and a removed node.
+
+        Optionally, a function can be set to the path. This function can be called to
+        perform a supported conversion between the new and old type (or vice versa).
         """
+
+        self.post_process: Dict[str, Callable[[IDSBase], None]] = {}
+        """Map providing postprocess functions for paths.
+
+        The postprocess function should be applied to the nodes after all the data is
+        converted.
+        """
+
+        self.ignore_missing_paths: Set[str] = set()
+        """Set of paths that should not be logged when data is present."""
 
     def __setitem__(self, path: str, value: Tuple[Optional[str], str, str]) -> None:
         self.path[path], self.tbp[path], self.ctxpath[path] = value
@@ -176,6 +191,17 @@ class DDVersionMap:
         old_path_set = set(old_paths)
         new_path_set = set(new_paths)
 
+        def process_parent_renames(path: str) -> str:
+            # Apply any parent AoS/structure rename
+            # Loop in reverse order to find the closest parent which was renamed:
+            for parent in reversed(list(iter_parents(path))):
+                parent_rename = self.new_to_old.path.get(parent)
+                if parent_rename:
+                    if new_paths[parent].get("data_type") in self.STRUCTURE_TYPES:
+                        path = path.replace(parent, parent_rename, 1)
+                        break
+            return path
+
         def get_old_path(path: str, previous_name: str) -> str:
             """Calculate old path from the path and change_nbc_previous_name"""
             # Apply rename
@@ -184,15 +210,7 @@ class DDVersionMap:
                 old_path = path[:i_slash] + "/" + previous_name
             else:
                 old_path = previous_name
-            # Apply any parent AoS/structure rename
-            # Loop in reverse order to find the closest parent which was renamed:
-            for parent in reversed(list(iter_parents(old_path))):
-                parent_rename = self.new_to_old.path.get(parent)
-                if parent_rename:
-                    if new_paths[parent].get("data_type") in self.STRUCTURE_TYPES:
-                        old_path = old_path.replace(parent, parent_rename, 1)
-                        break
-            return old_path
+            return process_parent_renames(old_path)
 
         def add_rename(old_path: str, new_path: str):
             old_item = old_paths[old_path]
@@ -257,6 +275,27 @@ class DDVersionMap:
                                     add_rename(path, npath)
             elif nbc_description == "type_changed":
                 pass  # We will handle this (if possible) in self._check_data_type
+            elif nbc_description == "repeat_children_first_point":
+                old_path = process_parent_renames(new_path)
+                self.new_to_old.post_process[new_path] = _remove_last_point
+                self.old_to_new.post_process[old_path] = _repeat_first_point
+            elif nbc_description == "repeat_children_first_point_conditional":
+                # This conversion needs access to the old data structure to get the
+                # DDv3 `closed` node which is removed in DDv4, so we handle it as a type
+                # change:
+                old_path = process_parent_renames(new_path)
+                self.new_to_old.type_change[new_path] = _remove_last_point_conditional
+                self.old_to_new.type_change[old_path] = _repeat_first_point_conditional
+                self.old_to_new.ignore_missing_paths.add(f"{old_path}/closed")
+            elif nbc_description in (
+                "repeat_children_first_point_conditional_sibling",
+                "repeat_children_first_point_conditional_sibling_dynamic",
+            ):
+                old_path = process_parent_renames(new_path)
+                self.new_to_old.type_change[new_path] = _remove_last_point_conditional
+                self.old_to_new.type_change[old_path] = _repeat_first_point_conditional
+                closed_path = Path(old_path).parent / "closed"
+                self.old_to_new.ignore_missing_paths.add(str(closed_path))
             else:  # Ignore unknown NBC changes
                 log_args = (nbc_description, new_path)
                 logger.error("Ignoring unsupported NBC change: %r for %r.", *log_args)
@@ -432,11 +471,12 @@ def _copy_structure(
         path = item.metadata.path_string
         if path in rename_map:
             if rename_map.path[path] is None:
-                if path in rename_map.type_change:
-                    msg = "Element %r changed type in the target IDS."
-                else:
-                    msg = "Element %r does not exist in the target IDS."
-                logger.warning(msg + " Data is not copied.", path)
+                if path not in rename_map.ignore_missing_paths:
+                    if path in rename_map.type_change:
+                        msg = "Element %r changed type in the target IDS."
+                    else:
+                        msg = "Element %r does not exist in the target IDS."
+                    logger.warning(msg + " Data is not copied.", path)
                 continue
             else:
                 target_item = IDSPath(rename_map.path[path]).goto(target)
@@ -474,8 +514,16 @@ def _copy_structure(
             else:
                 target_item.value = item.value
 
+        # Post-process the node:
+        if path in rename_map.post_process:
+            rename_map.post_process[path](target_item)
 
-# Type changed handlers
+
+########################################################################################
+# Type changed handlers and post-processing functions                                  #
+########################################################################################
+
+
 def _type_changed_structure_aos(
     source_node: IDSBase, target_node: IDSBase
 ) -> Optional[Tuple[IDSStructure, IDSStructure]]:
@@ -561,3 +609,92 @@ def _type_changed_to_identifier(source_node: IDSBase, target_node: IDSBase) -> N
     else:
         # source_node is an array of identifier structures, target_node is an INT_1D
         target_node.value = [node.index for node in source_node]
+
+
+def _remove_last_point(node: IDSBase) -> None:
+    """Postprocess method for nbc_description=repeat_children_first_point.
+
+    This method handles postprocessing when converting from new (DDv4) to old (DDv3).
+    """
+    for child in node.iter_nonempty_():
+        child.value = child.value[:-1]
+
+
+def _repeat_first_point(node: IDSBase) -> None:
+    """Postprocess method for nbc_description=repeat_children_first_point.
+
+    This method handles postprocessing when converting from old (DDv3) to new (DDv4).
+    """
+    for child in node.iter_nonempty_():
+        child.value = numpy.concatenate((child.value, [child.value[0]]))
+
+
+def _remove_last_point_conditional(
+    source_node: IDSStructure, target_node: IDSStructure
+) -> None:
+    """Type change method for nbc_description=repeat_children_first_point_conditional*.
+
+    This method handles converting from new (DDv4) to old (DDv3).
+    """
+    closed_node = getattr(target_node, "closed", None)
+    if closed_node is None:  # closed is a sibling node
+        closed_node = target_node._dd_parent.closed
+
+    # Figure out if the contour is closed:
+    closed = True
+    # source_node may be an AoS for the ...conditional_sibling_dynamic case
+    if source_node.metadata.data_type is IDSDataType.STRUCT_ARRAY:
+        iterator = source_node
+    else:
+        iterator = [source_node]
+    for source in iterator:
+        for component in source.iter_nonempty_():
+            if component.metadata.name != "time":
+                if not numpy.isclose(component[0], component[-1], rtol=1e-6, atol=0):
+                    closed = False
+                    break
+        if not closed:
+            break
+
+    # Copy data
+    closed_node.value = int(closed)
+    if source_node.metadata.data_type is IDSDataType.STRUCT_ARRAY:
+        target_node.resize(len(source_node))
+        iterator = zip(source_node, target_node)
+    else:
+        iterator = [(source_node, target_node)]
+    for source, target in iterator:
+        for child in source.iter_nonempty_():
+            value = child.value
+            if closed and child.metadata.name != "time":
+                # repeat first point:
+                value = value[:-1]
+            target[child.metadata.name] = value
+
+
+def _repeat_first_point_conditional(
+    source_node: IDSStructure, target_node: IDSStructure
+) -> None:
+    """Type change method for nbc_description=repeat_children_first_point_conditional*.
+
+    This method handles converting from old (DDv3) to new (DDv4).
+    """
+    closed_node = getattr(source_node, "closed", None)
+    if closed_node is None:  # closed is a sibling node
+        closed_node = source_node._dd_parent.closed
+    closed = bool(closed_node)
+
+    # source_node may be an AoS for the ...conditional_sibling_dynamic case
+    if source_node.metadata.data_type is IDSDataType.STRUCT_ARRAY:
+        target_node.resize(len(source_node))
+        iterator = zip(source_node, target_node)
+    else:
+        iterator = [(source_node, target_node)]
+    for source, target in iterator:
+        for child in source.iter_nonempty_():
+            if child.metadata.name != "closed":
+                value = child.value
+                if closed and child.metadata.name != "time":
+                    # repeat first point:
+                    value = numpy.concatenate((value, [value[0]]))
+                target[child.metadata.name] = value

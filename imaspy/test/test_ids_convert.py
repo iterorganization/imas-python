@@ -4,6 +4,7 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 
+import numpy
 import pytest
 
 from imaspy import identifiers
@@ -205,3 +206,95 @@ def test_3to4_ggd_space_identifier(dd4factory):
 
     ep3 = convert_ids(ep4, "3.39.0")
     compare_children(ep, ep3)
+
+
+def test_3to4_repeat_children_first_point_conditional(dd4factory):
+    # The wall IDS contains all (three!) cases with conditional repeats
+    wall = IDSFactory("3.39.0").wall()
+    wall.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
+    wall.description_2d.resize(1)
+
+    # Case 1: repeat_children_first_point_conditional
+    wall.description_2d[0].vessel.unit.resize(2)
+    for i in range(2):
+        outline_inner = wall.description_2d[0].vessel.unit[i].annular.outline_inner
+        outline_inner.closed = i  # first is open, second is closed
+        outline_inner.r = [1.0, 2.0, 3.0]
+        outline_inner.z = [-1.0, -2.0, -3.0]
+
+    # Case 2: repeat_children_first_point_conditional_sibling
+    wall.description_2d[0].limiter.unit.resize(2)
+    for i in range(2):
+        unit = wall.description_2d[0].limiter.unit[i]
+        unit.closed = i  # first is open, second is closed
+        unit.outline.r = [1.0, 2.0, 3.0]
+        unit.outline.z = [-1.0, -2.0, -3.0]
+
+    # Case 3: repeat_children_first_point_conditional_sibling_dynamic
+    wall.description_2d[0].mobile.unit.resize(2)
+    for i in range(2):
+        unit = wall.description_2d[0].mobile.unit[i]
+        unit.closed = i  # first is open, second is closed
+        unit.outline.resize(3)
+        for j in range(3):
+            unit.outline[j].r = [1.0, 2.0, 3.0]
+            unit.outline[j].z = [-1.0, -2.0, -3.0]
+            unit.outline[j].time = j / 5
+
+    wall4 = convert_ids(wall, None, factory=dd4factory)
+    assert len(wall4.description_2d) == 1
+
+    # Test conversion for case 1:
+    assert len(wall4.description_2d[0].vessel.unit) == 2
+    for i in range(2):
+        outline_inner = wall4.description_2d[0].vessel.unit[i].annular.outline_inner
+        if i == 0:  # open outline, first point not repeated:
+            assert numpy.array_equal(outline_inner.r, [1.0, 2.0, 3.0])
+            assert numpy.array_equal(outline_inner.z, [-1.0, -2.0, -3.0])
+        else:  # closed outline, first point repeated:
+            assert numpy.array_equal(outline_inner.r, [1.0, 2.0, 3.0, 1.0])
+            assert numpy.array_equal(outline_inner.z, [-1.0, -2.0, -3.0, -1.0])
+
+    # Test conversion for case 2:
+    assert len(wall4.description_2d[0].limiter.unit) == 2
+    for i in range(2):
+        unit = wall4.description_2d[0].limiter.unit[i]
+        if i == 0:  # open outline, first point not repeated:
+            assert numpy.array_equal(unit.outline.r, [1.0, 2.0, 3.0])
+            assert numpy.array_equal(unit.outline.z, [-1.0, -2.0, -3.0])
+        else:  # closed outline, first point repeated:
+            assert numpy.array_equal(unit.outline.r, [1.0, 2.0, 3.0, 1.0])
+            assert numpy.array_equal(unit.outline.z, [-1.0, -2.0, -3.0, -1.0])
+
+    # Test conversion for case 3:
+    assert len(wall4.description_2d[0].mobile.unit) == 2
+    for i in range(2):
+        unit = wall4.description_2d[0].mobile.unit[i]
+        for j in range(3):
+            if i == 0:  # open outline, first point not repeated:
+                assert numpy.array_equal(unit.outline[j].r, [1.0, 2.0, 3.0])
+                assert numpy.array_equal(unit.outline[j].z, [-1.0, -2.0, -3.0])
+            else:  # closed outline, first point repeated:
+                assert numpy.array_equal(unit.outline[j].r, [1.0, 2.0, 3.0, 1.0])
+                assert numpy.array_equal(unit.outline[j].z, [-1.0, -2.0, -3.0, -1.0])
+            assert unit.outline[j].time == pytest.approx(j / 5)
+
+    # Test conversion back
+    wall3 = convert_ids(wall4, "3.39.0")
+    compare_children(wall, wall3)
+
+
+def test_3to4_repeat_children_first_point(dd4factory):
+    iron_core = IDSFactory("3.39.0").iron_core()
+    iron_core.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
+    iron_core.segment.resize(1)
+    iron_core.segment[0].geometry.outline.r = [1.0, 2.0, 3.0]
+    iron_core.segment[0].geometry.outline.z = [-1.0, -2.0, -3.0]
+
+    iron_core4 = convert_ids(iron_core, None, factory=dd4factory)
+    geometry = iron_core4.segment[0].geometry
+    assert numpy.array_equal(geometry.outline.r, [1.0, 2.0, 3.0, 1.0])
+    assert numpy.array_equal(geometry.outline.z, [-1.0, -2.0, -3.0, -1.0])
+
+    iron_core3 = convert_ids(iron_core4, "3.39.0")
+    compare_children(iron_core, iron_core3)
