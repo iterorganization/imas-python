@@ -310,6 +310,20 @@ class DDVersionMap:
         self._map_missing(True, new_path_set.difference(old_path_set, self.new_to_old))
         self._map_missing(False, old_path_set.difference(new_path_set, self.old_to_new))
 
+        new_version = None
+        new_version_node = self.new_version.find("version")
+        if new_version_node is not None:
+            new_version = parse_dd_version(new_version_node.text)
+        # Additional conversion rules for DDv3 to DDv4
+        if self.version_old.major == 3 and new_version and new_version.major == 4:
+            # Postprocessing for COCOS definition change:
+            xpath_query = ".//field[@cocos_label_transformation='psi_like']"
+            for old_item in old.iterfind(xpath_query):
+                old_path = old_item.get("path")
+                new_path = self.old_to_new.path.get(old_path, old_path)
+                self.new_to_old.post_process[new_path] = _cocos_change
+                self.old_to_new.post_process[old_path] = _cocos_change
+
     def _map_missing(self, is_new: bool, missing_paths: Set[str]):
         rename_map = self.new_to_old if is_new else self.old_to_new
         # Find all structures which have a renamed sub-item
@@ -698,3 +712,8 @@ def _repeat_first_point_conditional(
                     # repeat first point:
                     value = numpy.concatenate((value, [value[0]]))
                 target[child.metadata.name] = value
+
+
+def _cocos_change(node: IDSPrimitive) -> None:
+    """Handle COCOS definition change: multiply values by -1."""
+    node.value = -node.value

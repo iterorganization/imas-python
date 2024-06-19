@@ -17,7 +17,12 @@ from imaspy.ids_convert import (
     dd_version_map_from_factories,
     iter_parents,
 )
-from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HETEROGENEOUS, MEMORY_BACKEND
+from imaspy.ids_defs import (
+    ASCII_BACKEND,
+    IDS_TIME_MODE_HETEROGENEOUS,
+    IDS_TIME_MODE_HOMOGENEOUS,
+    MEMORY_BACKEND,
+)
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
@@ -298,3 +303,25 @@ def test_3to4_repeat_children_first_point(dd4factory):
 
     iron_core3 = convert_ids(iron_core4, "3.39.0")
     compare_children(iron_core, iron_core3)
+
+
+def test_3to4_cocos_change(dd4factory):
+    cp = IDSFactory("3.39.0").core_profiles()
+    cp.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    cp.time = [1.0]
+    cp.profiles_1d.resize(1)
+    cp.profiles_1d[0].grid.rho_tor_norm = numpy.linspace(0, 1, 11)
+    cp.profiles_1d[0].grid.psi = numpy.linspace(10, 20, 11)
+
+    cp4 = convert_ids(cp, None, factory=dd4factory)
+    assert numpy.array_equal(
+        cp4.profiles_1d[0].grid.rho_tor_norm,
+        cp.profiles_1d[0].grid.rho_tor_norm,
+    )
+    assert numpy.array_equal(
+        cp4.profiles_1d[0].grid.psi,
+        -cp.profiles_1d[0].grid.psi,
+    )
+
+    cp3 = convert_ids(cp4, "3.39.0")
+    compare_children(cp, cp3)
