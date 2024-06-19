@@ -739,7 +739,7 @@ def _circuit_connections_3to4(node: IDSPrimitive) -> None:
 def _circuit_connections_4to3(node: IDSPrimitive) -> None:
     """Handle definition change for pf_active circuit/connections."""
     shape = node.shape
-    new_value = numpy.zeros((shape[0], 2*shape[1]), dtype=numpy.int32)
+    new_value = numpy.zeros((shape[0], 2 * shape[1]), dtype=numpy.int32)
     new_value[:, ::2] = node.value == 1
     new_value[:, 1::2] = node.value == -1
     node.value = new_value
