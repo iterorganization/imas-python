@@ -155,6 +155,7 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet, timeit):
                 IDSDef.xml to convert to a custom/unreleased DD version.
     uri_out     URI of the output Data Entry.
     """
+    # TODO: add provenance data to converted IDSs
     min_version_guard(Version("5.1"))
     setup_rich_log_handler(quiet)
 
