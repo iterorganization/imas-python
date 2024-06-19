@@ -1,13 +1,18 @@
 # Unit tests for ids_convert.py.
 # See also integration tests for conversions in test_nbc_change.py
 
+from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
 
+from imaspy import identifiers
+from imaspy.dd_zip import parse_dd_version
+from imaspy.exception import UnknownDDVersion
 from imaspy.ids_convert import (
     _get_ctxpath,
     _get_tbp,
+    convert_ids,
     dd_version_map_from_factories,
     iter_parents,
 )
@@ -15,7 +20,7 @@ from imaspy.ids_defs import ASCII_BACKEND, IDS_TIME_MODE_HETEROGENEOUS, MEMORY_B
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
-from imaspy.test.test_helpers import open_dbentry
+from imaspy.test.test_helpers import compare_children, open_dbentry
 
 
 def test_iter_parents():
@@ -160,3 +165,43 @@ def test_dbentry_autoconvert2(backend, worker_id, tmp_path):
     assert old_ids_get._dd_version == "3.31.0"
 
     entry_331.close()
+
+
+@pytest.fixture
+def dd4factory():
+    try:
+        return IDSFactory("4.0.0")
+    except UnknownDDVersion:
+        pass
+    # Temporary workaround:
+    xml_path = Path("data-dictionary/IDSDef.xml")
+    if not xml_path.exists():
+        pytest.skip("No DDv4 install available")
+    factory = IDSFactory(xml_path=str(xml_path))
+    if parse_dd_version(factory.version).major != 4:
+        pytest.skip("No DDv4 install available")
+    return factory
+
+
+def test_3to4_ggd_space_identifier(dd4factory):
+    ep = IDSFactory("3.39.0").edge_profiles()
+    ep.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
+    ep.grid_ggd.resize(1)
+    ep.grid_ggd[0].time = 0.0
+    ep.grid_ggd[0].space.resize(1)
+    ep.grid_ggd[0].space[0].coordinates_type = [1, 2]
+
+    ep4 = convert_ids(ep, None, factory=dd4factory)
+    cid = identifiers.coordinate_identifier
+    assert ep4.grid_ggd[0].time == 0.0
+    coordinates_type = ep4.grid_ggd[0].space[0].coordinates_type
+    assert len(coordinates_type) == 2
+    for i in range(2):
+        # Test that the full identifier structure is filled:
+        identifier = cid(i + 1)
+        assert coordinates_type[i].index == identifier.index
+        assert coordinates_type[i].name == identifier.name
+        assert coordinates_type[i].description == identifier.description
+
+    ep3 = convert_ids(ep4, "3.39.0")
+    compare_children(ep, ep3)

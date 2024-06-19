@@ -13,6 +13,7 @@ from packaging.version import InvalidVersion, Version
 
 from imaspy.dd_zip import parse_dd_version
 from imaspy.ids_base import IDSBase
+from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_path import IDSPath
 from imaspy.ids_primitive import IDSPrimitive
@@ -148,6 +149,11 @@ class DDVersionMap:
         ):
             self.new_to_old.type_change[new_path] = _type_changed_0d_1d_data
             self.old_to_new.type_change[old_path] = _type_changed_0d_1d_data
+        elif old_data_type == "INT_1D" and new_item.get("doc_identifier"):
+            # DD3to4: Support change of grid_ggd/grid/space/coordinates_type from an
+            # INT_1D to a proper identifier
+            self.new_to_old.type_change[new_path] = _type_changed_to_identifier
+            self.old_to_new.type_change[old_path] = _type_changed_to_identifier
         else:
             logger.debug(
                 "Data type of %s changed from %s to %s. This change is not "
@@ -526,3 +532,32 @@ def _type_changed_0d_1d_data(
             "Data is not copied.",
             source_node.metadata.path_string,
         )
+
+
+def _type_changed_to_identifier(source_node: IDSBase, target_node: IDSBase) -> None:
+    """Handle a type change from list of indexes to a proper identifier."""
+    if len(source_node) == 0:
+        return
+
+    if source_node.metadata.data_type is IDSDataType.INT:
+        # target_node is an array of identifier structures
+        target_node.resize(len(source_node))
+        identifier_enum = target_node.metadata.identifier_enum
+        if identifier_enum is not None:
+            for i in range(len(source_node)):
+                try:
+                    # Look up the index in the identifier and assign to set name, index
+                    # and description
+                    target_node[i] = identifier_enum(source_node[i])
+                except ValueError:
+                    # That may fail for unknown values (e.g. negative values): fall back
+                    # to only setting index and leaving name and description empty
+                    target_node[i].index = source_node[i]
+        else:
+            # We couldn't get the identifier enum, so just copy into the index array
+            for i in range(len(source_node)):
+                target_node[i].index = source_node[i]
+
+    else:
+        # source_node is an array of identifier structures, target_node is an INT_1D
+        target_node.value = [node.index for node in source_node]
