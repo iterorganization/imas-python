@@ -323,6 +323,11 @@ class DDVersionMap:
                 new_path = self.old_to_new.path.get(old_path, old_path)
                 self.new_to_old.post_process[new_path] = _cocos_change
                 self.old_to_new.post_process[old_path] = _cocos_change
+            # Definition change for pf_active circuit/connections
+            if self.ids_name == "pf_active":
+                path = "circuit/connections"
+                self.new_to_old.post_process[path] = _circuit_connections_4to3
+                self.old_to_new.post_process[path] = _circuit_connections_3to4
 
     def _map_missing(self, is_new: bool, missing_paths: Set[str]):
         rename_map = self.new_to_old if is_new else self.old_to_new
@@ -717,3 +722,24 @@ def _repeat_first_point_conditional(
 def _cocos_change(node: IDSPrimitive) -> None:
     """Handle COCOS definition change: multiply values by -1."""
     node.value = -node.value
+
+
+def _circuit_connections_3to4(node: IDSPrimitive) -> None:
+    """Handle definition change for pf_active circuit/connections."""
+    shape = node.shape
+    if shape[1] % 2:  # second dimension not divisible by 2:
+        logger.error(
+            f"Error while converting {node}. Size of the second dimension should "
+            "be divisible by 2. Data was not converted."
+        )
+    else:
+        node.value = node.value[:, ::2] - node.value[:, 1::2]
+
+
+def _circuit_connections_4to3(node: IDSPrimitive) -> None:
+    """Handle definition change for pf_active circuit/connections."""
+    shape = node.shape
+    new_value = numpy.zeros((shape[0], 2*shape[1]), dtype=numpy.int32)
+    new_value[:, ::2] = node.value == 1
+    new_value[:, 1::2] = node.value == -1
+    node.value = new_value

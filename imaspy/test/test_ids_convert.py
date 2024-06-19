@@ -1,6 +1,7 @@
 # Unit tests for ids_convert.py.
 # See also integration tests for conversions in test_nbc_change.py
 
+import logging
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -325,3 +326,37 @@ def test_3to4_cocos_change(dd4factory):
 
     cp3 = convert_ids(cp4, "3.39.0")
     compare_children(cp, cp3)
+
+
+def test_3to4_circuit_connections(dd4factory, caplog):
+    pfa = IDSFactory("3.39.0").pf_active()
+    pfa.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
+    pfa.circuit.resize(1)
+    pfa.circuit[0].connections = [
+        [0, 1, 0, 0, 1, 0],
+        [0, 0, 1, 0, 0, 1],
+        [1, 0, 0, 1, 0, 0],
+    ]
+
+    pfa4 = convert_ids(pfa, None, factory=dd4factory)
+    assert numpy.array_equal(
+        pfa4.circuit[0].connections, [[-1, 0, 1], [0, 1, -1], [1, -1, 0]]
+    )
+
+    pfa3 = convert_ids(pfa4, "3.39.0")
+    compare_children(pfa, pfa3)
+
+    # Test invalid connections shape
+    pfa.circuit[0].connections = [
+        [0, 1, 0, 0, 1, 0, 1],
+        [0, 0, 1, 0, 0, 1, 1],
+        [1, 0, 0, 1, 0, 0, 1],
+    ]
+    caplog.clear()
+    with caplog.at_level(logging.ERROR):
+        pfa4 = convert_ids(pfa, None, factory=dd4factory)
+    # Incorrect shape, data is not converted:
+    assert numpy.array_equal(pfa.circuit[0].connections, pfa4.circuit[0].connections)
+    # Check that a message with ERROR severity was logged
+    assert len(caplog.record_tuples) == 1
+    assert caplog.record_tuples[0][1] == logging.ERROR
