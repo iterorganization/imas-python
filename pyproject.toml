@@ -79,7 +79,7 @@ docs = [
 ]
 imas-core = [ "imas-core@git+ssh://git@git.iter.org/imas/al-core.git@main" ]
 netcdf = [
-    "netCDF4",
+    "netCDF4>=1.7.0",
 ]
 test = [
     "pytest>=5.4.1",

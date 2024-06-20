@@ -185,15 +185,14 @@ class IDS2NC:
 
             else:
                 dtype = dtypes[metadata.data_type]
+                kwargs = {}
+                if dtype is not str:  # Enable compression:
+                    kwargs.update(compression="zlib", complevel=1)
+                if dtype is not numpy.complex128:  # Set fillvalue
+                    kwargs.update(fill_value=default_fillvals[metadata.data_type])
                 # Create variable
-                var = self.group.createVariable(
-                    var_name,
-                    dtype,
-                    get_dimensions(path, self.homogeneous_time),
-                    compression=None if dtype is str else "zlib",
-                    complevel=1,
-                    fill_value=default_fillvals[metadata.data_type],
-                )
+                dimensions = get_dimensions(path, self.homogeneous_time)
+                var = self.group.createVariable(var_name, dtype, dimensions, **kwargs)
 
             # Fill metadata attributes
             var.documentation = metadata.documentation
@@ -218,6 +217,7 @@ class IDS2NC:
                 if not metadata.ndim:
                     # Doesn't need a :shape array:
                     var.sparse = "Sparse data, missing data is filled with _FillValue"
+                    var.sparse += f" ({default_fillvals[metadata.data_type]})"
 
                 else:
                     shape_name = f"{var_name}:shape"
@@ -285,10 +285,11 @@ class IDS2NC:
 
             else:
                 # Data is tensorized: tensorize in-memory
-                var.set_auto_mask(False)
                 # TODO: depending on the data, tmp_var may be HUGE, we may need a more
                 # efficient assignment algorithm for large and/or irregular data
-                tmp_var = var[()]
+                tmp_var = numpy.full(var.shape, default_fillvals[metadata.data_type])
+                if metadata.data_type is IDSDataType.STR:
+                    tmp_var = numpy.asarray(tmp_var, dtype=object)
 
                 # Fill tmp_var
                 if shapes is None:

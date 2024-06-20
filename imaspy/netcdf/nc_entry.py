@@ -54,7 +54,8 @@ class NCEntry:
         self._xml_path = xml_path
         self._ids_factory = IDSFactory(dd_version, xml_path)
 
-        self._dataset = Dataset(filename, mode, format="NETCDF4", **kwargs)
+        kwargs = {"auto_complex": True, **kwargs, "format": "NETCDF4"}
+        self._dataset = Dataset(filename, mode, **kwargs)
 
         if self._dataset.dimensions or self._dataset.variables or self._dataset.groups:
             if "data_dictionary_version" not in self._dataset.ncattrs():
