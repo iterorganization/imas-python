@@ -14,7 +14,7 @@ find the value of new points. This can be used like so:
 
 .. code-block:: python
 
-    pulse_schedule = IDSFactory().new("pulse_schedule")
+    pulse_schedule = imaspy.IDSFactory().new("pulse_schedule")
     f = scipy.interpolate.interp1d(pulse_schedule.time, pulse_schedule_some_1d_var)
     ids.pulse_schedule.some_1d_var = f(pulse_schedule.some_1d_var)
 
@@ -31,14 +31,13 @@ For example, a proposal implementation included in 0.4.0 can be used as such
 
 .. code-block:: python
 
+    import imaspy
     nbi = imaspy.IDSFactory().new("nbi")
-    nbi.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    nbi.ids_properties.homogeneous_time = imaspy.ids_defs.IDS_TIME_MODE_HOMOGENEOUS
     nbi.time = [1, 2, 3]
     nbi.unit.resize(1)
     nbi.unit[0].energy.data = 2 * nbi.time
     old_id = id(nbi.unit[0].energy.data)
-
-    assert nbi.unit[0].energy.data.time_axis == 0
 
     imaspy.util.resample(
         nbi.unit[0].energy.data,
@@ -50,24 +49,23 @@ For example, a proposal implementation included in 0.4.0 can be used as such
     )
 
     assert old_id == id(nbi.unit[0].energy.data)
-    assert nbi.unit[0].energy.data == [1, 3]
+    assert list(nbi.unit[0].energy.data) == [1, 3]
 
 
 Or as such (explicit in-memory copy + interpolation, producing a new data leaf/container):
 
 .. code-block:: python
 
+    import imaspy
     nbi = imaspy.IDSFactory().new("nbi")
-    nbi.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    nbi.ids_properties.homogeneous_time = imaspy.ids_defs.IDS_TIME_MODE_HOMOGENEOUS
     nbi.time = [1, 2, 3]
     nbi.unit.resize(1)
     nbi.unit[0].energy.data = 2 * nbi.time
     old_id = id(nbi.unit[0].energy.data)
 
-    assert nbi.unit[0].energy.data.time_axis == 0
-
     new_data = imaspy.util.resample(
-        nbi.unit[0].energy.data.resample,
+        nbi.unit[0].energy.data,
         nbi.time,
         [0.5, 1.5],
         nbi.ids_properties.homogeneous_time,
@@ -76,7 +74,7 @@ Or as such (explicit in-memory copy + interpolation, producing a new data leaf/c
     )
 
     assert old_id != id(new_data)
-    assert new_data == [1, 3]
+    assert list(new_data) == [1, 3]
 
 
 Implementation unit tests can be found in `test_latest_dd_resample.py`.

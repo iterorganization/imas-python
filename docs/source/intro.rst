@@ -20,7 +20,7 @@ be outdated.
 
     >>> import imaspy
     >>> print(imaspy.__version__)
-    0.7.0
+    1.0.0
 
 .. note::
 
