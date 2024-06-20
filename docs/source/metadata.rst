@@ -62,7 +62,7 @@ looked up. See below example.
     
     >>> core_profiles = imaspy.IDSFactory().core_profiles()
     >>> core_profiles.profiles_1d.resize(1)
-    >>> profile = root.core_profiles.profiles_1d[0]
+    >>> profile = core_profiles.profiles_1d[0]
     >>> profile.grid.rho_tor_norm = [0, 0.15, 0.3, 0.45, 0.6]
     >>> # Electron temperature has rho_tor_norm as coordinate:
     >>> profile.electrons.temperature.coordinates[0]
@@ -93,7 +93,7 @@ is in homogeneous time mode or not. IMASPy handles this transparently.
     >>> # profiles_1d is a time-dependent array of structures:
     >>> core_profiles.profiles_1d.coordinates[0]
     [...]
-    ValueError: Invalid IDS time mode: ids_properties/homogeneous_time is -999999999, was expecting 0 or 1.
+    ValueError: Invalid IDS time mode: ids_properties/homogeneous_time is <IDSInt0D (IDS:core_profiles, ids_properties/homogeneous_time, empty INT_0D)>, was expecting 0 or 1.
     >>> core_profiles.ids_properties.homogeneous_time = \\
     ...     imaspy.ids_defs.IDS_TIME_MODE_HOMOGENEOUS
     >>> # In homogeneous time mode, the root /time array is used

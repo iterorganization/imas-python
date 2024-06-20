@@ -56,7 +56,6 @@ Or as such (explicit in-memory copy + interpolation, producing a new data leaf/c
 
 .. code-block:: python
 
-    import imaspy
     nbi = imaspy.IDSFactory().new("nbi")
     nbi.ids_properties.homogeneous_time = imaspy.ids_defs.IDS_TIME_MODE_HOMOGENEOUS
     nbi.time = [1, 2, 3]

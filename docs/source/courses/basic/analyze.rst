@@ -166,7 +166,8 @@ Exercise 3
             :collapsible:
 
             :meth:`~imaspy.db_entry.DBEntry.get_slice()` requires an ``interpolation_method`` as one
-            of its arguments, here you can use ``imas.imasdef.CLOSEST_INTERP``
+            of its arguments, here you can use ``imas.imasdef.CLOSEST_INTERP``. Alternatively,
+            if you use IMASPy, you can use ``imaspy.ids_defs.CLOSEST_INTERP``.
 
     .. md-tab-item:: AL4
 

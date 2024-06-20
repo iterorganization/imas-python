@@ -46,7 +46,7 @@ populate the following fields:
   homogeneous time mode, meaning that all time-dependent quantities use the root
   ``time`` as their coordinate.
 - ``ids_properties.comment``, where we can describe this IDS.
-- ``ids_properties.create_date``, which we need to set to today's date.
+- ``ids_properties.creation_date``, which we need to set to today's date.
 - :code:`time = [1.0, 2.5, 4.0]`
 - ``profiles_1d`` is an array of structures, with one structure for each time slice. We
   need to resize it to match the size of the ``time`` array.
@@ -183,9 +183,11 @@ Exercise 5
             pulse = 1
             run = 1
 
-        After a successful ``put`` you should see a file
-        ``imaspy-course_1_1_core_profiles.ids`` in your working directory with the
-        contents of the IDS.
+        After a successful ``put``, the ids file will be created. If you are using
+        AL4, you should see a file ``imaspy-course_1_1_core_profiles.ids`` in your 
+        working directory with the contents of the IDS. 
+        If you are using AL5, this file can be found under
+        ``~/public/imasdb/imaspy-course/3/1/1/core_profiles.ids`` 
 
         .. hint::
             :collapsible:
