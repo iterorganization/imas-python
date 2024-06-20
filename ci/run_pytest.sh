@@ -24,7 +24,7 @@ source venv/bin/activate
 
 # Install imaspy and test dependencies
 pip install --upgrade pip setuptools wheel
-pip install .[test]
+pip install .[netcdf,test]
 
 # Debugging:
 pip freeze
