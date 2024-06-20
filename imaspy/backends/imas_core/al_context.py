@@ -8,6 +8,7 @@ import weakref
 from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Callable, Iterator, List, Optional, Tuple
 
+from imaspy.backends.imas_core.imas_interface import ll_interface
 from imaspy.exception import LowlevelError
 from imaspy.ids_defs import (
     CLOSEST_INTERP,
@@ -15,7 +16,6 @@ from imaspy.ids_defs import (
     PREVIOUS_INTERP,
     UNDEFINED_INTERP,
 )
-from imaspy.imas_interface import ll_interface
 
 INTERP_MODES = (
     CLOSEST_INTERP,

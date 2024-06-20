@@ -8,6 +8,7 @@ import os
 import numpy as np
 import pytest
 
+from imaspy.backends.imas_core.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     CLOSEST_INTERP,
@@ -16,7 +17,6 @@ from imaspy.ids_defs import (
     MDSPLUS_BACKEND,
 )
 from imaspy.ids_factory import IDSFactory
-from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.test.test_helpers import open_dbentry
 
 # import IMAS HLI, skip module when this is an install without IMAS

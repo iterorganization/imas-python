@@ -9,7 +9,7 @@ from typing import Optional, Tuple
 
 from xxhash import xxh3_64
 
-from imaspy.al_context import LazyALArrayStructContext
+from imaspy.backends.imas_core.al_context import LazyALArrayStructContext
 from imaspy.ids_base import IDSBase, IDSDoc
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_metadata import IDSMetadata

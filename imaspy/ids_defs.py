@@ -69,7 +69,7 @@ Interpolation modes
 import functools
 import logging
 
-from imaspy.imas_interface import has_imas, imasdef
+from imaspy.backends.imas_core.imas_interface import has_imas, imasdef
 
 logger = logging.getLogger(__name__)
 

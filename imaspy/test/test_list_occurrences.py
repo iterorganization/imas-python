@@ -2,7 +2,7 @@ import pytest
 from packaging.version import Version
 
 import imaspy
-from imaspy.imas_interface import ll_interface
+from imaspy.backends.imas_core.imas_interface import ll_interface
 from imaspy.test.test_helpers import open_dbentry
 
 

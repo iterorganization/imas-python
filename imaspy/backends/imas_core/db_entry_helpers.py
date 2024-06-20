@@ -7,7 +7,6 @@ from typing import Optional
 
 import numpy as np
 
-from imaspy.al_context import ALContext, LazyALContext
 from imaspy.ids_base import IDSBase
 from imaspy.ids_convert import NBCPathMap
 from imaspy.ids_data_type import IDSDataType
@@ -16,8 +15,10 @@ from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 
+from .al_context import ALContext, LazyALContext
 
-def _get_children(
+
+def get_children(
     structure: IDSStructure,
     ctx: ALContext,
     time_mode: int,
@@ -56,12 +57,12 @@ def _get_children(
                     element = getattr(structure, name)
                     element.resize(size)
                     for item in element:
-                        _get_children(item, new_ctx, time_mode, nbc_map)
+                        get_children(item, new_ctx, time_mode, nbc_map)
                         new_ctx.iterate_over_arraystruct(1)
 
         elif data_type is IDSDataType.STRUCTURE:
             element = getattr(structure, name)
-            _get_children(element, ctx, time_mode, nbc_map)
+            get_children(element, ctx, time_mode, nbc_map)
 
         else:  # Data elements
             ndim = child_meta._al_ndim
@@ -129,16 +130,16 @@ def _get_child(child: IDSBase, ctx: LazyALContext):
             child._IDSPrimitive__value = data
 
 
-def _delete_children(structure: IDSMetadata, ctx: ALContext) -> None:
+def delete_children(structure: IDSMetadata, ctx: ALContext) -> None:
     """Recursively delete all children of an IDSStructure"""
     for child_meta in structure._children.values():
         if child_meta.data_type is IDSDataType.STRUCTURE:
-            _delete_children(child_meta, ctx)
+            delete_children(child_meta, ctx)
         else:
             ctx.delete_data(child_meta._ctx_path)
 
 
-def _put_children(
+def put_children(
     structure: IDSStructure,
     ctx: ALContext,
     time_mode: int,
@@ -181,13 +182,13 @@ def _put_children(
                     )
             with ctx.arraystruct_action(new_path, timebase, size) as (new_ctx, _):
                 for item in element:
-                    _put_children(
+                    put_children(
                         item, new_ctx, time_mode, is_slice, nbc_map, verify_maxoccur
                     )
                     new_ctx.iterate_over_arraystruct(1)
 
         elif isinstance(element, IDSStructure):
-            _put_children(element, ctx, time_mode, is_slice, nbc_map, verify_maxoccur)
+            put_children(element, ctx, time_mode, is_slice, nbc_map, verify_maxoccur)
 
         else:  # Data elements
             if is_slice and not element.metadata.type.is_dynamic:

@@ -3,6 +3,7 @@ from unittest.mock import DEFAULT, patch
 
 import pytest
 
+from imaspy.backends.imas_core.imas_interface import ll_interface
 from imaspy.db_entry import DBEntry
 from imaspy.ids_defs import (
     ASCII_BACKEND,
@@ -12,7 +13,6 @@ from imaspy.ids_defs import (
 )
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_primitive import IDSPrimitive
-from imaspy.imas_interface import ll_interface
 from imaspy.test.test_helpers import compare_children, fill_consistent, open_dbentry
 
 

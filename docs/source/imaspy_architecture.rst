@@ -250,12 +250,11 @@ Creating and loading IDSs
     :py:meth:`~imaspy.db_entry.DBEntry.put_slice`) or load
     (:py:meth:`~imaspy.db_entry.DBEntry.get`,
     :py:meth:`~imaspy.db_entry.DBEntry.get_slice`) IDSs. The actual implementation of
-    data storage and retrieval is handled by the :py:mod:`imaspy.db_entry_helpers`
-    module.
+    data storage and retrieval is handled by the backends in the
+    ``imaspy.backends.*`` subpackages.
 
     :py:class:`~imaspy.db_entry.DBEntry` handles the autoconversion between IDS versions
     as described in :ref:`Automatic conversion between DD versions`.
--   :py:mod:`imaspy.db_entry_helpers` contains implementation for ``get`` and ``put``.
 -   :py:mod:`imaspy.ids_factory` contains the :py:class:`~imaspy.ids_factory.IDSFactory`
     class. This class is responsible for creating IDS toplevels from a given Data
     Dictionary definition, and can list all IDS names inside a DD definition.
@@ -264,20 +263,20 @@ Creating and loading IDSs
 Access Layer interfaces
 -----------------------
 
--   :py:mod:`imaspy.al_context` provides an object-oriented interface when working with
+-   :py:mod:`imaspy.backends.imas_core.al_context` provides an object-oriented interface when working with
     Lowlevel contexts. The contexts returned by the lowlevel are an integer identifier
     and need to be provided to several LL methods (e.g. ``read_data``), some of which
     may create new contexts.
     
-    The :py:class:`~imaspy.al_context.ALContext` class implements this object oriented
+    The :py:class:`~imaspy.backends.imas_core.al_context.ALContext` class implements this object oriented
     interface.
 
-    A second class (:py:class:`~imaspy.al_context.LazyALContext`) implements the same
+    A second class (:py:class:`~imaspy.backends.imas_core.al_context.LazyALContext`) implements the same
     interface, but is used when :ref:`dev lazy loading`.
 -   :py:mod:`imaspy.ids_defs` provides access to Access Layer constants (mostly defined
     in ``imas.imasdef``).
--   :py:mod:`imaspy.imas_interface` provides a version-independent interface to the
-    Access Layer through :py:class:`~imaspy.imas_interface.LowlevelInterface`. It
+-   :py:mod:`imaspy.backends.imas_core.imas_interface` provides a version-independent interface to the
+    Access Layer through :py:class:`~imaspy.backends.imas_core.imas_interface.LowlevelInterface`. It
     defines all known methods of the Access Layer and defers to the correct
     implementation if it is available in the loaded AL version (and raises a descriptive
     exception if the function is not available).
@@ -286,7 +285,7 @@ Access Layer interfaces
 MDSplus support
 ---------------
 
--   :py:mod:`imaspy.mdsplus_model` is responsible for creating MDSplus `models`. These
+-   :py:mod:`imaspy.backends.imas_core.mdsplus_model` is responsible for creating MDSplus `models`. These
     models are specific to a DD version and are required when using the MDSplus
     backend for creating new Data Entries.
 
@@ -331,7 +330,7 @@ between versions. It works as follows:
 uses the same ``DDVersionMap`` and ``NBCPathMap`` as
 :py:func:`~imaspy.ids_convert.convert_ids`. When reading data from the backends, the
 ``NBCPathMap`` is used to translate between the old and the new DD version. See the
-implementation in :py:mod:`imaspy.db_entry_helpers`.
+implementation in :py:mod:`imaspy.backends.imas_core.db_entry_helpers`.
 
 
 Miscelleneous

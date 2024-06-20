@@ -6,7 +6,7 @@ from pathlib import Path
 from packaging.version import Version
 
 import imaspy
-from imaspy.imas_interface import ll_interface, lowlevel
+from imaspy.backends.imas_core.imas_interface import ll_interface, lowlevel
 
 # Don't directly import imas: code analyzers break on the huge code base
 imas = importlib.import_module("imas")

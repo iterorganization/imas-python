@@ -10,7 +10,7 @@ from typing import Generator, List, Optional
 
 from xxhash import xxh3_64
 
-from imaspy.al_context import LazyALContext
+from imaspy.backends.imas_core.al_context import LazyALContext
 from imaspy.ids_base import IDSBase, IDSDoc
 from imaspy.ids_metadata import IDSDataType, IDSMetadata
 from imaspy.ids_path import IDSPath
@@ -62,7 +62,7 @@ class IDSStructure(IDSBase):
         child = child_meta._node_type(self, child_meta)
         self.__dict__[name] = child  # bypass setattr logic below: avoid recursion
         if self._lazy:  # lazy load the child
-            from imaspy.db_entry_helpers import _get_child
+            from imaspy.backends.imas_core.db_entry_helpers import _get_child
 
             _get_child(child, self._lazy_context)
         return child

@@ -22,6 +22,7 @@ import imaspy
 from imaspy.dd_helpers import get_saxon
 from imaspy.dd_zip import get_dd_xml, get_dd_xml_crc
 from imaspy.exception import MDSPlusModelError
+from imaspy.ids_factory import IDSFactory
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +74,7 @@ def safe_replace(src: Path, dst: Path) -> None:
             raise
 
 
-def mdsplus_model_dir(version=None, xml_file=None):
+def mdsplus_model_dir(factory: IDSFactory) -> str:
     """
     when given a version number this looks for the DD definition
     of that version in the internal cache. Alternatively a filename
@@ -90,32 +91,27 @@ def mdsplus_model_dir(version=None, xml_file=None):
     env={"CLASSPATH": saxon_jar_path, "PATH": os.environ.get("PATH", "")}
 
     Args:
-        version: DD version string where the cache should be based on
-
-    Kwargs:
-        xml_file: Path to the XML to build the cache on
+        factory: IDSFactory indicating the DD version / XML to build models for.
 
     Returns:
         The path to the requested DD cache
     """
 
-    if version and xml_file:
-        raise ValueError("Version OR filename need to be provided, both given")
-
     # Calculate a checksum on the contents of a DD XML file to uniquely
     # identify our cache files, and re-create them as-needed if the contents
     # of the file change
-    if version:
+
+    if factory._xml_path is None:  # Factory was created from version
+        version = factory.version
         crc = get_dd_xml_crc(version)
         xml_name = version + ".xml"
         fname = "-"
-    elif xml_file:
-        xml_name = Path(xml_file).name
-        fname = xml_file
+    else:
+        version = None
+        xml_name = Path(factory._xml_path).name
+        fname = factory._xml_path
         with open(fname, "rb") as file:
             crc = crc32(file.read())
-    else:
-        raise ValueError("Version OR filename need to be provided, none given")
 
     cache_dir_name = "%s-%08x" % (xml_name, crc)
     cache_dir_path = Path(_get_xdg_cache_dir()) / "imaspy" / "mdsplus" / cache_dir_name
