@@ -19,7 +19,7 @@ set -x
 
 # Set up the testing venv
 rm -rf venv  # Environment should be clean, but remove directory to be sure
-python -m venv --system-site-packages venv
+python -m venv venv
 source venv/bin/activate
 
 # Install imaspy and test dependencies
@@ -36,4 +36,4 @@ pip freeze
 rm -f junit.xml
 rm -rf htmlcov
 
-pytest -n=auto --cov=imaspy --cov-report=term-missing --cov-report=html --junit-xml=junit.xml
+python -m pytest -n=auto --cov=imaspy --cov-report=term-missing --cov-report=html --junit-xml=junit.xml

@@ -9,11 +9,8 @@ echo "Loading modules..."
 # Set up environment such that module files can be loaded
 . /usr/share/Modules/init/sh
 module purge
-# Load modules required for building the DD zip:
-# - Python (obviously)
-# - GitPython (providing `git` package)
-# - Saxon (required for building the DD)
-module load Python/3.8.6-GCCcore-10.2.0 GitPython/3.1.14-GCCcore-10.2.0 Saxon-HE/10.3-Java-11
+# Modules are supplied as arguments in the CI job:
+module load $@
 
 # Debuggging:
 echo "Done loading modules"
