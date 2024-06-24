@@ -139,7 +139,8 @@ Exercise 1: Using coordinates
             b.  Print the coordinate of the ``profiles_1d`` array of structures. What
                 do you notice?
             c.  Change the time mode of the IDS from homogeneous time to heterogeneous
-                time. You do this by setting ``ids_properties.homogeneous_time = 0``.
+                time. You do this by setting 
+                ``ids_properties.homogeneous_time = imaspy.ids_defs.IDS_TIME_MODE_HETEROGENEOUS``.
                 Print the coordinate of the ``profiles_1d`` array of structure again.
                 What has changed?
 

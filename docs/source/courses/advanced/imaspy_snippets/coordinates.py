@@ -16,7 +16,8 @@ print(core_profiles.profiles_1d.coordinates[0])
 #   numpy.ndarray([  3.98722186, 432.93759781, 792.        ])
 
 # 1c. Change the time mode and print again
-core_profiles.ids_properties.homogeneous_time = 0
+core_profiles.ids_properties.homogeneous_time = \
+    imaspy.ids_defs.IDS_TIME_MODE_HETEROGENEOUS
 print(core_profiles.profiles_1d.coordinates[0])
 # What has changed? Now we get a numpy array with values -9e+40:
 #   [-9.e+40 -9.e+40 -9.e+40]
