@@ -9,9 +9,8 @@ echo "Loading modules..."
 # Set up environment such that module files can be loaded
 . /usr/share/Modules/init/sh
 module purge
-# Load modules required for linting
-# - Python (obviously)
-module load Python/3.8.6-GCCcore-10.2.0
+# Modules are supplied as arguments in the CI job:
+module load $@
 
 # Debuggging:
 echo "Done loading modules"
