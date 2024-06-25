@@ -29,7 +29,7 @@ pip install --upgrade pip setuptools wheel
 pip install virtualenv .[test]
 
 # Generate MDS+ models cache
-python -c 'import imaspy; print(imaspy.mdsplus_model.mdsplus_model_dir(version=imaspy.IDSFactory().version))'
+python -c 'import imaspy.backends.imas_core.mdsplus_model; print(imaspy.backends.imas_core.mdsplus_model.mdsplus_model_dir(imaspy.IDSFactory()))'
 
 # Copy previous results (if any)
 mkdir -p /mnt/bamboo_deploy/imaspy/benchmarks/results
