@@ -1,7 +1,10 @@
 import pytest
 
 import imaspy
+import imaspy.ids_defs
+from imaspy.exception import UnknownDDVersion
 from imaspy.imas_interface import has_imas, ll_interface
+from imaspy.test.test_helpers import compare_children, open_dbentry
 
 
 def test_dbentry_contextmanager(requires_imas):
@@ -37,3 +40,25 @@ def test_dbentry_contextmanager_uri(tmp_path):
 
     # Check that entry2 was closed
     assert entry2._db_ctx is None
+
+
+def test_ignore_unknown_dd_version(monkeypatch, worker_id, tmp_path):
+    entry = open_dbentry(imaspy.ids_defs.MEMORY_BACKEND, "w", worker_id, tmp_path)
+    ids = entry.factory.core_profiles()
+    ids.ids_properties.homogeneous_time = 0
+    ids.ids_properties.comment = "Test unknown DD version"
+    # Put this IDS with an invalid DD version
+    with monkeypatch.context() as m:
+        m.setattr(entry.factory, "_version", "invalid DD version")
+        assert entry.dd_version == "invalid DD version"
+        entry.put(ids)
+
+    with pytest.raises(UnknownDDVersion) as exc_info:
+        entry.get("core_profiles")
+    assert "ignore_unknown_dd_version" in str(exc_info.value)
+    ids2 = entry.get("core_profiles", ignore_unknown_dd_version=True)
+    assert ids2.ids_properties.version_put.data_dictionary == "invalid DD version"
+    compare_children(ids, ids2)
+    # Test that autoconvert plays nicely with this option as well
+    ids3 = entry.get("core_profiles", ignore_unknown_dd_version=True, autoconvert=False)
+    compare_children(ids, ids3)

@@ -13,11 +13,13 @@ from urllib.parse import urlparse
 import imaspy
 from imaspy.al_context import ALContext, LazyALContext
 from imaspy.db_entry_helpers import _delete_children, _get_children, _put_children
+from imaspy.dd_zip import dd_xml_versions
 from imaspy.exception import (
     DataEntryException,
     IDSNameError,
     LowlevelError,
     MDSPlusModelError,
+    UnknownDDVersion,
     ValidationError,
 )
 from imaspy.ids_base import IDSBase
@@ -377,6 +379,7 @@ class DBEntry:
         *,
         lazy: bool = False,
         autoconvert: bool = True,
+        ignore_unknown_dd_version: bool = False,
         destination: Optional[IDSToplevel] = None,
     ) -> IDSToplevel:
         """Read the contents of an IDS into memory.
@@ -403,6 +406,9 @@ class DBEntry:
 
                 When set to ``False``, the IDS will be returned in the DD version it was
                 stored in.
+            ignore_unknown_dd_version: When an IDS is stored with an unknown DD version,
+                do not attempt automatic conversion and fetch the data in the Data
+                Dictionary version attached to this Data Entry.
             destination: Populate this IDSToplevel instead of creating an empty one.
 
         Returns:
@@ -417,7 +423,16 @@ class DBEntry:
                 imas_entry.open()
                 core_profiles = imas_entry.get("core_profiles")
         """  # noqa
-        return self._get(ids_name, occurrence, None, 0, destination, lazy, autoconvert)
+        return self._get(
+            ids_name,
+            occurrence,
+            None,
+            0,
+            destination,
+            lazy,
+            autoconvert,
+            ignore_unknown_dd_version,
+        )
 
     def get_slice(
         self,
@@ -428,6 +443,7 @@ class DBEntry:
         *,
         lazy: bool = False,
         autoconvert: bool = True,
+        ignore_unknown_dd_version: bool = False,
         destination: Optional[IDSToplevel] = None,
     ) -> IDSToplevel:
         """Read a single time slice from an IDS in this Database Entry.
@@ -460,6 +476,9 @@ class DBEntry:
 
                 When set to ``False``, the IDS will be returned in the DD version it was
                 stored in.
+            ignore_unknown_dd_version: When an IDS is stored with an unknown DD version,
+                do not attempt automatic conversion and fetch the data in the Data
+                Dictionary version attached to this Data Entry.
             destination: Populate this IDSToplevel instead of creating an empty one.
 
         Returns:
@@ -482,6 +501,7 @@ class DBEntry:
             destination,
             lazy,
             autoconvert,
+            ignore_unknown_dd_version,
         )
 
     def _get(
@@ -493,6 +513,7 @@ class DBEntry:
         destination: Optional[IDSToplevel],
         lazy: bool,
         autoconvert: bool,
+        ignore_unknown_dd_version: bool,
     ) -> IDSToplevel:
         """Actual implementation of get() and get_slice()"""
         if self._db_ctx is None:
@@ -533,10 +554,21 @@ class DBEntry:
                 ids_name,
                 occurrence,
             )
+        elif dd_version != self.dd_version and dd_version not in dd_xml_versions():
+            if ignore_unknown_dd_version:
+                logger.info("Ignoring unknown data dictionary version %s", dd_version)
+                dd_version = None
+            else:
+                note = (
+                    "\nYou may set the get/get_slice parameter "
+                    "ignore_unknown_dd_version=True to ignore this and get an IDS in "
+                    f"the default DD version ({self.factory.dd_version})"
+                )
+                raise UnknownDDVersion(dd_version, dd_xml_versions(), note)
 
         # Ensure we have a destination
         if not destination:
-            if autoconvert:  # store results in our DD version
+            if autoconvert or not dd_version:  # store results in our DD version
                 destination = self._ids_factory.new(ids_name, _lazy=lazy)
             else:  # store results in on-disk DD version
                 destination = IDSFactory(dd_version).new(ids_name, _lazy=lazy)
