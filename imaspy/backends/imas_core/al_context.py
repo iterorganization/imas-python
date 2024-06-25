@@ -25,7 +25,7 @@ INTERP_MODES = (
 )
 
 if TYPE_CHECKING:
-    from imaspy.db_entry import DBEntry
+    from imaspy.backends.imas_core.db_entry_al import ALDBEntryImpl
     from imaspy.ids_convert import NBCPathMap
 
 
@@ -209,9 +209,9 @@ class LazyALContext:
 
     This class tracks:
 
-    - The DBEntry object which was used for get() / get_slice().
-    - The context object from that DBEntry (such that we can detect if the underlying AL
-      context was closed or replaced).
+    - The ALDBEntryImpl object which was used for get() / get_slice().
+    - The context object from that ALDBEntryImpl (such that we can detect if the
+      underlying AL context was closed or replaced).
     - Potentially a parent LazyALContext for nested contexts (looking at you,
       arraystruct_action!).
     - The ALContext method and arguments that we need to call on the ALContext we obtain
@@ -240,14 +240,14 @@ class LazyALContext:
         method: Optional[Callable] = None,
         args: Tuple = (),
         *,
-        dbentry: Optional["DBEntry"] = None,
+        dbentry: Optional["ALDBEntryImpl"] = None,
         nbc_map: Optional["NBCPathMap"] = None,
         time_mode: Optional[int] = None,
     ) -> None:
         self.dbentry = dbentry or (parent_ctx and parent_ctx.dbentry)
-        """DBEntry object that created us, or our parent."""
+        """ALDBEntryImpl object that created us, or our parent."""
         self.dbentry_ctx = self.dbentry._db_ctx
-        """The ALContext of the DBEntry at the time of get/get_slice."""
+        """The ALContext of the ALDBEntryImpl at the time of get/get_slice."""
         self.parent_ctx = parent_ctx
         """Optional parent context that provides our parent ALContext."""
         self.method = method

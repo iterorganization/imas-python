@@ -9,8 +9,10 @@ from typing import Any, List, Optional, Tuple, Type, overload
 
 import imaspy
 from imaspy.backends.db_entry_impl import DBEntryImpl
-from imaspy.exception import IDSNameError, ValidationError
+from imaspy.dd_zip import dd_xml_versions
+from imaspy.exception import IDSNameError, UnknownDDVersion, ValidationError
 from imaspy.ids_base import IDSBase
+from imaspy.ids_convert import dd_version_map_from_factories
 from imaspy.ids_defs import (
     CREATE_PULSE,
     FORCE_CREATE_PULSE,
@@ -440,6 +442,53 @@ class DBEntry:
             raise ValueError("Cannot supply a destination IDS when lazy loading.")
         if not self._ids_factory.exists(ids_name):
             raise IDSNameError(ids_name, self._ids_factory)
+
+        # Note: this will raise an exception when the ids/occurrence is not filled:
+        dd_version = self._dbe_impl.read_dd_version(ids_name, occurrence)
+
+        # DD version sanity checks:
+        if not dd_version:
+            # No DD version stored in the IDS, load as if it was stored with
+            # self.dd_version
+            logger.warning(
+                "Loaded IDS (%s, occurrence %s) does not specify a data dictionary "
+                "version. Some data may not be loaded.",
+                ids_name,
+                occurrence,
+            )
+        elif dd_version != self.dd_version and dd_version not in dd_xml_versions():
+            # We don't know the DD version that this IDS was written with
+            if ignore_unknown_dd_version:
+                # User chooses to ignore this problem, load as if it was stored with
+                # self.dd_version
+                logger.info("Ignoring unknown data dictionary version %s", dd_version)
+                dd_version = None
+            else:
+                note = (
+                    "\nYou may set the get/get_slice parameter "
+                    "ignore_unknown_dd_version=True to ignore this and get an IDS in "
+                    f"the default DD version ({self.dd_version})"
+                )
+                raise UnknownDDVersion(dd_version, dd_xml_versions(), note)
+
+        # Implicit version conversion:
+        if not destination:
+            # Construct IDS object that the backend can store data in
+            if autoconvert or not dd_version:
+                # Store results in our DD version
+                destination = self._ids_factory.new(ids_name, _lazy=lazy)
+            else:
+                # Store results in the on-disk version
+                destination = IDSFactory(dd_version).new(ids_name, _lazy=lazy)
+
+        nbc_map = None
+        if dd_version and dd_version != destination._dd_version:
+            ddmap, source_is_older = dd_version_map_from_factories(
+                ids_name, IDSFactory(version=dd_version), self._ids_factory
+            )
+            nbc_map = ddmap.new_to_old if source_is_older else ddmap.old_to_new
+
+        # Pass on to the DBEntry implementation:
         return self._dbe_impl.get(
             ids_name,
             occurrence,
@@ -447,8 +496,7 @@ class DBEntry:
             interpolation_method,
             destination,
             lazy,
-            autoconvert,
-            ignore_unknown_dd_version,
+            nbc_map,
         )
 
     def put(self, ids: IDSToplevel, occurrence: int = 0) -> None:

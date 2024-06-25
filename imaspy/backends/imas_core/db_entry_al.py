@@ -5,13 +5,12 @@ import getpass
 import logging
 import os
 from collections import deque
-from typing import Any, Deque, Optional
+from typing import Any, Deque, List, Optional
 from urllib.parse import urlparse
 
 from imaspy.db_entry import DBEntryImpl
-from imaspy.dd_zip import dd_xml_versions
-from imaspy.exception import DataEntryException, LowlevelError, UnknownDDVersion
-from imaspy.ids_convert import dd_version_map_from_factories
+from imaspy.exception import DataEntryException, LowlevelError
+from imaspy.ids_convert import NBCPathMap, dd_version_map_from_factories
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     CHAR_DATA,
@@ -194,13 +193,7 @@ class ALDBEntryImpl(DBEntryImpl):
         else:
             logger.warning("Backend %s is unknown to IMASPy", backend)
 
-    @property
-    def dd_version(self) -> str:
-        """Get the DD version used by this DB entry"""
-        return self._ids_factory.version
-
-    def close(self, *, erase=False):
-        """Implements DBEntry.close()"""
+    def close(self, *, erase: bool = False) -> None:
         if self._db_ctx is None:
             return
 
@@ -225,10 +218,9 @@ class ALDBEntryImpl(DBEntryImpl):
         occurrence: int,
         time_requested: Optional[float],
         interpolation_method: int,
-        destination: Optional[IDSToplevel],
+        destination: IDSToplevel,
         lazy: bool,
-        autoconvert: bool,
-        ignore_unknown_dd_version: bool,
+        nbc_map: Optional[NBCPathMap],
     ) -> None:
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not open.")
@@ -243,51 +235,10 @@ class ALDBEntryImpl(DBEntryImpl):
             ll_path += f"/{occurrence}"
 
         with self._db_ctx.global_action(ll_path, READ_OP) as read_ctx:
-            time_mode = read_ctx.read_data(
-                "ids_properties/homogeneous_time", "", INTEGER_DATA, 0
-            )
-            dd_version = read_ctx.read_data(
-                "ids_properties/version_put/data_dictionary", "", CHAR_DATA, 1
-            )
-
-        if time_mode not in IDS_TIME_MODES:
-            raise DataEntryException(
-                f"IDS {ids_name!r}, occurrence {occurrence} is empty."
-            )
-
-        if not dd_version:
-            logger.warning(
-                "Loaded IDS (%s, occurrence %s) does not specify a data dictionary "
-                "version. Some data may not be loaded.",
-                ids_name,
-                occurrence,
-            )
-        elif dd_version != self.dd_version and dd_version not in dd_xml_versions():
-            if ignore_unknown_dd_version:
-                logger.info("Ignoring unknown data dictionary version %s", dd_version)
-                dd_version = None
-            else:
-                note = (
-                    "\nYou may set the get/get_slice parameter "
-                    "ignore_unknown_dd_version=True to ignore this and get an IDS in "
-                    f"the default DD version ({self.dd_version})"
-                )
-                raise UnknownDDVersion(dd_version, dd_xml_versions(), note)
-
-        # Ensure we have a destination
-        if not destination:
-            if autoconvert:  # store results in our DD version
-                destination = self._ids_factory.new(ids_name, _lazy=lazy)
-            else:  # store results in on-disk DD version
-                destination = IDSFactory(dd_version).new(ids_name, _lazy=lazy)
-
-        # Create a version conversion map, if needed
-        nbc_map = None
-        if dd_version and dd_version != destination._dd_version:
-            ddmap, source_is_older = dd_version_map_from_factories(
-                ids_name, IDSFactory(version=dd_version), self._ids_factory
-            )
-            nbc_map = ddmap.new_to_old if source_is_older else ddmap.old_to_new
+            time_mode_path = "ids_properties/homogeneous_time"
+            time_mode = read_ctx.read_data(time_mode_path, "", INTEGER_DATA, 0)
+            # This is already checked by read_dd_version, but ensure:
+            assert time_mode in IDS_TIME_MODES
 
         if lazy:
             context = LazyALContext(dbentry=self, nbc_map=nbc_map, time_mode=time_mode)
@@ -314,6 +265,28 @@ class ALDBEntryImpl(DBEntryImpl):
                     gc.enable()
 
         return destination
+
+    def read_dd_version(self, ids_name: str, occurrence: int) -> str:
+        if self._db_ctx is None:
+            raise RuntimeError("Database entry is not open.")
+        # Mixing contexts can be problematic, ensure all lazy contexts are closed:
+        self._clear_lazy_ctx_cache()
+
+        ll_path = ids_name
+        if occurrence != 0:
+            ll_path += f"/{occurrence}"
+
+        with self._db_ctx.global_action(ll_path, READ_OP) as read_ctx:
+            time_mode_path = "ids_properties/homogeneous_time"
+            time_mode = read_ctx.read_data(time_mode_path, "", INTEGER_DATA, 0)
+            dd_version_path = "ids_properties/version_put/data_dictionary"
+            dd_version = read_ctx.read_data(dd_version_path, "", CHAR_DATA, 1)
+
+        if time_mode not in IDS_TIME_MODES:
+            raise DataEntryException(
+                f"IDS {ids_name!r}, occurrence {occurrence} is empty."
+            )
+        return dd_version
 
     def put(self, ids: IDSToplevel, occurrence: int, is_slice: bool) -> None:
         if self._db_ctx is None:
@@ -382,7 +355,7 @@ class ALDBEntryImpl(DBEntryImpl):
         with self._db_ctx.global_action(ll_path, WRITE_OP) as write_ctx:
             delete_children(ids.metadata, write_ctx, "")
 
-    def list_all_occurrences(self, ids_name):
+    def list_all_occurrences(self, ids_name: str) -> List[int]:
         try:
             occurrence_list = self._db_ctx.list_all_occurrences(ids_name)
         except LLInterfaceError:

@@ -2,8 +2,9 @@
 # You should have received the IMASPy LICENSE file with this project.
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, List, Optional
 
+from imaspy.ids_convert import NBCPathMap
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_toplevel import IDSToplevel
 
@@ -33,7 +34,7 @@ class DBEntryImpl(ABC):
         """Open a datasource with pulse, run and other legacy arguments."""
 
     @abstractmethod
-    def close(self, *, erase=False):
+    def close(self, *, erase: bool = False) -> None:
         """Close the data source.
 
         Keyword Args:
@@ -48,10 +49,9 @@ class DBEntryImpl(ABC):
         occurrence: int,
         time_requested: Optional[float],
         interpolation_method: int,
-        destination: Optional[IDSToplevel],
+        destination: IDSToplevel,
         lazy: bool,
-        autoconvert: bool,
-        ignore_unknown_dd_version: bool,
+        nbc_map: Optional[NBCPathMap],
     ) -> None:
         """Implement DBEntry.get()/get_slice(). Load data from the data source.
 
@@ -63,10 +63,16 @@ class DBEntryImpl(ABC):
                 time_requested is None).
             destination: IDS object to store data in.
             lazy: Use lazy loading.
-            autoconvert: Automatically convert between on-disk and requested version.
-            ignore_unknown_dd_version: When an IDS is stored with an unknown DD version,
-                do not attempt automatic conversion and fetch the data in the Data
-                Dictionary version attached to this Data Entry.
+            nbc_map: NBCPathMap to use for implicit conversion. When None, no implicit
+                conversion needs to be done.
+        """
+
+    @abstractmethod
+    def read_dd_version(self, ids_name: str, occurrence: int) -> str:
+        """Read data dictionary version that the requested IDS was stored with.
+
+        This method should raise a DataEntryException if the specified ids/occurrence is
+        not filled.
         """
 
     @abstractmethod
@@ -88,5 +94,5 @@ class DBEntryImpl(ABC):
         """Implement DBEntry.delete_data()"""
 
     @abstractmethod
-    def list_all_occurrences(self, ids_name):
+    def list_all_occurrences(self, ids_name: str) -> List[int]:
         """Implement DBEntry.list_all_occurrences()"""
