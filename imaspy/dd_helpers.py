@@ -229,7 +229,7 @@ def _run_data_dictionary(
     if result.returncode != 0:
         logger.warning("Error making DD version %s, make reported:", tag)
         logger.warning("CLASSPATH ='%s'", saxon_jar_path)
-        logger.warning("PATH = '%s'", os.environ["PATH"])
+        logger.warning("PATH = '%s'", os.environ.get("PATH", ""))
         logger.warning("stdout = '%s'", result.stdout.strip())
         logger.warning("stderr = '%s'", result.stderr.strip())
         logger.warning("continuing without DD version %s", tag)
