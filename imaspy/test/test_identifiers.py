@@ -16,7 +16,7 @@ def test_identifier_enum():
     # Test item access
     assert csid is identifiers["core_source_identifier"]
 
-    # Class and inheretence tests
+    # Class and inheritance tests
     assert csid.__name__ == "core_source_identifier"
     assert csid.__qualname__ == "imaspy.ids_identifiers.core_source_identifier"
     assert issubclass(csid, IDSIdentifier)
