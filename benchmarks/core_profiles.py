@@ -1,26 +1,18 @@
 import datetime
 import os
-from pathlib import Path
-from unittest.mock import patch
 
 import numpy as np
 
-import imas
 import imaspy
 
-from .utils import available_backends, available_slicing_backends
-
-
-hlis = ["imas", "imaspy"]
-available_serializers = [imas.imasdef.ASCII_SERIALIZER_PROTOCOL]
-DBEntry = {
-    "imas": imas.DBEntry,
-    "imaspy": imaspy.DBEntry,
-}
-factory = {
-    "imas": imas,
-    "imaspy": imaspy.IDSFactory(),
-}
+from .utils import (
+    available_backends,
+    available_serializers,
+    available_slicing_backends,
+    create_dbentry,
+    factory,
+    hlis,
+)
 
 N_SLICES = 32
 TIME = np.linspace(0, 1000, N_SLICES)
@@ -70,18 +62,6 @@ def fill_slices(core_profiles, times):
             profiles_1d.neutral[i].density = np.zeros(N_GRID)
 
 
-def create_dbentry(hli, backend):
-    path = Path.cwd() / f"DB-{hli}-{backend}"
-    path.mkdir(exist_ok=True)
-    if backend == imas.imasdef.MDSPLUS_BACKEND:
-        # Need to ensure that the MDS+ data folder exists:
-        (path / "benchmark" / "3" / "0").mkdir(parents=True, exist_ok=True)
-    dbentry = DBEntry[hli](backend, "benchmark", 1, 1, str(path))
-    options = f"-prefix {path}/" if backend == imas.imasdef.ASCII_BACKEND else None
-    dbentry.create(options=options)
-    return dbentry
-
-
 def setup_dbentry(hli, backend):
     dbentry = create_dbentry(hli, backend, "w")
     core_profiles = factory[hli].core_profiles()
@@ -102,7 +82,7 @@ class GetSlice:
 
     def time_get_slice(self, hli, backend):
         for t in TIME:
-            self.dbentry.get_slice("core_profiles", t, imas.imasdef.CLOSEST_INTERP)
+            self.dbentry.get_slice("core_profiles", t, imaspy.ids_defs.CLOSEST_INTERP)
 
 
 class Get:
@@ -117,7 +97,7 @@ class Get:
 class LazyGet:
     params = [[True, False], available_slicing_backends]
     param_names = ["lazy", "backend"]
-    
+
     def setup(self, lazy, backend):
         self.dbentry = create_dbentry("imaspy", backend)
         core_profiles = factory["imaspy"].core_profiles()
@@ -126,9 +106,7 @@ class LazyGet:
 
     def time_lazy_get(self, lazy, backend):
         cp = self.dbentry.get("core_profiles", lazy=lazy)
-        electron_temperatures = np.array([
-            prof_1d.electrons.temperature for prof_1d in cp.profiles_1d
-        ])
+        np.array([prof_1d.electrons.temperature for prof_1d in cp.profiles_1d])
 
 
 class Generate:

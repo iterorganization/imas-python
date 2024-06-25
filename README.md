@@ -48,6 +48,8 @@ Then clone this repository, and run `pip install`:
 git clone ssh://git@git.iter.org/imas/imaspy.git
 cd imaspy
 pip install .
+# Optional: also install `imas-core` with the HDF5 backend in the venv:
+pip install .[imas-core]
 ```
 
 If you get strange errors you might want to upgrade your `setuptools` and `pip`.

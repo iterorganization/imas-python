@@ -262,6 +262,7 @@ def test_ducktype_int0d(minimal):
     assert int(node) == 1
     assert float(node) == 1.0
     assert complex(node) == 1.0 + 0.0j
+    assert str(node) == "1"
     assert isinstance(node, Number)
     assert isinstance(node, Integral)
     # int functions/properties
@@ -296,6 +297,11 @@ def test_ducktype_int0d(minimal):
     # Check we haven't accidentally replaced `node` with an actual int
     assert node is minimal.int_0d
 
+    # Numpy operations
+    assert np.array_equal(node, 7)
+    assert np.isclose(node, 7)
+    assert np.array(node).dtype.kind == "i"  # Don't care if int32 or int64
+
 
 def test_ducktype_flt0d(minimal):
     node = minimal.flt_0d
@@ -304,6 +310,7 @@ def test_ducktype_flt0d(minimal):
     assert int(node) == 3
     assert float(node) == np.pi
     assert complex(node) == np.pi + 0.0j
+    assert str(node) == str(np.pi)
     assert isinstance(node, Number)
     assert isinstance(node, Real)
     # float functions/properties
@@ -336,12 +343,18 @@ def test_ducktype_flt0d(minimal):
     # Check we haven't accidentally replaced `node` with an actual float
     assert node is minimal.flt_0d
 
+    # Numpy operations
+    assert np.array_equal(node, 7)
+    assert np.isclose(node, 7)
+    assert np.array(node).dtype == np.float64
+
 
 def test_ducktype_cpx0d(minimal):
     node = minimal.cpx_0d
     node.value = 1.0 - 1.5j
     assert node == 1.0 - 1.5j
     assert complex(node) == 1.0 - 1.5j
+    assert str(node) == str(1.0 - 1.5j)
     assert isinstance(node, Number)
     assert isinstance(node, Complex)
     # complex functions/properties
@@ -364,6 +377,11 @@ def test_ducktype_cpx0d(minimal):
     assert node / 3 == 2 / 3 + 1j / 3
     # Check we haven't accidentally replaced `node` with an actual complex
     assert node is minimal.cpx_0d
+
+    # Numpy operations
+    assert np.array_equal(node, 2 + 1j)
+    assert np.isclose(node, 2 + 1j)
+    assert np.array(node).dtype == np.complex128
 
 
 ducktype_params = []

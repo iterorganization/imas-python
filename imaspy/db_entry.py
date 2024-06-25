@@ -3,6 +3,8 @@
 """Logic for interacting with IMAS Data Entries.
 """
 
+import gc
+import getpass
 import logging
 import os
 from collections import deque
@@ -111,7 +113,7 @@ class DBEntry:
         self.db_name = db_name
         self.pulse = pulse
         self.run = run
-        self.user_name = user_name or os.environ["USER"]
+        self.user_name = user_name or getpass.getuser()
         self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
         self.uri = None
 
@@ -575,7 +577,13 @@ class DBEntry:
             if lazy:
                 destination._set_lazy_context(read_ctx)
             else:
+                # Get may create LOTS of new objects. Temporarily disable Python's
+                # garbage collector to speed up the get:
+                gc_enabled = gc.isenabled()
+                gc.disable()
                 _get_children(destination, read_ctx, time_mode, nbc_map)
+                if gc_enabled:
+                    gc.enable()
 
         return destination
 

@@ -334,6 +334,12 @@ class IDSNumeric0D(IDSPrimitive):
     __doc__ = IDSDoc(__doc__)
     __slots__ = ()
 
+    def __array__(self, dtype=None):
+        return np.array(self.value, dtype=dtype)
+
+    def __str__(self):
+        return str(self.value)
+
     def _cast_value(self, value):
         if isinstance(value, np.ndarray) and value.ndim == 0:
             value = value.item()  # Unpack 0D numpy arrays

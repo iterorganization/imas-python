@@ -9,6 +9,7 @@
 import functools
 import logging
 import os
+import sys
 from copy import deepcopy
 from pathlib import Path
 
@@ -33,6 +34,18 @@ logger = logging.getLogger("imaspy")
 logger.setLevel(logging.INFO)
 
 os.environ["IMAS_AL_DISABLE_VALIDATE"] = "1"
+
+
+try:
+    import imas  # noqa
+except ImportError:
+
+    class SkipOnIMASAccess:
+        def __getattr__(self, attr):
+            pytest.skip("This test requires the `imas` HLI, which is not available.")
+
+    # Any test that tries to access an attribute from the `imas` package will be skipped
+    sys.modules["imas"] = SkipOnIMASAccess()
 
 
 def pytest_addoption(parser):
