@@ -6,11 +6,13 @@ import re
 import types
 from enum import Enum
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, Type
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_coordinates import IDSCoordinate
 from imaspy.ids_data_type import IDSDataType
+from imaspy.ids_identifiers import IDSIdentifier, identifiers
 from imaspy.ids_path import IDSPath
 
 
@@ -280,3 +282,22 @@ class IDSMetadata:
                     f"'{part}' element."
                 ) from None
         return item
+
+    @property
+    def identifier_enum(self) -> Optional[Type[IDSIdentifier]]:
+        """The identifier enum for this IDS node (if available).
+
+        This property is an identifier enum (a subclass of
+        :py:class:`imaspy.ids_identifiers.IDSIdentifier`) if this node represents an
+        identifier, and the Data Dictionary defines the allowed identifier values.
+
+        This property is ``None`` when this node is not an identifier, or the Data
+        Dictionary does not define the allowed identifier values.
+
+        .. seealso:: :ref:`Identifiers`
+        """
+        doc_identifier = getattr(self, "doc_identifier", None)
+        if not doc_identifier:
+            return None
+        identifier_name = Path(doc_identifier).stem
+        return identifiers[identifier_name]

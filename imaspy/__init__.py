@@ -1,6 +1,8 @@
 # This file is part of IMASPy.
 # You should have received the IMASPy LICENSE file with this project.
 
+# isort: skip_file
+
 from packaging.version import Version as _V
 
 from . import _version
@@ -16,6 +18,7 @@ from . import setup_logging
 from .db_entry import DBEntry
 from .ids_factory import IDSFactory
 from .ids_convert import convert_ids
+from .ids_identifiers import identifiers
 
 # Load the IMASPy IMAS AL/DD core
 from . import (

@@ -198,6 +198,28 @@ def _read_dd_versions() -> Dict[str, Tuple[Union[Path, Traversable], str]]:
 
 
 @lru_cache
+def _read_identifiers() -> Dict[str, Tuple[Union[Path, Traversable], str]]:
+    """Traverse all possible DD zip files and return a map of known identifiers.
+
+    Returns:
+        identifier_map: identifier -> (zipfile path, filename)
+    """
+    identifiers = {}
+    xml_re = re.compile(r"^identifiers/\w+/(\w+_identifier).xml$")
+    for path in ZIPFILE_LOCATIONS:
+        if not path.is_file():
+            continue
+        with _open_zipfile(path) as zipfile:
+            for fname in zipfile.namelist():
+                match = xml_re.match(fname)
+                if match:
+                    identifier_name = match.group(1)
+                    if identifier_name not in identifiers:
+                        identifiers[identifier_name] = (path, fname)
+    return identifiers
+
+
+@lru_cache
 def dd_xml_versions() -> List[str]:
     """Parse IDSDef.zip to find version numbers available"""
 
@@ -212,6 +234,13 @@ def dd_xml_versions() -> List[str]:
             return Version(0)
 
     return sorted(_read_dd_versions(), key=sort_key)
+
+
+@lru_cache
+def dd_identifiers() -> List[str]:
+    """Parse IDSDef.zip to find available identifiers"""
+
+    return sorted(_read_identifiers())
 
 
 def get_dd_xml(version):
@@ -231,6 +260,13 @@ def get_dd_xml_crc(version):
     path, fname = _read_dd_versions()[version]
     with _open_zipfile(path) as zipfile:
         return zipfile.getinfo(fname).CRC
+
+
+def get_identifier_xml(identifier_name):
+    """Get identifier XML for the given identifier name"""
+    path, fname = _read_identifiers()[identifier_name]
+    with _open_zipfile(path) as zipfile:
+        return zipfile.read(fname)
 
 
 def print_supported_version_warning(version):
