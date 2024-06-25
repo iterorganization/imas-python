@@ -49,6 +49,12 @@ class IDSIdentifier(Enum):
                         self.description,
                     )
                 return True
+            else:
+                logger.warning(
+                    "Name %r does not match identifier name %r, but indexes are equal.",
+                    other.name,
+                    self.name,
+                )
         return False
 
     @classmethod
