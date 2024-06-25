@@ -3,55 +3,41 @@
 """Logic for interacting with IMAS Data Entries.
 """
 
-import gc
-import getpass
 import logging
 import os
-from collections import deque
-from typing import Any, List, Optional, Tuple, overload
-from urllib.parse import urlparse
+from typing import Any, List, Optional, Tuple, Type, overload
 
 import imaspy
-from imaspy.al_context import ALContext, LazyALContext
-from imaspy.db_entry_helpers import _delete_children, _get_children, _put_children
+from imaspy.backends.db_entry_impl import DBEntryImpl
 from imaspy.dd_zip import dd_xml_versions
-from imaspy.exception import (
-    DataEntryException,
-    IDSNameError,
-    LowlevelError,
-    MDSPlusModelError,
-    UnknownDDVersion,
-    ValidationError,
-)
+from imaspy.exception import IDSNameError, UnknownDDVersion, ValidationError
 from imaspy.ids_base import IDSBase
 from imaspy.ids_convert import dd_version_map_from_factories
 from imaspy.ids_defs import (
-    ASCII_BACKEND,
-    CHAR_DATA,
-    CLOSE_PULSE,
     CREATE_PULSE,
-    ERASE_PULSE,
     FORCE_CREATE_PULSE,
     FORCE_OPEN_PULSE,
     IDS_TIME_MODE_INDEPENDENT,
-    IDS_TIME_MODE_UNKNOWN,
     IDS_TIME_MODES,
-    INTEGER_DATA,
-    MDSPLUS_BACKEND,
     OPEN_PULSE,
-    READ_OP,
-    UNDEFINED_INTERP,
-    UNDEFINED_TIME,
-    WRITE_OP,
-    needs_imas,
 )
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_metadata import IDSType
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.imas_interface import LLInterfaceError, ll_interface
-from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 
 logger = logging.getLogger(__name__)
+
+
+def _get_uri_mode(uri, mode) -> Tuple[str, str]:
+    """Helper method to parse arguments of DBEntry.__init__."""
+    return uri, mode
+
+
+def _get_legacy_params(
+    backend_id, db_name, pulse, run, user_name=None, data_version=None
+) -> Tuple[int, str, int, int, Optional[str], Optional[str]]:
+    """Helper method to parse arguments of DBEntry.__init__."""
+    return backend_id, db_name, pulse, run, user_name, data_version
 
 
 class DBEntry:
@@ -64,7 +50,7 @@ class DBEntry:
         import imaspy
 
         # AL4-style constructor:
-        with imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 1234) as dbentry:
+        with imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 12) as dbentry:
             # dbentry is now opened and can be used for reading data:
             ids = dbentry.get(...)
         # The dbentry is now closed
@@ -75,78 +61,52 @@ class DBEntry:
             # dbentry is now created and can be used for writing data:
             dbentry.put(ids)
         # The dbentry is now closed
-
     """
 
-    _OPEN_MODES = {
-        "r": OPEN_PULSE,
-        "a": FORCE_OPEN_PULSE,
-        "w": FORCE_CREATE_PULSE,
-        "x": CREATE_PULSE,
-    }
+    @overload
+    def __init__(
+        self,
+        uri: str,
+        mode: str,
+        *,
+        dd_version: Optional[str] = None,
+        xml_path: Optional[str] = None,
+    ) -> None: ...
 
-    @needs_imas
-    def __legacy_init(
+    @overload
+    def __init__(
         self,
         backend_id: int,
         db_name: str,
-        pulse: Optional[int] = None,
-        run: Optional[int] = None,
+        pulse: int,
+        run: int,
         user_name: Optional[str] = None,
         data_version: Optional[str] = None,
         *,
         shot: Optional[int] = None,
-    ):
-        # Backwards compatibility: support shot as alias for pulse
-        if pulse is None:
-            if shot is None:
-                raise ValueError("No value provided for `pulse`")
-            pulse = shot
-        elif shot is not None:
-            raise ValueError(
-                "Cannot provide a value for `shot` and `pulse`. "
-                "`shot` is an alias for pulse, please use `pulse` instead."
-            )
-        if run is None:
-            raise ValueError("No value provided for `run`")
+        dd_version: Optional[str] = None,
+        xml_path: Optional[str] = None,
+    ) -> None: ...
 
-        self._legacy_init = True
-        self.backend_id = backend_id
-        self.db_name = db_name
-        self.pulse = pulse
-        self.run = run
-        self.user_name = user_name or getpass.getuser()
-        self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
-        self.uri = None
-
-    @needs_imas
     def __init__(
         self,
-        uri: Optional[str] = None,
-        mode: Optional[str] = None,
         *args,
         dd_version: Optional[str] = None,
         xml_path: Optional[str] = None,
         **kwargs,
-    ) -> None:
-        """Create a new IMAS database entry object.
+    ):
+        """Open or create a Data Entry based on the provided URI and mode, or prepare a
+        DBEntry using `legacy` parameters.
 
-        You may use the optional arguments ``dd_version`` or ``xml_path`` to indicate
-        the Data Dictionary version for usage with this Database Entry. If neither are
-        supplied, the version is obtained from the IMAS_VERSION environment variable. If
-        that also is not available, the latest available DD version is used.
-
-        When using this DBEntry for reading data (:meth:`get` or :meth:`get_slice`), the
-        returned IDSToplevel will be in the DD version specified. If the on-disk format
-        is for a different DD version, the data is converted automatically.
-
-        When using this DBEntry for writing data (:meth:`put` or :meth:`put_slice`), the
-        specified DD version is used for writing to the backend. If the provided
-        IDSToplevel is for a different DD version, the data is converted automatically.
+        Note:
+            When using `legacy` parameters (:param:`backend_id`, :param:`db_name`,
+            :param:`pulse`, :param:`run`), the DBEntry is not opened.
+            You have to call :meth:`open` or :meth:`create` after creating the DBEntry
+            object before you can use it for reading or writing data.
 
         Args:
-            uri: IMAS URI of the data source (only available when using Access Layer 5)
-            mode: Mode to open the pulse in. One of:
+            uri: URI to the data entry, see explanation above.
+            mode: Mode to open the Data Entry in:
 
               - ``"r"``: Open an existing data entry. Raises an error when the data
                 entry does not exist.
@@ -160,86 +120,76 @@ class DBEntry:
               - ``"x"``: Create a data entry. Raises an error when a data entry already
                 exists.
 
-        Notes:
-
-            Instead of the URI and mode, legacy parameters can be supplied as well. When
-            using Access Layer version 4, the URI/mode arguments are not supported and
-            the legacy parameters must be used instead:
-
-            ``backend_id``
-                ID of the backend to use, e.g. HDF5_BACKEND. See :ref:`Backend
-                identifiers`.
-
-            ``db_name``
-                Database name, e.g. "ITER".
-
-            ``pulse``
-                Pulse number of the database entry
-
-            ``run``
-                Run number of the database entry
-
-            ``user_name``
-                User name of the database, retrieved from environment when not supplied.
-
-            ``data_version``
-                Major version of the DD used by the the access layer, retrieved from
-                environment when not supplied.
+            backend_id: ID of the backend to use. See :ref:`Backend identifiers`.
+            db_name: Database name, e.g. "ITER".
+            pulse: Pulse number of the database entry.
+            run: Run number of the database entry.
+            user_name: User name of the database, retrieved from environment when not
+                supplied.
+            data_version: Major version of the DD used by the the access layer.
 
         Keyword Args:
-            dd_version: Data dictionary version to use.
-            xml_path: Data dictionary definition XML file to use.
+            shot: Legacy alternative for :param:`pulse`.
+            dd_version: Use a specific Data Dictionary version instead of the default
+                one. See :ref:`multi-dd training`.
+            xml_path: Use a specific Data Dictionary build by pointing to the
+                IDSDef.xml. See :ref:`Using custom builds of the Data Dictionary`.
         """
-        self._db_ctx: Optional[ALContext] = None
+        try:
+            # Try to map *args and **kwargs to (uri, mode)
+            uri, mode = _get_uri_mode(*args, **kwargs)
+            legacy = False
+
+        except TypeError as exc1:
+            # map legacy `shot` to `pulse`
+            if "shot" in kwargs:
+                if "pulse" in kwargs:
+                    raise ValueError("Cannot provide a value for both shot and pulse")
+                kwargs["pulse"] = kwargs.pop("shot")
+            # Try to map *args and **kwargs to legacy call pattern
+            try:
+                legacy_params = _get_legacy_params(*args, **kwargs)
+                legacy = True
+            except TypeError as exc2:
+                raise TypeError(
+                    f"Incorrect arguments to {__class__.__name__}.__init__(): "
+                    f"{exc1.args[0]}, {exc2.args[0]}"
+                ) from None
+
+        # Actual intializiation
+        self._dbe_impl: Optional[DBEntryImpl] = None
         self._dd_version = dd_version
         self._xml_path = xml_path
         self._ids_factory = IDSFactory(dd_version, xml_path)
-        self._uses_mdsplus = False
-        self._lazy_ctx_cache = deque()
 
-        if args or kwargs:
-            # uri and mode may be set as positional arguments in which case they
-            # represent backend_id and db_name, though backend_id and/or db_name may
-            # also be provided as kwargs
-            if mode is not None:
-                args = (uri, mode) + args
-            elif uri is not None:
-                args = (uri,) + args
-            self.__legacy_init(*args, **kwargs)
-        elif ll_interface._al_version.major < 5:
-            raise ValueError("Providing a URI to DBEntry() requires IMAS version 5.")
+        if legacy:
+            # Unpack legacy params
+            (
+                self.backend_id,
+                self.db_name,
+                self.pulse,
+                self.run,
+                self.user_name,
+                self.data_version,
+            ) = legacy_params
+            self.uri = None
+            self.mode = None
         else:
-            self._legacy_init = False
-            if not uri:
-                raise ValueError("No URI provided.")
             self.uri = uri
-            if mode not in self._OPEN_MODES:
-                modes = set(self._OPEN_MODES)
-                raise ValueError(f"Unknown mode {mode!r}, was expecting any of {modes}")
-            self.open(self._OPEN_MODES[mode])
+            self.mode = mode
+            cls = self._select_implementation(uri)
+            self._dbe_impl = cls.from_uri(uri, mode, self._ids_factory)
 
-    def _build_legacy_uri(self, options):
-        if not self._legacy_init:
-            raise RuntimeError(
-                "DBEntry was not constructed with legacy parameters, and no"
-                " URI provided to 'open()' or 'create()'"
-            )
-        status, uri = ll_interface.build_uri_from_legacy_parameters(
-            self.backend_id,
-            self.pulse,
-            self.run,
-            self.user_name,
-            self.db_name,
-            self.data_version,
-            options if options is not None else "",
-        )
-        if status != 0:
-            raise LowlevelError("build URI from legacy parameters", status)
-        return uri
+    @staticmethod
+    def _select_implementation(uri: Optional[str]) -> Type[DBEntryImpl]:
+        """Select which DBEntry implementation to use based on the URI."""
+        from imaspy.backends.imas_core.db_entry_al import ALDBEntryImpl
+
+        return ALDBEntryImpl
 
     def __enter__(self):
         # Context manager protocol
-        if self._db_ctx is None:
+        if self._dbe_impl is None:
             # Open if the DBEntry was not already opened or created
             self.open()
         return self
@@ -258,88 +208,22 @@ class DBEntry:
         """Get the DD version used by this DB entry"""
         return self._ids_factory.version
 
-    def _open_pulse(self, mode: int, options: Any) -> None:
-        """Internal method implementing open()/create()."""
-        if self._db_ctx is not None:
-            raise RuntimeError("This DBEntry is already open")
-        if self._legacy_init:
-            if ll_interface._al_version.major < 5:
-                # AL4 compatibility
-                if self.backend_id == MDSPLUS_BACKEND:
-                    self._setup_mdsplus(mode)
-                status, ctx = ll_interface.begin_pulse_action(
-                    self.backend_id,
-                    self.pulse,
-                    self.run,
-                    self.user_name,
-                    self.db_name,
-                    self.data_version,
-                )
-                if status != 0:
-                    raise LowlevelError("begin pulse action", status)
-                status = ll_interface.open_pulse(ctx, mode, options)
-            else:
-                self.uri = self._build_legacy_uri(options)
-        if ll_interface._al_version.major >= 5:
-            if urlparse(self.uri).path.lower() == "mdsplus":
-                self._setup_mdsplus(mode)
-            status, ctx = ll_interface.begin_dataentry_action(self.uri, mode)
-        if status != 0:
-            raise LowlevelError("opening/creating data entry", status)
-        self._db_ctx = ALContext(ctx)
-
-    def _setup_mdsplus(self, mode):
-        """Additional setup required for MDSPLUS backend"""
-        # All open modes except for OPEN_PULSE might create a new Data Entry:
-        if mode != OPEN_PULSE:
-            # Building the MDS+ models is only required when creating a new Data Entry
-            if self._dd_version or self._xml_path:
-                ids_path = mdsplus_model_dir(
-                    version=self._dd_version, xml_file=self._xml_path
-                )
-            elif self._ids_factory._version:
-                ids_path = mdsplus_model_dir(version=self._ids_factory._version)
-            else:
-                # We should always have a version, but just in case:
-                raise MDSPlusModelError("Unknown Data Dictionary version")
-            if ids_path:
-                os.environ["ids_path"] = ids_path
-
-        # Note: MDSPLUS model directory only uses the major version component of
-        # IMAS_VERSION, so we'll take the first character of IMAS_VERSION, or fallback
-        # to "3" (older we don't support, newer is not available and probably never will
-        # with Access Layer 4.x).
-        if ll_interface._al_version.major == 4:
-            version = self._dd_version[0] if self._dd_version else "3"
-            ensure_data_dir(str(self.user_name), self.db_name, version, self.run)
-        self._uses_mdsplus = True
-
     def close(self, *, erase=False):
         """Close this Database Entry.
 
         Keyword Args:
-            erase: Remove the pulse file from the database.
+            erase: Remove the pulse file from the database. Note: this parameter may be
+                ignored by the backend. It is best to not use it.
         """
-        if self._db_ctx is None:
+        if self._dbe_impl is None:
             return
-
-        self._clear_lazy_ctx_cache()
-
-        mode = ERASE_PULSE if erase else CLOSE_PULSE
-        status = ll_interface.close_pulse(self._db_ctx.ctx, mode)
-        if status != 0:
-            raise LowlevelError("close data entry", status)
-
-        ll_interface.end_action(self._db_ctx.ctx)
-        self._db_ctx = None
-
-    def _clear_lazy_ctx_cache(self) -> None:
-        """Close any cached lazy contexts"""
-        while self._lazy_ctx_cache:
-            self._lazy_ctx_cache.pop().close()
+        self._dbe_impl.close(erase=erase)
+        self._dbe_impl = None
 
     def create(self, *, options=None, force=True) -> None:
         """Create a new database entry.
+
+        This method may not be called when using the URI constructor of DBEntry.
 
         Caution:
             This method erases the previous entry if it existed!
@@ -352,14 +236,17 @@ class DBEntry:
             .. code-block:: python
 
                 import imaspy
+                from imaspy.ids_defs import HDF5_BACKEND
 
-                imas_entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 1234)
+                imas_entry = imaspy.DBEntry(HDF5_BACKEND, "test", 1, 1234)
                 imas_entry.create()
-        """  # noqa
+        """
         self._open_pulse(FORCE_CREATE_PULSE if force else CREATE_PULSE, options)
 
     def open(self, mode=OPEN_PULSE, *, options=None, force=False) -> None:
         """Open an existing database entry.
+
+        This method may not be called when using the URI constructor of DBEntry.
 
         Keyword Args:
             options: Backend specific options.
@@ -369,10 +256,11 @@ class DBEntry:
             .. code-block:: python
 
                 import imaspy
+                from imaspy.ids_defs import HDF5_BACKEND
 
-                imas_entry = imaspy.DBEntry(imaspy.ids_defs.HDF5_BACKEND, "test", 1, 1234)
+                imas_entry = imaspy.DBEntry(HDF5_BACKEND, "test", 1, 1234)
                 imas_entry.open()
-        """  # noqa
+        """
         if force:
             mode = FORCE_OPEN_PULSE
             logger.warning(
@@ -380,6 +268,29 @@ class DBEntry:
                 "use DBEntry.open(FORCE_OPEN_PULSE) instead"
             )
         self._open_pulse(mode, options)
+
+    def _open_pulse(self, mode: int, options: Any) -> None:
+        """Internal method implementing open()/create()."""
+        if self._dbe_impl is not None:
+            raise RuntimeError("This DBEntry is already open")
+        if self.uri is not None:
+            raise RuntimeError(
+                "This DBEntry was opened using an URI: "
+                "DBEntry.open/create is not available."
+            )
+
+        cls = self._select_implementation(self.uri)
+        self._dbe_impl = cls.from_pulse_run(
+            self.backend_id,
+            self.db_name,
+            self.pulse,
+            self.run,
+            self.user_name,
+            self.data_version,
+            mode,
+            options,
+            self._ids_factory,
+        )
 
     def get(
         self,
@@ -525,41 +436,20 @@ class DBEntry:
         ignore_unknown_dd_version: bool,
     ) -> IDSToplevel:
         """Actual implementation of get() and get_slice()"""
-        if self._db_ctx is None:
-            raise RuntimeError("Database entry is not opened, use open() first.")
-        if lazy and (
-            (self._legacy_init and self.backend_id == ASCII_BACKEND)
-            or (not self._legacy_init and urlparse(self.uri).path.lower() == "ascii")
-        ):
-            raise RuntimeError("Lazy loading is not supported by the ASCII backend.")
+        if self._dbe_impl is None:
+            raise RuntimeError("Database entry is not open.")
         if lazy and destination:
             raise ValueError("Cannot supply a destination IDS when lazy loading.")
+        if not self._ids_factory.exists(ids_name):
+            raise IDSNameError(ids_name, self._ids_factory)
 
-        # Mixing contexts can be problematic, ensure all lazy contexts are closed:
-        self._clear_lazy_ctx_cache()
+        # Note: this will raise an exception when the ids/occurrence is not filled:
+        dd_version = self._dbe_impl.read_dd_version(ids_name, occurrence)
 
-        ll_path = ids_name
-        if occurrence != 0:
-            ll_path += f"/{occurrence}"
-
-        with self._db_ctx.global_action(ll_path, READ_OP) as read_ctx:
-            time_mode = read_ctx.read_data(
-                "ids_properties/homogeneous_time", "", INTEGER_DATA, 0
-            )
-            dd_version = read_ctx.read_data(
-                "ids_properties/version_put/data_dictionary", "", CHAR_DATA, 1
-            )
-
-        if time_mode not in IDS_TIME_MODES:
-            # First check if we know about this IDS name, perhaps it was a typo?
-            if self._ids_factory.exists(ids_name):
-                # IDS exists, but is not available in the backend
-                raise DataEntryException(
-                    f"IDS {ids_name!r}, occurrence {occurrence} is empty."
-                )
-            else:
-                raise IDSNameError(ids_name, self._ids_factory)
+        # DD version sanity checks:
         if not dd_version:
+            # No DD version stored in the IDS, load as if it was stored with
+            # self.dd_version
             logger.warning(
                 "Loaded IDS (%s, occurrence %s) does not specify a data dictionary "
                 "version. Some data may not be loaded.",
@@ -567,25 +457,30 @@ class DBEntry:
                 occurrence,
             )
         elif dd_version != self.dd_version and dd_version not in dd_xml_versions():
+            # We don't know the DD version that this IDS was written with
             if ignore_unknown_dd_version:
+                # User chooses to ignore this problem, load as if it was stored with
+                # self.dd_version
                 logger.info("Ignoring unknown data dictionary version %s", dd_version)
                 dd_version = None
             else:
                 note = (
                     "\nYou may set the get/get_slice parameter "
                     "ignore_unknown_dd_version=True to ignore this and get an IDS in "
-                    f"the default DD version ({self.factory.dd_version})"
+                    f"the default DD version ({self.dd_version})"
                 )
                 raise UnknownDDVersion(dd_version, dd_xml_versions(), note)
 
-        # Ensure we have a destination
+        # Implicit version conversion:
         if not destination:
-            if autoconvert or not dd_version:  # store results in our DD version
+            # Construct IDS object that the backend can store data in
+            if autoconvert or not dd_version:
+                # Store results in our DD version
                 destination = self._ids_factory.new(ids_name, _lazy=lazy)
-            else:  # store results in on-disk DD version
+            else:
+                # Store results in the on-disk version
                 destination = IDSFactory(dd_version).new(ids_name, _lazy=lazy)
 
-        # Create a version conversion map, if needed
         nbc_map = None
         if dd_version and dd_version != destination._dd_version:
             ddmap, source_is_older = dd_version_map_from_factories(
@@ -593,31 +488,16 @@ class DBEntry:
             )
             nbc_map = ddmap.new_to_old if source_is_older else ddmap.old_to_new
 
-        if lazy:
-            context = LazyALContext(dbentry=self, nbc_map=nbc_map, time_mode=time_mode)
-        else:
-            context = self._db_ctx
-        # Now fill the IDSToplevel
-        if time_requested is None or destination.metadata.type is IDSType.CONSTANT:
-            # called from get(), or when the IDS is constant (see IMAS-3330)
-            manager = context.global_action(ll_path, READ_OP)
-        else:  # get_slice
-            manager = context.slice_action(
-                ll_path, READ_OP, time_requested, interpolation_method
-            )
-        with manager as read_ctx:
-            if lazy:
-                destination._set_lazy_context(read_ctx)
-            else:
-                # Get may create LOTS of new objects. Temporarily disable Python's
-                # garbage collector to speed up the get:
-                gc_enabled = gc.isenabled()
-                gc.disable()
-                _get_children(destination, read_ctx, time_mode, nbc_map)
-                if gc_enabled:
-                    gc.enable()
-
-        return destination
+        # Pass on to the DBEntry implementation:
+        return self._dbe_impl.get(
+            ids_name,
+            occurrence,
+            time_requested,
+            interpolation_method,
+            destination,
+            lazy,
+            nbc_map,
+        )
 
     def put(self, ids: IDSToplevel, occurrence: int = 0) -> None:
         """Write the contents of an IDS into this Database Entry.
@@ -682,13 +562,10 @@ class DBEntry:
 
     def _put(self, ids: IDSToplevel, occurrence: int, is_slice: bool):
         """Actual implementation of put() and put_slice()"""
-        if self._db_ctx is None:
-            raise RuntimeError("Database entry is not opened, use open() first.")
+        if self._dbe_impl is None:
+            raise RuntimeError("Database entry is not open.")
         if ids._lazy:
             raise ValueError("Lazy loaded IDSs cannot be used in put or put_slice.")
-
-        # Mixing contexts can be problematic, ensure all lazy contexts are closed:
-        self._clear_lazy_ctx_cache()
 
         # Automatic validation
         disable_validate = os.environ.get("IMAS_AL_DISABLE_VALIDATE")
@@ -704,14 +581,6 @@ class DBEntry:
                 raise
 
         ids_name = ids.metadata.name
-        # Create a version conversion map, if needed
-        nbc_map = None
-        if ids._version != self._ids_factory._version:
-            ddmap, source_is_older = dd_version_map_from_factories(
-                ids_name, ids._parent, self._ids_factory
-            )
-            nbc_map = ddmap.old_to_new if source_is_older else ddmap.new_to_old
-
         # Verify homogeneous_time is set
         time_mode = ids.ids_properties.homogeneous_time
         # TODO: allow unset homogeneous_time and quit with no action?
@@ -731,46 +600,14 @@ class DBEntry:
         if is_slice and time_mode == IDS_TIME_MODE_INDEPENDENT:
             raise RuntimeError("Cannot use put_slice with IDS_TIME_MODE_INDEPENDENT.")
 
-        ll_path = ids_name
-        if occurrence != 0:
-            ll_path += f"/{occurrence}"
-
         # Set version_put properties (version_put was added in DD 3.22)
         if hasattr(ids.ids_properties, "version_put"):
             version_put = ids.ids_properties.version_put
             version_put.data_dictionary = self._ids_factory._version
-            version_put.access_layer = ll_interface._al_version_str
-            version_put.access_layer_language = "imaspy " + imaspy.__version__
+            version_put.access_layer = self._dbe_impl.access_layer_version()
+            version_put.access_layer_language = f"imaspy {imaspy.__version__}"
 
-        if is_slice:
-            with self._db_ctx.global_action(ll_path, READ_OP) as read_ctx:
-                db_time_mode = read_ctx.read_data(
-                    "ids_properties/homogeneous_time", "", INTEGER_DATA, 0
-                )
-            if db_time_mode == IDS_TIME_MODE_UNKNOWN:
-                # No data yet on disk, so just put everything
-                is_slice = False
-            elif db_time_mode != time_mode:
-                raise DataEntryException(
-                    f"Cannot change homogeneous_time from {db_time_mode} to {time_mode}"
-                )
-
-        if not is_slice:
-            # put() must first delete any existing data
-            with self._db_ctx.global_action(ll_path, WRITE_OP) as write_ctx:
-                # New IDS to ensure all fields in "our" DD version are deleted
-                # If ids is in another version, we might not erase all fields
-                _delete_children(self._ids_factory.new(ids_name).metadata, write_ctx)
-
-        if is_slice:
-            manager = self._db_ctx.slice_action(
-                ll_path, WRITE_OP, UNDEFINED_TIME, UNDEFINED_INTERP
-            )
-        else:
-            manager = self._db_ctx.global_action(ll_path, WRITE_OP)
-        verify_maxoccur = self._uses_mdsplus
-        with manager as write_ctx:
-            _put_children(ids, write_ctx, time_mode, is_slice, nbc_map, verify_maxoccur)
+        self._dbe_impl.put(ids, occurrence, is_slice)
 
     def delete_data(self, ids_name: str, occurrence: int = 0) -> None:
         """Delete the provided IDS occurrence from this IMAS database entry.
@@ -779,17 +616,9 @@ class DBEntry:
             ids_name: Name of the IDS to delete from the backend.
             occurrence: Which occurrence of the IDS to delete.
         """
-        if self._db_ctx is None:
-            raise RuntimeError("Database entry is not opened, use open() first.")
-        # Mixing contexts can be problematic, ensure all lazy contexts are closed:
-        self._clear_lazy_ctx_cache()
-
-        ll_path = ids_name
-        if occurrence != 0:
-            ll_path += f"/{occurrence}"
-        ids = self._ids_factory.new(ids_name)
-        with self._db_ctx.global_action(ll_path, WRITE_OP) as write_ctx:
-            _delete_children(ids.metadata, write_ctx, "")
+        if self._dbe_impl is None:
+            raise RuntimeError("Database entry is not open.")
+        self._dbe_impl.delete_data(ids_name, occurrence)
 
     @overload
     def list_all_occurrences(
@@ -830,17 +659,10 @@ class DBEntry:
                     dbentry.list_all_occurrences("magnetics", "ids_properties/comment")
                 dbentry.close()
         """
-        if self._db_ctx is None:
-            raise RuntimeError("Database entry is not opened, use open() first.")
+        if self._dbe_impl is None:
+            raise RuntimeError("Database entry is not open.")
 
-        try:
-            occurrence_list = self._db_ctx.list_all_occurrences(ids_name)
-        except LLInterfaceError:
-            # al_get_occurrences is not available in the lowlevel
-            raise RuntimeError(
-                "list_all_occurrences is not available. "
-                "Access Layer 5.1 or newer is required."
-            ) from None
+        occurrence_list = self._dbe_impl.list_all_occurrences(ids_name)
 
         if node_path is None:
             return occurrence_list

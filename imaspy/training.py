@@ -9,12 +9,13 @@ from unittest.mock import patch
 from importlib_resources import files
 
 import imaspy
+from imaspy.backends.imas_core.imas_interface import ll_interface
 
 
 def _initialize_training_db(DBEntry_cls):
     assets_path = files(imaspy) / "assets/"
     pulse, run, user, database = 134173, 106, "public", "ITER"
-    if imaspy.imas_interface.ll_interface._al_version.major == 4:
+    if ll_interface._al_version.major == 4:
         entry = DBEntry_cls(imaspy.ids_defs.ASCII_BACKEND, database, pulse, run, user)
         entry.open(options=f"-prefix {assets_path}/")
     else:

@@ -8,6 +8,7 @@ import os
 import numpy as np
 import pytest
 
+from imaspy.backends.imas_core.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     CLOSEST_INTERP,
@@ -16,7 +17,6 @@ from imaspy.ids_defs import (
     MDSPLUS_BACKEND,
 )
 from imaspy.ids_factory import IDSFactory
-from imaspy.mdsplus_model import ensure_data_dir, mdsplus_model_dir
 from imaspy.test.test_helpers import open_dbentry
 
 # import IMAS HLI, skip module when this is an install without IMAS
@@ -98,7 +98,7 @@ def test_hli_time_slicing_put(backend, worker_id, tmp_path, time_mode):
 
     # ensure presence of mdsplus model dir
     if backend == MDSPLUS_BACKEND:
-        os.environ["ids_path"] = mdsplus_model_dir(version=os.environ["IMAS_VERSION"])
+        os.environ["ids_path"] = mdsplus_model_dir(IDSFactory())
         ensure_data_dir(str(tmp_path), "test", "3", 9999)
     db_entry = imas.DBEntry(backend, "test", pulse, 9999, user_name=str(tmp_path))
     status, ctx = db_entry.create()

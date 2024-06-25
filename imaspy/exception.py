@@ -7,7 +7,7 @@ import difflib
 import logging
 from typing import TYPE_CHECKING, List
 
-import imaspy.imas_interface
+from imaspy.backends.imas_core import imas_interface as _imas_interface
 
 if TYPE_CHECKING:
     from imaspy.ids_factory import IDSFactory
@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 # Expose ALException, which may be thrown by the lowlevel
-if imaspy.imas_interface.has_imas:
-    ALException = imaspy.imas_interface.lowlevel.ALException
+if _imas_interface.has_imas:
+    ALException = _imas_interface.lowlevel.ALException
 else:
     ALException = None
 

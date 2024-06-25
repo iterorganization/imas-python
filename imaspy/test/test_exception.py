@@ -1,7 +1,7 @@
 import pytest
 
 import imaspy
-from imaspy.imas_interface import ll_interface
+from imaspy.backends.imas_core.imas_interface import ll_interface
 
 
 def test_catch_al_exception(requires_imas):

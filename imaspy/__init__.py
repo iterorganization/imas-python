@@ -25,7 +25,6 @@ from . import (
     db_entry,
     dd_helpers,
     dd_zip,
-    mdsplus_model,
     util,
 )
 

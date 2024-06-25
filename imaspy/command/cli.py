@@ -22,11 +22,11 @@ from rich.progress import (
 from rich.table import Table
 
 import imaspy
-import imaspy.imas_interface
-from imaspy import dd_zip, imas_interface
+import imaspy.backends.imas_core.imas_interface
+from imaspy import dd_zip
+from imaspy.backends.imas_core.imas_interface import ll_interface
 from imaspy.command.timer import Timer
 from imaspy.exception import UnknownDDVersion
-from imaspy.imas_interface import ll_interface
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ def cli():
 
 def min_version_guard(al_version: Version):
     """Print an error message if the loaded AL version is too old."""
-    used_version = imas_interface.ll_interface._al_version
+    used_version = ll_interface._al_version
     if used_version >= al_version:
         return
     click.echo(

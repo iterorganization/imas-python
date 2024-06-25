@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
+from imaspy.backends.imas_core.imas_interface import ll_interface
 from imaspy.exception import ValidationError
 from imaspy.ids_base import IDSDoc
 from imaspy.ids_defs import (
@@ -22,7 +23,6 @@ from imaspy.ids_defs import (
 )
 from imaspy.ids_metadata import IDSMetadata, IDSType, get_toplevel_metadata
 from imaspy.ids_structure import IDSStructure
-from imaspy.imas_interface import ll_interface
 
 if TYPE_CHECKING:
     from imaspy.db_entry import DBEntry
