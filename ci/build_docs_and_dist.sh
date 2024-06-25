@@ -19,7 +19,7 @@ set -x
 
 # Set up the testing venv
 rm -rf venv  # Environment should be clean, but remove directory to be sure
-python -m venv --system-site-packages venv
+python -m venv venv
 source venv/bin/activate
 
 # Create sdist and wheel

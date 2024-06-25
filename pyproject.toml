@@ -56,7 +56,8 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "numpy>=1.15.4",
+    # FIXME: numpy 2.0 compatibility
+    "numpy>=1.15.4,<2",
     "rich",
     "scipy",
     "click",
