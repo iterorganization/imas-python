@@ -4,6 +4,7 @@
 """
 
 import gc
+import getpass
 import logging
 import os
 from typing import Any, List, Optional, Tuple, overload
@@ -113,7 +114,7 @@ class DBEntry:
         self.db_name = db_name
         self.pulse = pulse
         self.run = run
-        self.user_name = user_name or os.environ["USER"]
+        self.user_name = user_name or getpass.getuser()
         self.data_version = data_version or os.environ.get("IMAS_VERSION", "")
         self.uri = None
 

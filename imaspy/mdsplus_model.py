@@ -87,7 +87,7 @@ def mdsplus_model_dir(version=None, xml_file=None):
     java net.sf.saxon.Transform -s:- -xsl: -o:${OUTPUT_FILE}
 
     with ENV:
-    env={"CLASSPATH": saxon_jar_path, "PATH": os.environ["PATH"]}
+    env={"CLASSPATH": saxon_jar_path, "PATH": os.environ.get("PATH", "")}
 
     Args:
         version: DD version string where the cache should be based on
@@ -262,7 +262,7 @@ def create_model_ids_xml(cache_dir_path, fname, version):
                     "-xsl:" + str(xslfile),
                 ],
                 input=get_dd_xml(version) if version else None,
-                env={"CLASSPATH": get_saxon(), "PATH": os.environ["PATH"]},
+                env={"CLASSPATH": get_saxon(), "PATH": os.environ.get("PATH", "")},
             )
     except CalledProcessError as e:
         if fname:
@@ -300,8 +300,8 @@ def create_mdsplus_model(cache_dir_path: Path) -> None:
             ],
             cwd=str(cache_dir_path),
             env={
-                "PATH": os.environ["PATH"],
-                "LD_LIBRARY_PATH": os.environ["LD_LIBRARY_PATH"],
+                "PATH": os.environ.get("PATH", ""),
+                "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
                 "ids_path": str(cache_dir_path),
             },
         )
@@ -351,6 +351,11 @@ def ensure_data_dir(user: str, tokamak: str, version: str, run: int) -> None:
     the MDSplus backend uses to set the data path.
     See also mdsplus_backend.cpp:751 (setDataEnv)"""
     if user == "public":
+        if "IMAS_HOME" not in os.environ:
+            raise RuntimeError(
+                "Environment variable IMAS_HOME must be set to access "
+                "the public database."
+            )
         dbdir = Path(os.environ["IMAS_HOME"]) / "shared" / "imasdb" / tokamak / version
     elif user[0] == "/":
         dbdir = Path(user) / tokamak / version

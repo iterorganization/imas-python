@@ -19,14 +19,12 @@ set -x
 
 # Set up the testing venv
 rm -rf venv  # Environment should be clean, but remove directory to be sure
-python -m venv --system-site-packages venv
+python -m venv venv
 source venv/bin/activate
 
 # Install imaspy and test dependencies
 pip install --upgrade pip setuptools wheel
-# Pin xarray version (the numpy bundled in SciPy-bundle/2020.11-intel-2020b is too old
-# for the latest xarray):
-pip install xarray==2022.3.0 .[test]
+pip install .[test]
 
 # Debugging:
 pip freeze
@@ -36,4 +34,4 @@ pip freeze
 rm -f junit.xml
 rm -rf htmlcov
 
-pytest -n=auto --cov=imaspy --cov-report=term-missing --cov-report=html --junit-xml=junit.xml
+python -m pytest -n=auto --cov=imaspy --cov-report=term-missing --cov-report=html --junit-xml=junit.xml
