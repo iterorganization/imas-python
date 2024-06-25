@@ -45,8 +45,9 @@ def test_inspect():
 
 
 def test_inspect_lazy():
-    cp = get_training_db_entry().get("core_profiles", lazy=True)
-    inspect(cp)
+    with get_training_db_entry() as entry:
+        cp = entry.get("core_profiles", lazy=True)
+        inspect(cp)
 
 
 def test_print_tree():

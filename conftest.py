@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 from packaging.version import Version
 
-from imaspy.db_entry import DBEntry
 from imaspy.dd_zip import dd_etree, latest_dd_version
 from imaspy.ids_defs import (
     ASCII_BACKEND,
@@ -31,7 +30,7 @@ from imaspy.ids_factory import IDSFactory
 from imaspy.imas_interface import has_imas as _has_imas
 from imaspy.imas_interface import ll_interface, lowlevel
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("imaspy")
 logger.setLevel(logging.INFO)
 
 os.environ["IMAS_AL_DISABLE_VALIDATE"] = "1"

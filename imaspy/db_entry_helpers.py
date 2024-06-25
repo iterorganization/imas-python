@@ -106,15 +106,15 @@ def _get_child(child: IDSBase, ctx: LazyALContext):
         timebase = "/time"
 
     if data_type is IDSDataType.STRUCT_ARRAY:
-        child._set_lazy_context(ctx, new_path, timebase)
+        aos_ctx = ctx.arraystruct_action(new_path, timebase, 0)
+        child._set_lazy_context(aos_ctx)
 
     elif data_type is IDSDataType.STRUCTURE:
         child._set_lazy_context(ctx)
 
     else:  # Data elements
         ndim = child_meta._al_ndim
-        with ctx.get_context() as real_ctx:
-            data = real_ctx.read_data(new_path, timebase, data_type.al_type, ndim)
+        data = ctx.get_context().read_data(new_path, timebase, data_type.al_type, ndim)
         if not (
             # Empty arrays and STR_1D
             data is None

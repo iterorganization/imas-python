@@ -9,7 +9,7 @@ from typing import Optional, Tuple
 
 from xxhash import xxh3_64
 
-from imaspy.al_context import LazyALContext
+from imaspy.al_context import LazyALArrayStructContext
 from imaspy.ids_base import IDSBase, IDSDoc
 from imaspy.ids_coordinates import IDSCoordinates
 from imaspy.ids_metadata import IDSMetadata
@@ -25,7 +25,7 @@ class IDSStructArray(IDSBase):
     """
 
     __doc__ = IDSDoc(__doc__)
-    __slots__ = ["_parent", "_lazy", "metadata", "value", "_lazy_ctx", "_lazy_paths"]
+    __slots__ = ["_parent", "_lazy", "metadata", "value", "_lazy_ctx"]
 
     def __init__(self, parent: IDSBase, metadata: IDSMetadata):
         """Initialize IDSStructArray from XML specification
@@ -45,8 +45,7 @@ class IDSStructArray(IDSBase):
 
         # Lazy loading context, only applicable when self._lazy is True
         # When lazy loading, all items in self.value are None until they are requested
-        self._lazy_ctx: Optional[LazyALContext] = None
-        self._lazy_paths = ("", "")  # path, timebasepath
+        self._lazy_ctx: Optional[LazyALArrayStructContext] = None
 
     @property
     def coordinates(self):
@@ -69,13 +68,12 @@ class IDSStructArray(IDSBase):
         # Equal if same size and all contained structures are the same
         return len(self) == len(other) and all(a == b for a, b in zip(self, other))
 
-    def _set_lazy_context(self, ctx: LazyALContext, path: str, timebase: str) -> None:
+    def _set_lazy_context(self, ctx: LazyALArrayStructContext) -> None:
         """Called by DBEntry during a lazy get/get_slice.
 
         Set the context that we can use for retrieving our size and children.
         """
         self._lazy_ctx = ctx
-        self._lazy_paths = (path, timebase)
 
     def _load(self, item: Optional[int]) -> None:
         """When lazy loading, ensure that the requested item is loaded.
@@ -92,22 +90,20 @@ class IDSStructArray(IDSBase):
             if self.value[item] is not None:
                 return  # item is already loaded
         # Load requested data from the backend
-        manager = self._lazy_ctx.lazy_arraystruct_action(*self._lazy_paths, item)
-        with manager as (new_ctx, size):
-            # Note: we can be a bit more efficient here by recognizing that the returned
-            # LazyALContext (new_ctx) for different items is essentially the same,
-            # except for the requested item number. It would need some work to get
-            # right, so keep the logic like this unless we find it to be a bottleneck.
-            if self.value is None:
-                self.value = [None] * size
-            assert len(self.value) == size
+        if self.value is None:
+            ctx = self._lazy_ctx.get_context()
+            self.value = [None] * ctx.size
 
-            if item is not None:
-                # Create the requested item
-                from imaspy.ids_structure import IDSStructure
+        if item is not None:
+            if item < 0:
+                item += len(self)
+            if item < 0 or item >= len(self):
+                raise IndexError("list index out of range")
+            # Create the requested item
+            from imaspy.ids_structure import IDSStructure
 
-                element = self.value[item] = IDSStructure(self, self.metadata)
-                element._set_lazy_context(new_ctx)
+            element = self.value[item] = IDSStructure(self, self.metadata)
+            element._set_lazy_context(self._lazy_ctx.iterate_to_index(item))
 
     @property
     def _element_structure(self):

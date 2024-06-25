@@ -7,6 +7,7 @@ import gc
 import getpass
 import logging
 import os
+from collections import deque
 from typing import Any, List, Optional, Tuple, overload
 from urllib.parse import urlparse
 
@@ -194,6 +195,7 @@ class DBEntry:
         self._xml_path = xml_path
         self._ids_factory = IDSFactory(dd_version, xml_path)
         self._uses_mdsplus = False
+        self._lazy_ctx_cache = deque()
 
         if args or kwargs:
             # uri and mode may be set as positional arguments in which case they
@@ -321,6 +323,8 @@ class DBEntry:
         if self._db_ctx is None:
             return
 
+        self._clear_lazy_ctx_cache()
+
         mode = ERASE_PULSE if erase else CLOSE_PULSE
         status = ll_interface.close_pulse(self._db_ctx.ctx, mode)
         if status != 0:
@@ -328,6 +332,11 @@ class DBEntry:
 
         ll_interface.end_action(self._db_ctx.ctx)
         self._db_ctx = None
+
+    def _clear_lazy_ctx_cache(self) -> None:
+        """Close any cached lazy contexts"""
+        while self._lazy_ctx_cache:
+            self._lazy_ctx_cache.pop().close()
 
     def create(self, *, options=None, force=True) -> None:
         """Create a new database entry.
@@ -526,6 +535,9 @@ class DBEntry:
         if lazy and destination:
             raise ValueError("Cannot supply a destination IDS when lazy loading.")
 
+        # Mixing contexts can be problematic, ensure all lazy contexts are closed:
+        self._clear_lazy_ctx_cache()
+
         ll_path = ids_name
         if occurrence != 0:
             ll_path += f"/{occurrence}"
@@ -675,6 +687,9 @@ class DBEntry:
         if ids._lazy:
             raise ValueError("Lazy loaded IDSs cannot be used in put or put_slice.")
 
+        # Mixing contexts can be problematic, ensure all lazy contexts are closed:
+        self._clear_lazy_ctx_cache()
+
         # Automatic validation
         disable_validate = os.environ.get("IMAS_AL_DISABLE_VALIDATE")
         if not disable_validate or disable_validate == "0":
@@ -766,6 +781,9 @@ class DBEntry:
         """
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not opened, use open() first.")
+        # Mixing contexts can be problematic, ensure all lazy contexts are closed:
+        self._clear_lazy_ctx_cache()
+
         ll_path = ids_name
         if occurrence != 0:
             ll_path += f"/{occurrence}"

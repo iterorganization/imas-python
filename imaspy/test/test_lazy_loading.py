@@ -12,7 +12,7 @@ from imaspy.ids_defs import (
 )
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_primitive import IDSPrimitive
-from imaspy.imas_interface import ll_interface, lowlevel
+from imaspy.imas_interface import ll_interface
 from imaspy.test.test_helpers import compare_children, fill_consistent, open_dbentry
 
 
@@ -35,11 +35,8 @@ def test_lazy_load_aos(backend, worker_id, tmp_path, log_lowlevel_calls):
         assert lazy_ids.profiles_1d[i].time == i
     # Now all profiles_1d/time are loaded, check that we use loaded values and do not
     # read data from the lowlevel
-    if ll_interface._al_version.major == 4:
-        to_patch = {"ual_read_data": DEFAULT, "ual_begin_arraystruct_action": DEFAULT}
-    else:
-        to_patch = {"al_read_data": DEFAULT, "al_begin_arraystruct_action": DEFAULT}
-    with patch.multiple(lowlevel, **to_patch) as values:
+    to_patch = {"read_data": DEFAULT, "begin_arraystruct_action": DEFAULT}
+    with patch.multiple(ll_interface, **to_patch) as values:
         assert len(lazy_ids.profiles_1d) == 10
         for i in range(10):
             assert lazy_ids.profiles_1d[i].time == i
