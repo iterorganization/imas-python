@@ -471,7 +471,7 @@ class DBEntry:
                 )
                 raise UnknownDDVersion(dd_version, dd_xml_versions(), note)
 
-        # Implicit version conversion:
+        # Version conversion:
         if not destination:
             # Construct IDS object that the backend can store data in
             if autoconvert or not dd_version:
@@ -483,6 +483,16 @@ class DBEntry:
 
         nbc_map = None
         if dd_version and dd_version != destination._dd_version:
+            if dd_version.split(".")[0] != destination._dd_version.split(".")[0]:
+                logger.warning(
+                    "On-disk data is stored in DD %s which has a different major "
+                    "version than the requested DD version (%s). IMASPy will convert "
+                    "the data automatically, but this does not cover all changes. See "
+                    "%s/multi-dd.html#conversion-of-idss-between-dd-versions",
+                    dd_version,
+                    destination._dd_version,
+                    imaspy.PUBLISHED_DOCUMENTATION_ROOT,
+                )
             ddmap, source_is_older = dd_version_map_from_factories(
                 ids_name, IDSFactory(version=dd_version), self._ids_factory
             )

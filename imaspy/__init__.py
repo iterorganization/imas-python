@@ -28,4 +28,10 @@ from . import (
     util,
 )
 
+PUBLISHED_DOCUMENTATION_ROOT = (
+    "https://sharepoint.iter.org/departments/POP/CM/IMDesign/"
+    "Code%20Documentation/IMASPy-doc"
+)
+"""URL to the published documentation."""
 OLDEST_SUPPORTED_VERSION = _V("3.22.0")
+"""Oldest Data Dictionary version that is supported by IMASPy."""
