@@ -196,7 +196,7 @@ def test_3to4_ggd_space_identifier(dd4factory):
     ep.grid_ggd.resize(1)
     ep.grid_ggd[0].time = 0.0
     ep.grid_ggd[0].space.resize(1)
-    ep.grid_ggd[0].space[0].coordinates_type = [1, 2]
+    ep.grid_ggd[0].space[0].coordinates_type = numpy.array([1, 2], dtype=numpy.int32)
 
     ep4 = convert_ids(ep, None, factory=dd4factory)
     cid = identifiers.coordinate_identifier

@@ -1,3 +1,5 @@
+.. _`IMASPy Command Line tool`:
+
 IMASPy Command Line tool
 ========================
 

@@ -4,3 +4,12 @@
 .tabbed-content {
     padding: 0 0.5rem;
 }
+
+table caption {
+    /* style adapted from code-block captions (selector: `.highlight span.filename`) */
+    background-color: var(--md-code-bg-color);
+    border-bottom: .05rem solid var(--md-default-fg-color--lightest);
+    font-weight: 700;
+    padding: .6617647059em 1.1764705882em;
+    text-align: left;
+}

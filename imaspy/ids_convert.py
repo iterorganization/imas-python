@@ -415,6 +415,9 @@ def convert_ids(
     be changed in both IDSs! If this is not desired, you may set the ``deepcopy``
     keyword argument to True.
 
+    See also:
+        :ref:`Conversion of IDSs between DD versions`.
+
     Args:
         toplevel: The IDS element to convert.
         version: The data dictionary version to convert to, for example "3.38.0". Must
@@ -627,7 +630,9 @@ def _type_changed_to_identifier(source_node: IDSBase, target_node: IDSBase) -> N
 
     else:
         # source_node is an array of identifier structures, target_node is an INT_1D
-        target_node.value = [node.index for node in source_node]
+        target_node.value = numpy.array(
+            [node.index for node in source_node], numpy.int32
+        )
 
 
 def _remove_last_point(node: IDSBase) -> None:
