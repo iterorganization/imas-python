@@ -142,10 +142,12 @@ class Put:
     param_names = ["disable_validate", "hli", "backend"]
 
     def setup(self, disable_validate, hli, backend):
-        self.dbentry = create_dbentry(hli, backend)
+        create_dbentry(hli, backend).close()  # catch unsupported combinations
         self.edge_profiles = factory[hli].edge_profiles()
         fill_ggd(self.edge_profiles, TIME)
         os.environ["IMAS_AL_DISABLE_VALIDATE"] = disable_validate
 
     def time_put(self, disable_validate, hli, backend):
+        self.dbentry = create_dbentry(hli, backend)
         self.dbentry.put(self.edge_profiles)
+        self.dbentry.close()
