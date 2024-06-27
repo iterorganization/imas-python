@@ -4,7 +4,7 @@ import uuid
 from pathlib import Path
 
 import imaspy
-from imaspy.backends.imas_core.imas_interface import lowlevel
+import imaspy.exception
 
 # Don't directly import imas: code analyzers break on the huge code base
 imas = importlib.import_module("imas")
@@ -32,9 +32,9 @@ def backend_exists(backend):
     except Exception as exc:
         if "backend is not available" in str(exc):
             return False
-        elif isinstance(exc, (lowlevel.ImasCoreBackendException, FileNotFoundError)):
+        elif isinstance(exc, (imaspy.exception.ALException, FileNotFoundError)):
             return True
-        raise
+        return True
     # Highly unlikely, but it could succeed without error
     entry.close()
     return True
