@@ -2,10 +2,10 @@ import netCDF4
 import numpy
 import pytest
 
+from imaspy.backends.netcdf.ids2nc import IDS2NC, default_fillvals
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_factory import IDSFactory
-from imaspy.netcdf.ids2nc import IDS2NC, default_fillvals
 
 
 @pytest.fixture

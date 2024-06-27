@@ -1,6 +1,6 @@
 import pytest
 
-from imaspy.netcdf.nc_entry import NCEntry
+from imaspy.backends.netcdf.nc_entry import NCEntry
 from imaspy.test.test_helpers import compare_children, fill_consistent
 
 

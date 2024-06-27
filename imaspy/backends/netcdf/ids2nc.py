@@ -8,13 +8,13 @@ from typing import Iterator, Tuple
 import netCDF4
 import numpy
 
+from imaspy.backends.netcdf.nc_metadata import NCMetadata
 from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.netcdf.nc_metadata import NCMetadata
 
 default_fillvals = {
     IDSDataType.INT: netCDF4.default_fillvals["i4"],

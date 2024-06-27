@@ -10,13 +10,13 @@ from typing import Optional
 from netCDF4 import Dataset
 
 import imaspy
+from imaspy.backends.netcdf.ids2nc import IDS2NC
+from imaspy.backends.netcdf.nc2ids import nc2ids
 from imaspy.ids_convert import convert_ids
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT, IDS_TIME_MODES
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_metadata import IDSType
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.netcdf.ids2nc import IDS2NC
-from imaspy.netcdf.nc2ids import nc2ids
 
 logger = logging.getLogger(__name__)
 

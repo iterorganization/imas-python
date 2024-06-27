@@ -2,13 +2,13 @@ from typing import Iterator, List, Tuple
 
 import netCDF4
 
+from imaspy.backends.netcdf.nc_metadata import NCMetadata
 from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_defs import IDS_TIME_MODE_HOMOGENEOUS
 from imaspy.ids_metadata import IDSMetadata
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
-from imaspy.netcdf.nc_metadata import NCMetadata
 
 
 def split_on_aos(metadata: IDSMetadata):

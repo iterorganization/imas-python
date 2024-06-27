@@ -1,8 +1,8 @@
 import pytest
 
+from imaspy.backends.netcdf.nc_entry import NCEntry
 from imaspy.ids_defs import IDS_TIME_MODE_INDEPENDENT
 from imaspy.ids_factory import IDSFactory
-from imaspy.netcdf.nc_entry import NCEntry
 
 
 def test_readwrite(tmp_path):

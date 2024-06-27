@@ -1,8 +1,8 @@
 import pytest
 
+from imaspy.backends.netcdf.nc_metadata import NCMetadata, _get_aos_label_coordinates
 from imaspy.exception import UnknownDDVersion
 from imaspy.ids_factory import IDSFactory
-from imaspy.netcdf.nc_metadata import NCMetadata, _get_aos_label_coordinates
 
 
 def test_generate_nc_metadata(ids_name):
