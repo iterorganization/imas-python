@@ -175,17 +175,19 @@ class DBEntry:
             self.uri = None
             self.mode = None
         else:
-            self.uri = uri
+            self.uri = str(uri)
             self.mode = mode
-            cls = self._select_implementation(uri)
-            self._dbe_impl = cls.from_uri(uri, mode, self._ids_factory)
+            cls = self._select_implementation(self.uri)
+            self._dbe_impl = cls.from_uri(self.uri, mode, self._ids_factory)
 
     @staticmethod
     def _select_implementation(uri: Optional[str]) -> Type[DBEntryImpl]:
         """Select which DBEntry implementation to use based on the URI."""
-        from imaspy.backends.imas_core.db_entry_al import ALDBEntryImpl
-
-        return ALDBEntryImpl
+        if uri and uri.endswith(".nc") and not uri.startswith("imas:"):
+            from imaspy.backends.netcdf.db_entry_nc import NCDBEntryImpl as impl
+        else:
+            from imaspy.backends.imas_core.db_entry_al import ALDBEntryImpl as impl
+        return impl
 
     def __enter__(self):
         # Context manager protocol

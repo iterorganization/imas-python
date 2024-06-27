@@ -23,7 +23,7 @@ from rich.table import Table
 
 import imaspy
 import imaspy.backends.imas_core.imas_interface
-from imaspy import dd_zip
+from imaspy import DBEntry, dd_zip
 from imaspy.backends.imas_core.imas_interface import ll_interface
 from imaspy.command.timer import Timer
 from imaspy.exception import UnknownDDVersion
@@ -55,14 +55,6 @@ def _excepthook(type_, value, tb):
             tb = tb.tb_next
     rich_tb = traceback.Traceback.from_exception(type_, value, tb, extra_lines=0)
     console.Console(stderr=True).print(rich_tb)
-
-
-def _DBEntry(uri: str, mode: str, **kwargs):
-    if uri.endswith(".nc") and not uri.startswith("imas:"):
-        from imaspy.netcdf.nc_entry import NCEntry
-
-        return NCEntry(uri, mode, **kwargs)
-    return imaspy.DBEntry(uri, mode, **kwargs)
 
 
 @click.group("imaspy", invoke_without_command=True, no_args_is_help=True)
@@ -131,7 +123,7 @@ def print_ids(uri, ids, occurrence, print_all):
     min_version_guard(Version("5.0"))
     setup_rich_log_handler(False)
 
-    with _DBEntry(uri, "r") as dbentry:
+    with DBEntry(uri, "r") as dbentry:
         ids_obj = dbentry.get(ids, occurrence, autoconvert=False)
         imaspy.util.print_tree(ids_obj, not print_all)
 
@@ -176,8 +168,8 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet, timeit):
 
     # Use an ExitStack to avoid three nested with-statements
     with ExitStack() as stack:
-        entry_in = stack.enter_context(_DBEntry(uri_in, "r"))
-        entry_out = stack.enter_context(_DBEntry(uri_out, "x", **version_params))
+        entry_in = stack.enter_context(DBEntry(uri_in, "r"))
+        entry_out = stack.enter_context(DBEntry(uri_out, "x", **version_params))
 
         # First build IDS/occurrence list so we can show a decent progress bar
         ids_list = [ids] if ids != "*" else entry_out.factory.ids_names()
