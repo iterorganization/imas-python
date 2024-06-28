@@ -73,9 +73,20 @@ available_serializers = [imaspy.ids_defs.ASCII_SERIALIZER_PROTOCOL]
 
 
 def create_dbentry(hli, backend):
-    if hli == "imas" and backend == NETCDF:
-        # Raising NotImplementedError will skip the benchmarks for this combination
-        raise NotImplementedError("AL-Python HLI doesn't implement netCDF")
+    if backend == NETCDF:
+        if hli == "imas":
+            # Raising NotImplementedError will skip the benchmarks for this combination
+            raise NotImplementedError("AL-Python HLI doesn't implement netCDF.")
+        if hli == "imaspy":  # check if netcdf backend is available
+            try:
+                assert (
+                    imaspy.DBEntry._select_implementation("x.nc").__name__
+                    == "NCDBEntryImpl"
+                )
+            except (AttributeError, AssertionError):
+                raise NotImplementedError(
+                    "This version of IMASPy doesn't implement netCDF."
+                ) from None
 
     path = Path.cwd() / f"DB-{hli}-{backend}"
     return DBEntry[hli](create_uri(backend, path), "w")
