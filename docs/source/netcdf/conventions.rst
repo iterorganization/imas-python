@@ -86,7 +86,7 @@ NetCDF files and components
 ===========================
 
 In this section we describe conventions associated with filenames and the basic
-comopnents of a netCDF file.
+components of a netCDF file.
 
 
 Filename
@@ -150,7 +150,7 @@ Variable names
 ''''''''''''''
 
 NetCDF variable names are derived from the Data Dictionary node names by taking
-it's path and replacing the forward slashes (``/``) by periods (``.``). For
+their path and replacing the forward slashes (``/``) by periods (``.``). For
 example, the netCDF variable name for ``profiles_1d/ion/temperature`` in the
 ``core_profiles`` IDS is ``profiles_1d.ion.temperature``.
 
@@ -194,15 +194,15 @@ The following attributes can be present on the netCDF variables:
 ``ancillary_variables``
     The IMAS Data Dictionary allows error bar nodes (ending in ``_error_upper``,
     ``_error_lower``) for many quantities. When these error nodes are filled, it
-    is recommended to fill the ``ancillary_variables`` attribute with the names
-    of the error bar variables.
+    is recommended to fill the ``ancillary_variables`` attribute with a blank
+    separated list [#blank_separated]_ of the names of the error bar variables.
 
     .. seealso:: https://cfconventions.org/Data/cf-conventions/cf-conventions-1.11/cf-conventions.html#ancillary-data
 
 ``coordinates``
-    The ``coordinates`` attribute contains a *blank separated list of the names
-    of auxiliary coordinate variables*. There is no restriction on the order in
-    which the auxiliary variables appear.
+    The ``coordinates`` attribute contains a blank separated list
+    [#blank_separated]_ of the names of auxiliary coordinate variables. There
+    is no restriction on the order in which the auxiliary variables appear.
 
     See the :ref:`Dimensions and auxiliary coordinates` section on how to
     determine auxiliary coordinates from the Data Model defined by the IMAS Data
@@ -237,6 +237,12 @@ The following attributes can be present on the netCDF variables:
         created for this.
 
     .. seealso:: https://docs.unidata.ucar.edu/netcdf-c/current/attribute_conventions.html
+
+
+.. [#blank_separated] Several string attributes are defined by this standard to
+    contain "blank-separated lists". Consecutive words in such a list are
+    separated by one or more adjacent spaces. The list may begin and end with
+    any number of spaces.
 
 
 IDS metadata and provenance
@@ -360,6 +366,18 @@ The Data Model described by the IMAS Data Dictionary is a tree structure
 containing many *structures*, *arrays of structures* and data nodes. To fit that
 in the netCDF data model as described in this document, we need to *tensorize*
 the tree structure. This section explains that process in detail.
+
+Tensorizing the data effectively converts all *arrays of structures* to one
+structure of tensorized arrays. For some (abstract) data nodes, this means:
+
+.. code-block:: text
+
+    aos[i].data[j, k]       =>  aos.data[i, j, k]
+    aos[i].aos[j].data[k]   =>  aos.data[i, j, k]
+    aos[i].struct.data[j]   =>  aos.struct.data[i, j]
+
+    # Tensorization doesn't affect data nodes outside arrays of structures
+    struct.data[i, j]       =>  struct.data[i, j]
 
 We will first walk through the tensorization process by looking at the
 ``profiles_1d(itime)/j_tor`` variable in the ``core_profiles`` IDS. This is a
