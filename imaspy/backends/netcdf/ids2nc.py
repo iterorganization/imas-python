@@ -40,7 +40,7 @@ def nc_tree_iter(
         node: IDS node to iterate over
 
     Yields:
-        (aos_index, node) for all filled leaf nodes and array of structures nodes.
+        (aos_index, node) for all filled nodes.
     """
     for child in node.iter_nonempty_():
         yield (aos_index, child)

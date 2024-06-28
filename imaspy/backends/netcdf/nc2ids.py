@@ -41,8 +41,8 @@ def tree_iter(structure: IDSStructure, metadata: IDSMetadata) -> Iterator[Indexe
 def _tree_iter(
     structure: IDSStructure, paths: List[str], curindex: Tuple[int, ...]
 ) -> Iterator[IndexedNode]:
-    path, *paths = paths
-    aos = structure[path]
+    aos_path, *paths = paths
+    aos = structure[aos_path]
 
     if len(paths) == 1:
         path = paths[0]

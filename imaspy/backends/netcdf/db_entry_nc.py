@@ -24,6 +24,12 @@ class NCDBEntryImpl(DBEntryImpl):
     """DBEntry implementation for netCDF storage."""
 
     def __init__(self, fname: str, mode: str, factory: IDSFactory) -> None:
+        if netCDF4 is None:
+            raise RuntimeError(
+                "The `netCDF4` python module is not available. Please install this "
+                "module to read/write IMAS netCDF files with IMASPy."
+            )
+
         self._dataset = netCDF4.Dataset(
             fname,
             mode,
@@ -54,14 +60,14 @@ class NCDBEntryImpl(DBEntryImpl):
 
     @classmethod
     def from_uri(cls, uri: str, mode: str, factory: IDSFactory) -> "NCDBEntryImpl":
-        if netCDF4 is None:
-            raise RuntimeError(
-                "The `netCDF4` python module is not available. Please install this "
-                "module to read/write IMAS netCDF files with IMASPy."
-            )
         return cls(uri, mode, factory)
 
     def close(self, *, erase: bool = False) -> None:
+        if erase:
+            logger.info(
+                "The netCDF backend does not support the `erase` keyword argument "
+                "to DBEntry.close(): this argument is ignored."
+            )
         self._dataset.close()
 
     def get(
@@ -87,7 +93,7 @@ class NCDBEntryImpl(DBEntryImpl):
             group = self._dataset[f"{ids_name}/{occurrence}"]
         except KeyError:
             raise DataEntryException(
-                f"IDS {ids_name!r}, occurrence {occurrence} is empty."
+                f"IDS {ids_name!r}, occurrence {occurrence} is not found."
             )
 
         # Load data into the destination IDS
@@ -122,7 +128,7 @@ class NCDBEntryImpl(DBEntryImpl):
             if str(occurrence) in self._dataset[ids_name].groups:
                 raise RuntimeError(
                     f"IDS {ids_name}, occurrence {occurrence} already exists. "
-                    "Cannot overwrite data existing data."
+                    "Cannot overwrite existing data."
                 )
 
         if hasattr(ids.ids_properties, "version_put"):
