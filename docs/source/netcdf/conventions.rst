@@ -103,6 +103,8 @@ file format. As a result, this is the only supported file format for IMAS netCDF
 files.
 
 
+.. _`global attributes`:
+
 Global attributes
 -----------------
 
@@ -248,7 +250,23 @@ The following attributes can be present on the netCDF variables:
 IDS metadata and provenance
 ===========================
 
-TODO
+The Data Dictionary describes an ``ids_properties`` structure in every IDS,
+which contains IDS metadata and provenance. See, for example, the :ref:`time
+dimensions` section where the ``ids_properties.homogeneous_time`` metadata is
+used.
+
+IMAS netCDF writers are recommended to overwrite the following metadata:
+
+- ``ids_properties.version_put.data_dictionary``: fill with the Data Dictionary
+  version used for this IDS. This must match the ``data_dictionary_version``
+  :ref:`global attribute <global attributes>`.
+- ``ids_properties.version_put.access_layer``: fill with ``"N/A"``, since this
+  IDS is not written by the IMAS Access Layer.
+- ``ids_properties.version_put.access_layer_language``: fill with the name and
+  version of the netCDF writer, for example ``IMASPy 1.1.0``.
+
+All other IDS metadata and provenance should be filled by the user or software
+that provides the IDS data.
 
 
 .. _`Dimensions and auxiliary coordinates`:
