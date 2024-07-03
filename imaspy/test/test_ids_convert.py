@@ -174,6 +174,28 @@ def test_dbentry_autoconvert2(backend, worker_id, tmp_path):
     entry_331.close()
 
 
+def test_provenance_entry(factory):
+    cp = factory.core_profiles()
+    # Note: DD 3.31.0 doesn't have the provenance data structure, test that it doesn't
+    # report an error:
+    cp2 = convert_ids(cp, "3.31.0", provenance_origin_uri="<testdata>")
+    # Convert back to 3.38.0
+    cp3 = convert_ids(cp2, "3.38.0", provenance_origin_uri="<testdata>")
+    assert len(cp3.ids_properties.provenance.node) == 1
+    assert cp3.ids_properties.provenance.node[0].path == ""
+    assert len(cp3.ids_properties.provenance.node[0].sources) == 1
+    provenance_txt = cp3.ids_properties.provenance.node[0].sources[0]
+    # Check that the provided origin URI is in the text
+    assert "<testdata>" in provenance_txt
+    # Check that origin and destination DD versions are included
+    assert "3.31.0" in provenance_txt
+    assert "3.38.0" in provenance_txt
+    # Check that IMASPy is mentioned
+    assert "IMASPy" in provenance_txt
+
+    # TODO: test logic branch for node.reference after IMAS-5304 is merged
+
+
 @pytest.fixture
 def dd4factory():
     try:

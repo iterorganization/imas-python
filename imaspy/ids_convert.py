@@ -4,6 +4,7 @@
 """
 
 import copy
+import datetime
 import logging
 from functools import lru_cache
 from pathlib import Path
@@ -13,6 +14,7 @@ from xml.etree.ElementTree import Element, ElementTree
 import numpy
 from packaging.version import InvalidVersion, Version
 
+import imaspy
 from imaspy.dd_zip import parse_dd_version
 from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
@@ -397,6 +399,7 @@ def convert_ids(
     version: Optional[str],
     *,
     deepcopy: bool = False,
+    provenance_origin_uri: str = "",
     xml_path: Optional[str] = None,
     factory: Optional[IDSFactory] = None,
     target: Optional[IDSToplevel] = None,
@@ -427,6 +430,9 @@ def convert_ids(
         deepcopy: When True, performs a deep copy of all data. When False (default),
             numpy arrays are not copied and the converted IDS shares the same underlying
             data buffers.
+        provenance_origin_uri: When nonempty, add an entry in the provenance data in
+            ``ids_properties`` to indicate that this IDS has been converted, and it was
+            originally stored at the given uri.
         xml_path: Path to a data dictionary XML file that should be used instead of the
             released data dictionary version specified by ``version``.
         factory: Existing IDSFactory to use for as target version.
@@ -468,7 +474,47 @@ def convert_ids(
 
     _copy_structure(toplevel, target_ids, deepcopy, source_is_new, version_map)
     logger.info("Conversion of IDS %s finished.", ids_name)
+    if provenance_origin_uri:
+        _add_provenance_entry(target_ids, toplevel._version, provenance_origin_uri)
     return target_ids
+
+
+def _add_provenance_entry(
+    target_ids: IDSToplevel, source_version: str, provenance_origin_uri: str
+) -> None:
+    # provenance node was added in DD 3.34.0
+    if not hasattr(target_ids.ids_properties, "provenance"):
+        logger.warning(
+            "Cannot add provenance entry for DD conversion: "
+            "target IDS does not have a provenance property."
+        )
+        return
+
+    # Find the node corresponding to the whole IDS, or create one if there is none
+    for node in target_ids.ids_properties.provenance.node:
+        if node.path == "":
+            break
+    else:
+        # No node found for the whole IDS, create a new one:
+        curlen = len(target_ids.ids_properties.provenance.node)
+        target_ids.ids_properties.provenance.node.resize(curlen + 1, keep=True)
+        node = target_ids.ids_properties.provenance.node[-1]
+
+    # Populate the node
+    source_txt = (
+        f"{provenance_origin_uri}; "
+        f"This IDS has been converted from DD {source_version} to "
+        f"DD {target_ids._dd_version} by IMASPy {imaspy.__version__}."
+    )
+    if hasattr(node, "reference"):
+        # DD version after IMAS-5304
+        node.reference.resize(len(node.reference) + 1, keep=True)
+        node.reference[-1].name = source_txt
+        timestamp = datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds")
+        node.reference[-1].time = timestamp.replace("+00:00", "Z")
+    else:
+        # DD before IMAS-5304 (between 3.34.0 and 3.41.0)
+        node.sources.append(source_txt)  # sources is a STR_1D (=list of strings)
 
 
 def _copy_structure(
