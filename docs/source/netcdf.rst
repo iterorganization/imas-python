@@ -74,7 +74,7 @@ your directory. Let's open this file with ``xarray.load_dataset``:
 
     # Load the dataset. Note the group="core_profiles/0" indicating we want to
     # load the default occurrence of the core_profiles IDS:
-    ds = xarray.load_dataset("core_profiles.nc", "r", group="core_profiles/0")
+    ds = xarray.load_dataset("core_profiles.nc", group="core_profiles/0")
 
     # Plot j_tor with time on the x-axis and rho_tor_norm on the y-axis
     j_tor = ds["profiles_1d.j_tor"]
