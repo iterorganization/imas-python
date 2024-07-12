@@ -28,7 +28,7 @@ rm -rf dist
 python -m build .
 
 # Install imaspy and documentation dependencies from the just-built wheel
-pip install "`readlink -f dist/*.whl`[docs]"
+pip install "`readlink -f dist/*.whl`[docs,netcdf]"
 
 # Debugging:
 pip freeze

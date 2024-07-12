@@ -18,7 +18,6 @@ class DBEntryImpl(ABC):
         """Open a datasource by URI."""
 
     @classmethod
-    @abstractmethod
     def from_pulse_run(
         cls,
         backend_id: int,
@@ -32,6 +31,7 @@ class DBEntryImpl(ABC):
         factory: IDSFactory,
     ) -> "DBEntryImpl":
         """Open a datasource with pulse, run and other legacy arguments."""
+        raise NotImplementedError()  # Only the `imas_core` backend implements this.
 
     @abstractmethod
     def close(self, *, erase: bool = False) -> None:
