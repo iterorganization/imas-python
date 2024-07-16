@@ -25,6 +25,7 @@ import imaspy
 import imaspy.backends.imas_core.imas_interface
 from imaspy import DBEntry, dd_zip
 from imaspy.backends.imas_core.imas_interface import ll_interface
+from imaspy.command.db_analysis import analyze_db, process_db_analysis
 from imaspy.command.timer import Timer
 from imaspy.exception import UnknownDDVersion
 
@@ -69,6 +70,10 @@ def cli():
     # Limit the traceback to 1 item: avoid scaring CLI users with long traceback prints
     # and let them focus on the actual error message
     sys.excepthook = _excepthook
+
+
+cli.add_command(analyze_db)
+cli.add_command(process_db_analysis)
 
 
 def min_version_guard(al_version: Version):
