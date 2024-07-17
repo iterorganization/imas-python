@@ -8,12 +8,14 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, List
+from typing import Dict, Iterable, List
 
 import click
 import rich
+import rich.panel
 import rich.progress
 import rich.table
+import rich.tree
 
 import imaspy
 from imaspy.ids_metadata import IDSMetadata
@@ -171,7 +173,7 @@ def process_db_analysis(input):
     logger.info("Analyzing filled data...")
 
     # Construct AnalysisNodes per IDS
-    analysis_nodes = {}
+    analysis_nodes: Dict[str, _AnalysisNode] = {}
     for ids_name, filled in filled_per_ids.items():
         metadata = factory.new(ids_name).metadata
         ids_analysis_node = _AnalysisNode("")
@@ -204,15 +206,33 @@ def process_db_analysis(input):
         analysis_nodes,
         key=lambda ids_name: analysis_nodes[ids_name].fill_fraction,
     )
-    table = rich.table.Table("IDS", "Filled nodes (percentage)")
+    table = rich.table.Table("IDS", "Filled nodes", caption="Usage summary")
     for ids_name in sorted_ids_names:
-        node: _AnalysisNode = analysis_nodes[ids_name]
+        node = analysis_nodes[ids_name]
         table.add_row(
             f"[bold]{ids_name}",
             f"{node.num_desc_nodes_filled: >4} / {node.num_desc_nodes: >4} "
             f"({node.fill_fraction: >6.2%})",
         )
     rich.print(table)
+
+    while True:
+        value = click.prompt("Enter IDS name to show detailed usage", default="exit")
+        value = value.strip()
+        if value == "exit":
+            break
+        elif value not in analysis_nodes:
+            rich.print(f"[red]Unknown IDS name: [bold]{value}")
+            continue
+
+        node = analysis_nodes[value]
+        tree = rich.tree.Tree(
+            f"[bold red]{value}[/]: [bold]{node.num_desc_nodes_filled}/"
+            f"{node.num_desc_nodes}[/] data nodes filled"
+        )
+        for childnode in node.children:
+            childnode.fill_tree(tree)
+        rich.print(rich.panel.Panel(tree, expand=False))
 
 
 @dataclass
@@ -230,4 +250,20 @@ class _AnalysisNode:
 
     @property
     def fill_fraction(self):
+        """The fill fraction of all descendent nodes."""
         return self.num_desc_nodes_filled / self.num_desc_nodes
+
+    def fill_tree(self, tree: rich.tree.Tree):
+        """Fill provided rich.tree.Tree with analysis data."""
+        if not self.children:  # leaf node
+            if not self.used:
+                return  # skip empty leaf nodes
+            label = f"[green]{self.path}[/] is used"
+        else:
+            label = f"[blue]{self.path}[/]: [bold]{self.num_desc_nodes_filled}"
+            label += f"/{self.num_desc_nodes}[/] descendent nodes filled"
+
+        subtree = tree.add(label)
+        if self.used:
+            for child in self.children:
+                child.fill_tree(subtree)
