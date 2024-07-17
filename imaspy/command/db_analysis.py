@@ -20,6 +20,7 @@ import rich.text
 import rich.tree
 
 import imaspy
+from imaspy.command.helpers import setup_rich_log_handler
 from imaspy.ids_metadata import IDSMetadata
 
 directory_path = click.Path(exists=True, file_okay=False, path_type=Path)
@@ -73,10 +74,6 @@ def analyze_db(dbentry: Iterable[Path], output: Path) -> None:
             file=sys.stderr,
         )
         sys.exit(1)
-
-    # Setup log handler, use local import to avoid circular imports
-    from .cli import setup_rich_log_handler
-
     setup_rich_log_handler(False)
 
     # Load existing data?
@@ -151,9 +148,6 @@ def process_db_analysis(infiles):
     Arguments:
     INPUT_FILES     File(s) produced by `imaspy analyze-db` to process.
     """
-    # Setup log handler, use local import to avoid circular imports
-    from .cli import setup_rich_log_handler
-
     setup_rich_log_handler(False)
 
     factory = imaspy.IDSFactory()
