@@ -5,16 +5,18 @@ import json
 import logging
 import platform
 import re
+import readline
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List
+from typing import Dict, Iterable, List, Optional
 
 import click
 import rich
 import rich.panel
 import rich.progress
 import rich.table
+import rich.text
 import rich.tree
 
 import imaspy
@@ -141,13 +143,13 @@ def ids_info(idsfile: Path):
 
 
 @click.command("process-db-analysis")
-@click.argument("input", nargs=-1, type=infile_path)
-def process_db_analysis(input):
+@click.argument("infiles", metavar="INPUT_FILES...", nargs=-1, type=infile_path)
+def process_db_analysis(infiles):
     """Process supplied Data Entry analyses, and display statistics.
 
     \b
     Arguments:
-    INPUT   File(s) produced by `imaspy analyze-db` to process.
+    INPUT_FILES     File(s) produced by `imaspy analyze-db` to process.
     """
     # Setup log handler, use local import to avoid circular imports
     from .cli import setup_rich_log_handler
@@ -157,10 +159,10 @@ def process_db_analysis(input):
     factory = imaspy.IDSFactory()
     filled_per_ids = {ids_name: set() for ids_name in factory.ids_names()}
     logger.info("Using Data Dictionary version %s.", factory.dd_version)
-    logger.info("Reading %d input files...", len(input))
+    logger.info("Reading %d input files...", len(infiles))
 
     # Read input data and collate usage info per IDS
-    for fname in input:
+    for fname in infiles:
         with gzip.open(fname, "rt", encoding="utf-8") as file:
             data = json.load(file)
 
@@ -201,34 +203,48 @@ def process_db_analysis(input):
         walk_metadata_tree(metadata, ids_analysis_node)
         analysis_nodes[ids_name] = ids_analysis_node
 
+    # Display summary results per IDS
     logger.info("Analysis done. Printing results:")
     sorted_ids_names = sorted(
         analysis_nodes,
-        key=lambda ids_name: analysis_nodes[ids_name].fill_fraction,
+        key=lambda ids_name: -analysis_nodes[ids_name].fill_fraction,
     )
     table = rich.table.Table("IDS", "Filled nodes", caption="Usage summary")
     for ids_name in sorted_ids_names:
         node = analysis_nodes[ids_name]
+        dim = "" if node.num_desc_nodes_filled > 0 else "[dim]"
         table.add_row(
-            f"[bold]{ids_name}",
-            f"{node.num_desc_nodes_filled: >4} / {node.num_desc_nodes: >4} "
+            f"{dim}[bold]{ids_name}",
+            f"{dim}{node.num_desc_nodes_filled: >4} / {node.num_desc_nodes: >4} "
             f"({node.fill_fraction: >6.2%})",
         )
     rich.print(table)
 
+    # Use readline for autocompleting IDS names when pressing <tab>
+    def rlcompleter(text, state) -> Optional[str]:
+        matching_idss = [name for name in sorted_ids_names if name.startswith(text)]
+        if state < len(matching_idss):
+            return matching_idss[state]
+        return None
+
+    readline.set_completer(rlcompleter)
+    readline.parse_and_bind("tab: complete")
+
+    # Display input prompt for detailed results per IDS
     while True:
-        value = click.prompt("Enter IDS name to show detailed usage", default="exit")
-        value = value.strip()
-        if value == "exit":
+        # click.prompt doesn't work nicely with readline, so use builtin input():
+        ids_name = input("Enter IDS name to show detailed usage [exit]: ").strip()
+
+        if ids_name == "exit" or not ids_name:
             break
-        elif value not in analysis_nodes:
-            rich.print(f"[red]Unknown IDS name: [bold]{value}")
+        elif ids_name not in analysis_nodes:
+            rich.print(f"[red]Unknown IDS name: [bold]{ids_name}")
             continue
 
-        node = analysis_nodes[value]
+        node = analysis_nodes[ids_name]
         tree = rich.tree.Tree(
-            f"[bold red]{value}[/]: [bold]{node.num_desc_nodes_filled}/"
-            f"{node.num_desc_nodes}[/] data nodes filled"
+            f"[bold red]{ids_name}[/]: [bold cyan]{node.num_desc_nodes_filled}[/]/"
+            f"[bold cyan]{node.num_desc_nodes}[/] data nodes filled"
         )
         for childnode in node.children:
             childnode.fill_tree(tree)
@@ -237,6 +253,8 @@ def process_db_analysis(input):
 
 @dataclass
 class _AnalysisNode:
+    """Data class to store analysis results for a node in an IDS."""
+
     path: str
     """Path of this node, e.g. "ids_properties/comment"."""
     used: bool = False
@@ -260,8 +278,12 @@ class _AnalysisNode:
                 return  # skip empty leaf nodes
             label = f"[green]{self.path}[/] is used"
         else:
-            label = f"[blue]{self.path}[/]: [bold]{self.num_desc_nodes_filled}"
-            label += f"/{self.num_desc_nodes}[/] descendent nodes filled"
+            label = (
+                f"[blue]{self.path}[/]: [bold cyan]{self.num_desc_nodes_filled}[/]/"
+                f"[bold cyan]{self.num_desc_nodes}[/] descendent nodes filled"
+            )
+            if self.num_desc_nodes_filled == 0:
+                label = rich.text.Text.from_markup(label, style="dim")
 
         subtree = tree.add(label)
         if self.used:
