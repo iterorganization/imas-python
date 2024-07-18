@@ -69,7 +69,7 @@ dependencies = [
 [project.optional-dependencies]
 # these self-dependencies are available since pip 21.2
 all = [
-    "imaspy[test,docs,imas-core,netcdf]"
+    "imaspy[test,docs,imas-core,netcdf,h5py]"
 ]
 docs = [
     "sphinx>=6.0.0,<7.0.0",
@@ -80,6 +80,9 @@ docs = [
 imas-core = [ "imas-core@git+ssh://git@git.iter.org/imas/al-core.git@main" ]
 netcdf = [
     "netCDF4>=1.7.0",
+]
+h5py = [
+    "h5py",
 ]
 test = [
     "pytest>=5.4.1",
