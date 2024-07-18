@@ -140,8 +140,11 @@ def ids_info(idsfile: Path):
 
 
 @click.command("process-db-analysis")
-@click.argument("infiles", metavar="INPUT_FILES...", nargs=-1, type=infile_path)
-def process_db_analysis(infiles):
+@click.argument(
+    "infiles", metavar="INPUT_FILES...", nargs=-1, type=infile_path, required=True
+)
+@click.option("--show-empty-ids", is_flag=True, help="Show empty IDSs in the overview.")
+def process_db_analysis(infiles, show_empty_ids):
     """Process supplied Data Entry analyses, and display statistics.
 
     \b
@@ -206,6 +209,8 @@ def process_db_analysis(infiles):
     table = rich.table.Table("IDS", "Filled nodes", caption="Usage summary")
     for ids_name in sorted_ids_names:
         node = analysis_nodes[ids_name]
+        if node.num_desc_nodes_filled == 0 and not show_empty_ids:
+            continue  # hide IDSs without data
         dim = "" if node.num_desc_nodes_filled > 0 else "[dim]"
         table.add_row(
             f"{dim}[bold]{ids_name}",
