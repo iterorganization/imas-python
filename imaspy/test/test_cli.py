@@ -31,7 +31,7 @@ def test_db_analysis(tmp_path):
     runner = CliRunner()
     with runner.isolated_filesystem(temp_dir=tmp_path) as td:
         analyze_result = runner.invoke(analyze_db, [str(db_path)])
-        assert analyze_result.exit_code == 0
+        assert analyze_result.exit_code == 0, analyze_result.output
 
     outfile = Path(td) / "imaspy-db-analysis.json.gz"
     assert outfile.exists()
@@ -40,5 +40,5 @@ def test_db_analysis(tmp_path):
     process_result = runner.invoke(
         process_db_analysis, [str(outfile)], input="core_profiles\n\n"
     )
-    assert process_result.exit_code == 0
+    assert process_result.exit_code == 0, process_result.output
     assert "core_profiles" in process_result.output
