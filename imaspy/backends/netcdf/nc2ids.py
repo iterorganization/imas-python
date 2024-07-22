@@ -55,6 +55,20 @@ def _tree_iter(
 
 
 def nc2ids(group: netCDF4.Group, ids: IDSToplevel):
+    """Get data from the netCDF group and store it in the provided IDS."""
+    try:
+        _nc2ids(group, ids)
+    except Exception as exc:
+        raise RuntimeError(
+            "An error occurred while reading data from the netCDF file "
+            f"'{group.filepath()}'. The netCDF functionality is currently in "
+            "preview status. Unexpected data in an otherwise valid netCDF file "
+            "may cause errors in IMASPy. A more robust mechanism to load IDS data from "
+            "netCDF files will be included in the next release of IMASPy."
+        ) from exc
+
+
+def _nc2ids(group: netCDF4.Group, ids: IDSToplevel):
     var_names = list(group.variables)
     # FIXME: ensure that var_names are sorted properly
     # Current assumption is that creation-order is fine
