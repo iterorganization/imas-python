@@ -113,15 +113,15 @@ additional analysis data is *appended* to the file.
 Once you have one or more output files from ``imaspy analyze-db``, you can
 process these files with ``imaspy process-db-analysis``. This will:
 
-1.  Load all analysis results from the provided files, and compare this againts
+1.  Load all analysis results from the provided files, and compare this against
     the available fields in :ref:`The default Data Dictionary version` (which
     can be tuned by explicitly setting the ``IMAS_VERSION`` environment
     variable).
 2.  These results are summarized in a table, showing per IDS:
 
-    - The amount of data fields [#data_fields]_ that were filled in *any* of the
+    - The number of data fields [#data_fields]_ that were filled in *any* of the
       analyzed data entries.
-    - The total amount of data fields [#data_fields]_ that the Data Dictionary
+    - The total number of data fields [#data_fields]_ that the Data Dictionary
       defines for this IDS.
     - The percentage of fields filled.
 
