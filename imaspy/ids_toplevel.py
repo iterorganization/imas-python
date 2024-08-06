@@ -9,13 +9,18 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from imaspy.backends.imas_core.imas_interface import ll_interface
+import numpy
+
+import imaspy
+from imaspy.backends.imas_core.imas_interface import ll_interface, lowlevel
 from imaspy.exception import ValidationError
 from imaspy.ids_base import IDSDoc
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     ASCII_SERIALIZER_PROTOCOL,
+    CHAR_DATA,
     DEFAULT_SERIALIZER_PROTOCOL,
+    FLEXBUFFERS_SERIALIZER_PROTOCOL,
     IDS_TIME_MODE_INDEPENDENT,
     IDS_TIME_MODE_UNKNOWN,
     IDS_TIME_MODES,
@@ -41,17 +46,15 @@ def _serializer_tmpdir() -> str:
 
 def _create_serialization_dbentry(filepath: str, dd_version: str) -> "DBEntry":
     """Create a temporary DBEntry for use in the ASCII serialization protocol."""
-    from imaspy.db_entry import DBEntry  # Local import to avoid circular imports
-
     if ll_interface._al_version.major == 4:  # AL4 compatibility
-        dbentry = DBEntry(
+        dbentry = imaspy.DBEntry(
             ASCII_BACKEND, "serialize", 1, 1, "serialize", dd_version=dd_version
         )
         dbentry.create(options=f"-fullpath {filepath}")
         return dbentry
     else:  # AL5
         path = Path(filepath)
-        return DBEntry(
+        return imaspy.DBEntry(
             f"imas:ascii?path={path.parent};filename={path.name}",
             "w",
             dd_version=dd_version,
@@ -109,7 +112,7 @@ class IDSToplevel(IDSStructure):
         return DEFAULT_SERIALIZER_PROTOCOL
 
     @needs_imas
-    def serialize(self, protocol=None):
+    def serialize(self, protocol=None) -> bytes:
         """Serialize this IDS to a data buffer.
 
         The data buffer can be deserialized from any Access Layer High-Level Interface
@@ -158,10 +161,20 @@ class IDSToplevel(IDSStructure):
             finally:
                 os.unlink(filepath)  # remove tmpfile from disk
             return bytes([ASCII_SERIALIZER_PROTOCOL]) + data
+        if protocol == FLEXBUFFERS_SERIALIZER_PROTOCOL:
+            # Note: FLEXBUFFERS_SERIALIZER_PROTOCOL is None when imas_core doesn't
+            # support this format
+            with imaspy.DBEntry("imas:serialize?path=/", "w") as entry:
+                entry.put(self)
+                # Read serialized buffer
+                status, buffer = lowlevel.al_read_data_array(
+                    entry._dbe_impl._db_ctx.ctx, "<buffer>", "", CHAR_DATA, 1
+                )
+                return bytes(buffer)
         raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 
     @needs_imas
-    def deserialize(self, data):
+    def deserialize(self, data: bytes) -> None:
         """Deserialize the data buffer into this IDS.
 
         See :meth:`serialize` for an example.
@@ -187,6 +200,19 @@ class IDSToplevel(IDSStructure):
                 # tmpfile may not exist depending if an error occurs in above code
                 if os.path.exists(filepath):
                     os.unlink(filepath)
+        elif protocol == FLEXBUFFERS_SERIALIZER_PROTOCOL:
+            with imaspy.DBEntry("imas:serialize?path=/", "r") as entry:
+                # Write serialized buffer to the serializer backend
+                buffer = numpy.frombuffer(data, dtype=numpy.int8)
+                lowlevel._al_write_data_array(
+                    entry._dbe_impl._db_ctx.ctx, b"<buffer>", b"", buffer, CHAR_DATA
+                )
+                entry.get(self.metadata.name, destination=self)
+        elif protocol == 61:  # Fallthrough
+            raise NotImplementedError(
+                "FLEXBUFFERS_SERIALIZER_PROTOCOL is not implemented by the installed "
+                "version of imas_core. Please update imas_core to 5.3 or newer."
+            )
         else:
             raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 
