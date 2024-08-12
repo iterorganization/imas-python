@@ -64,6 +64,24 @@ Interpolation modes
 
     Interpolation method that returns a linear interpolation between the existing slices
     before and after the requested time.
+
+
+Serializer protocols
+--------------------
+
+.. data:: ASCII_SERIALIZER_PROTOCOL
+
+    Identifier for the ASCII serialization protocol.
+
+.. data:: FLEXBUFFERS_SERIALIZER_PROTOCOL
+
+    Identifier for the Flexbuffers serialization protocol. This protocol is more
+    performant and results in a smaller buffer size than the
+    :data:`ASCII_SERIALIZER_PROTOCOL`.
+
+.. data:: DEFAULT_SERIALIZER_PROTOCOL
+
+    Identifier for the default serialization protocol.
 """
 
 import functools
