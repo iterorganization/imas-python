@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from imaspy.ids_factory import IDSFactory
 
 
+_FLEXBUFFERS_URI = "imas:flexbuffers?path=/"
 logger = logging.getLogger(__name__)
 
 
@@ -152,12 +153,13 @@ class IDSToplevel(IDSStructure):
         """
         if protocol is None:
             protocol = self.default_serializer_protocol()
+        dd_version = self._dd_version
         if self.ids_properties.homogeneous_time == IDS_TIME_MODE_UNKNOWN:
             raise ValueError("IDS is found to be EMPTY (homogeneous_time undefined)")
         if protocol == ASCII_SERIALIZER_PROTOCOL:
             tmpdir = _serializer_tmpdir()
             filepath = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
-            dbentry = _create_serialization_dbentry(filepath, self._dd_version)
+            dbentry = _create_serialization_dbentry(filepath, dd_version)
             dbentry.put(self)
             dbentry.close()
 
@@ -171,7 +173,7 @@ class IDSToplevel(IDSStructure):
         if protocol == FLEXBUFFERS_SERIALIZER_PROTOCOL:
             # Note: FLEXBUFFERS_SERIALIZER_PROTOCOL is None when imas_core doesn't
             # support this format
-            with imaspy.DBEntry("imas:serialize?path=/", "w") as entry:
+            with imaspy.DBEntry(_FLEXBUFFERS_URI, "w", dd_version=dd_version) as entry:
                 entry.put(self)
                 # Read serialized buffer
                 status, buffer = lowlevel.al_read_data_array(
@@ -192,6 +194,7 @@ class IDSToplevel(IDSStructure):
         if len(data) <= 1:
             raise ValueError("No data provided")
         protocol = int(data[0])  # first byte of data contains serialization protocol
+        dd_version = self._dd_version
         if protocol == ASCII_SERIALIZER_PROTOCOL:
             tmpdir = _serializer_tmpdir()
             filepath = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
@@ -200,7 +203,7 @@ class IDSToplevel(IDSStructure):
                 with open(filepath, "wb") as f:
                     f.write(data[1:])
                 # Temporarily open an ASCII backend for deserialization from tmpfile
-                dbentry = _create_serialization_dbentry(filepath, self._dd_version)
+                dbentry = _create_serialization_dbentry(filepath, dd_version)
                 dbentry.get(self.metadata.name, destination=self)
                 dbentry.close()
             finally:
@@ -208,8 +211,8 @@ class IDSToplevel(IDSStructure):
                 if os.path.exists(filepath):
                     os.unlink(filepath)
         elif protocol == FLEXBUFFERS_SERIALIZER_PROTOCOL:
-            with imaspy.DBEntry("imas:serialize?path=/", "r") as entry:
-                # Write serialized buffer to the serializer backend
+            with imaspy.DBEntry(_FLEXBUFFERS_URI, "r", dd_version=dd_version) as entry:
+                # Write serialized buffer to the flexbuffers backend
                 buffer = numpy.frombuffer(data, dtype=numpy.int8)
                 lowlevel._al_write_data_array(
                     entry._dbe_impl._db_ctx.ctx, b"<buffer>", b"", buffer, CHAR_DATA

@@ -190,7 +190,7 @@ class ALDBEntryImpl(DBEntryImpl):
                 "Please raise any issues you find."
             )
 
-        elif backend == "serialize":
+        elif backend == "flexbuffers":
             pass  # nothing to set up
 
         else:
