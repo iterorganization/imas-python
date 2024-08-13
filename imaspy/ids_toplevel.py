@@ -146,7 +146,7 @@ class IDSToplevel(IDSStructure):
                 - :const:`~imaspy.ids_defs.DEFAULT_SERIALIZER_PROTOCOL`
 
                 The flexbuffers serializer protocol is only available when using
-                ``imas_core > 5.3``. It's the default protocol when it is available.
+                ``imas_core >= 5.3``. It's the default protocol when it is available.
 
         Returns:
             Data buffer that can be deserialized using :meth:`deserialize`.

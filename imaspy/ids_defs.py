@@ -79,6 +79,8 @@ Serializer protocols
     performant and results in a smaller buffer size than the
     :data:`ASCII_SERIALIZER_PROTOCOL`.
 
+    .. versionadded:: 1.1 Requires ``imas_core`` version 5.3 or newer.
+
 .. data:: DEFAULT_SERIALIZER_PROTOCOL
 
     Identifier for the default serialization protocol.
