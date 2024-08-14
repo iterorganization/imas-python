@@ -7,7 +7,7 @@ import types
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Type
+from typing import Any, Dict, Iterator, Optional, Tuple, Type
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_coordinates import IDSCoordinate
@@ -270,6 +270,9 @@ class IDSMetadata:
 
     def __deepcopy__(self, memo: dict):
         return self  # IDSMetadata is immutable
+
+    def __iter__(self) -> Iterator["IDSMetadata"]:
+        return iter(self._children.values())
 
     def __getitem__(self, path):
         item = self
