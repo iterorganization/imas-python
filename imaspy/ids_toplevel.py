@@ -103,10 +103,6 @@ class IDSToplevel(IDSStructure):
         """Retrieve the time mode from `/ids_properties/homogeneous_time`"""
         return self.ids_properties.homogeneous_time
 
-    @property
-    def _is_dynamic(self) -> bool:
-        return False
-
     @staticmethod
     def default_serializer_protocol():
         """Return the default serializer protocol."""
