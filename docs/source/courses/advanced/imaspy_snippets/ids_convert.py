@@ -1,11 +1,12 @@
 import imaspy
+from imaspy.util import get_data_dictionary_version
 
 # 1. Create an IDSFactory for DD 3.25.0
 factory = imaspy.IDSFactory("3.25.0")
 
 # 2. Create a pulse_schedule IDS
 pulse_schedule = factory.new("pulse_schedule")
-print(pulse_schedule._dd_version)  # This should print 3.25.0
+print(get_data_dictionary_version(pulse_schedule))  # This should print 3.25.0
 
 # 3. Fill the IDS with some test data
 pulse_schedule.ids_properties.homogeneous_time = \

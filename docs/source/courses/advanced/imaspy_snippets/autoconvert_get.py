@@ -1,4 +1,5 @@
 import imaspy
+from imaspy.util import get_data_dictionary_version
 
 # 1. Create test data
 # Create an IDSFactory for DD 3.25.0
@@ -41,10 +42,10 @@ entry.open()
 ps_autoconvert = entry.get("pulse_schedule")
 
 print(f"{ps_autoconvert.ids_properties.version_put.data_dictionary=!s}")
-print(f"{ps_autoconvert._dd_version=!s}")
+print(f"{get_data_dictionary_version(ps_autoconvert)=!s}")
 # What do you notice?
 #   version_put: 3.25.0
-#   _dd_version: 3.40.0 -> the IDS was automatically converted
+#   get_data_dictionary_version: 3.40.0 -> the IDS was automatically converted
 
 # 4. Print the data in the loaded IDS
 imaspy.util.print_tree(ps_autoconvert)
@@ -59,10 +60,10 @@ print("====================")
 ps_noconvert = entry.get("pulse_schedule", autoconvert=False)
 
 print(f"{ps_noconvert.ids_properties.version_put.data_dictionary=!s}")
-print(f"{ps_noconvert._dd_version=!s}")
+print(f"{get_data_dictionary_version(ps_noconvert)=!s}")
 # What do you notice?
 #   version_put: 3.25.0
-#   _dd_version: 3.25.0 -> the IDS was not converted!
+#   get_data_dictionary_version: 3.25.0 -> the IDS was not converted!
 
 # Print the data in the loaded IDS
 imaspy.util.print_tree(ps_noconvert)
