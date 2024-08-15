@@ -81,6 +81,9 @@ def fill_with_random_data(structure, max_children=3):
             for i, ch in enumerate(child.value):
                 max_grand_children = max_children if i == max_child else 1
                 fill_with_random_data(ch, max_grand_children)
+            # Delete empty structures at the back
+            while len(child) > 0 and not child[-1].has_value:
+                child.resize(len(child) - 1, keep=True)
         else:  # leaf node
             if child_name == "homogeneous_time":
                 child.value = IDS_TIME_MODE_HOMOGENEOUS
