@@ -64,6 +64,26 @@ Interpolation modes
 
     Interpolation method that returns a linear interpolation between the existing slices
     before and after the requested time.
+
+
+Serializer protocols
+--------------------
+
+.. data:: ASCII_SERIALIZER_PROTOCOL
+
+    Identifier for the ASCII serialization protocol.
+
+.. data:: FLEXBUFFERS_SERIALIZER_PROTOCOL
+
+    Identifier for the Flexbuffers serialization protocol. This protocol is more
+    performant and results in a smaller buffer size than the
+    :data:`ASCII_SERIALIZER_PROTOCOL`.
+
+    .. versionadded:: 1.1 Requires ``imas_core`` version 5.3 or newer.
+
+.. data:: DEFAULT_SERIALIZER_PROTOCOL
+
+    Identifier for the default serialization protocol.
 """
 
 import functools
@@ -107,6 +127,9 @@ if has_imas:
     UNDEFINED_TIME = imasdef.UNDEFINED_TIME
     WRITE_OP = imasdef.WRITE_OP
     ASCII_SERIALIZER_PROTOCOL = getattr(imasdef, "ASCII_SERIALIZER_PROTOCOL", 60)
+    FLEXBUFFERS_SERIALIZER_PROTOCOL = getattr(
+        imasdef, "FLEXBUFFERS_SERIALIZER_PROTOCOL", None
+    )
     DEFAULT_SERIALIZER_PROTOCOL = getattr(imasdef, "DEFAULT_SERIALIZER_PROTOCOL", 60)
 
 else:
@@ -131,6 +154,7 @@ else:
     IDS_TIME_MODE_INDEPENDENT = 2
     IDS_TIME_MODES = [0, 1, 2]
     ASCII_SERIALIZER_PROTOCOL = 60
+    FLEXBUFFERS_SERIALIZER_PROTOCOL = None
     DEFAULT_SERIALIZER_PROTOCOL = 60
 
 

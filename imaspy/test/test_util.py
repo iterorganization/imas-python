@@ -1,10 +1,20 @@
+import pytest
+
 import imaspy
+from imaspy.db_entry import DBEntry
+from imaspy.ids_defs import MEMORY_BACKEND
 from imaspy.test.test_helpers import fill_consistent
 from imaspy.training import get_training_db_entry
 from imaspy.util import (
     find_paths,
+    get_data_dictionary_version,
+    get_full_path,
+    get_parent,
+    get_time_mode,
+    get_toplevel,
     idsdiffgen,
     inspect,
+    is_lazy_loaded,
     print_metadata_tree,
     print_tree,
     tree_iter,
@@ -133,5 +143,67 @@ def test_idsdiffgen():
 
 def test_idsdiff():
     # Test the diff rendering for two sample IDSs
-    entry = imaspy.training.get_training_db_entry()
-    imaspy.util.idsdiff(entry.get("core_profiles"), entry.get("equilibrium"))
+    with get_training_db_entry() as entry:
+        imaspy.util.idsdiff(entry.get("core_profiles"), entry.get("equilibrium"))
+
+
+def test_get_parent():
+    cp = imaspy.IDSFactory("3.39.0").core_profiles()
+    cp.profiles_1d.resize(2)
+    assert (
+        get_parent(cp.profiles_1d[0].electrons.temperature)
+        is cp.profiles_1d[0].electrons
+    )
+    assert get_parent(cp.profiles_1d[0].electrons) is cp.profiles_1d[0]
+    assert get_parent(cp.profiles_1d[0]) is cp.profiles_1d
+    assert get_parent(cp.profiles_1d) is cp
+    assert get_parent(cp) is None
+
+
+def test_get_time_mode():
+    cp = imaspy.IDSFactory("3.39.0").core_profiles()
+    cp.profiles_1d.resize(2)
+    assert (
+        get_time_mode(cp.profiles_1d[0].electrons.temperature)
+        is cp.ids_properties.homogeneous_time
+    )
+
+
+def test_get_toplevel():
+    cp = imaspy.IDSFactory("3.39.0").core_profiles()
+    cp.profiles_1d.resize(2)
+    assert get_toplevel(cp.profiles_1d[0].electrons.temperature) is cp
+    assert get_toplevel(cp.profiles_1d[0].electrons) is cp
+    assert get_toplevel(cp.profiles_1d[0]) is cp
+    assert get_toplevel(cp.profiles_1d) is cp
+    assert get_toplevel(cp) is cp
+
+
+def test_is_lazy_loaded():
+    with get_training_db_entry() as entry:
+        assert is_lazy_loaded(entry.get("core_profiles")) is False
+        assert is_lazy_loaded(entry.get("core_profiles", lazy=True)) is True
+
+
+def test_get_full_path():
+    cp = imaspy.IDSFactory("3.39.0").core_profiles()
+    cp.profiles_1d.resize(2)
+    assert (
+        get_full_path(cp.profiles_1d[1].electrons.temperature)
+        == "profiles_1d[1]/electrons/temperature"
+    )
+
+
+@pytest.mark.parametrize("version", ["3.31.0", "3.39.0"])
+def test_get_dd_version(version):
+    entry = DBEntry(MEMORY_BACKEND, "test", 0, 0, dd_version=version)
+    assert get_data_dictionary_version(entry) == version
+    assert get_data_dictionary_version(entry.factory) == version
+
+    cp = entry.factory.core_profiles()
+    cp.profiles_1d.resize(2)
+    assert get_data_dictionary_version(cp.profiles_1d[0].electrons) == version
+    assert get_data_dictionary_version(cp.profiles_1d[0]) == version
+    assert get_data_dictionary_version(cp.profiles_1d) == version
+    assert get_data_dictionary_version(cp) == version
+    assert get_data_dictionary_version(cp.time) == version

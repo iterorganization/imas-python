@@ -62,14 +62,6 @@ def fill_slices(core_profiles, times):
             profiles_1d.neutral[i].density = np.zeros(N_GRID)
 
 
-def setup_dbentry(hli, backend):
-    dbentry = create_dbentry(hli, backend, "w")
-    core_profiles = factory[hli].core_profiles()
-    fill_slices(core_profiles, TIME)
-    dbentry.put(core_profiles)
-    dbentry.close()
-
-
 class GetSlice:
     params = [hlis, available_slicing_backends]
     param_names = ["hli", "backend"]
@@ -84,11 +76,16 @@ class GetSlice:
         for t in TIME:
             self.dbentry.get_slice("core_profiles", t, imaspy.ids_defs.CLOSEST_INTERP)
 
+    def teardown(self, hli, backend):
+        if hasattr(self, "dbentry"):  # imas + netCDF has no dbentry
+            self.dbentry.close()
+
 
 class Get:
     params = [hlis, available_backends]
     param_names = ["hli", "backend"]
     setup = GetSlice.setup
+    teardown = GetSlice.teardown
 
     def time_get(self, hli, backend):
         self.dbentry.get("core_profiles")
@@ -107,6 +104,10 @@ class LazyGet:
     def time_lazy_get(self, lazy, backend):
         cp = self.dbentry.get("core_profiles", lazy=lazy)
         np.array([prof_1d.electrons.temperature for prof_1d in cp.profiles_1d])
+
+    def teardown(self, lazy, backend):
+        if hasattr(self, "dbentry"):  # imas + netCDF has no dbentry
+            self.dbentry.close()
 
 
 class Generate:
@@ -132,13 +133,14 @@ class Put:
     param_names = ["disable_validate", "hli", "backend"]
 
     def setup(self, disable_validate, hli, backend):
-        self.dbentry = create_dbentry(hli, backend)
+        create_dbentry(hli, backend).close()  # catch unsupported combinations
         self.core_profiles = factory[hli].core_profiles()
         fill_slices(self.core_profiles, TIME)
         os.environ["IMAS_AL_DISABLE_VALIDATE"] = disable_validate
 
     def time_put(self, disable_validate, hli, backend):
-        self.dbentry.put(self.core_profiles)
+        with create_dbentry(hli, backend) as dbentry:
+            dbentry.put(self.core_profiles)
 
 
 class PutSlice:
@@ -146,14 +148,15 @@ class PutSlice:
     param_names = ["disable_validate", "hli", "backend"]
 
     def setup(self, disable_validate, hli, backend):
-        self.dbentry = create_dbentry(hli, backend)
+        create_dbentry(hli, backend).close()  # catch unsupported combinations
         self.core_profiles = factory[hli].core_profiles()
         os.environ["IMAS_AL_DISABLE_VALIDATE"] = disable_validate
 
     def time_put_slice(self, disable_validate, hli, backend):
-        for t in TIME:
-            fill_slices(self.core_profiles, [t])
-            self.dbentry.put_slice(self.core_profiles)
+        with create_dbentry(hli, backend) as dbentry:
+            for t in TIME:
+                fill_slices(self.core_profiles, [t])
+                dbentry.put_slice(self.core_profiles)
 
 
 class Serialize:

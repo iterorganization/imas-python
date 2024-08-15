@@ -35,11 +35,11 @@ Exercise 1: The default DD version
         1.  Create an :py:class:`imaspy.IDSFactory() <imaspy.ids_factory.IDSFactory>`.
         2.  Print the version of the DD that is used.
         3.  Create an empty IDS with this IDSFactory (any IDS is fine) and print the
-            ``_dd_version`` of the IDS. The ``_dd_version`` attribute of an IDS tells
-            you the Data Dictionary version of this IDS. What do you notice?
+            DD version of the IDS, see
+            :py:meth:`~imaspy.util.get_data_dictionary_version`. What do you notice?
         4.  Create an :py:class:`imaspy.DBEntry <imaspy.db_entry.DBEntry>`, you may use
             the :py:attr:`MEMORY_BACKEND <imaspy.ids_defs.MEMORY_BACKEND>`. Print the
-            ``dd_version`` that is used. What do you notice?
+            DD version that is used. What do you notice?
 
     .. md-tab-item:: Solution
 
@@ -202,7 +202,8 @@ Exercise 4: Automatic conversion when loading IDSs
         
         2.  Reopen the ``DBEntry`` with the default DD version.
         3.  ``get`` the pulse schedule IDS. Print its
-            ``version_put/data_dictionary`` and ``_dd_version``. What do you
+            ``version_put/data_dictionary`` and Data Dictionary version (with
+            :py:meth:`~imaspy.util.get_data_dictionary_version`). What do you
             notice?
         4.  Use ``imaspy.util.print_tree`` to print all data in the loaded IDS. What do
             you notice?

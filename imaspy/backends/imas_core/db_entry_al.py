@@ -190,6 +190,9 @@ class ALDBEntryImpl(DBEntryImpl):
                 "Please raise any issues you find."
             )
 
+        elif backend == "flexbuffers":
+            pass  # nothing to set up
+
         else:
             logger.warning("Backend %s is unknown to IMASPy", backend)
 

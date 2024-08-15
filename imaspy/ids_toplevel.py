@@ -9,13 +9,18 @@ import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
-from imaspy.backends.imas_core.imas_interface import ll_interface
+import numpy
+
+import imaspy
+from imaspy.backends.imas_core.imas_interface import ll_interface, lowlevel
 from imaspy.exception import ValidationError
 from imaspy.ids_base import IDSDoc
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     ASCII_SERIALIZER_PROTOCOL,
+    CHAR_DATA,
     DEFAULT_SERIALIZER_PROTOCOL,
+    FLEXBUFFERS_SERIALIZER_PROTOCOL,
     IDS_TIME_MODE_INDEPENDENT,
     IDS_TIME_MODE_UNKNOWN,
     IDS_TIME_MODES,
@@ -29,6 +34,7 @@ if TYPE_CHECKING:
     from imaspy.ids_factory import IDSFactory
 
 
+_FLEXBUFFERS_URI = "imas:flexbuffers?path=/"
 logger = logging.getLogger(__name__)
 
 
@@ -41,17 +47,15 @@ def _serializer_tmpdir() -> str:
 
 def _create_serialization_dbentry(filepath: str, dd_version: str) -> "DBEntry":
     """Create a temporary DBEntry for use in the ASCII serialization protocol."""
-    from imaspy.db_entry import DBEntry  # Local import to avoid circular imports
-
     if ll_interface._al_version.major == 4:  # AL4 compatibility
-        dbentry = DBEntry(
+        dbentry = imaspy.DBEntry(
             ASCII_BACKEND, "serialize", 1, 1, "serialize", dd_version=dd_version
         )
         dbentry.create(options=f"-fullpath {filepath}")
         return dbentry
     else:  # AL5
         path = Path(filepath)
-        return DBEntry(
+        return imaspy.DBEntry(
             f"imas:ascii?path={path.parent};filename={path.name}",
             "w",
             dd_version=dd_version,
@@ -99,21 +103,17 @@ class IDSToplevel(IDSStructure):
         """Retrieve the time mode from `/ids_properties/homogeneous_time`"""
         return self.ids_properties.homogeneous_time
 
-    @property
-    def _is_dynamic(self) -> bool:
-        return False
-
     @staticmethod
     def default_serializer_protocol():
         """Return the default serializer protocol."""
         return DEFAULT_SERIALIZER_PROTOCOL
 
     @needs_imas
-    def serialize(self, protocol=None):
+    def serialize(self, protocol=None) -> bytes:
         """Serialize this IDS to a data buffer.
 
         The data buffer can be deserialized from any Access Layer High-Level Interface
-        that supports this. Currently known to be: IMASPy, Python, C++ and Fortran.
+        that supports this.
 
         Example:
 
@@ -134,20 +134,28 @@ class IDSToplevel(IDSStructure):
             ...
 
         Args:
-            protocol: Which serialization protocol to use. Currently only
-                ASCII_SERIALIZER_PROTOCOL is supported.
+            protocol: Which serialization protocol to use. Uses
+                ``DEFAULT_SERIALIZER_PROTOCOL`` when none specified. One of:
+
+                - :const:`~imaspy.ids_defs.ASCII_SERIALIZER_PROTOCOL`
+                - :const:`~imaspy.ids_defs.FLEXBUFFERS_SERIALIZER_PROTOCOL`
+                - :const:`~imaspy.ids_defs.DEFAULT_SERIALIZER_PROTOCOL`
+
+                The flexbuffers serializer protocol is only available when using
+                ``imas_core >= 5.3``. It's the default protocol when it is available.
 
         Returns:
             Data buffer that can be deserialized using :meth:`deserialize`.
         """
         if protocol is None:
             protocol = self.default_serializer_protocol()
+        dd_version = self._dd_version
         if self.ids_properties.homogeneous_time == IDS_TIME_MODE_UNKNOWN:
             raise ValueError("IDS is found to be EMPTY (homogeneous_time undefined)")
         if protocol == ASCII_SERIALIZER_PROTOCOL:
             tmpdir = _serializer_tmpdir()
             filepath = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
-            dbentry = _create_serialization_dbentry(filepath, self._dd_version)
+            dbentry = _create_serialization_dbentry(filepath, dd_version)
             dbentry.put(self)
             dbentry.close()
 
@@ -158,10 +166,20 @@ class IDSToplevel(IDSStructure):
             finally:
                 os.unlink(filepath)  # remove tmpfile from disk
             return bytes([ASCII_SERIALIZER_PROTOCOL]) + data
+        if protocol == FLEXBUFFERS_SERIALIZER_PROTOCOL:
+            # Note: FLEXBUFFERS_SERIALIZER_PROTOCOL is None when imas_core doesn't
+            # support this format
+            with imaspy.DBEntry(_FLEXBUFFERS_URI, "w", dd_version=dd_version) as entry:
+                entry.put(self)
+                # Read serialized buffer
+                status, buffer = lowlevel.al_read_data_array(
+                    entry._dbe_impl._db_ctx.ctx, "<buffer>", "", CHAR_DATA, 1
+                )
+                return bytes(buffer)
         raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 
     @needs_imas
-    def deserialize(self, data):
+    def deserialize(self, data: bytes) -> None:
         """Deserialize the data buffer into this IDS.
 
         See :meth:`serialize` for an example.
@@ -172,6 +190,7 @@ class IDSToplevel(IDSStructure):
         if len(data) <= 1:
             raise ValueError("No data provided")
         protocol = int(data[0])  # first byte of data contains serialization protocol
+        dd_version = self._dd_version
         if protocol == ASCII_SERIALIZER_PROTOCOL:
             tmpdir = _serializer_tmpdir()
             filepath = tempfile.mktemp(prefix="al_serialize_", dir=tmpdir)
@@ -180,13 +199,26 @@ class IDSToplevel(IDSStructure):
                 with open(filepath, "wb") as f:
                     f.write(data[1:])
                 # Temporarily open an ASCII backend for deserialization from tmpfile
-                dbentry = _create_serialization_dbentry(filepath, self._dd_version)
+                dbentry = _create_serialization_dbentry(filepath, dd_version)
                 dbentry.get(self.metadata.name, destination=self)
                 dbentry.close()
             finally:
                 # tmpfile may not exist depending if an error occurs in above code
                 if os.path.exists(filepath):
                     os.unlink(filepath)
+        elif protocol == FLEXBUFFERS_SERIALIZER_PROTOCOL:
+            with imaspy.DBEntry(_FLEXBUFFERS_URI, "r", dd_version=dd_version) as entry:
+                # Write serialized buffer to the flexbuffers backend
+                buffer = numpy.frombuffer(data, dtype=numpy.int8)
+                lowlevel._al_write_data_array(
+                    entry._dbe_impl._db_ctx.ctx, b"<buffer>", b"", buffer, CHAR_DATA
+                )
+                entry.get(self.metadata.name, destination=self)
+        elif protocol == 61:  # Fallthrough
+            raise NotImplementedError(
+                "FLEXBUFFERS_SERIALIZER_PROTOCOL is not implemented by the installed "
+                "version of imas_core. Please update imas_core to 5.3 or newer."
+            )
         else:
             raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 
@@ -198,24 +230,24 @@ class IDSToplevel(IDSStructure):
         - The IDS must have a valid time mode (``ids_properties.homogeneous_time``)
         - For all non-empty quantities with coordinates:
 
-            - If coordinates have an exact size (e.g. coordinate1 = 1...3), the size in
-              that dimension must match this.
-            - If coordinates refer to other elements (e.g. coordinate1 = time), the size
-              in that dimension must be the same as the size of the referred quantity.
+          - If coordinates have an exact size (e.g. coordinate1 = 1...3), the size in
+            that dimension must match this.
+          - If coordinates refer to other elements (e.g. coordinate1 = time), the size
+            in that dimension must be the same as the size of the referred quantity.
 
-              Note that time is a special coordinate:
+            Note that time is a special coordinate:
 
-              - When using homogeneous time, the time coordinate is the /time node.
-              - When using heterogeneous time, the time coordinate is the one specified
-                by the coordinate. For dynamic Array of Structures, the time element is
-                a FLT_0D inside the AoS (see ``profiles_1d`` in the core_profiles IDS).
-                In such cases the time element must be set.
-              - When using independent time mode, no time-dependent quantities may be
-                set.
+            - When using homogeneous time, the time coordinate is the /time node.
+            - When using heterogeneous time, the time coordinate is the one specified
+              by the coordinate. For dynamic Array of Structures, the time element is
+              a FLT_0D inside the AoS (see ``profiles_1d`` in the core_profiles IDS).
+              In such cases the time element must be set.
+            - When using independent time mode, no time-dependent quantities may be
+              set.
 
-            - If a "same_as" coordinate is specified (e.g. coordinate2_same_as = r), the
-              size in that dimension must be the same as the size in that dimension of
-              the referred quantity.
+          - If a "same_as" coordinate is specified (e.g. coordinate2_same_as = r), the
+            size in that dimension must be the same as the size in that dimension of
+            the referred quantity.
 
         If any check fails, a ValidationError is raised that describes the problem.
 

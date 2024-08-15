@@ -10,7 +10,6 @@ from pathlib import Path
 import click
 from packaging.version import Version
 from rich import box, console, traceback
-from rich.logging import RichHandler
 from rich.progress import (
     BarColumn,
     Progress,
@@ -23,28 +22,14 @@ from rich.table import Table
 
 import imaspy
 import imaspy.backends.imas_core.imas_interface
-from imaspy import dd_zip
+from imaspy import DBEntry, dd_zip
 from imaspy.backends.imas_core.imas_interface import ll_interface
+from imaspy.command.db_analysis import analyze_db, process_db_analysis
+from imaspy.command.helpers import min_version_guard, setup_rich_log_handler
 from imaspy.command.timer import Timer
 from imaspy.exception import UnknownDDVersion
 
 logger = logging.getLogger(__name__)
-
-
-def setup_rich_log_handler(quiet: bool):
-    # Disable default imaspy log handler
-    imaspy_logger = logging.getLogger("imaspy")
-    for handler in imaspy_logger.handlers:
-        imaspy_logger.removeHandler(handler)
-    # Disable any root log handlers
-    root_logger = logging.getLogger()
-    for handler in root_logger.handlers:
-        root_logger.removeHandler(handler)
-    # Install rich handler on the root logger:
-    root_logger.addHandler(RichHandler())
-    if quiet:  # Silence IMASPy INFO messages
-        # If loglevel is less than WARNING, set it to WARNING:
-        imaspy_logger.setLevel(max(logging.WARNING, imaspy_logger.getEffectiveLevel()))
 
 
 def _excepthook(type_, value, tb):
@@ -71,16 +56,8 @@ def cli():
     sys.excepthook = _excepthook
 
 
-def min_version_guard(al_version: Version):
-    """Print an error message if the loaded AL version is too old."""
-    used_version = ll_interface._al_version
-    if used_version >= al_version:
-        return
-    click.echo(
-        f"This command requires at least version {al_version} of the Access Layer."
-    )
-    click.echo(f"The current loaded version is {used_version}, which is too old.")
-    sys.exit(1)
+cli.add_command(analyze_db)
+cli.add_command(process_db_analysis)
 
 
 @cli.command("version")
@@ -123,7 +100,7 @@ def print_ids(uri, ids, occurrence, print_all):
     min_version_guard(Version("5.0"))
     setup_rich_log_handler(False)
 
-    with imaspy.DBEntry(uri, "r") as dbentry:
+    with DBEntry(uri, "r") as dbentry:
         ids_obj = dbentry.get(ids, occurrence, autoconvert=False)
         imaspy.util.print_tree(ids_obj, not print_all)
 
@@ -169,8 +146,8 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet, timeit):
 
     # Use an ExitStack to avoid three nested with-statements
     with ExitStack() as stack:
-        entry_in = stack.enter_context(imaspy.DBEntry(uri_in, "r"))
-        entry_out = stack.enter_context(imaspy.DBEntry(uri_out, "x", **version_params))
+        entry_in = stack.enter_context(DBEntry(uri_in, "r"))
+        entry_out = stack.enter_context(DBEntry(uri_out, "x", **version_params))
 
         # First build IDS/occurrence list so we can show a decent progress bar
         ids_list = [ids] if ids != "*" else entry_out.factory.ids_names()

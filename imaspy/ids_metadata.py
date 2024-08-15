@@ -7,7 +7,7 @@ import types
 from enum import Enum
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, Type
+from typing import Any, Dict, Iterator, Optional, Tuple, Type
 from xml.etree.ElementTree import Element
 
 from imaspy.ids_coordinates import IDSCoordinate
@@ -259,19 +259,22 @@ class IDSMetadata:
     def __repr__(self) -> str:
         return f"<IDSMetadata for '{self.name}'>"
 
-    def __setattr__(self, name: str, value: Any):
+    def __setattr__(self, name: str, value: Any) -> None:
         raise RuntimeError("Cannot set attribute: IDSMetadata is read-only.")
 
-    def __delattr__(self, name: str):
+    def __delattr__(self, name: str) -> None:
         raise RuntimeError("Cannot delete attribute: IDSMetadata is read-only.")
 
-    def __copy__(self):
+    def __copy__(self) -> "IDSMetadata":
         return self  # IDSMetadata is immutable
 
-    def __deepcopy__(self, memo: dict):
+    def __deepcopy__(self, memo: dict) -> "IDSMetadata":
         return self  # IDSMetadata is immutable
 
-    def __getitem__(self, path):
+    def __iter__(self) -> Iterator["IDSMetadata"]:
+        return iter(self._children.values())
+
+    def __getitem__(self, path) -> "IDSMetadata":
         item = self
         for part in re.split("[./]", path):
             try:

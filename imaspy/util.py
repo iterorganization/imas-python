@@ -6,15 +6,18 @@
 
 import logging
 import re
-from typing import Any, Callable, Iterator, List, Tuple, Union
+from typing import Any, Callable, Iterator, List, Optional, Tuple, Union
 
 import numpy
 
+from imaspy.db_entry import DBEntry
 from imaspy.ids_base import IDSBase
+from imaspy.ids_factory import IDSFactory
 from imaspy.ids_metadata import IDSMetadata
-from imaspy.ids_primitive import IDSPrimitive
+from imaspy.ids_primitive import IDSInt0D, IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
+from imaspy.ids_toplevel import IDSToplevel
 
 logger = logging.getLogger(__name__)
 
@@ -404,3 +407,120 @@ def calc_hash(node: IDSBase) -> bytes:
             print(imaspy.util.calc_hash(cp).hex())  # 3b9b929756a242fd
     """
     return node._xxhash()
+
+
+def get_parent(node: IDSBase) -> Optional[IDSBase]:
+    """Get the parent of any IDS node.
+
+    Args:
+        node: Any node (structure, array of structures, data node) of an IDS.
+
+    Returns:
+        The parent node of the provided node, or None if the node is an IDS toplevel.
+
+    Example:
+        .. code-block:: python
+
+            >>> cp = imaspy.IDSFactory().core_profiles()
+            >>> cp.profiles_1d.resize(2)
+            >>> imaspy.util.get_parent(cp.profiles_1d[0].electrons.temperature)
+            <IDSStructure (IDS:core_profiles, profiles_1d[0]/electrons)>
+            >>> imaspy.util.get_parent(cp.profiles_1d[0].electrons)
+            <IDSStructure (IDS:core_profiles, profiles_1d[0])>
+            >>> imaspy.util.get_parent(cp.profiles_1d[0])
+            <IDSStructArray (IDS:core_profiles, profiles_1d with 2 items)>
+            >>> imaspy.util.get_parent(cp.profiles_1d)
+            <IDSToplevel (IDS:core_profiles)>
+            >>> imaspy.util.get_parent(cp)
+            >>>
+    """
+    if isinstance(node, IDSToplevel):
+        return None
+    return node._parent
+
+
+def get_time_mode(node: IDSBase) -> IDSInt0D:
+    """Retrieve ``ids_properties/homogeneous_time`` for any node in the IDS.
+
+    Args:
+        node: Any node (structure, array of structures, data node) of an IDS.
+
+    Returns:
+        ``ids_properties/homogeneous_time``.
+
+    Example:
+        .. code-block:: python
+
+            >>> cp = imaspy.IDSFactory().core_profiles()
+            >>> cp.ids_properties.homogeneous_time = 0
+            >>> cp.profiles_1d.resize(2)
+            >>> imaspy.util.get_time_mode(cp.profiles_1d[0].electrons.temperature)
+            <IDSInt0D (IDS:core_profiles, ids_properties/homogeneous_time, INT_0D)>
+            int(0)
+    """
+    return node._time_mode
+
+
+def get_toplevel(node: IDSBase) -> IDSToplevel:
+    """Retrieve the toplevel IDS object for any node in the IDS.
+
+    Args:
+        node: Any node (structure, array of structures, data node) of an IDS.
+
+    Returns:
+        The toplevel IDS object.
+
+    Example:
+        .. code-block:: python
+
+            >>> cp = imaspy.IDSFactory().core_profiles()
+            >>> cp.profiles_1d.resize(2)
+            >>> imaspy.util.get_toplevel(cp.profiles_1d[0].electrons.temperature)
+            <IDSToplevel (IDS:core_profiles)>
+    """
+    return node._toplevel
+
+
+def is_lazy_loaded(node: IDSBase) -> bool:
+    """Find out if the provided (node of an) IDS is lazy loaded.
+
+    Args:
+        node: Any node (structure, array of structures, data node) of an IDS.
+    """
+    return node._lazy
+
+
+def get_full_path(node: IDSBase) -> str:
+    """Get the full path (relative to the IDS toplevel) of the provided node.
+
+    Caution:
+        Determining the path is relatively expensive in large, nested Arrays of
+        Structures: the calculation of the index suffix is O(N) in the size of the AoS.
+
+        Using this function may result in a performance bottleneck for your application.
+
+    Example:
+        .. code-block:: python
+
+            >>> cp = imaspy.IDSFactory().core_profiles()
+            >>> cp.profiles_1d.resize(2)
+            >>> imaspy.util.get_full_path(cp.profiles_1d[1].electrons.temperature)
+            'profiles_1d[1]/electrons/temperature'
+    """
+    return node._path
+
+
+def get_data_dictionary_version(obj: Union[IDSBase, DBEntry, IDSFactory]) -> str:
+    """Find out the version of the data dictionary definitions that this object uses.
+
+    Args:
+        obj: Any IMASPy object that is data-dictionary dependent.
+
+    Returns:
+        The data dictionary version, e.g. ``"3.38.1"``.
+    """
+    if isinstance(obj, (DBEntry, IDSFactory)):
+        return obj.dd_version
+    if isinstance(obj, IDSBase):
+        return obj._version
+    raise TypeError(f"Cannot get data dictionary version of '{type(obj)}'")

@@ -7,7 +7,9 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
 
 import datetime
+import inspect
 import sys
+import zlib
 from urllib.parse import urljoin
 
 # Sphinx extention to format xarray/pandas summaries
@@ -282,6 +284,33 @@ napoleon_numpy_docstring = False
 napoleon_attr_annotations = True
 
 
+# Generate intersphinx mapping for netCDF4, which doesn't use sphinx
+# Adapted from sphinx.util.inventory.InventoryFile.dump()
+netcdf4_intersphinx_map = "netcdf4.objects.inv"
+with open(netcdf4_intersphinx_map, "wb") as f:
+    f.write(
+        """# Sphinx inventory version 2
+# Project: netCDF4
+# Version: 1.7.0
+# The remainder of this file is compressed using zlib.
+""".encode()
+    )
+    compressor = zlib.compressobj(9)
+    try:
+        import netCDF4
+
+        nc_classes = inspect.getmembers(netCDF4, inspect.isclass)
+    except ImportError:
+        nc_classes = []
+    for name, cls in nc_classes:
+        # Map class name to URL (relative to https://unidata.github.io/netcdf4-python/)
+        entry = f"netCDF4.{name} py:class 1 #$ -\n"
+        if cls.__module__ != "netCDF4":
+            entry += f"{cls.__module__}.{name} py:class 1 #netCDF4.{name} -\n"
+        f.write(compressor.compress(entry.encode()))
+    f.write(compressor.flush())
+
+
 # Configuration of sphinx.ext.intersphinx
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html
 intersphinx_mapping = {
@@ -289,6 +318,7 @@ intersphinx_mapping = {
     "numpy": ("https://numpy.org/doc/stable", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "packaging": ("https://packaging.pypa.io/en/stable/", None),
+    "netCDF4": ("https://unidata.github.io/netcdf4-python/", netcdf4_intersphinx_map),
 }
 intersphinx_timeout = 60  # Downloads time out after 1 minute
 

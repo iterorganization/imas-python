@@ -88,7 +88,7 @@ def fill_with_random_data(structure, max_children=3):
                 child.value = random_data(child.metadata.data_type, child.metadata.ndim)
 
 
-def maybe_set_random_value(primitive: IDSPrimitive, leave_empty=0.2) -> None:
+def maybe_set_random_value(primitive: IDSPrimitive, leave_empty: float) -> None:
     """Set the value of an IDS primitive with a certain chance.
 
     If the IDSPrimitive has coordinates, then the size of the coordinates is taken into
@@ -96,8 +96,12 @@ def maybe_set_random_value(primitive: IDSPrimitive, leave_empty=0.2) -> None:
 
     Args:
         primitive: IDSPrimitive to set the value of
-        leave_empty: Chance that this primitive remains empty. Defaults to 0.2.
+        leave_empty: Chance that this primitive remains empty.
     """
+    # Skip obsolescent nodes
+    if getattr(primitive.metadata, "lifecycle_status", None) == "obsolescent":
+        return
+
     if random.random() < leave_empty:
         return
 
@@ -110,7 +114,23 @@ def maybe_set_random_value(primitive: IDSPrimitive, leave_empty=0.2) -> None:
     for dim, coordinate in enumerate(primitive.metadata.coordinates):
         same_as = primitive.metadata.coordinates_same_as[dim]
         if not coordinate.has_validation and not same_as.has_validation:
-            size = random.randint(1, 6)
+            if primitive.metadata.name.endswith("_error_upper"):
+                # <name>_error_upper should only be filled when <name> is
+                name = primitive.metadata.name[: -len("_error_upper")]
+                data = primitive._parent[name]
+                if not data.has_value:
+                    return
+                size = data.shape[dim]
+            elif primitive.metadata.name.endswith("_error_lower"):
+                # <name>_error_lower should only be filled when <name>_error_upper is
+                name = primitive.metadata.name[: -len("_error_lower")] + "_error_upper"
+                data = primitive._parent[name]
+                if not data.has_value:
+                    return
+                size = data.shape[dim]
+            else:
+                # we can independently choose a size for this dimension:
+                size = random.randint(1, 6)
         elif coordinate.references or same_as.references:
             try:
                 if coordinate.references:
@@ -157,13 +177,14 @@ def maybe_set_random_value(primitive: IDSPrimitive, leave_empty=0.2) -> None:
         raise ValueError(f"Invalid IDS data type: {primitive.metadata.data_type}")
 
 
-def fill_consistent(structure: IDSStructure):
+def fill_consistent(structure: IDSStructure, leave_empty: float = 0.2):
     """Fill a structure with random data, such that coordinate sizes are consistent.
 
     Sets homogeneous_time to heterogeneous (always).
 
     Args:
         structure: IDSStructure object to (recursively fill)
+        leave_empty: factor (0-1) of nodes to leave empty
 
     Returns:
         Nothing: if the provided IDSStructue is an IDSToplevel
@@ -181,7 +202,7 @@ def fill_consistent(structure: IDSStructure):
 
     for child in structure:
         if isinstance(child, IDSStructure):
-            exclusive_coordinates.extend(fill_consistent(child))
+            exclusive_coordinates.extend(fill_consistent(child, leave_empty))
 
         elif isinstance(child, IDSStructArray):
             if child.metadata.coordinates[0].references:
@@ -193,7 +214,7 @@ def fill_consistent(structure: IDSStructure):
                     if isinstance(coor, IDSPrimitive):
                         # maybe fill with random data:
                         try:
-                            maybe_set_random_value(coor)
+                            maybe_set_random_value(coor, leave_empty)
                         except (RuntimeError, ValueError):
                             pass
                         child.resize(len(coor))
@@ -207,7 +228,7 @@ def fill_consistent(structure: IDSStructure):
             else:
                 child.resize(child.metadata.coordinates[0].size or 1)
             for ele in child:
-                exclusive_coordinates.extend(fill_consistent(ele))
+                exclusive_coordinates.extend(fill_consistent(ele, leave_empty))
 
         else:  # IDSPrimitive
             coordinates = child.metadata.coordinates
@@ -219,7 +240,7 @@ def fill_consistent(structure: IDSStructure):
                 exclusive_coordinates.append(child)
             else:
                 try:
-                    maybe_set_random_value(child)
+                    maybe_set_random_value(child, leave_empty)
                 except (RuntimeError, ValueError):
                     pass
 
@@ -241,7 +262,7 @@ def fill_consistent(structure: IDSStructure):
                     coor = filled_refs.pop()
                     unset_coordinate(coor)
 
-            maybe_set_random_value(element)
+            maybe_set_random_value(element, leave_empty)
     else:
         return exclusive_coordinates
 

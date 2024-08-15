@@ -124,6 +124,10 @@ class Get:
     def time_get(self, hli, backend):
         self.dbentry.get("edge_profiles")
 
+    def teardown(self, hli, backend):
+        if hasattr(self, "dbentry"):  # imas + netCDF has no dbentry
+            self.dbentry.close()
+
 
 class Generate:
     params = [hlis]
@@ -142,10 +146,11 @@ class Put:
     param_names = ["disable_validate", "hli", "backend"]
 
     def setup(self, disable_validate, hli, backend):
-        self.dbentry = create_dbentry(hli, backend)
+        create_dbentry(hli, backend).close()  # catch unsupported combinations
         self.edge_profiles = factory[hli].edge_profiles()
         fill_ggd(self.edge_profiles, TIME)
         os.environ["IMAS_AL_DISABLE_VALIDATE"] = disable_validate
 
     def time_put(self, disable_validate, hli, backend):
-        self.dbentry.put(self.edge_profiles)
+        with create_dbentry(hli, backend) as dbentry:
+            dbentry.put(self.edge_profiles)
