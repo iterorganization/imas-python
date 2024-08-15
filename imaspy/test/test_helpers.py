@@ -3,6 +3,8 @@ import random
 import string
 
 import numpy as np
+import pytest
+from packaging.version import Version
 
 from imaspy.db_entry import DBEntry
 from imaspy.ids_data_type import IDSDataType
@@ -193,6 +195,17 @@ def fill_consistent(structure: IDSStructure, leave_empty: float = 0.2):
             filling an IDSToplevel, a choice is made between the exclusive coordinates.
     """
     if isinstance(structure, IDSToplevel):
+        unsupported_ids_name = (
+            "amns_data"
+            if Version(structure._version) < Version("3.42.0")
+            else "thomson_scattering"
+        )
+        if structure.metadata.name == unsupported_ids_name:
+            pytest.skip(
+                f"fill_consistent doesn't support IDS {structure.metadata.name} "
+                f"for Data Dictionary version {structure._version}."
+            )
+
         time_mode = IDS_TIME_MODE_HETEROGENEOUS
         if structure.metadata.type is IDSType.CONSTANT:
             time_mode = IDS_TIME_MODE_INDEPENDENT

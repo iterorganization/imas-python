@@ -341,8 +341,6 @@ def test_validate_with_alternative_coordinates(alternative_coordinates_cp, alter
 
 
 def test_validate_random_fill(ids_name):
-    if ids_name == "amns_data":
-        pytest.skip("Indirect coordinates in amns_data tested separately")
     ids = IDSFactory().new(ids_name)
     fill_consistent(ids)
     ids.validate()
