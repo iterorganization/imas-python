@@ -1,3 +1,5 @@
+.. _`IMAS netCDF files`:
+
 IMAS netCDF files
 =================
 
