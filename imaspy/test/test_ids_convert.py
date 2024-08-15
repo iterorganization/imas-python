@@ -2,6 +2,8 @@
 # See also integration tests for conversions in test_nbc_change.py
 
 import logging
+import re
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -193,7 +195,17 @@ def test_provenance_entry(factory):
     # Check that IMASPy is mentioned
     assert "IMASPy" in provenance_txt
 
-    # TODO: test logic branch for node.reference after IMAS-5304 is merged
+    # Test logic branch for node.reference implemented with IMAS-5304
+    cp4 = convert_ids(cp2, "3.42.0", provenance_origin_uri="<testdata>")
+    assert len(cp4.ids_properties.provenance.node) == 1
+    assert cp4.ids_properties.provenance.node[0].path == ""
+    assert len(cp4.ids_properties.provenance.node[0].reference) == 1
+    assert "<testdata>" in cp4.ids_properties.provenance.node[0].reference[0].name
+    timestamp = str(cp4.ids_properties.provenance.node[0].reference[0].timestamp)
+    # Check that timestamp adheres to the format YYYY-MM-DDTHH:MM:SSZ
+    assert re.match(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", timestamp)
+    dtime = datetime.now(UTC) - datetime.fromisoformat(timestamp)
+    assert timedelta(seconds=0) <= dtime < timedelta(seconds=2)
 
 
 @pytest.fixture
