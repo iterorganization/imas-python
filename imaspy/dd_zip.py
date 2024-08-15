@@ -39,8 +39,18 @@ from pathlib import Path
 from typing import Dict, Iterator, List, Tuple, Union
 from zipfile import ZipFile
 
-from importlib_resources import as_file, files
-from importlib_resources.abc import Traversable
+try:
+    from importlib.resources import as_file, files
+
+    try:
+        from importlib.resources.abc import Traversable
+    except ModuleNotFoundError:  # Python 3.9/3.10 support
+        from importlib.abc import Traversable
+
+except ImportError:  # Python 3.8 support
+    from importlib_resources import as_file, files
+    from importlib_resources.abc import Traversable
+
 from packaging.version import InvalidVersion, Version
 
 import imaspy

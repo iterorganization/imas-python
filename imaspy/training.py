@@ -6,7 +6,10 @@
 import importlib
 from unittest.mock import patch
 
-from importlib_resources import files
+try:
+    from importlib.resources import files
+except ImportError:  # Python 3.8 support
+    from importlib_resources import files
 
 import imaspy
 from imaspy.backends.imas_core.imas_interface import ll_interface

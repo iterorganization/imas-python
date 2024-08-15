@@ -61,7 +61,7 @@ dependencies = [
     "rich",
     "scipy",
     "click",
-    "importlib_resources",
+    "importlib_resources;python_version<'3.9'",
     "packaging",
     "xxhash >= 2",
 ]
