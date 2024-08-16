@@ -17,7 +17,7 @@ New features
   :py:const:`~imaspy.ids_defs.FLEXBUFFERS_SERIALIZER_PROTOCOL` that is
   implemented in Access Layer Core 5.3. This is a much faster and more efficient
   serialization format than the
-  :py:const:`~imaspy.ids_defs.ASCII_SERIALIZER_PROTOCOL`. The Flexbufferes
+  :py:const:`~imaspy.ids_defs.ASCII_SERIALIZER_PROTOCOL`. The Flexbuffers
   serializer protocol requires ``imas_core`` version 5.3 or newer. It is the
   default serializer format when it is available. This features is not available
   when the variable :py:const:`~imaspy.ids_defs.FLEXBUFFERS_SERIALIZER_PROTOCOL`
