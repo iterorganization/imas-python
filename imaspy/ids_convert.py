@@ -4,15 +4,20 @@
 """
 
 import copy
+import datetime
 import logging
 from functools import lru_cache
+from pathlib import Path
 from typing import Callable, Dict, Iterator, Optional, Set, Tuple
 from xml.etree.ElementTree import Element, ElementTree
 
+import numpy
 from packaging.version import InvalidVersion, Version
 
+import imaspy
 from imaspy.dd_zip import parse_dd_version
 from imaspy.ids_base import IDSBase
+from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_path import IDSPath
 from imaspy.ids_primitive import IDSPrimitive
@@ -61,12 +66,25 @@ class NBCPathMap:
         self.ctxpath: Dict[str, str] = {}
         """Map providing the lowlevel context path for renamed elements."""
 
-        self.type_change: Dict[str, Optional[Callable]] = {}
-        """Set of paths that had a type change.
+        self.type_change: Dict[str, Optional[Callable[[IDSBase, IDSBase], None]]] = {}
+        """Dictionary of paths that had a type change.
 
-        Type changes are mapped to None in :py:attr:`path`, this ``set`` allows to
+        Type changes are mapped to None in :py:attr:`path`, this ``dict`` allows to
         distinguish between a type change and a removed node.
+
+        Optionally, a function can be set to the path. This function can be called to
+        perform a supported conversion between the new and old type (or vice versa).
         """
+
+        self.post_process: Dict[str, Callable[[IDSBase], None]] = {}
+        """Map providing postprocess functions for paths.
+
+        The postprocess function should be applied to the nodes after all the data is
+        converted.
+        """
+
+        self.ignore_missing_paths: Set[str] = set()
+        """Set of paths that should not be logged when data is present."""
 
     def __setitem__(self, path: str, value: Tuple[Optional[str], str, str]) -> None:
         self.path[path], self.tbp[path], self.ctxpath[path] = value
@@ -126,7 +144,7 @@ class DDVersionMap:
         """
         new_data_type = new_item.get("data_type")
         old_data_type = old_item.get("data_type")
-        if new_data_type == old_data_type:
+        if IDSDataType.parse(new_data_type) == IDSDataType.parse(old_data_type):
             return True
 
         # Data type changed, record in type_change sets
@@ -148,6 +166,11 @@ class DDVersionMap:
         ):
             self.new_to_old.type_change[new_path] = _type_changed_0d_1d_data
             self.old_to_new.type_change[old_path] = _type_changed_0d_1d_data
+        elif old_data_type == "INT_1D" and new_item.get("doc_identifier"):
+            # DD3to4: Support change of grid_ggd/grid/space/coordinates_type from an
+            # INT_1D to a proper identifier
+            self.new_to_old.type_change[new_path] = _type_changed_to_identifier
+            self.old_to_new.type_change[old_path] = _type_changed_to_identifier
         else:
             logger.debug(
                 "Data type of %s changed from %s to %s. This change is not "
@@ -170,6 +193,17 @@ class DDVersionMap:
         old_path_set = set(old_paths)
         new_path_set = set(new_paths)
 
+        def process_parent_renames(path: str) -> str:
+            # Apply any parent AoS/structure rename
+            # Loop in reverse order to find the closest parent which was renamed:
+            for parent in reversed(list(iter_parents(path))):
+                parent_rename = self.new_to_old.path.get(parent)
+                if parent_rename:
+                    if new_paths[parent].get("data_type") in self.STRUCTURE_TYPES:
+                        path = path.replace(parent, parent_rename, 1)
+                        break
+            return path
+
         def get_old_path(path: str, previous_name: str) -> str:
             """Calculate old path from the path and change_nbc_previous_name"""
             # Apply rename
@@ -178,15 +212,7 @@ class DDVersionMap:
                 old_path = path[:i_slash] + "/" + previous_name
             else:
                 old_path = previous_name
-            # Apply any parent AoS/structure rename
-            # Loop in reverse order to find the closest parent which was renamed:
-            for parent in reversed(list(iter_parents(old_path))):
-                parent_rename = self.new_to_old.path.get(parent)
-                if parent_rename:
-                    if new_paths[parent].get("data_type") in self.STRUCTURE_TYPES:
-                        old_path = old_path.replace(parent, parent_rename, 1)
-                        break
-            return old_path
+            return process_parent_renames(old_path)
 
         def add_rename(old_path: str, new_path: str):
             old_item = old_paths[old_path]
@@ -251,6 +277,27 @@ class DDVersionMap:
                                     add_rename(path, npath)
             elif nbc_description == "type_changed":
                 pass  # We will handle this (if possible) in self._check_data_type
+            elif nbc_description == "repeat_children_first_point":
+                old_path = process_parent_renames(new_path)
+                self.new_to_old.post_process[new_path] = _remove_last_point
+                self.old_to_new.post_process[old_path] = _repeat_first_point
+            elif nbc_description == "repeat_children_first_point_conditional":
+                # This conversion needs access to the old data structure to get the
+                # DDv3 `closed` node which is removed in DDv4, so we handle it as a type
+                # change:
+                old_path = process_parent_renames(new_path)
+                self.new_to_old.type_change[new_path] = _remove_last_point_conditional
+                self.old_to_new.type_change[old_path] = _repeat_first_point_conditional
+                self.old_to_new.ignore_missing_paths.add(f"{old_path}/closed")
+            elif nbc_description in (
+                "repeat_children_first_point_conditional_sibling",
+                "repeat_children_first_point_conditional_sibling_dynamic",
+            ):
+                old_path = process_parent_renames(new_path)
+                self.new_to_old.type_change[new_path] = _remove_last_point_conditional
+                self.old_to_new.type_change[old_path] = _repeat_first_point_conditional
+                closed_path = Path(old_path).parent / "closed"
+                self.old_to_new.ignore_missing_paths.add(str(closed_path))
             else:  # Ignore unknown NBC changes
                 log_args = (nbc_description, new_path)
                 logger.error("Ignoring unsupported NBC change: %r for %r.", *log_args)
@@ -264,6 +311,25 @@ class DDVersionMap:
         # Record missing items
         self._map_missing(True, new_path_set.difference(old_path_set, self.new_to_old))
         self._map_missing(False, old_path_set.difference(new_path_set, self.old_to_new))
+
+        new_version = None
+        new_version_node = self.new_version.find("version")
+        if new_version_node is not None:
+            new_version = parse_dd_version(new_version_node.text)
+        # Additional conversion rules for DDv3 to DDv4
+        if self.version_old.major == 3 and new_version and new_version.major == 4:
+            # Postprocessing for COCOS definition change:
+            xpath_query = ".//field[@cocos_label_transformation='psi_like']"
+            for old_item in old.iterfind(xpath_query):
+                old_path = old_item.get("path")
+                new_path = self.old_to_new.path.get(old_path, old_path)
+                self.new_to_old.post_process[new_path] = _cocos_change
+                self.old_to_new.post_process[old_path] = _cocos_change
+            # Definition change for pf_active circuit/connections
+            if self.ids_name == "pf_active":
+                path = "circuit/connections"
+                self.new_to_old.post_process[path] = _circuit_connections_4to3
+                self.old_to_new.post_process[path] = _circuit_connections_3to4
 
     def _map_missing(self, is_new: bool, missing_paths: Set[str]):
         rename_map = self.new_to_old if is_new else self.old_to_new
@@ -333,6 +399,7 @@ def convert_ids(
     version: Optional[str],
     *,
     deepcopy: bool = False,
+    provenance_origin_uri: str = "",
     xml_path: Optional[str] = None,
     factory: Optional[IDSFactory] = None,
     target: Optional[IDSToplevel] = None,
@@ -351,6 +418,9 @@ def convert_ids(
     be changed in both IDSs! If this is not desired, you may set the ``deepcopy``
     keyword argument to True.
 
+    See also:
+        :ref:`Conversion of IDSs between DD versions`.
+
     Args:
         toplevel: The IDS element to convert.
         version: The data dictionary version to convert to, for example "3.38.0". Must
@@ -360,6 +430,9 @@ def convert_ids(
         deepcopy: When True, performs a deep copy of all data. When False (default),
             numpy arrays are not copied and the converted IDS shares the same underlying
             data buffers.
+        provenance_origin_uri: When nonempty, add an entry in the provenance data in
+            ``ids_properties`` to indicate that this IDS has been converted, and it was
+            originally stored at the given uri.
         xml_path: Path to a data dictionary XML file that should be used instead of the
             released data dictionary version specified by ``version``.
         factory: Existing IDSFactory to use for as target version.
@@ -401,7 +474,47 @@ def convert_ids(
 
     _copy_structure(toplevel, target_ids, deepcopy, source_is_new, version_map)
     logger.info("Conversion of IDS %s finished.", ids_name)
+    if provenance_origin_uri:
+        _add_provenance_entry(target_ids, toplevel._version, provenance_origin_uri)
     return target_ids
+
+
+def _add_provenance_entry(
+    target_ids: IDSToplevel, source_version: str, provenance_origin_uri: str
+) -> None:
+    # provenance node was added in DD 3.34.0
+    if not hasattr(target_ids.ids_properties, "provenance"):
+        logger.warning(
+            "Cannot add provenance entry for DD conversion: "
+            "target IDS does not have a provenance property."
+        )
+        return
+
+    # Find the node corresponding to the whole IDS, or create one if there is none
+    for node in target_ids.ids_properties.provenance.node:
+        if node.path == "":
+            break
+    else:
+        # No node found for the whole IDS, create a new one:
+        curlen = len(target_ids.ids_properties.provenance.node)
+        target_ids.ids_properties.provenance.node.resize(curlen + 1, keep=True)
+        node = target_ids.ids_properties.provenance.node[-1]
+
+    # Populate the node
+    source_txt = (
+        f"{provenance_origin_uri}; "
+        f"This IDS has been converted from DD {source_version} to "
+        f"DD {target_ids._dd_version} by IMASPy {imaspy.__version__}."
+    )
+    if hasattr(node, "reference"):
+        # DD version after IMAS-5304
+        node.reference.resize(len(node.reference) + 1, keep=True)
+        node.reference[-1].name = source_txt
+        timestamp = datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds")
+        node.reference[-1].timestamp = timestamp.replace("+00:00", "Z")
+    else:
+        # DD before IMAS-5304 (between 3.34.0 and 3.41.0)
+        node.sources.append(source_txt)  # sources is a STR_1D (=list of strings)
 
 
 def _copy_structure(
@@ -426,11 +539,12 @@ def _copy_structure(
         path = item.metadata.path_string
         if path in rename_map:
             if rename_map.path[path] is None:
-                if path in rename_map.type_change:
-                    msg = "Element %r changed type in the target IDS."
-                else:
-                    msg = "Element %r does not exist in the target IDS."
-                logger.warning(msg + " Data is not copied.", path)
+                if path not in rename_map.ignore_missing_paths:
+                    if path in rename_map.type_change:
+                        msg = "Element %r changed type in the target IDS."
+                    else:
+                        msg = "Element %r does not exist in the target IDS."
+                    logger.warning(msg + " Data is not copied.", path)
                 continue
             else:
                 target_item = IDSPath(rename_map.path[path]).goto(target)
@@ -468,8 +582,16 @@ def _copy_structure(
             else:
                 target_item.value = item.value
 
+        # Post-process the node:
+        if path in rename_map.post_process:
+            rename_map.post_process[path](target_item)
 
-# Type changed handlers
+
+########################################################################################
+# Type changed handlers and post-processing functions                                  #
+########################################################################################
+
+
 def _type_changed_structure_aos(
     source_node: IDSBase, target_node: IDSBase
 ) -> Optional[Tuple[IDSStructure, IDSStructure]]:
@@ -526,3 +648,149 @@ def _type_changed_0d_1d_data(
             "Data is not copied.",
             source_node.metadata.path_string,
         )
+
+
+def _type_changed_to_identifier(source_node: IDSBase, target_node: IDSBase) -> None:
+    """Handle a type change from list of indexes to a proper identifier."""
+    if len(source_node) == 0:
+        return
+
+    if source_node.metadata.data_type is IDSDataType.INT:
+        # target_node is an array of identifier structures
+        target_node.resize(len(source_node))
+        identifier_enum = target_node.metadata.identifier_enum
+        if identifier_enum is not None:
+            for i in range(len(source_node)):
+                try:
+                    # Look up the index in the identifier and assign to set name, index
+                    # and description
+                    target_node[i] = identifier_enum(source_node[i])
+                except ValueError:
+                    # That may fail for unknown values (e.g. negative values): fall back
+                    # to only setting index and leaving name and description empty
+                    target_node[i].index = source_node[i]
+        else:
+            # We couldn't get the identifier enum, so just copy into the index array
+            for i in range(len(source_node)):
+                target_node[i].index = source_node[i]
+
+    else:
+        # source_node is an array of identifier structures, target_node is an INT_1D
+        target_node.value = numpy.array(
+            [node.index for node in source_node], numpy.int32
+        )
+
+
+def _remove_last_point(node: IDSBase) -> None:
+    """Postprocess method for nbc_description=repeat_children_first_point.
+
+    This method handles postprocessing when converting from new (DDv4) to old (DDv3).
+    """
+    for child in node.iter_nonempty_():
+        child.value = child.value[:-1]
+
+
+def _repeat_first_point(node: IDSBase) -> None:
+    """Postprocess method for nbc_description=repeat_children_first_point.
+
+    This method handles postprocessing when converting from old (DDv3) to new (DDv4).
+    """
+    for child in node.iter_nonempty_():
+        child.value = numpy.concatenate((child.value, [child.value[0]]))
+
+
+def _remove_last_point_conditional(
+    source_node: IDSStructure, target_node: IDSStructure
+) -> None:
+    """Type change method for nbc_description=repeat_children_first_point_conditional*.
+
+    This method handles converting from new (DDv4) to old (DDv3).
+    """
+    closed_node = getattr(target_node, "closed", None)
+    if closed_node is None:  # closed is a sibling node
+        closed_node = target_node._dd_parent.closed
+
+    # Figure out if the contour is closed:
+    closed = True
+    # source_node may be an AoS for the ...conditional_sibling_dynamic case
+    if source_node.metadata.data_type is IDSDataType.STRUCT_ARRAY:
+        iterator = source_node
+    else:
+        iterator = [source_node]
+    for source in iterator:
+        for component in source.iter_nonempty_():
+            if component.metadata.name != "time":
+                if not numpy.isclose(component[0], component[-1], rtol=1e-6, atol=0):
+                    closed = False
+                    break
+        if not closed:
+            break
+
+    # Copy data
+    closed_node.value = int(closed)
+    if source_node.metadata.data_type is IDSDataType.STRUCT_ARRAY:
+        target_node.resize(len(source_node))
+        iterator = zip(source_node, target_node)
+    else:
+        iterator = [(source_node, target_node)]
+    for source, target in iterator:
+        for child in source.iter_nonempty_():
+            value = child.value
+            if closed and child.metadata.name != "time":
+                # repeat first point:
+                value = value[:-1]
+            target[child.metadata.name] = value
+
+
+def _repeat_first_point_conditional(
+    source_node: IDSStructure, target_node: IDSStructure
+) -> None:
+    """Type change method for nbc_description=repeat_children_first_point_conditional*.
+
+    This method handles converting from old (DDv3) to new (DDv4).
+    """
+    closed_node = getattr(source_node, "closed", None)
+    if closed_node is None:  # closed is a sibling node
+        closed_node = source_node._dd_parent.closed
+    closed = bool(closed_node)
+
+    # source_node may be an AoS for the ...conditional_sibling_dynamic case
+    if source_node.metadata.data_type is IDSDataType.STRUCT_ARRAY:
+        target_node.resize(len(source_node))
+        iterator = zip(source_node, target_node)
+    else:
+        iterator = [(source_node, target_node)]
+    for source, target in iterator:
+        for child in source.iter_nonempty_():
+            if child.metadata.name != "closed":
+                value = child.value
+                if closed and child.metadata.name != "time":
+                    # repeat first point:
+                    value = numpy.concatenate((value, [value[0]]))
+                target[child.metadata.name] = value
+
+
+def _cocos_change(node: IDSPrimitive) -> None:
+    """Handle COCOS definition change: multiply values by -1."""
+    node.value = -node.value
+
+
+def _circuit_connections_3to4(node: IDSPrimitive) -> None:
+    """Handle definition change for pf_active circuit/connections."""
+    shape = node.shape
+    if shape[1] % 2:  # second dimension not divisible by 2:
+        logger.error(
+            f"Error while converting {node}. Size of the second dimension should "
+            "be divisible by 2. Data was not converted."
+        )
+    else:
+        node.value = node.value[:, ::2] - node.value[:, 1::2]
+
+
+def _circuit_connections_4to3(node: IDSPrimitive) -> None:
+    """Handle definition change for pf_active circuit/connections."""
+    shape = node.shape
+    new_value = numpy.zeros((shape[0], 2 * shape[1]), dtype=numpy.int32)
+    new_value[:, ::2] = node.value == 1
+    new_value[:, 1::2] = node.value == -1
+    node.value = new_value

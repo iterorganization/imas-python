@@ -118,7 +118,14 @@ If not provided, all IDSs in the data entry are converted.",
 @click.option("--occurrence", default=-1, help="Specify which occurrence to convert.")
 @click.option("--quiet", "-q", is_flag=True, help="Suppress progress output.")
 @click.option("--timeit", is_flag=True, help="Show timing information.")
-def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet, timeit):
+@click.option(
+    "--no-provenance",
+    is_flag=True,
+    help="Don't add provenance metadata to the converted IDS.",
+)
+def convert_ids(
+    uri_in, dd_version, uri_out, ids, occurrence, quiet, timeit, no_provenance
+):
     """Convert a Data Entry (or a single IDS) to the target DD version.
 
     Provide a different backend to URI_OUT than URI_IN to convert between backends.
@@ -142,6 +149,10 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet, timeit):
         version_params = dict(xml_path=dd_version)
     else:
         raise UnknownDDVersion(dd_version, dd_zip.dd_xml_versions())
+
+    provenance_origin_uri = ""
+    if not no_provenance:
+        provenance_origin_uri = uri_in
 
     # Use an ExitStack to avoid three nested with-statements
     with ExitStack() as stack:
@@ -187,7 +198,12 @@ def convert_ids(uri_in, dd_version, uri_out, ids, occurrence, quiet, timeit):
                 ids2 = ids
             else:
                 with timer("Convert", name):
-                    ids2 = imaspy.convert_ids(ids, None, factory=entry_out.factory)
+                    ids2 = imaspy.convert_ids(
+                        ids,
+                        None,
+                        factory=entry_out.factory,
+                        provenance_origin_uri=provenance_origin_uri,
+                    )
 
             # Store in output entry:
             progress.update(task, description=f"Storing {name}", advance=1)
