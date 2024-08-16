@@ -3,7 +3,11 @@
 from pathlib import PosixPath
 
 import pytest
-from importlib_resources import files
+
+try:
+    from importlib.resources import files
+except ImportError:  # Python 3.8 support
+    from importlib_resources import files
 
 import imaspy.training
 

@@ -13,7 +13,11 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 
-import importlib_resources
+try:
+    from importlib.resources import files
+except ImportError:  # Python 3.8 support
+    from importlib_resources import files
+
 import numpy as np
 import pytest
 from packaging.version import Version
@@ -125,7 +129,7 @@ def latest_factory():
 # Fixtures for various assets
 @pytest.fixture()
 def imaspy_assets():
-    return importlib_resources.files("imaspy") / "assets"
+    return files("imaspy") / "assets"
 
 
 @pytest.fixture()
