@@ -20,7 +20,7 @@ from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_path import IDSPath
-from imaspy.ids_primitive import IDSPrimitive
+from imaspy.ids_primitive import IDSNumeric0D, IDSPrimitive
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
@@ -171,6 +171,10 @@ class DDVersionMap:
             # INT_1D to a proper identifier
             self.new_to_old.type_change[new_path] = _type_changed_to_identifier
             self.old_to_new.type_change[old_path] = _type_changed_to_identifier
+        elif data_types == ["FLT_0D", "INT_0D"]:
+            # Support conversion of FLT_0D -> INT_0D when the float is integral
+            self.new_to_old.type_change[new_path] = _type_changed_flt0d_int0d
+            self.old_to_new.type_change[old_path] = _type_changed_flt0d_int0d
         else:
             logger.debug(
                 "Data type of %s changed from %s to %s. This change is not "
@@ -679,6 +683,33 @@ def _type_changed_to_identifier(source_node: IDSBase, target_node: IDSBase) -> N
         target_node.value = numpy.array(
             [node.index for node in source_node], numpy.int32
         )
+
+
+def _type_changed_flt0d_int0d(source_node: IDSNumeric0D, target_node: IDSNumeric0D):
+    """Handle a type change from FLT_0D to INT_0D.
+
+    Support type change of ion/element/z_n from DD3 to DD4.
+
+    Note:
+        When the floating point data cannot be converted to an integer without loss of
+        data, a warning is issued and the data is not copied.
+    """
+    if source_node.metadata.data_type is IDSDataType.INT:
+        # INT to FLT can always be represented exactly
+        target_node.value = float(source_node.value)
+
+    else:
+        float_value: float = source_node.value
+        int_value = numpy.int32(float_value)
+        if int_value == float_value:
+            target_node.value = int_value  # no data lost on conversion
+        else:
+            logger.warning(
+                "Element %r with value %f is cannot be represented as an integer. "
+                "Data is not copied.",
+                source_node.metadata.path,
+                float_value,
+            )
 
 
 def _remove_last_point(node: IDSBase) -> None:
