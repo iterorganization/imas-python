@@ -135,6 +135,7 @@ explicit conversion mechanisms.
   Type change: FLT_0D to FLT_1D (or reverse), Yes [#0d1d]_, No [#ignore_type_change]_
   Type change: CPX_0D to CPX_1D (or reverse), Yes [#0d1d]_, No [#ignore_type_change]_
   Type change: STR_0D to STR_1D (or reverse), Yes [#0d1d]_, No [#ignore_type_change]_
+  Type change: FLT_0D to INT_0D (or reverse), Yes [#flt_int]_, No [#ignore_type_change]_
   Other type changes, No [#ignore_type_change]_, No [#ignore_type_change]_
 
 .. csv-table:: Supported data conversions between DD major version 3 and major version 4
@@ -144,6 +145,7 @@ explicit conversion mechanisms.
   Changed definition of ``circuit(i1)/connection`` in ``pf_active``, Yes, No
   Changed definition of open/closed contours, Yes, No
   Changed definition of ``space/coordinates_type`` in GGD grids, Yes, No
+  Migrate obsolescent ``ids_properties/source`` to ``ids_properties/provenance``, Yes, No
 
 .. [#rename] Quantities which have been renamed between the two DD versions. For
   example, the ``ec/beam`` Array of Structures in the ``pulse_schedule`` IDS,
@@ -164,6 +166,11 @@ explicit conversion mechanisms.
 
   The reverse is supported when the size of the 1D array is 1. A warning is
   logged if the 1D array has more elements.
+
+.. [#flt_int] Data is only converted from FLT_0D to INT_0D when the floating
+    point number can be exactly represented by an integer. For example ``123.0
+    -> 123``. Data is not copied and a warning is logged when this is not the
+    case.
 
 .. [#ignore_type_change] These type changes are not supported. Quantities in the
     destination IDS will remain empty.
