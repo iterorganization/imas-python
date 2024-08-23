@@ -20,7 +20,7 @@ from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_path import IDSPath
-from imaspy.ids_primitive import IDSNumeric0D, IDSPrimitive
+from imaspy.ids_primitive import IDSNumeric0D, IDSPrimitive, IDSString0D
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
@@ -334,6 +334,14 @@ class DDVersionMap:
                 path = "circuit/connections"
                 self.new_to_old.post_process[path] = _circuit_connections_4to3
                 self.old_to_new.post_process[path] = _circuit_connections_3to4
+            # Migrate ids_properties/source to ids_properties/provenance
+            # Only implement forward conversion (DD3 -> 4):
+            # - Pretend that this is a rename from ids_properties/source -> provenance
+            # - And register type_change handler which will be called with the source
+            #   element and the new provenance structure
+            path = "ids_properties/source"
+            self.old_to_new.path[path] = "ids_properties/provenance"
+            self.old_to_new.type_change[path] = _ids_properties_source
 
     def _map_missing(self, is_new: bool, missing_paths: Set[str]):
         rename_map = self.new_to_old if is_new else self.old_to_new
@@ -562,13 +570,13 @@ def _copy_structure(
                 # structure no longer exists but we need to descend into it to get the
                 # total_neutron_flux.
                 target_item = target
-            if path in rename_map.type_change:
-                # Handle type change
-                new_items = rename_map.type_change[path](item, target_item)
-                if new_items is None:
-                    continue  # handled
-                else:
-                    item, target_item = new_items
+        if path in rename_map.type_change:
+            # Handle type change
+            new_items = rename_map.type_change[path](item, target_item)
+            if new_items is None:
+                continue  # handled
+            else:
+                item, target_item = new_items
 
         if isinstance(item, IDSStructArray):
             size = len(item)
@@ -707,7 +715,7 @@ def _type_changed_flt0d_int0d(source_node: IDSNumeric0D, target_node: IDSNumeric
             logger.warning(
                 "Element %r with value %f is cannot be represented as an integer. "
                 "Data is not copied.",
-                source_node.metadata.path,
+                source_node.metadata.path_string,
                 float_value,
             )
 
@@ -825,3 +833,19 @@ def _circuit_connections_4to3(node: IDSPrimitive) -> None:
     new_value[:, ::2] = node.value == 1
     new_value[:, 1::2] = node.value == -1
     node.value = new_value
+
+
+def _ids_properties_source(source: IDSString0D, provenance: IDSStructure) -> None:
+    """Handle DD3to4 migration of ids_properties/source to ids_properties/provenance."""
+    if len(provenance.node) > 0:
+        logger.warning(
+            "Element %r could not be migrated: %r is alreadys set.",
+            source.metadata.path_string,
+            provenance.node.metadata.path_string,
+        )
+        return
+
+    # Populate ids_properties/provenance/node[0]/reference[0].name with source.value
+    provenance.node.resize(1)
+    provenance.node[0].reference.resize(1)
+    provenance.node[0].reference[0].name = source.value
