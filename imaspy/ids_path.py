@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Tuple, Union
 
 if TYPE_CHECKING:  # Prevent circular imports
     from imaspy.ids_base import IDSBase
+    from imaspy.ids_metadata import IDSMetadata
 
 
 logger = logging.getLogger(__name__)
@@ -221,6 +222,31 @@ class IDSPath:
             for _ in range(len(from_path) - len(self)):
                 element = element._dd_parent
         return element
+
+    def goto_metadata(self, from_metadata: "IDSMetadata") -> "IDSMetadata":
+        """Go to the metadata of this path, taking from_metadata as reference.
+
+        This returns the metadata of the metadata IDS node at the specified path,
+        or raises an error when that path cannot be found. It is useful when you want to
+        retrieve the metadata of an IDS node without having to traverse the IDS nodes.
+
+        Args:
+            from_metadata: IDS metadata node to start the goto from
+
+        Example:
+            .. code-block:: python
+
+                es = imaspy.IDSFactory().edge_sources()
+                path = IDSPath("source/ggd/ion/energy")
+                energy_metadata = path.goto_metadata(es.metadata)
+        """
+        metadata_node = from_metadata
+        for part, _ in self.items():
+            if part in metadata_node._children:
+                metadata_node = metadata_node[part]
+            else:
+                raise ValueError(f"Could not find {part} in {metadata_node}.")
+        return metadata_node
 
     def is_ancestor_of(self, other_path: "IDSPath") -> bool:
         """Test if this path is an ancestor of the other path."""
