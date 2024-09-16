@@ -7,7 +7,7 @@ set -e -o pipefail
 echo "Loading modules:" $@
 
 # Set up environment such that module files can be loaded
-. /usr/share/Modules/init/sh
+source /etc/profile.d/modules.sh
 module purge
 # Modules are supplied as arguments in the CI job:
 module load $@
