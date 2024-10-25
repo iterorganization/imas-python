@@ -283,7 +283,8 @@ def test_3to4_repeat_children_first_point_conditional(dd4factory):
             unit.outline[j].z = [-1.0, -2.0, -3.0]
             unit.outline[j].time = j / 5
 
-    # Case 4: repeat_children_first_point_conditional_centreline (see https://jira.iter.org/browse/IMAS-5541)
+    # Case 4: repeat_children_first_point_conditional_centreline
+    # (see https://jira.iter.org/browse/IMAS-5541)
     wall.description_2d[0].vessel.unit.resize(2)
     for i in range(2):
         outline_inner = wall.description_2d[0].vessel.unit[i].annular.centreline
