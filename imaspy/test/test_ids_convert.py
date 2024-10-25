@@ -213,7 +213,7 @@ def test_provenance_entry(factory):
 @pytest.fixture
 def dd4factory():
     try:
-        return IDSFactory("4.0.0")
+        return IDSFactory("4.0.1")
     except UnknownDDVersion:
         pass
     # Temporary workaround:
@@ -291,8 +291,9 @@ def test_3to4_repeat_children_first_point_conditional(dd4factory):
         outline_inner.closed = i  # first is open, second is closed
         outline_inner.r = [1.0, 2.0, 3.0]
         outline_inner.z = [-1.0, -2.0, -3.0]
-        # if it was open there were too many thickness values! Drop the last one
-        wall.description_2d[1].vessel.unit[i].annular.thickness = [1, 0.9, 1.1]
+        # if it was open there were too many thickness values!
+        # The last one will be dropped and repeated
+        wall.description_2d[1].vessel.unit[i].annular.thickness = [1, 0.9, 0.9]
 
     wall4 = convert_ids(wall, None, factory=dd4factory)
     assert len(wall4.description_2d) == 2
@@ -339,7 +340,7 @@ def test_3to4_repeat_children_first_point_conditional(dd4factory):
         if i == 0:  # open outline, there was one value too many, drop the last one
             assert numpy.array_equal(thickness, [1, 0.9])
         else:  # closed outline, thickness values kept
-            assert numpy.array_equal(thickness, [1, 0.9, 1.1])
+            assert numpy.array_equal(thickness, [1, 0.9, 0.9])
 
     # Test conversion back
     wall3 = convert_ids(wall4, "3.39.0")

@@ -302,13 +302,11 @@ class DDVersionMap:
                 self.old_to_new.type_change[old_path] = _repeat_first_point_conditional
                 closed_path = Path(old_path).parent / "closed"
                 self.old_to_new.ignore_missing_paths.add(str(closed_path))
-            elif (
-                nbc_description == "repeat_children_first_point_conditional_centreline"
-            ):
+            elif nbc_description == "remove_last_point_if_open_annular_centreline":
                 old_path = process_parent_renames(new_path)
                 self.new_to_old.post_process[new_path] = _repeat_last_point_centreline
                 self.old_to_new.post_process[old_path] = _remove_last_point_centreline
-                closed_path = Path(old_path) / "centreline" / "closed"
+                closed_path = Path(old_path) / "closed"
                 self.old_to_new.ignore_missing_paths.add(str(closed_path))
             else:  # Ignore unknown NBC changes
                 log_args = (nbc_description, new_path)
@@ -817,9 +815,7 @@ def _repeat_first_point_conditional(
                 target[child.metadata.name] = value
 
 
-def _remove_last_point_centreline(
-    node: IDSBase
-) -> None:
+def _remove_last_point_centreline(node: IDSBase) -> None:
     """Type change method for
       nbc_description=repeat_children_first_point_conditional_centreline.
 
@@ -829,32 +825,27 @@ def _remove_last_point_centreline(
     If it is an open contour the thickness variable had too many entries,
       and we'll drop the last one.
     """
-    closed_node = node.dd_parent.centreline.closed
-    closed = bool(closed_node)
 
-    if not closed:
+    if (
+        node._parent.centreline.r[0] != node._parent.centreline.r[-1]
+        or node._parent.centreline.z[0] != node._parent.centreline.z[-1]
+    ):  # open contour
         node.value = node.value[:-1]
 
 
-def _repeat_last_point_centreline(
-    node: IDSBase
-) -> None:
+def _repeat_last_point_centreline(node: IDSBase) -> None:
     """Type change method for
      nbc_description=repeat_children_first_point_conditional_centreline.
 
-    This method handles converting from new (DDv4) to new (DDv3).
+    This method handles converting from new (DDv4) to old (DDv3).
 
     If a centreline is a closed contour, we should do nothing.
     If it is an open contour the thickness variable in the older
      dd has one extra entry, so repeat the last one.
     """
-    closed_node = node.dd_parent.centreline.closed
-    closed = bool(closed_node)
-
+    closed = node._parent.centreline.closed
     if not closed:
-        node.value = numpy.concatenate(
-            (node.value, [node.value[-1]])
-        )
+        node.value = numpy.concatenate((node.value, [node.value[-1]]))
 
 
 def _cocos_change(node: IDSPrimitive) -> None:
