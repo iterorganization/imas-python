@@ -295,7 +295,7 @@ def test_3to4_repeat_children_first_point_conditional(dd4factory):
         wall.description_2d[1].vessel.unit[i].annular.thickness = [1, 0.9, 1.1]
 
     wall4 = convert_ids(wall, None, factory=dd4factory)
-    assert len(wall4.description_2d) == 1
+    assert len(wall4.description_2d) == 2
 
     # Test conversion for case 1:
     assert len(wall4.description_2d[0].vessel.unit) == 2
