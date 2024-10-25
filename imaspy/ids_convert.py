@@ -306,8 +306,8 @@ class DDVersionMap:
                 nbc_description == "repeat_children_first_point_conditional_centreline"
             ):
                 old_path = process_parent_renames(new_path)
-                self.new_to_old.type_change[new_path] = _repeat_last_point_centreline
-                self.old_to_new.type_change[old_path] = _remove_last_point_centreline
+                self.new_to_old.post_process[new_path] = _repeat_last_point_centreline
+                self.old_to_new.post_process[old_path] = _remove_last_point_centreline
                 closed_path = Path(old_path) / "centreline" / "closed"
                 self.old_to_new.ignore_missing_paths.add(str(closed_path))
             else:  # Ignore unknown NBC changes
@@ -818,7 +818,7 @@ def _repeat_first_point_conditional(
 
 
 def _remove_last_point_centreline(
-    source_node: IDSStructure, target_node: IDSStructure
+    node: IDSBase
 ) -> None:
     """Type change method for
       nbc_description=repeat_children_first_point_conditional_centreline.
@@ -829,15 +829,15 @@ def _remove_last_point_centreline(
     If it is an open contour the thickness variable had too many entries,
       and we'll drop the last one.
     """
-    closed_node = source_node.dd_parent.centreline.closed
+    closed_node = node.dd_parent.centreline.closed
     closed = bool(closed_node)
 
     if not closed:
-        target_node.value = source_node.value[:-1]
+        node.value = node.value[:-1]
 
 
 def _repeat_last_point_centreline(
-    source_node: IDSStructure, target_node: IDSStructure
+    node: IDSBase
 ) -> None:
     """Type change method for
      nbc_description=repeat_children_first_point_conditional_centreline.
@@ -848,12 +848,12 @@ def _repeat_last_point_centreline(
     If it is an open contour the thickness variable in the older
      dd has one extra entry, so repeat the last one.
     """
-    closed_node = source_node.dd_parent.centreline.closed
+    closed_node = node.dd_parent.centreline.closed
     closed = bool(closed_node)
 
     if not closed:
-        target_node.value = numpy.concatenate(
-            (source_node.value, [source_node.value[-1]])
+        node.value = numpy.concatenate(
+            (node.value, [node.value[-1]])
         )
 
 
