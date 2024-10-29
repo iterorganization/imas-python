@@ -20,7 +20,7 @@ from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_path import IDSPath
-from imaspy.ids_primitive import IDSNumeric0D, IDSPrimitive, IDSString0D
+from imaspy.ids_primitive import IDSNumeric0D, IDSPrimitive, IDSString0D, IDSNumericArray
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
@@ -781,7 +781,7 @@ def _remove_last_point_conditional(
     for source, target in iterator:
         for child in source.iter_nonempty_():
             value = child.value
-            if closed and child.metadata.name != "time":
+            if closed and child.metadata.name != "time" and isinstance(child, IDSNumericArray):
                 # repeat first point:
                 value = value[:-1]
             target[child.metadata.name] = value
@@ -807,9 +807,9 @@ def _repeat_first_point_conditional(
         iterator = [(source_node, target_node)]
     for source, target in iterator:
         for child in source.iter_nonempty_():
-            if child.metadata.name != "closed":
+            if child.metadata.name != "closed" and not child.metadata.name.endswith('_error_index'):
                 value = child.value
-                if closed and child.metadata.name != "time":
+                if closed and child.metadata.name != "time" and isinstance(child, IDSNumericArray):
                     # repeat first point:
                     value = numpy.concatenate((value, [value[0]]))
                 target[child.metadata.name] = value
