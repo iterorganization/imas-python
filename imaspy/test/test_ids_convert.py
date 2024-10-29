@@ -213,7 +213,7 @@ def test_provenance_entry(factory):
 @pytest.fixture
 def dd4factory():
     try:
-        return IDSFactory("4.0.1")
+        return IDSFactory("4.0.0")
     except UnknownDDVersion:
         pass
     # Temporary workaround:
@@ -287,10 +287,10 @@ def test_3to4_repeat_children_first_point_conditional(dd4factory):
     # (see https://jira.iter.org/browse/IMAS-5541)
     wall.description_2d[1].vessel.unit.resize(2)
     for i in range(2):
-        outline_inner = wall.description_2d[1].vessel.unit[i].annular.centreline
-        outline_inner.closed = i  # first is open, second is closed
-        outline_inner.r = [1.0, 2.0, 3.0]
-        outline_inner.z = [-1.0, -2.0, -3.0]
+        centreline = wall.description_2d[1].vessel.unit[i].annular.centreline
+        centreline.closed = i  # first is open, second is closed
+        centreline.r = [1.0, 2.0, 3.0]
+        centreline.z = [-1.0, -2.0, -3.0]
         # if it was open there were too many thickness values!
         # The last one will be dropped and repeated
         wall.description_2d[1].vessel.unit[i].annular.thickness = [1, 0.9, 0.9]
