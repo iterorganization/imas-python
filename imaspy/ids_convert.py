@@ -809,9 +809,20 @@ def _repeat_first_point_conditional(
                 target[child.metadata.name] = value
 
 
-def _cocos_change(node: IDSPrimitive) -> None:
+def _cocos_change(node: IDSBase) -> None:
     """Handle COCOS definition change: multiply values by -1."""
-    node.value = -node.value
+    if not isinstance(node, IDSPrimitive):
+        if node.metadata.path_string == "flux_loop/flux":
+            # Workaround for DD definition issue with flux_loop/flux in magnetics IDS
+            node.data.value = -node.data.value
+        else:
+            logger.error(
+                "Error while applying COCOS transformation (DD3->4): cannot multiply "
+                "element %r by -1.",
+                node.metadata.path_string,
+            )
+    else:
+        node.value = -node.value
 
 
 def _circuit_connections_3to4(node: IDSPrimitive) -> None:

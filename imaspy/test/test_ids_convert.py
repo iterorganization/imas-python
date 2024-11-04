@@ -24,6 +24,7 @@ from imaspy.ids_defs import (
     ASCII_BACKEND,
     IDS_TIME_MODE_HETEROGENEOUS,
     IDS_TIME_MODE_HOMOGENEOUS,
+    IDS_TIME_MODE_INDEPENDENT,
     MEMORY_BACKEND,
 )
 from imaspy.ids_factory import IDSFactory
@@ -394,3 +395,16 @@ def test_3to4_circuit_connections(dd4factory, caplog):
     # Check that a message with ERROR severity was logged
     assert len(caplog.record_tuples) == 1
     assert caplog.record_tuples[0][1] == logging.ERROR
+
+
+def test_3to4_cocos_magnetics_workaround(dd4factory):
+    mag = IDSFactory("3.39.0").magnetics()
+    mag.ids_properties.homogeneous_time = IDS_TIME_MODE_INDEPENDENT
+    mag.flux_loop.resize(1)
+    mag.flux_loop[0].flux.data = [1.0, 2.0]
+
+    mag4 = convert_ids(mag, None, factory=dd4factory)
+    assert numpy.array_equal(mag4.flux_loop[0].flux.data, [-1.0, -2.0])
+
+    mag3 = convert_ids(mag4, "3.39.0")
+    compare_children(mag, mag3)
