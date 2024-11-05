@@ -132,7 +132,7 @@ def test_dbentry_autoconvert1(backend, worker_id, tmp_path):
     # Work around ASCII backend bug...
     if backend == ASCII_BACKEND:
         entry_342.close()
-        entry_342 = open_dbentry(backend, "r", worker_id, tmp_path)
+        entry_342 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.42.0")
 
     # Get with conversion
     new_ids_get = entry_342.get("core_profiles")
