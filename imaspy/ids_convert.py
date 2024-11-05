@@ -20,7 +20,12 @@ from imaspy.ids_base import IDSBase
 from imaspy.ids_data_type import IDSDataType
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_path import IDSPath
-from imaspy.ids_primitive import IDSNumeric0D, IDSPrimitive, IDSString0D, IDSNumericArray
+from imaspy.ids_primitive import (
+    IDSNumeric0D,
+    IDSNumericArray,
+    IDSPrimitive,
+    IDSString0D,
+)
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.ids_toplevel import IDSToplevel
@@ -781,7 +786,11 @@ def _remove_last_point_conditional(
     for source, target in iterator:
         for child in source.iter_nonempty_():
             value = child.value
-            if closed and child.metadata.name != "time" and isinstance(child, IDSNumericArray):
+            if (
+                closed
+                and child.metadata.name != "time"
+                and isinstance(child, IDSNumericArray)
+            ):
                 # repeat first point:
                 value = value[:-1]
             target[child.metadata.name] = value
@@ -807,9 +816,15 @@ def _repeat_first_point_conditional(
         iterator = [(source_node, target_node)]
     for source, target in iterator:
         for child in source.iter_nonempty_():
-            if child.metadata.name != "closed" and not child.metadata.name.endswith('_error_index'):
+            if child.metadata.name != "closed" and not child.metadata.name.endswith(
+                "_error_index"
+            ):
                 value = child.value
-                if closed and child.metadata.name != "time" and isinstance(child, IDSNumericArray):
+                if (
+                    closed
+                    and child.metadata.name != "time"
+                    and isinstance(child, IDSNumericArray)
+                ):
                     # repeat first point:
                     value = numpy.concatenate((value, [value[0]]))
                 target[child.metadata.name] = value
@@ -852,9 +867,20 @@ def _repeat_last_point_centreline(source_node: IDSBase, target_node: IDSBase) ->
         )
 
 
-def _cocos_change(node: IDSPrimitive) -> None:
+def _cocos_change(node: IDSBase) -> None:
     """Handle COCOS definition change: multiply values by -1."""
-    node.value = -node.value
+    if not isinstance(node, IDSPrimitive):
+        if node.metadata.path_string == "flux_loop/flux":
+            # Workaround for DD definition issue with flux_loop/flux in magnetics IDS
+            node.data.value = -node.data.value
+        else:
+            logger.error(
+                "Error while applying COCOS transformation (DD3->4): cannot multiply "
+                "element %r by -1.",
+                node.metadata.path_string,
+            )
+    else:
+        node.value = -node.value
 
 
 def _circuit_connections_3to4(node: IDSPrimitive) -> None:
