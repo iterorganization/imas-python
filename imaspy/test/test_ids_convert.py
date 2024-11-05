@@ -122,47 +122,43 @@ def test_dbentry_autoconvert1(backend, worker_id, tmp_path):
     if backend != MEMORY_BACKEND:
         entry_331.close()
 
-    entry_default = open_dbentry(backend, "r", worker_id, tmp_path)
-    default_version = entry_default.factory.version
-    assert default_version != "3.31.0"
+    entry_342 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.42.0")
 
     # Get without conversion
-    old_ids_get = entry_default.get("core_profiles", autoconvert=False)
+    old_ids_get = entry_342.get("core_profiles", autoconvert=False)
     assert old_ids_get.ids_properties.version_put.data_dictionary == "3.31.0"
     assert old_ids_get._dd_version == "3.31.0"
 
     # Work around ASCII backend bug...
     if backend == ASCII_BACKEND:
-        entry_default.close()
-        entry_default = open_dbentry(backend, "r", worker_id, tmp_path)
+        entry_342.close()
+        entry_342 = open_dbentry(backend, "r", worker_id, tmp_path)
 
     # Get with conversion
-    new_ids_get = entry_default.get("core_profiles")
+    new_ids_get = entry_342.get("core_profiles")
     assert new_ids_get.ids_properties.version_put.data_dictionary == "3.31.0"
-    assert new_ids_get._dd_version == default_version
+    assert new_ids_get._dd_version == "3.42.0"
 
-    entry_default.close()
+    entry_342.close()
 
 
 def test_dbentry_autoconvert2(backend, worker_id, tmp_path):
-    entry_default = open_dbentry(backend, "w", worker_id, tmp_path)
-    default_version = entry_default.factory.version
-    new_ids = entry_default.factory.new("core_profiles")
+    entry_342 = open_dbentry(backend, "w", worker_id, tmp_path, dd_version="3.42.0")
+    new_ids = entry_342.factory.new("core_profiles")
     new_ids.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
 
     # Put without conversion:
-    entry_default.put(new_ids)
-    assert new_ids.ids_properties.version_put.data_dictionary == default_version
+    entry_342.put(new_ids)
+    assert new_ids.ids_properties.version_put.data_dictionary == "3.42.0"
     if backend != MEMORY_BACKEND:
-        entry_default.close()
+        entry_342.close()
 
     entry_331 = open_dbentry(backend, "r", worker_id, tmp_path, dd_version="3.31.0")
-    assert default_version != "3.31.0"
 
     # Get without conversion
     new_ids_get = entry_331.get("core_profiles", autoconvert=False)
-    assert new_ids_get.ids_properties.version_put.data_dictionary == default_version
-    assert new_ids_get._dd_version == default_version
+    assert new_ids_get.ids_properties.version_put.data_dictionary == "3.42.0"
+    assert new_ids_get._dd_version == "3.42.0"
 
     # Work around ASCII backend bug...
     if backend == ASCII_BACKEND:
@@ -171,7 +167,7 @@ def test_dbentry_autoconvert2(backend, worker_id, tmp_path):
 
     # Get with conversion
     old_ids_get = entry_331.get("core_profiles")
-    assert old_ids_get.ids_properties.version_put.data_dictionary == default_version
+    assert old_ids_get.ids_properties.version_put.data_dictionary == "3.42.0"
     assert old_ids_get._dd_version == "3.31.0"
 
     entry_331.close()
