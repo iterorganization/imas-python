@@ -362,25 +362,47 @@ def test_autofill_save_newer(ids_name, backend, worker_id, tmp_path):
         dbentry2.close()
 
 
-def test_convert_min_to_max(ids_name, latest_factory):
+def test_convert_min_to_max_v3(ids_name, latest_factory3):
+    """Convert from DD 3.22.0 to the last DDv3 release."""
     factory = IDSFactory("3.22.0")
     if not factory.exists(ids_name):
         pytest.skip("IDS %s not defined for version 3.22.0" % (ids_name,))
-    if not latest_factory.exists(ids_name):
-        pytest.skip(f"IDS {ids_name} not defined for version {latest_factory.version}")
+    if not latest_factory3.exists(ids_name):
+        pytest.skip(f"IDS {ids_name} not defined for version {latest_factory3.version}")
 
     ids = factory.new(ids_name)
     fill_with_random_data(ids)
-    convert_ids(ids, latest_factory.version)
+    convert_ids(ids, latest_factory3.version)
 
 
-def test_convert_max_to_min(ids_name, latest_factory):
+def test_convert_max_to_min_v3(ids_name, latest_factory3):
+    """Convert from the last DDv3 release to DD 3.22.0."""
     factory = IDSFactory("3.22.0")
     if not factory.exists(ids_name):
         pytest.skip(f"IDS {ids_name} not defined for version 3.22.0")
-    if not latest_factory.exists(ids_name):
-        pytest.skip(f"IDS {ids_name} not defined for version {latest_factory.version}")
+    if not latest_factory3.exists(ids_name):
+        pytest.skip(f"IDS {ids_name} not defined for version {latest_factory3.version}")
+
+    ids = latest_factory3.new(ids_name)
+    fill_with_random_data(ids)
+    convert_ids(ids, None, factory=factory)
+
+
+def test_convert_3_to_newest(ids_name, latest_factory3, latest_factory):
+    """Convert from the last DDv3 release to the last released DD."""
+    if not latest_factory3.exists(ids_name) or not latest_factory.exists(ids_name):
+        pytest.skip(f"IDS {ids_name} not defined for both versions.")
+
+    ids = latest_factory3.new(ids_name)
+    fill_with_random_data(ids)
+    convert_ids(ids, None, factory=latest_factory)
+
+
+def test_convert_newest_to_3(ids_name, latest_factory3, latest_factory):
+    """Convert from the last released DD to the last DDv3 release."""
+    if not latest_factory3.exists(ids_name) or not latest_factory.exists(ids_name):
+        pytest.skip(f"IDS {ids_name} not defined for both versions.")
 
     ids = latest_factory.new(ids_name)
     fill_with_random_data(ids)
-    convert_ids(ids, None, factory=factory)
+    convert_ids(ids, None, factory=latest_factory3)

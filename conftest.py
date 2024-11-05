@@ -24,7 +24,7 @@ from packaging.version import Version
 
 from imaspy.backends.imas_core.imas_interface import has_imas as _has_imas
 from imaspy.backends.imas_core.imas_interface import ll_interface, lowlevel
-from imaspy.dd_zip import dd_etree, latest_dd_version
+from imaspy.dd_zip import dd_etree, dd_xml_versions, latest_dd_version
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     HDF5_BACKEND,
@@ -124,6 +124,14 @@ def latest_factory():
     if Version(default_version) >= Version(latest_version):
         return default_factory
     return IDSFactory(latest_version)
+
+
+@pytest.fixture()
+def latest_factory3():
+    """Get most recent DDv3 version."""
+    for version in reversed(dd_xml_versions()):
+        if version.startswith("3."):
+            return IDSFactory(version)
 
 
 # Fixtures for various assets
