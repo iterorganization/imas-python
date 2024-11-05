@@ -1,9 +1,10 @@
 import os
 
-import imaspy.training
 import matplotlib
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
+
+import imaspy.training
 
 if "DISPLAY" not in os.environ:
     matplotlib.use("agg")
@@ -20,8 +21,7 @@ eq_in = entry.get("equilibrium", lazy=True)
 input_times = eq_in.time
 
 # Create output data entry
-output_entry = imaspy.DBEntry(
-    imaspy.ids_defs.MEMORY_BACKEND, "imaspy-course", 2, 1)
+output_entry = imaspy.DBEntry(imaspy.ids_defs.MEMORY_BACKEND, "imaspy-course", 2, 1)
 output_entry.create()
 
 # Loop over each time slice
@@ -53,8 +53,8 @@ for time in input_times:
     grid_z = z_axis + rho_grid * np.sin(theta_grid)
     interpolation_points = np.dstack((grid_r.flatten(), grid_z.flatten()))
 
-    # Interpolate all data nodes on the new grid
-    for data_node in ["b_field_r", "b_field_z", "b_field_tor", "psi"]:
+    # Interpolate data nodes on the new grid
+    for data_node in ["b_field_r", "b_field_z", "psi"]:
         # `.value` so we can plot the original values after the IDS node is overwritten
         data = p2d[data_node].value
         interp = RegularGridInterpolator((r, z), data)
@@ -62,9 +62,7 @@ for time in input_times:
         p2d[data_node] = new_data
 
     # Update coordinate identifier
-    p2d.grid_type.index = 2
-    p2d.grid_type.name = "inverse"
-    p2d.grid_type.description = "Rhopolar_polar 2D polar coordinates (rho=dim1, theta=dim2) with magnetic axis as centre of grid; theta and values following the COCOS=11 convention; the polar angle is theta=atan2(z-zaxis,r-raxis)"  # noqa: E501
+    p2d.grid_type = "inverse"
 
     # Update coordinates
     p2d.grid.dim1 = rho
@@ -83,14 +81,14 @@ contour_levels = np.linspace(vmin, vmax, 32)
 
 rzmesh = np.meshgrid(r, z, indexing="ij")
 mesh = ax1.pcolormesh(*rzmesh, data, vmin=vmin, vmax=vmax)
-ax1.contour(*rzmesh, data, contour_levels, colors='black')
+ax1.contour(*rzmesh, data, contour_levels, colors="black")
 
 ax2.pcolormesh(grid_r, grid_z, new_data, vmin=vmin, vmax=vmax)
-ax2.contour(grid_r, grid_z, new_data, contour_levels, colors='black')
+ax2.contour(grid_r, grid_z, new_data, contour_levels, colors="black")
 
 rho_theta_mesh = np.meshgrid(rho, theta, indexing="ij")
 ax3.pcolormesh(*rho_theta_mesh, new_data, vmin=vmin, vmax=vmax)
-ax3.contour(*rho_theta_mesh, new_data, contour_levels, colors='black')
+ax3.contour(*rho_theta_mesh, new_data, contour_levels, colors="black")
 
 ax1.set_xlabel("r [m]")
 ax2.set_xlabel("r [m]")
