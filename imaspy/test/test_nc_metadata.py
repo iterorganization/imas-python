@@ -1,7 +1,4 @@
-import pytest
-
 from imaspy.backends.netcdf.nc_metadata import NCMetadata, _get_aos_label_coordinates
-from imaspy.exception import UnknownDDVersion
 from imaspy.ids_factory import IDSFactory
 
 
@@ -105,16 +102,15 @@ def test_dd3_alternative_coordinates():
     )
 
 
-@pytest.mark.xfail(reason="DDv4 not yet released", raises=UnknownDDVersion)
 def test_dd4_alternative_coordinates():
     cp = NCMetadata(IDSFactory("4.0.0").core_profiles().metadata)
 
     # Dimension names use the first listed of the alternatives
-    dims = cp.get_dimensions("profiles_1d/j_tor", True)
+    dims = cp.get_dimensions("profiles_1d/j_phi", True)
     assert dims == ("time", "profiles_1d.grid.rho_tor_norm:i")
 
     # Auxiliary coordinates list all, including the alternatives
-    assert cp.get_coordinates("profiles_1d/j_tor", True) == (
+    assert cp.get_coordinates("profiles_1d/j_phi", True) == (
         "time",
         "profiles_1d.grid.rho_tor_norm",
         "profiles_1d.grid.rho_tor",

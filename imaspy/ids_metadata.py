@@ -200,9 +200,9 @@ class IDSMetadata:
                 not self.type.is_dynamic or self._parent._is_dynamic
             ):
                 self.timebasepath = ""
-        self._is_dynamic = self.type.is_dynamic
+        self._is_dynamic = False
         if self._parent is not None:
-            self._is_dynamic = self._is_dynamic or self._parent._is_dynamic
+            self._is_dynamic = self.type.is_dynamic or self._parent._is_dynamic
 
         self.coordinates: "tuple[IDSCoordinate]"
         """Tuple of coordinates of this node.
