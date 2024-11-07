@@ -4,15 +4,12 @@
 import logging
 import re
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from unittest.mock import MagicMock
 
 import numpy
 import pytest
 
 from imaspy import identifiers
-from imaspy.dd_zip import parse_dd_version
-from imaspy.exception import UnknownDDVersion
 from imaspy.ids_convert import (
     _get_ctxpath,
     _get_tbp,
@@ -207,18 +204,7 @@ def test_provenance_entry(factory):
 
 @pytest.fixture
 def dd4factory():
-    try:
-        return IDSFactory("4.0.0")
-    except UnknownDDVersion:
-        pass
-    # Temporary workaround:
-    xml_path = Path("data-dictionary/IDSDef.xml")
-    if not xml_path.exists():
-        pytest.skip("No DDv4 install available")
-    factory = IDSFactory(xml_path=str(xml_path))
-    if parse_dd_version(factory.version).major != 4:
-        pytest.skip("No DDv4 install available")
-    return factory
+    return IDSFactory("4.0.0")
 
 
 def test_3to4_ggd_space_identifier(dd4factory):
