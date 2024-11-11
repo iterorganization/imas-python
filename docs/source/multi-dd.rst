@@ -29,12 +29,71 @@ example:
 .. seealso:: :ref:`multi-dd training`
 
 
+.. _`Conversion of IDSs between DD versions`:
+
 Conversion of IDSs between DD versions
 --------------------------------------
 
 IMASPy can convert IDSs between different versions of the data dictionary. This uses the
-"non-backwards compatible changes" metadata from the DD definitions. You can explicitly
-convert IDSs using :py:func:`imaspy.convert_ids <imaspy.ids_convert.convert_ids>`:
+"non-backwards compatible changes" metadata from the DD definitions. There are
+two conversion modes:
+
+1.  Automatic conversion: this is handled when reading or writing data
+    (:py:meth:`~imaspy.db_entry.DBEntry.get`/:py:meth:`~imaspy.db_entry.DBEntry.get_slice`,
+    :py:meth:`~imaspy.db_entry.DBEntry.put`/:py:meth:`~imaspy.db_entry.DBEntry.put_slice`).
+
+    The DBEntry class automatically converts IDSs to the requested version:
+
+    - When doing a ``put`` or ``put_slice``, the provided IDS is automatically converted to
+      the target version of the DBEntry when putting to disk.
+    - When doing a ``get`` or ``get_slice``, the IDS is automatically converted from the
+      data dictionary version it was stored in (by checking
+      ``ids_properties/version_put/data_dictionary``) to the requested target version.
+  
+    .. caution::
+
+      The automatic conversion doesn't provide feedback when data cannot be converted
+      between two versions of the data dictionary. Any incompatibilities between versions
+      are silently ignored.
+
+2.  Explicit conversion: this is achieved with a call to
+    :py:func:`imaspy.convert_ids <imaspy.ids_convert.convert_ids>`.
+
+Automatic conversion is faster when reading data (up to a factor 2, depending on
+the backend and the stored data), but it doesn't support all conversion logic
+(see :ref:`Supported conversions`).
+
+
+.. rubric:: Recommendations for reading data
+
+-   Use automatic conversion when converting IDSs between Data Dictionary
+    versions that have the same major version, unless you require a feature that
+    is not supported by the automatic conversion.
+-   Use explicit conversion (see the example below) when converting IDSs between
+    different major versions of the Data Dictionary.
+-   If you're often reading the same data from a different DD version, it may
+    be more efficient to convert the data to your DD version, store it and then
+    use it. This avoids conversion every time you read the data.
+
+    Converting an entire Data Entry can also be done with the IMASPy command
+    line interface. See :ref:`IMASPy Command Line tool`.
+
+
+Explicit conversion
+'''''''''''''''''''
+
+.. code-block:: python
+    :caption: Explicitly convert data when reading from disk
+
+    import imaspy
+
+    entry = imaspy.DBEntry("<URI to data>", "r")
+
+    # Disable automatic conversion when reading the IDS with autoconvert=False
+    ids = entry.get("<ids name>", autoconvert=False)
+    # Explicitly convert the IDS to the target version
+    ids = imaspy.convert_ids(ids, "<target DD version>")
+
 
 .. code-block:: python
     :caption: Convert an IDS to a different DD version
@@ -58,23 +117,8 @@ convert IDSs using :py:func:`imaspy.convert_ids <imaspy.ids_convert.convert_ids>
     versions, the corresponding data is not copied. IMASPy provides logging to indicate
     when this happens.
 
-The DBEntry class automatically converts IDSs to the requested version:
 
-- When doing a ``put`` or ``put_slice``, the provided IDS is automatically converted to
-  the target version of the DBEntry when putting to disk.
-- When doing a ``get`` or ``get_slice``, the IDS is automatically converted from the
-  data dictionary version it was stored in (by checking
-  ``ids_properties/version_put/data_dictionary``) to the requested target version.
-  
-.. caution::
-
-  The automatic conversion doesn't provide feedback when data cannot be converted
-  between two versions of the data dictionary. Any incompatibilities between versions
-  are silently ignored.
-
-  Use the explicit :py:func:`imaspy.convert_ids <imaspy.ids_convert.convert_ids>` if you
-  need to know when any data cannot be converted.
-
+.. _`Supported conversions`:
 
 Supported conversions
 '''''''''''''''''''''
@@ -82,7 +126,7 @@ Supported conversions
 The following table shows which conversions are supported by the automatic and
 explicit conversion mechanisms.
 
-.. csv-table::
+.. csv-table:: Supported conversions for Non-Backwards-Compatible (NBC) changes
   :header: , Explicit conversion, Automatic conversion
   
   Renames [#rename]_, Yes, Yes
@@ -91,7 +135,17 @@ explicit conversion mechanisms.
   Type change: FLT_0D to FLT_1D (or reverse), Yes [#0d1d]_, No [#ignore_type_change]_
   Type change: CPX_0D to CPX_1D (or reverse), Yes [#0d1d]_, No [#ignore_type_change]_
   Type change: STR_0D to STR_1D (or reverse), Yes [#0d1d]_, No [#ignore_type_change]_
+  Type change: FLT_0D to INT_0D (or reverse), Yes [#flt_int]_, No [#ignore_type_change]_
   Other type changes, No [#ignore_type_change]_, No [#ignore_type_change]_
+
+.. csv-table:: Supported data conversions between DD major version 3 and major version 4
+  :header: , Explicit conversion, Automatic conversion
+
+  Changed COCOS definition, Yes, No
+  Changed definition of ``circuit(i1)/connection`` in ``pf_active``, Yes, No
+  Changed definition of open/closed contours, Yes, No
+  Changed definition of ``space/coordinates_type`` in GGD grids, Yes, No
+  Migrate obsolescent ``ids_properties/source`` to ``ids_properties/provenance``, Yes, No
 
 .. [#rename] Quantities which have been renamed between the two DD versions. For
   example, the ``ec/beam`` Array of Structures in the ``pulse_schedule`` IDS,
@@ -113,8 +167,14 @@ explicit conversion mechanisms.
   The reverse is supported when the size of the 1D array is 1. A warning is
   logged if the 1D array has more elements.
 
+.. [#flt_int] Data is only converted from FLT_0D to INT_0D when the floating
+    point number can be exactly represented by an integer. For example ``123.0
+    -> 123``. Data is not copied and a warning is logged when this is not the
+    case.
+
 .. [#ignore_type_change] These type changes are not supported. Quantities in the
     destination IDS will remain empty.
+
 
 .. _`DD background`:
 

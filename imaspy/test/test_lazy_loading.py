@@ -1,6 +1,7 @@
 import random
 from unittest.mock import DEFAULT, patch
 
+import numpy
 import pytest
 
 from imaspy.backends.imas_core.imas_interface import ll_interface
@@ -8,6 +9,7 @@ from imaspy.db_entry import DBEntry
 from imaspy.ids_defs import (
     ASCII_BACKEND,
     IDS_TIME_MODE_HETEROGENEOUS,
+    IDS_TIME_MODE_HOMOGENEOUS,
     MEMORY_BACKEND,
     PREVIOUS_INTERP,
 )
@@ -135,5 +137,29 @@ def test_lazy_load_no_put(requires_imas):
         dbentry.put(lazy_ids)
     with pytest.raises(ValueError):
         dbentry.put_slice(lazy_ids)
+
+    dbentry.close()
+
+
+def test_lazy_load_with_new_aos(requires_imas):
+    dbentry = DBEntry(MEMORY_BACKEND, "ITER", 1, 1, dd_version="3.30.0")
+    dbentry.create()
+    et = dbentry.factory.edge_transport()
+
+    et.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    et.time = [1.0]
+    et.model.resize(1)
+    et.model[0].ggd.resize(1)
+    et.model[0].ggd[0].electrons.particles.d.resize(1)
+    et.model[0].ggd[0].electrons.particles.d[0].grid_index = -1
+    dbentry.put(et)
+
+    entry2 = DBEntry(MEMORY_BACKEND, "ITER", 1, 1, dd_version="3.39.0")
+    entry2.open()
+    lazy_et = entry2.get("edge_transport", lazy=True)
+    assert numpy.array_equal(lazy_et.time, [1.0])
+    assert lazy_et.model[0].ggd[0].electrons.particles.d[0].grid_index == -1
+    # d_radial did not exist in 3.30.0
+    assert len(lazy_et.model[0].ggd[0].electrons.particles.d_radial) == 0
 
     dbentry.close()

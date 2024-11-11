@@ -88,7 +88,7 @@ The following submodules and classes represent IDS nodes.
 
 -   :py:mod:`imaspy.ids_base` defines the base class for all IDS nodes:
     :py:class:`~imaspy.ids_base.IDSBase`. This class is an abstract class and shouldn't
-    be instatiated directly.
+    be instantiated directly.
 
     Several useful properties are defined in this class, which are therefore available
     on any IDS node:

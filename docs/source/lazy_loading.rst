@@ -26,8 +26,9 @@ See below example:
 .. literalinclude:: courses/basic/imaspy_snippets/plot_core_profiles_te.py
     :caption: Example with lazy loading of data
 
-In this example, using lazy loading is about 6 times faster than a regular
-:code:`get()`.
+In this example, using lazy loading with the MDSPLUS backend is about 12 times
+faster than a regular :code:`get()`. When using the HDF5 backend, lazy loading
+is about 300 times faster for this example.
 
 
 Caveats of lazy loaded IDSs

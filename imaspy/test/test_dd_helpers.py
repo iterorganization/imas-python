@@ -1,8 +1,6 @@
-from pathlib import Path
-
 import pytest
 
-from imaspy.dd_helpers import download_saxon, find_saxon_classpath
+from imaspy.dd_helpers import find_saxon_classpath
 
 # TODO: Write tests!
 # def prepare_data_dictionaries():
@@ -128,14 +126,6 @@ def test_classpath_hpc(monkeypatch):
         saxon_jar_path
         == "/work/imas/opt/EasyBuild/software/Saxon-HE/10.3-Java-11/saxon-he-10.3.jar"
     )
-
-
-# Might be slow, depending on internet connectivity
-@pytest.mark.slow
-def test_download_saxon(tmpdir):
-    with tmpdir.as_cwd():
-        saxon_path = download_saxon()
-    assert Path(saxon_path).exists()
 
 
 # TODO: Write tests!

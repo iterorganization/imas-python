@@ -16,7 +16,10 @@ from pathlib import Path
 from subprocess import CalledProcessError, check_output
 from zlib import crc32
 
-from importlib_resources import as_file, files
+try:
+    from importlib.resources import as_file, files
+except ImportError:  # Python 3.8 support
+    from importlib_resources import as_file, files
 
 import imaspy
 from imaspy.dd_helpers import get_saxon

@@ -22,6 +22,8 @@ It provides:
 
 The README is best read on :src:`#imaspy`.
 
+Read what's new in the current version of IMASPy in our :ref:`changelog`!
+
 
 Manual
 ------
@@ -42,6 +44,8 @@ Manual
    identifiers
    configuring
    cli
+   netcdf
+   changelog
 
 .. toctree::
    :caption: IMASPy training courses

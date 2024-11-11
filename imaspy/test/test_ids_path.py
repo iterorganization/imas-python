@@ -169,3 +169,24 @@ def test_path_goto(fake_toplevel_xml):
 
     # Test that we can goto the same path
     assert IDSPath("wavevector").goto(ids.wavevector[1]) is ids.wavevector[1]
+
+
+def test_path_goto_metadata():
+    es = IDSFactory(version="3.42.0").new("edge_sources")
+    path = IDSPath("source/ggd/ion/energy")
+    energy_metadata = path.goto_metadata(es.metadata)
+
+    es.source.resize(1)
+    es.source[0].ggd.resize(1)
+    es.source[0].ggd[0].ion.resize(1)
+    energy = es.source[0].ggd[0].ion[0].energy
+    assert energy_metadata == energy.metadata
+
+    # Test when path does not exist in metadata
+    wrong_path = IDSPath("ggd/ion/energy")
+    with pytest.raises(ValueError):
+        wrong_path.goto_metadata(es.metadata)
+
+    sub_path = IDSPath("ggd/ion/energy")
+    energy_metadata = sub_path.goto_metadata(es.source.metadata)
+    assert energy_metadata == energy.metadata

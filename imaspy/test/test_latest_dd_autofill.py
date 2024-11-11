@@ -4,7 +4,13 @@ data dictionary version.
 
 import copy
 
-from imaspy.ids_defs import MEMORY_BACKEND
+import pytest
+
+from imaspy.ids_defs import (
+    ASCII_SERIALIZER_PROTOCOL,
+    FLEXBUFFERS_SERIALIZER_PROTOCOL,
+    MEMORY_BACKEND,
+)
 from imaspy.ids_factory import IDSFactory
 from imaspy.test.test_helpers import (
     compare_children,
@@ -46,16 +52,21 @@ def test_latest_dd_autofill(ids_name, backend, worker_id, tmp_path):
         dbentry2.close()
 
 
-def test_latest_dd_autofill_serialize(ids_name, has_imas):
+@pytest.mark.parametrize(
+    "serializer", [ASCII_SERIALIZER_PROTOCOL, FLEXBUFFERS_SERIALIZER_PROTOCOL]
+)
+def test_latest_dd_autofill_serialize(serializer, ids_name, has_imas):
     """Serialize and then deserialize again all IDSToplevels"""
-    # TODO: test with multiple serialization protocols
+    if serializer is None:
+        pytest.skip("Unsupported serializer")
+
     factory = IDSFactory()
     ids = factory.new(ids_name)
     fill_with_random_data(ids)
 
     if not has_imas:
         return  # rest of the test requires an IMAS install
-    data = ids.serialize()
+    data = ids.serialize(serializer)
 
     ids2 = factory.new(ids_name)
     ids2.deserialize(data)

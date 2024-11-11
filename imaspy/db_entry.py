@@ -181,17 +181,19 @@ class DBEntry:
             self.uri = None
             self.mode = None
         else:
-            self.uri = uri
+            self.uri = str(uri)
             self.mode = mode
-            cls = self._select_implementation(uri)
-            self._dbe_impl = cls.from_uri(uri, mode, self._ids_factory)
+            cls = self._select_implementation(self.uri)
+            self._dbe_impl = cls.from_uri(self.uri, mode, self._ids_factory)
 
     @staticmethod
     def _select_implementation(uri: Optional[str]) -> Type[DBEntryImpl]:
         """Select which DBEntry implementation to use based on the URI."""
-        from imaspy.backends.imas_core.db_entry_al import ALDBEntryImpl
-
-        return ALDBEntryImpl
+        if uri and uri.endswith(".nc") and not uri.startswith("imas:"):
+            from imaspy.backends.netcdf.db_entry_nc import NCDBEntryImpl as impl
+        else:
+            from imaspy.backends.imas_core.db_entry_al import ALDBEntryImpl as impl
+        return impl
 
     def __enter__(self):
         # Context manager protocol
@@ -584,7 +586,7 @@ class DBEntry:
                 )
                 raise UnknownDDVersion(dd_version, dd_xml_versions(), note)
 
-        # Implicit version conversion:
+        # Version conversion:
         if not destination:
             # Construct IDS object that the backend can store data in
             if autoconvert or not dd_version:
@@ -596,6 +598,16 @@ class DBEntry:
 
         nbc_map = None
         if dd_version and dd_version != destination._dd_version:
+            if dd_version.split(".")[0] != destination._dd_version.split(".")[0]:
+                logger.warning(
+                    "On-disk data is stored in DD %s which has a different major "
+                    "version than the requested DD version (%s). IMASPy will convert "
+                    "the data automatically, but this does not cover all changes. See "
+                    "%s/multi-dd.html#conversion-of-idss-between-dd-versions",
+                    dd_version,
+                    destination._dd_version,
+                    imaspy.PUBLISHED_DOCUMENTATION_ROOT,
+                )
             ddmap, source_is_older = dd_version_map_from_factories(
                 ids_name, IDSFactory(version=dd_version), self._ids_factory
             )

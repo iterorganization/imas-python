@@ -84,7 +84,6 @@ class IDSStructArray(IDSBase):
                 loaded from the lowlevel.
         """
         assert self._lazy
-        assert self._lazy_ctx
         if self.value is not None:  # We already loaded our size
             if item is None:
                 return
@@ -92,8 +91,15 @@ class IDSStructArray(IDSBase):
                 return  # item is already loaded
         # Load requested data from the backend
         if self.value is None:
-            ctx = self._lazy_ctx.get_context()
-            self.value = [None] * ctx.size
+            if self._lazy_ctx is None:
+                # Lazy context can be None when:
+                # 1. The element does not exist in the on-disk DD version
+                # 2. The element exists, but changed type compared to the on-disk DD
+                # In both cases we just report that we're empty
+                self.value = []
+            else:
+                ctx = self._lazy_ctx.get_context()
+                self.value = [None] * ctx.size
 
         if item is not None:
             if item < 0:

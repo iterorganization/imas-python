@@ -280,16 +280,13 @@ def test_validate_ignore_nested_aos():
 
 
 @pytest.fixture
-def alternative_coordinates_cp(latest_factory):
+def alternative_coordinates_cp():
     """Test alternative coordinates introduced in DDv4 with IMAS-4725."""
-    cp = latest_factory.new("core_profiles")
+    cp = IDSFactory("4.0.0").new("core_profiles")
     cp.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
     cp.profiles_1d.resize(1)
     cp.profiles_1d[0].time = 1.0
     cp.validate()
-    grid = cp.profiles_1d[0].grid
-    if not grid.rho_tor_norm.metadata.alternative_coordinates:
-        pytest.skip("Alternative coordinates are introduced with DDv4")
     return cp
 
 
@@ -341,8 +338,6 @@ def test_validate_with_alternative_coordinates(alternative_coordinates_cp, alter
 
 
 def test_validate_random_fill(ids_name):
-    if ids_name == "amns_data":
-        pytest.skip("Indirect coordinates in amns_data tested separately")
     ids = IDSFactory().new(ids_name)
     fill_consistent(ids)
     ids.validate()
