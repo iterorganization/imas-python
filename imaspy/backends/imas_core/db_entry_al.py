@@ -136,7 +136,7 @@ class ALDBEntryImpl(DBEntryImpl):
     @classmethod
     def _from_uri(cls, uri: str, mode: int, factory: IDSFactory) -> "ALDBEntryImpl":
         """Helper method to actually open/create the dataentry."""
-        backend = urlparse(uri).path.lower()
+        backend = urlparse(uri).path.lower().lstrip("/")
         cls._setup_backend(backend, mode, factory)
 
         status, ctx = ll_interface.begin_dataentry_action(uri, mode)
