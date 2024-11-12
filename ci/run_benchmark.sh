@@ -52,9 +52,9 @@ asv run --skip-existing-successful main^!
 # Compare results
 if [ `git rev-parse --abbrev-ref HEAD` == develop ]
 then
-    asv compare main develop
+    asv compare main develop --machine $(hostname) || echo "asv compare failed"
 else
-    asv compare develop HEAD
+    asv compare develop HEAD --machine $(hostname) || echo "asv compare failed"
 fi
 
 # Publish results

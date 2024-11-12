@@ -3,7 +3,7 @@
 
 import logging
 import re
-from datetime import UTC, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock
 
 import numpy
@@ -28,6 +28,8 @@ from imaspy.ids_factory import IDSFactory
 from imaspy.ids_struct_array import IDSStructArray
 from imaspy.ids_structure import IDSStructure
 from imaspy.test.test_helpers import compare_children, open_dbentry
+
+UTC = timezone.utc
 
 
 def test_iter_parents():
@@ -232,10 +234,10 @@ def test_3to4_ggd_space_identifier(dd4factory):
 
 
 def test_3to4_repeat_children_first_point_conditional(dd4factory):
-    # The wall IDS contains all (three!) cases with conditional repeats
+    # The wall IDS contains all (four!) cases with conditional repeats
     wall = IDSFactory("3.39.0").wall()
     wall.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
-    wall.description_2d.resize(1)
+    wall.description_2d.resize(2)
 
     # Case 1: repeat_children_first_point_conditional
     wall.description_2d[0].vessel.unit.resize(2)
@@ -264,8 +266,20 @@ def test_3to4_repeat_children_first_point_conditional(dd4factory):
             unit.outline[j].z = [-1.0, -2.0, -3.0]
             unit.outline[j].time = j / 5
 
+    # Case 4: repeat_children_first_point_conditional_centreline
+    # (see https://jira.iter.org/browse/IMAS-5541)
+    wall.description_2d[1].vessel.unit.resize(2)
+    for i in range(2):
+        centreline = wall.description_2d[1].vessel.unit[i].annular.centreline
+        centreline.closed = i  # first is open, second is closed
+        centreline.r = [1.0, 2.0, 3.0]
+        centreline.z = [-1.0, -2.0, -3.0]
+        # if it was open there were too many thickness values!
+        # The last one will be dropped and repeated
+        wall.description_2d[1].vessel.unit[i].annular.thickness = [1, 0.9, 0.9]
+
     wall4 = convert_ids(wall, None, factory=dd4factory)
-    assert len(wall4.description_2d) == 1
+    assert len(wall4.description_2d) == 2
 
     # Test conversion for case 1:
     assert len(wall4.description_2d[0].vessel.unit) == 2
@@ -301,6 +315,15 @@ def test_3to4_repeat_children_first_point_conditional(dd4factory):
                 assert numpy.array_equal(unit.outline[j].r, [1.0, 2.0, 3.0, 1.0])
                 assert numpy.array_equal(unit.outline[j].z, [-1.0, -2.0, -3.0, -1.0])
             assert unit.outline[j].time == pytest.approx(j / 5)
+
+    # Test conversion for case 4:
+    assert len(wall4.description_2d[1].vessel.unit) == 2
+    for i in range(2):
+        thickness = wall4.description_2d[1].vessel.unit[i].annular.thickness
+        if i == 0:  # open outline, there was one value too many, drop the last one
+            assert numpy.array_equal(thickness, [1, 0.9])
+        else:  # closed outline, thickness values kept
+            assert numpy.array_equal(thickness, [1, 0.9, 0.9])
 
     # Test conversion back
     wall3 = convert_ids(wall4, "3.39.0")
