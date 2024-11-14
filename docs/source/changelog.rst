@@ -3,6 +3,32 @@
 Changelog
 =========
 
+What's new in IMASPy 1.1.1
+--------------------------
+
+This is a small release that mainly fixes issues related to the recent Data
+Dictionary 4.0.0 release.
+
+Bug fixes
+'''''''''
+
+- Data Dictionary 4.0.0 compatibility:
+
+  - Fix a bug with ``get_slice`` and ``put_slice`` not correctly slicing data.
+  - Update tests and examples. Some were updated to be compatible with both Data
+    Dictionary 4.0.0 and 3.42.0. In other cases, the Data Dictionary version is
+    now explicitly indicated.
+
+- :issue:`IMAS-5560`: Fix a bug where IMASPy would not correctly recognize that
+  the UDA backend is used.
+- :issue:`IMAS-5541`: Fix a bug when converting a closed contour to Data
+  Dictionary version 4.0.0.
+- Work around incorrect Data Dictionary 3.x metadata when converting
+  ``flux_loop/flux`` in the ``magnetics`` IDS to Data Dictionary version 4.0.0.
+- Fix a bug when lazy loading Arrays of Structures that where added in a more
+  recent Data Dictionary version than the on-disk data was stored with.
+
+
 What's new in IMASPy 1.1
 ------------------------
 
