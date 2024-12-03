@@ -2,11 +2,38 @@
 # You should have received the IMASPy LICENSE file with this project.
 
 from abc import ABC, abstractmethod
-from typing import Any, List, Optional
+from dataclasses import dataclass
+from typing import Any, List, Optional, Union
+
+import numpy
 
 from imaspy.ids_convert import NBCPathMap
 from imaspy.ids_factory import IDSFactory
 from imaspy.ids_toplevel import IDSToplevel
+
+
+@dataclass
+class GetSliceParameters:
+    """Helper class to store parameters to get_slice."""
+
+    time_requested: float
+    """See :param:`imaspy.db_entry.DBEntry.get_slice.time_requested`."""
+    interpolation_method: int
+    """See :param:`imaspy.db_entry.DBEntry.get_slice.interpolation_method`."""
+
+
+@dataclass
+class GetSampleParameters:
+    """Helper class to store parameters to get_sample."""
+
+    tmin: float
+    """See :param:`imaspy.db_entry.DBEntry.get_sample.tmin`."""
+    tmax: float
+    """See :param:`imaspy.db_entry.DBEntry.get_sample.tmax`."""
+    dtime: Optional[numpy.ndarray]
+    """See :param:`imaspy.db_entry.DBEntry.get_sample.dtime`."""
+    interpolation_method: Optional[int]
+    """See :param:`imaspy.db_entry.DBEntry.get_sample.interpolation_method`."""
 
 
 class DBEntryImpl(ABC):
@@ -47,20 +74,17 @@ class DBEntryImpl(ABC):
         self,
         ids_name: str,
         occurrence: int,
-        time_requested: Optional[float],
-        interpolation_method: int,
+        parameters: Union[None, GetSliceParameters, GetSampleParameters],
         destination: IDSToplevel,
         lazy: bool,
         nbc_map: Optional[NBCPathMap],
     ) -> None:
-        """Implement DBEntry.get()/get_slice(). Load data from the data source.
+        """Implement DBEntry.get/get_slice/get_sample. Load data from the data source.
 
         Args:
             ids_name: Name of the IDS to load.
             occurrence: Which occurence of the IDS to load.
-            time_requested: None for get(), requested time slice for get_slice().
-            interpolation_method: Requested interpolation method (ignore when
-                time_requested is None).
+            parameters: Additional parameters for a get_slice/get_sample call.
             destination: IDS object to store data in.
             lazy: Use lazy loading.
             nbc_map: NBCPathMap to use for implicit conversion. When None, no implicit
