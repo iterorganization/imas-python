@@ -101,8 +101,8 @@ class IDSSlice:
 
         Raises:
             ValueError: The underlying data is ragged (non-rectangular). Use 
-                .is_ragged to check first, or use
-                .to_array() to convert to a numpy object array.
+                .is_ragged to check first, or use .values() to extract values
+                as a flat list.
 
         Returns:
             Tuple of dimensions.
@@ -110,8 +110,8 @@ class IDSSlice:
         if self.is_ragged:
             raise ValueError(
                 f"Cannot get shape of ragged array: dimensions have varying sizes. "
-                f"Use .is_ragged to check if data is ragged, or .to_array() to "
-                f"convert to numpy object array."
+                f"Use .is_ragged to check if data is ragged, or .values() to "
+                f"get a flat list of elements."
             )
         
         # Build shape from hierarchy, replacing None with actual uniform size
@@ -435,170 +435,98 @@ class IDSSlice:
         return result
 
     def to_array(self) -> np.ndarray:
-        """Convert this slice to a numpy array respecting multi-dimensional structure.
+        """Convert this slice to a numpy array - for leaf node slices only.
 
-        For 1D slices: returns a simple 1D array.
-        For multi-dimensional slices: returns an array with shape self.shape.
-        For ragged data: returns an object array containing the elements as-is.
+        This method converts a slice containing scalar or numeric array leaf nodes
+        to a regular numpy array with shape self.shape. It is designed for
+        tensorization of leaf nodes only (e.g., slices of FLT_1D, profiles, etc.).
 
-        This is useful for integration with numpy operations, scipy functions,
-        and xarray data structures. The returned array preserves the hierarchical
-        structure of the IMAS data.
+        For multi-dimensional access to non-leaf nodes, use direct indexing instead:
+        ``ids[i1][i2]`` rather than slicing with ``.to_array()``.
 
         Returns:
-            numpy.ndarray with shape self.shape, or object array if ragged.
+            numpy.ndarray with shape self.shape containing the extracted values.
 
         Raises:
-            ValueError: If array cannot be converted to numpy
+            ValueError: If slice refers to IDSStructure or IDSStructArray elements
+                (non-leaf nodes). Use direct indexing instead.
+            ValueError: If the data is ragged/non-rectangular (dimensions have
+                varying sizes). Use direct indexing or ``.values()`` instead.
+            ValueError: If values cannot be converted to numpy array.
+
+        Examples:
+            Tensorize a 1D slice of numeric data::
+
+                # Works: leaf nodes are numeric arrays
+                array = core_profiles.profiles_1d[:].te.to_array()  # Shape: (n_profiles,)
+
+            Multi-dimensional tensorization::
+
+                # Works: accessing leaf nodes from nested structure
+                array = core_profiles.profiles_1d[:].te.to_array()  # Shape: (n_profiles,)
+
+            Direct indexing for non-leaf nodes::
+
+                # Don't do this - will raise ValueError
+                # array = core_profiles.profiles_1d[:].to_array()  # ERROR!
+
+                # Do this instead
+                profile = core_profiles.profiles_1d[0]  # Direct access
+                te = profile.te.to_array()  # Then tensorize
         """
         from imas.ids_primitive import IDSPrimitive, IDSNumericArray
-
-        # Try to get the actual shape (will check if ragged)
-        try:
-            actual_shape = self.shape  # Will raise if ragged
-            is_ragged_data = False
-        except ValueError:
-            # Data is ragged - handle it gracefully
-            is_ragged_data = True
-            actual_shape = None
-
-        # 1D case - simple conversion
-        if not is_ragged_data and len(actual_shape) == 1:
-            flat_values = []
-            for element in self._matched_elements:
-                if isinstance(element, IDSPrimitive):
-                    flat_values.append(element.value)
-                else:
-                    flat_values.append(element)
-            try:
-                return np.array(flat_values)
-            except (ValueError, TypeError):
-                return np.array(flat_values, dtype=object)
-
-        # Multi-dimensional case
-        # Check if matched elements are themselves arrays (IDSNumericArray)
-        if self._matched_elements and isinstance(
-            self._matched_elements[0], IDSNumericArray
-        ):
-            # Elements are numeric arrays - extract their values and stack them
-            array_values = []
-            for element in self._matched_elements:
-                if isinstance(element, IDSNumericArray):
-                    array_values.append(element.value)
-                else:
-                    array_values.append(element)
-
-            # For ragged data, return object array with arrays as elements
-            if is_ragged_data:
-                return np.array(array_values, dtype=object)
-
-            # Try to stack into proper shape
-            try:
-                # Check if all arrays have the same size (regular)
-                sizes = []
-                for val in array_values:
-                    if hasattr(val, "__len__"):
-                        sizes.append(len(val))
-                    else:
-                        sizes.append(1)
-
-                # If all sizes are the same, we can create a regular array
-                if len(set(sizes)) == 1:
-                    # Regular array - all sub-arrays same size
-                    stacked = np.array(array_values)
-                    # Should now have shape (first_dim, second_dim)
-                    if stacked.shape == actual_shape:
-                        return stacked
-                    else:
-                        # Try explicit reshape
-                        try:
-                            return stacked.reshape(actual_shape)
-                        except ValueError:
-                            # If reshape fails, return as object array
-                            result_arr = np.empty(actual_shape, dtype=object)
-                            for i, val in enumerate(array_values):
-                                result_arr.flat[i] = val
-                            return result_arr
-                else:
-                    result_arr = np.empty(actual_shape[0], dtype=object)
-                    for i, val in enumerate(array_values):
-                        result_arr[i] = val
-                    return result_arr
-            except (ValueError, TypeError):
-                # Fallback: return object array
-                result_arr = np.empty(actual_shape[0], dtype=object)
-                for i, val in enumerate(array_values):
-                    result_arr[i] = val
-                return result_arr
-
-        # For non-numeric elements in multi-dimensional structure
-        # Extract and try to build structure
-        flat_values = []
-
-        # First check if matched_elements are IDSStructArray (which need flattening)
         from imas.ids_struct_array import IDSStructArray
+        from imas.ids_structure import IDSStructure
 
-        has_struct_arrays = self._matched_elements and isinstance(
-            self._matched_elements[0], IDSStructArray
-        )
+        # Validate: slice must refer to leaf nodes only
+        if self._matched_elements:
+            first = self._matched_elements[0]
+            if isinstance(first, (IDSStructure, IDSStructArray)):
+                raise ValueError(
+                    f"Cannot tensorize {type(first).__name__} slice - only works for "
+                    f"leaf nodes (scalars, numeric arrays). Use direct indexing instead: "
+                    f"ids[i][j] to access structures."
+                )
 
-        if has_struct_arrays:
-            # Flatten IDSStructArray elements
-            for struct_array in self._matched_elements:
-                for element in struct_array:
-                    if isinstance(element, IDSPrimitive):
-                        flat_values.append(element.value)
-                    else:
-                        flat_values.append(element)
-        else:
-            # Regular elements
-            for element in self._matched_elements:
-                if isinstance(element, IDSPrimitive):
-                    flat_values.append(element.value)
-                else:
-                    flat_values.append(element)
-
-        # For ragged data, construct object array from hierarchy
-        if is_ragged_data:
-            # Build object array respecting the ragged structure
-            if len(self._element_hierarchy) == 1:
-                # Simple 1D array
-                return np.array(flat_values, dtype=object)
-            else:
-                # Multi-level hierarchy - reconstruct structure
-                result_arr = np.empty(self._element_hierarchy[0], dtype=object)
-                idx = 0
-                for i in range(self._element_hierarchy[0]):
-                    group_size = self._element_hierarchy[1][i]
-                    result_arr[i] = flat_values[idx:idx+group_size]
-                    idx += group_size
-                return result_arr
-
-        total_size = 1
-        for dim in actual_shape:
-            total_size *= dim
-
-        # Check if we have the right number of elements
-        if len(flat_values) != total_size:
+        # Validate: data must be rectangular (not ragged)
+        if self.is_ragged:
             raise ValueError(
-                f"Cannot convert to array: expected {total_size} elements "
-                f"but got {len(flat_values)}"
+                f"Cannot tensorize ragged array - dimensions have varying sizes. "
+                f"Use .values() to get a flat list, or use direct indexing for "
+                f"multi-dimensional access."
             )
 
-        # Try to create the array
+        # Get the target shape (we validated it's not ragged)
+        actual_shape = self.shape
+
+        # Handle empty slice
+        if len(self._matched_elements) == 0:
+            return np.empty(actual_shape, dtype=float)
+
+        # Extract values from leaf nodes
+        flat_values = []
+        for element in self._matched_elements:
+            if isinstance(element, IDSPrimitive):
+                flat_values.append(element.value)
+            elif isinstance(element, IDSNumericArray):
+                flat_values.append(element.value)
+            else:
+                flat_values.append(element)
+
+        # Tensorize to target shape
+        arr = np.array(flat_values)
+        
+        # For 1D, no reshape needed
+        if len(actual_shape) == 1:
+            return arr
+        
+        # For multi-dimensional, reshape to target shape
         try:
-            arr = np.array(flat_values)
-            try:
-                # Try to reshape to target shape
-                return arr.reshape(actual_shape)
-            except (ValueError, TypeError):
-                # If reshape fails, use object array
-                arr_obj = np.empty(actual_shape, dtype=object)
-                for i, val in enumerate(flat_values):
-                    arr_obj.flat[i] = val
-                return arr_obj
+            return arr.reshape(actual_shape)
         except (ValueError, TypeError) as e:
-            raise ValueError(f"Failed to convert slice to numpy array: {e}")
+            raise ValueError(
+                f"Failed to convert slice to array with shape {actual_shape}: {e}"
+            )
 
     @staticmethod
     def _format_slice(slice_obj: slice) -> str:

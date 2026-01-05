@@ -77,7 +77,7 @@ class TestMultiDimSlicing:
         assert np.allclose(array[0, 1, :], [0.0, 1.0])
 
     def test_to_array_variable_size(self):
-        """Test to_array() with variable-size arrays."""
+        """Test to_array() raises error for ragged arrays."""
         cp = IDSFactory("3.39.0").core_profiles()
         cp.profiles_1d.resize(3)
         cp.profiles_1d[0].grid.rho_tor_norm = np.array([0.0, 0.5, 1.0])
@@ -85,13 +85,17 @@ class TestMultiDimSlicing:
         cp.profiles_1d[2].grid.rho_tor_norm = np.array([0.0, 0.5, 1.0])
 
         result = cp.profiles_1d[:].grid.rho_tor_norm
-        array = result.to_array()
-
-        assert array.dtype == object
-        assert len(array) == 3
-        assert len(array[0]) == 3
-        assert len(array[1]) == 5
-        assert len(array[2]) == 3
+        
+        # to_array() should raise ValueError for ragged data
+        with pytest.raises(ValueError, match="Cannot tensorize ragged array"):
+            result.to_array()
+        
+        # But .values() should still work
+        values = result.values()
+        assert len(values) == 3
+        assert len(values[0]) == 3
+        assert len(values[1]) == 5
+        assert len(values[2]) == 3
 
     def test_enhanced_values_2d(self):
         """Test enhanced values() method for 2D extraction."""
