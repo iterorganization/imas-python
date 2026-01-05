@@ -257,36 +257,61 @@ class IDSSlice:
     def __getattr__(self, name: str) -> "IDSSlice":
         """Access a child node on all matched elements.
 
-        This returns a new IDSSlice containing the child node from
-        each matched element. Preserves multi-dimensional structure
-        when child elements are arrays.
+        Returns a new IDSSlice containing the child node from each matched
+        element. Validates the attribute name against metadata, allowing
+        empty slices with valid child node names.
 
         Args:
             name: Name of the node to access
 
         Returns:
-            A new IDSSlice containing the child node from each matched element
+            A new IDSSlice containing the child node from each matched element,
+            or an empty IDSSlice if the matched_elements is empty but the
+            attribute name is valid according to metadata.
+
+        Raises:
+            AttributeError: If name is not a valid child node in the metadata
         """
-        if not self._matched_elements:
-            raise IndexError(
-                f"Cannot access node '{name}' on empty slice with 0 elements"
-            )
-
         from imas.ids_struct_array import IDSStructArray
+        from imas.ids_primitive import IDSNumericArray
 
+        # Validate attribute name via metadata first
         child_metadata = None
         if self.metadata is not None:
             try:
                 child_metadata = self.metadata[name]
             except (KeyError, TypeError):
-                pass
+                raise AttributeError(
+                    f"'{self.metadata.name}' has no child node '{name}'"
+                ) from None
+        else:
+            # No metadata available for validation
+            # Try to get the attribute anyway, will fail if invalid
+            if not self._matched_elements:
+                raise AttributeError(
+                    f"Cannot validate attribute '{name}' on empty slice "
+                    f"without metadata"
+                ) from None
 
+        # Handle empty slice - valid if metadata says it's a valid node
+        if not self._matched_elements:
+            new_path = self._slice_path + "." + name
+            return IDSSlice(
+                child_metadata,
+                [],
+                new_path,
+                parent_array=self._parent_array,
+                virtual_shape=(0,),
+                element_hierarchy=[0],
+            )
+
+        # Get attributes from all non-empty matched elements
         child_elements = [getattr(element, name) for element in self]
         new_path = self._slice_path + "." + name
 
         # Check if children are IDSStructArray (nested arrays) or IDSNumericArray
         if not child_elements:
-            # Empty slice
+            # Empty child elements
             return IDSSlice(
                 child_metadata,
                 child_elements,
@@ -295,8 +320,6 @@ class IDSSlice:
                 virtual_shape=self._virtual_shape,
                 element_hierarchy=self._element_hierarchy,
             )
-
-        from imas.ids_primitive import IDSNumericArray
 
         if isinstance(child_elements[0], IDSStructArray):
             # Children are IDSStructArray - track the new dimension

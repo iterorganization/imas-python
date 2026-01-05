@@ -291,9 +291,10 @@ class TestMultiDimSlicing:
 
         result = cp.profiles_1d[:].grid.rho_tor_norm
 
-        # Verify lazy attributes are preserved
-        assert hasattr(result, "_lazy")
+        # Verify IDSSlice attributes are preserved
         assert hasattr(result, "_parent_array")
+        assert hasattr(result, "_matched_elements")
+        assert len(result._matched_elements) > 0
 
 
 class TestEdgeCases:
