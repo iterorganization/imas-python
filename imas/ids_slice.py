@@ -75,15 +75,44 @@ class IDSSlice:
         return self._slice_path
 
     @property
+    def is_ragged(self) -> bool:
+        """Check if the underlying data is ragged (non-rectangular).
+
+        Ragged arrays have varying sizes at one or more dimensions.
+
+        Returns:
+            True if any dimension has varying sizes, False otherwise
+
+        """
+        # Check if any level in the hierarchy has non-uniform sizes
+        for sizes_list in self._element_hierarchy:
+            # sizes_list can be a list of sizes or a single integer
+            if isinstance(sizes_list, list) and len(sizes_list) > 1:
+                if len(set(sizes_list)) > 1:
+                    return True
+        return False
+
+    @property
     def shape(self) -> Tuple[int, ...]:
         """Get the virtual multi-dimensional shape.
 
         Returns the shape of the data as if it were organized in a multi-dimensional
         array, based on the hierarchy of slicing operations performed.
 
+        Raises:
+            ValueError: The underlying data is ragged (non-rectangular). Use 
+                .is_ragged to check first, or use
+                .to_array() to convert to a numpy object array.
+
         Returns:
             Tuple of dimensions.
         """
+        if self.is_ragged:
+            raise ValueError(
+                f"Cannot get shape of ragged array: dimensions have varying sizes. "
+                f"Use .is_ragged to check if data is ragged, or .to_array() to "
+                f"convert to numpy object array."
+            )
         return self._virtual_shape
 
     def __len__(self) -> int:
