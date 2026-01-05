@@ -130,37 +130,16 @@ class IDSStructArray(IDSBase):
             A single IDSStructure if item is an int, or an IDSSlice if item is a slice
         """
         if isinstance(item, slice):
-            if self._lazy:
-
-                self._load(None)  # Load size
-
-                # Convert slice to indices
-                start, stop, step = item.indices(len(self))
-
-                # Load only the elements in the slice range
-                loaded_elements = []
-                for i in range(start, stop, step):
-                    self._load(i)  # Load each element on demand
-                    loaded_elements.append(self.value[i])
-
-                from imas.ids_slice import IDSSlice
-                from imas.util import get_full_path
-
-                slice_str = IDSSlice._format_slice(item)
-                # Build full path: parent path + this array name + slice
-                full_path = get_full_path(self) + slice_str
-
-                return IDSSlice(
-                    self.metadata,
-                    loaded_elements,
-                    full_path,
-                    parent_array=self,
-                )
-
             from imas.ids_slice import IDSSlice
             from imas.util import get_full_path
 
-            matched_elements = self.value[item]
+            if self._lazy:
+                # Use __getitem__ for each index to trigger proper lazy loading
+                matched_elements = [self[i] for i in range(*item.indices(len(self)))]
+            else:
+                # Direct slice for non-lazy case
+                matched_elements = self.value[item]
+
             slice_str = IDSSlice._format_slice(item)
             # Build full path: parent path + this array name + slice
             full_path = get_full_path(self) + slice_str
