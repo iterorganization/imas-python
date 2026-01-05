@@ -47,7 +47,7 @@ class IDSSlice:
         self,
         metadata: IDSMetadata,
         matched_elements: List[Any],
-        slice_path: str,
+        full_path: str,
         parent_array: Optional["IDSStructArray"] = None,
         virtual_shape: Optional[Tuple[int, ...]] = None,
         element_hierarchy: Optional[List[Any]] = None,
@@ -57,14 +57,14 @@ class IDSSlice:
         Args:
             metadata: Metadata from the parent array (required)
             matched_elements: List of elements that matched the slice
-            slice_path: String representation of the slice operation (e.g., "[8:]")
+            full_path: Full path from the IDS root (e.g., "profiles_1d[:].ion[:]")
             parent_array: Optional reference to the parent IDSStructArray for context
             virtual_shape: Optional tuple representing multi-dimensional shape
             element_hierarchy: Optional tracking of element grouping
         """
         self.metadata = metadata
         self._matched_elements = matched_elements
-        self._slice_path = slice_path
+        self._slice_path = full_path
         self._parent_array = parent_array
         self._virtual_shape = virtual_shape or (len(matched_elements),)
         self._element_hierarchy = element_hierarchy or [len(matched_elements)]
@@ -190,7 +190,8 @@ class IDSSlice:
                 sliced_sizes.append(1)
 
         slice_str = self._format_slice(item)
-        new_path = self._slice_path + slice_str
+        # Full path: current path + slice operation
+        full_path = self._path + slice_str
 
         # Update shape to reflect the sliced structure
         # Keep first dimensions, store actual sizes (may be ragged)
@@ -200,7 +201,7 @@ class IDSSlice:
         return IDSSlice(
             self.metadata,
             sliced_elements,
-            new_path,
+            full_path,
             parent_array=self._parent_array,
             virtual_shape=new_virtual_shape,
             element_hierarchy=new_hierarchy,
@@ -220,7 +221,8 @@ class IDSSlice:
         """
         indexed_elements = [array[int(item)] for array in self._matched_elements]
 
-        new_path = self._slice_path + f"[{item}]"
+        # Full path: current path + index operation
+        full_path = self._path + f"[{item}]"
 
         # Shape changes: last dimension becomes 1
         new_virtual_shape = self._virtual_shape[:-1] + (1,)
@@ -228,7 +230,7 @@ class IDSSlice:
         return IDSSlice(
             self.metadata,
             indexed_elements,
-            new_path,
+            full_path,
             parent_array=self._parent_array,
             virtual_shape=new_virtual_shape,
             element_hierarchy=self._element_hierarchy,
@@ -248,7 +250,8 @@ class IDSSlice:
         """
         sliced_elements = self._matched_elements[item]
         slice_str = self._format_slice(item)
-        new_path = self._slice_path + slice_str
+        # Full path: current path + slice operation
+        full_path = self._path + slice_str
 
         # Update shape to reflect the slice on first dimension
         new_virtual_shape = (len(sliced_elements),) + self._virtual_shape[1:]
@@ -257,7 +260,7 @@ class IDSSlice:
         return IDSSlice(
             self.metadata,
             sliced_elements,
-            new_path,
+            full_path,
             parent_array=self._parent_array,
             virtual_shape=new_virtual_shape,
             element_hierarchy=new_element_hierarchy,
@@ -292,13 +295,15 @@ class IDSSlice:
                 f"'{self.metadata.name}' has no child node '{name}'"
             ) from None
 
+        # Full path: current path + attribute access
+        full_path = self._path + "." + name
+
         # Handle empty slice - valid if metadata says it's a valid node
         if not self._matched_elements:
-            new_path = self._slice_path + "." + name
             return IDSSlice(
                 child_metadata,
                 [],
-                new_path,
+                full_path,
                 parent_array=self._parent_array,
                 virtual_shape=(0,),
                 element_hierarchy=[0],
@@ -306,7 +311,6 @@ class IDSSlice:
 
         # Get attributes from all non-empty matched elements
         child_elements = [getattr(element, name) for element in self]
-        new_path = self._slice_path + "." + name
 
         # Check if children are IDSStructArray (nested arrays) or IDSNumericArray
         if not child_elements:
@@ -314,7 +318,7 @@ class IDSSlice:
             return IDSSlice(
                 child_metadata,
                 child_elements,
-                new_path,
+                full_path,
                 parent_array=self._parent_array,
                 virtual_shape=self._virtual_shape,
                 element_hierarchy=self._element_hierarchy,
@@ -332,7 +336,7 @@ class IDSSlice:
             return IDSSlice(
                 child_metadata,
                 child_elements,
-                new_path,
+                full_path,
                 parent_array=self._parent_array,
                 virtual_shape=new_virtual_shape,
                 element_hierarchy=new_hierarchy,
@@ -350,7 +354,7 @@ class IDSSlice:
             return IDSSlice(
                 child_metadata,
                 child_elements,
-                new_path,
+                full_path,
                 parent_array=self._parent_array,
                 virtual_shape=new_virtual_shape,
                 element_hierarchy=new_hierarchy,
@@ -360,7 +364,7 @@ class IDSSlice:
             return IDSSlice(
                 child_metadata,
                 child_elements,
-                new_path,
+                full_path,
                 parent_array=self._parent_array,
                 virtual_shape=self._virtual_shape,
                 element_hierarchy=self._element_hierarchy,
@@ -371,26 +375,16 @@ class IDSSlice:
 
         Returns a string showing:
         - The IDS type name (e.g., 'equilibrium')
-        - The full path including the slice operation (e.g., 'time_slice[:]')
+        - The full path including slice operations (e.g., 'profiles_1d[:].ion[:]')
         - The number of matched elements
 
         Returns:
-            String representation like below
-            like '<IDSSlice (IDS:equilibrium, time_slice[:] with 106 matches)>'
+            String representation like:
+            '<IDSSlice (IDS:core_profiles, profiles_1d[:].ion[:] with 318 items)>'
         """
-        from imas.util import get_toplevel, get_full_path
-
-        my_repr = f"<{type(self).__name__}"
-        ids_name = "unknown"
-        full_path = self._path
-
-        if self._parent_array is not None:
-            ids_name = get_toplevel(self._parent_array).metadata.name
-            parent_array_path = get_full_path(self._parent_array)
-            full_path = parent_array_path + self._path
+        ids_name = self.metadata.ids_name
         item_word = "item" if len(self) == 1 else "items"
-        my_repr += f" (IDS:{ids_name}, {full_path} with {len(self)} {item_word})>"
-        return my_repr
+        return f"<{type(self).__name__} (IDS:{ids_name}, {self._path} with {len(self)} {item_word})>"
 
     def values(self, reshape: bool = False) -> Any:
         """Extract raw values from elements in this slice.

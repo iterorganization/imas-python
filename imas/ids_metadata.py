@@ -288,6 +288,20 @@ class IDSMetadata:
         return item
 
     @property
+    def ids_name(self) -> str:
+        """Get the root IDS name (e.g., 'core_profiles', 'equilibrium').
+
+        Traverses up the metadata hierarchy to find the toplevel IDS name.
+
+        Returns:
+            The name of the root IDS node.
+        """
+        current = self
+        while current._parent is not None:
+            current = current._parent
+        return current.name
+
+    @property
     def identifier_enum(self) -> Optional[Type[IDSIdentifier]]:
         """The identifier enum for this IDS node (if available).
 

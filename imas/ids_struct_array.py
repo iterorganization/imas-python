@@ -144,25 +144,31 @@ class IDSStructArray(IDSBase):
                     loaded_elements.append(self.value[i])
 
                 from imas.ids_slice import IDSSlice
+                from imas.util import get_full_path
 
                 slice_str = IDSSlice._format_slice(item)
+                # Build full path: parent path + this array name + slice
+                full_path = get_full_path(self) + slice_str
 
                 return IDSSlice(
                     self.metadata,
                     loaded_elements,
-                    slice_str,
+                    full_path,
                     parent_array=self,
                 )
 
             from imas.ids_slice import IDSSlice
+            from imas.util import get_full_path
 
             matched_elements = self.value[item]
             slice_str = IDSSlice._format_slice(item)
+            # Build full path: parent path + this array name + slice
+            full_path = get_full_path(self) + slice_str
 
             return IDSSlice(
                 self.metadata,
                 matched_elements,
-                slice_str,
+                full_path,
                 parent_array=self,
             )
         else:
