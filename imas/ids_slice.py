@@ -100,20 +100,20 @@ class IDSSlice:
         array, based on the hierarchy of slicing operations performed.
 
         Raises:
-            ValueError: The underlying data is ragged (non-rectangular). Use 
-                .is_ragged to check first, or use .values() to extract values
-                as a flat list.
+            ValueError: The underlying data is ragged (non-rectangular).
+                Use .is_ragged to check first, or use .values() to extract
+                values as a flat list.
 
         Returns:
             Tuple of dimensions.
         """
         if self.is_ragged:
             raise ValueError(
-                f"Cannot get shape of ragged array: dimensions have varying sizes. "
-                f"Use .is_ragged to check if data is ragged, or .values() to "
-                f"get a flat list of elements."
+                "Cannot get shape of ragged array: dimensions have varying "
+                "sizes. Use .is_ragged to check if data is ragged, or .values() "
+                "to get a flat list of elements."
             )
-        
+
         # Build shape from hierarchy
         shape = []
         for i, hierarchy_level in enumerate(self._element_hierarchy):
@@ -129,7 +129,7 @@ class IDSSlice:
             else:
                 # This is a single count
                 shape.append(hierarchy_level)
-        
+
         return tuple(shape)
 
     def __len__(self) -> int:
@@ -211,13 +211,15 @@ class IDSSlice:
             IDSSlice with updated shape and hierarchy
         """
         from imas.ids_struct_array import IDSStructArray
-        
+
         slice_str = self._format_slice(item)
         # Full path: current path + slice operation
         full_path = self._path + slice_str
 
         # Check if matched elements are IDSStructArray (nested arrays)
-        if self._matched_elements and isinstance(self._matched_elements[0], IDSStructArray):
+        if self._matched_elements and isinstance(
+            self._matched_elements[0], IDSStructArray
+        ):
             # When slicing nested arrays, apply slice to each array and then flatten
             flattened_elements = []
             new_hierarchy_values = []
@@ -227,17 +229,20 @@ class IDSSlice:
                 # Flatten: add each element from the sliced array to flattened list
                 for element in sliced_array:
                     flattened_elements.append(element)
-            
+
             # Build new hierarchy
-            # The key is: if we have a multi-level grouped hierarchy (like [3, [2, 2, 2], ...]),
-            # we're dealing with a nested structure that's already been flattened.
-            # We should only update the innermost level, NOT create a new top-level grouping.
-            
+            # The key is: if we have a multi-level grouped hierarchy
+            # (like [3, [2, 2, 2], ...]), we're dealing with a nested
+            # structure that's already been flattened. We should only update
+            # the innermost level, NOT create a new top-level grouping.
+
             num_groups = len(self._matched_elements)
-            
-            if (len(self._element_hierarchy) >= 2 and 
-                isinstance(self._element_hierarchy[0], int) and
-                isinstance(self._element_hierarchy[1], list)):
+
+            if (
+                len(self._element_hierarchy) >= 2
+                and isinstance(self._element_hierarchy[0], int)
+                and isinstance(self._element_hierarchy[1], list)
+            ):
                 # Multi-level hierarchy like [3, [2, 2, 2], ...]
                 # The top level is the original grouping, so DON'T recreate it
                 # Just replace the last (innermost) level
@@ -245,7 +250,7 @@ class IDSSlice:
             else:
                 # Single level or not grouped yet - create new grouping
                 new_hierarchy = [num_groups, new_hierarchy_values]
-            
+
             return IDSSlice(
                 self.metadata,
                 flattened_elements,
@@ -257,7 +262,7 @@ class IDSSlice:
         else:
             # Normal slice on outer list
             sliced_elements = self._matched_elements[item]
-            
+
             # Update shape to reflect the slice on first dimension
             new_virtual_shape = (len(sliced_elements),) + self._virtual_shape[1:]
             new_element_hierarchy = [len(sliced_elements)] + self._element_hierarchy[1:]
@@ -316,7 +321,9 @@ class IDSSlice:
 
         # Get attributes from all non-empty matched elements
         # Special case: if matched_elements are IDSStructArray, keep them grouped
-        if self._matched_elements and isinstance(self._matched_elements[0], IDSStructArray):
+        if self._matched_elements and isinstance(
+            self._matched_elements[0], IDSStructArray
+        ):
             # For nested arrays, return the arrays themselves, not attributes from them
             # This allows chaining like .ion[:].element[:] to work
             child_elements = self._matched_elements
@@ -335,19 +342,21 @@ class IDSSlice:
                 element_hierarchy=self._element_hierarchy,
             )
 
-        # If matched_elements are IDSStructArray and we're accessing an attribute on them,
-        # we need to get that attribute from each array's elements
+        # If matched_elements are IDSStructArray and we're accessing an
+        # attribute on them, we need to get that attribute from each
+        # array's elements
         if isinstance(self._matched_elements[0], IDSStructArray):
-            # Accessing attribute on nested arrays: need to get attr from each array's elements
+            # Accessing attribute on nested arrays: get attr from each
+            # array's elements
             flattened_elements = []
             for array in child_elements:
-                # array is IDSStructArray, get the attribute from its elements
+                # array is IDSStructArray, get attribute from its elements
                 for element in array:
                     flattened_elements.append(getattr(element, name))
-            
+
             # Keep track of grouping for shape preservation
             child_sizes = [len(array) for array in child_elements]
-            
+
             return IDSSlice(
                 child_metadata,
                 flattened_elements,
@@ -417,7 +426,10 @@ class IDSSlice:
         """
         ids_name = self.metadata.ids_name
         item_word = "item" if len(self) == 1 else "items"
-        return f"<{type(self).__name__} (IDS:{ids_name}, {self._path} with {len(self)} {item_word})>"
+        return (
+            f"<{type(self).__name__} (IDS:{ids_name}, {self._path} with "
+            f"{len(self)} {item_word})>"
+        )
 
     def values(self) -> List[Any]:
         """Extract raw values from elements in this slice.
@@ -425,13 +437,13 @@ class IDSSlice:
         For IDSPrimitive elements, this extracts the wrapped value.
         For other element types, returns them as-is.
 
-        Returns a flat list of extracted values. This is useful for getting 
-        the actual data without the IDS wrapper when accessing scalar fields 
-        through a slice, without requiring explicit looping through the 
+        Returns a flat list of extracted values. This is useful for getting
+        the actual data without the IDS wrapper when accessing scalar fields
+        through a slice, without requiring explicit looping through the
         original collection.
 
         For multi-dimensional access to values:
-        - Use direct indexing: ``ids_obj[i1].collection[i2].value`` for best 
+        - Use direct indexing: ``ids_obj[i1].collection[i2].value`` for best
           performance and clarity
         - Use ``.to_array()`` if you need numpy array integration
 
@@ -491,12 +503,14 @@ class IDSSlice:
             Tensorize a 1D slice of numeric data::
 
                 # Works: leaf nodes are numeric arrays
-                array = core_profiles.profiles_1d[:].te.to_array()  # Shape: (n_profiles,)
+                array = core_profiles.profiles_1d[:].te.to_array()
+                # Shape: (n_profiles,)
 
             Multi-dimensional tensorization::
 
                 # Works: accessing leaf nodes from nested structure
-                array = core_profiles.profiles_1d[:].te.to_array()  # Shape: (n_profiles,)
+                array = core_profiles.profiles_1d[:].te.to_array()
+                # Shape: (n_profiles,)
 
             Direct indexing for non-leaf nodes::
 
@@ -516,17 +530,17 @@ class IDSSlice:
             first = self._matched_elements[0]
             if isinstance(first, (IDSStructure, IDSStructArray)):
                 raise ValueError(
-                    f"Cannot tensorize {type(first).__name__} slice - only works for "
-                    f"leaf nodes (scalars, numeric arrays). Use direct indexing instead: "
-                    f"ids[i][j] to access structures."
+                    f"Cannot tensorize {type(first).__name__} slice - only "
+                    f"works for leaf nodes (scalars, numeric arrays). Use "
+                    f"direct indexing instead: ids[i][j] to access structures."
                 )
 
         # Validate: data must be rectangular (not ragged)
         if self.is_ragged:
             raise ValueError(
-                f"Cannot tensorize ragged array - dimensions have varying sizes. "
-                f"Use .values() to get a flat list, or use direct indexing for "
-                f"multi-dimensional access."
+                "Cannot tensorize ragged array - dimensions have varying "
+                "sizes. Use .values() to get a flat list, or use direct "
+                "indexing for multi-dimensional access."
             )
 
         # Get the target shape (we validated it's not ragged)
@@ -548,11 +562,11 @@ class IDSSlice:
 
         # Tensorize to target shape
         arr = np.array(flat_values)
-        
+
         # For 1D, no reshape needed
         if len(actual_shape) == 1:
             return arr
-        
+
         # For multi-dimensional, reshape to target shape
         try:
             return arr.reshape(actual_shape)

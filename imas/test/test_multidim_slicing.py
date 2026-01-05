@@ -85,11 +85,11 @@ class TestMultiDimSlicing:
         cp.profiles_1d[2].grid.rho_tor_norm = np.array([0.0, 0.5, 1.0])
 
         result = cp.profiles_1d[:].grid.rho_tor_norm
-        
+
         # to_array() should raise ValueError for ragged data
         with pytest.raises(ValueError, match="Cannot tensorize ragged array"):
             result.to_array()
-        
+
         # But .values() should still work
         values = result.values()
         assert len(values) == 3
@@ -162,12 +162,12 @@ class TestMultiDimSlicing:
         # Option 1: Direct indexing (recommended)
         ion_0_from_first_profile = cp.profiles_1d[0].ion[:1]  # Use slice, not int index
         assert len(ion_0_from_first_profile) == 1
-        
+
         # Option 2: Convert to list
         ions_list = list(cp.profiles_1d[:].ion)
         ions_from_first_profile = ions_list[0]
         assert len(ions_from_first_profile) == 2
-        
+
         # Option 3: Extract values
         ions_values = cp.profiles_1d[:].ion.values()
         first_profile_ions = ions_values[0]
@@ -216,7 +216,7 @@ class TestMultiDimSlicing:
         # Get last ion from each profile using slice
         result = cp.profiles_1d[:].ion[2:3]  # Get last element with slice
         assert result.shape == (5, 1)
-        
+
         # Or better: direct indexing
         last_ions = [p.ion[-1] for p in cp.profiles_1d]
         assert len(last_ions) == 5
