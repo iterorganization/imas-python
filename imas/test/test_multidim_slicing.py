@@ -145,8 +145,8 @@ class TestMultiDimSlicing:
         assert result.shape == (10, 3)
         assert len(result) == 30  # Flattened for iteration, but shape preserved
 
-    def test_integer_index_on_nested(self):
-        """Test integer indexing on nested structures."""
+    def test_integer_index_not_supported(self):
+        """Test that integer indexing on IDSSlice is not supported."""
         cp = IDSFactory("3.39.0").core_profiles()
         cp.profiles_1d.resize(5)
         for i, p in enumerate(cp.profiles_1d):
@@ -154,12 +154,24 @@ class TestMultiDimSlicing:
             for j, ion in enumerate(p.ion):
                 ion.label = f"ion_{i}_{j}"
 
-        # Get first ion from all profiles
-        result = cp.profiles_1d[:].ion[0]
+        # Integer indexing on IDSSlice should raise TypeError
+        with pytest.raises(TypeError, match="Cannot index IDSSlice with integer"):
+            cp.profiles_1d[:].ion[0]
 
-        assert len(result) == 5
-        for i, ion in enumerate(result):
-            assert ion.label == f"ion_{i}_0"
+        # Show the correct alternatives
+        # Option 1: Direct indexing (recommended)
+        ion_0_from_first_profile = cp.profiles_1d[0].ion[:1]  # Use slice, not int index
+        assert len(ion_0_from_first_profile) == 1
+        
+        # Option 2: Convert to list
+        ions_list = list(cp.profiles_1d[:].ion)
+        ions_from_first_profile = ions_list[0]
+        assert len(ions_from_first_profile) == 2
+        
+        # Option 3: Extract values
+        ions_values = cp.profiles_1d[:].ion.values()
+        first_profile_ions = ions_values[0]
+        assert len(first_profile_ions) == 2
 
     def test_slice_on_nested_arrays(self):
         """Test slicing on nested arrays."""
@@ -187,8 +199,8 @@ class TestMultiDimSlicing:
         assert result.shape == (5, 3)  # 5 profiles, 3 ions each (0, 2, 4)
         assert len(result) == 15
 
-    def test_negative_indexing_on_nested(self):
-        """Test negative indexing on nested structures."""
+    def test_negative_indexing_not_supported(self):
+        """Test that negative integer indexing on IDSSlice is not supported."""
         cp = IDSFactory("3.39.0").core_profiles()
         cp.profiles_1d.resize(5)
         for p in cp.profiles_1d:
@@ -196,12 +208,19 @@ class TestMultiDimSlicing:
             for j, ion in enumerate(p.ion):
                 ion.label = f"ion_{j}"
 
-        # Get last ion from each profile
-        result = cp.profiles_1d[:].ion[-1]
+        # Negative integer indexing on IDSSlice should raise TypeError
+        with pytest.raises(TypeError, match="Cannot index IDSSlice with integer"):
+            cp.profiles_1d[:].ion[-1]
 
-        assert len(result) == 5
-        for ion in result:
-            assert ion.label == "ion_2"
+        # Show the correct alternative: use slice instead
+        # Get last ion from each profile using slice
+        result = cp.profiles_1d[:].ion[2:3]  # Get last element with slice
+        assert result.shape == (5, 1)
+        
+        # Or better: direct indexing
+        last_ions = [p.ion[-1] for p in cp.profiles_1d]
+        assert len(last_ions) == 5
+        assert all(ion.label == "ion_2" for ion in last_ions)
 
     def test_to_array_grouped_structure(self):
         """Test that to_array preserves grouped structure."""
@@ -327,7 +346,7 @@ class TestEdgeCases:
         assert result.shape == (1, 3)
 
     def test_single_dimension_value(self):
-        """Test accessing a single value in multi-dimensional structure."""
+        """Test accessing scalar values from nested structures."""
         cp = IDSFactory("3.39.0").core_profiles()
         cp.profiles_1d.resize(3)
         for p in cp.profiles_1d:
@@ -335,9 +354,10 @@ class TestEdgeCases:
             for i in p.ion:
                 i.z_ion = 1.0
 
-        result = cp.profiles_1d[:].ion[0].z_ion
+        # Use slice notation instead of integer indexing
+        result = cp.profiles_1d[:].ion[:1].z_ion  # Get first ion only
 
-        # Should be 3 items (one per profile)
+        # Should be 3 items (one per profile, one ion per profile)
         assert len(result) == 3
 
     def test_slice_of_slice(self):

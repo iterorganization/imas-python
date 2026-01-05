@@ -114,12 +114,18 @@ class IDSSlice:
                 f"get a flat list of elements."
             )
         
-        # Build shape from hierarchy, replacing None with actual uniform size
+        # Build shape from hierarchy
         shape = []
-        for hierarchy_level in self._element_hierarchy:
+        for i, hierarchy_level in enumerate(self._element_hierarchy):
             if isinstance(hierarchy_level, list):
-                # This is a list of sizes - get the uniform size (we checked is_ragged)
-                shape.append(hierarchy_level[0])
+                # This is a list of sizes
+                if i == 0:
+                    # First level with a list means grouped data
+                    # The number of groups is the first hierarchy level (implicit)
+                    shape.append(len(hierarchy_level))
+                else:
+                    # Subsequent levels: use first size (uniform, we checked is_ragged)
+                    shape.append(hierarchy_level[0] if hierarchy_level else 0)
             else:
                 # This is a single count
                 shape.append(hierarchy_level)
@@ -135,106 +141,62 @@ class IDSSlice:
         return iter(self._matched_elements)
 
     def __getitem__(self, item: Union[int, slice]) -> "IDSSlice":
-        """Get element(s) from the slice.
+        """Get element(s) from the slice using slice notation.
 
-        When the matched elements are IDSStructArray objects, the indexing
-        operation is applied to each array element (array-wise indexing).
-        Otherwise, the operation is applied to the matched elements list itself.
+        Only slice operations are supported. Integer indexing on IDSSlice
+        is not allowed to avoid confusion with array-wise operations.
+        Use direct indexing on the IDS structure instead.
 
         Args:
-            item: Index or slice to apply
+            item: Slice object to apply
 
         Returns:
-            - IDSSlice: If item is a slice, or if applying integer index to
-              IDSStructArray elements
-            - Single element: If item is an int and elements are not IDSStructArray
-        """
-        from imas.ids_struct_array import IDSStructArray
+            IDSSlice: A new slice with the applied slice operation
 
-        # Check if we have array-wise indexing (elements are IDSStructArray)
-        if self._matched_elements and isinstance(
-            self._matched_elements[0], IDSStructArray
-        ):
-            if isinstance(item, slice):
-                return self._handle_array_wise_slice(item)
-            else:
-                return self._handle_array_wise_integer(item)
+        Raises:
+            TypeError: If item is an integer (not supported)
+
+        Examples:
+            Slice operations (supported)::
+
+                # Get ions 0 through 2 from all profiles
+                result = cp.profiles_1d[:].ion[:3]  # OK - returns IDSSlice
+                result = cp.profiles_1d[:].ion[1:3]  # OK - returns IDSSlice
+                result = cp.profiles_1d[:].ion[::2]  # OK - returns IDSSlice
+
+            Integer indexing (NOT supported)::
+
+                # These will raise TypeError
+                result = cp.profiles_1d[:].ion[0]  # ERROR!
+
+            Recommended alternatives to integer indexing::
+
+                # Option 1: Direct indexing (best - most efficient, clearest)
+                result = cp.profiles_1d[0].ion[:]
+
+                # Option 2: Convert slice to list first
+                ions_list = list(cp.profiles_1d[:].ion)
+                result = ions_list[0]
+
+                # Option 3: Extract values
+                ions_values = cp.profiles_1d[:].ion.values()
+                result = ions_values[0]
+        """
+        if isinstance(item, slice):
+            return self._handle_list_slice(item)
         else:
-            if isinstance(item, slice):
-                return self._handle_list_slice(item)
-            else:
-                return self._matched_elements[int(item)]
-
-    def _handle_array_wise_slice(self, item: slice) -> "IDSSlice":
-        """Apply a slice operation array-wise to IDSStructArray elements.
-
-        Applies the slice to each array element and preserves the grouping
-        structure for multi-dimensional shapes.
-
-        Args:
-            item: The slice object to apply
-
-        Returns:
-            IDSSlice with updated shape and hierarchy
-        """
-        sliced_elements = []
-        sliced_sizes = []
-
-        for array in self._matched_elements:
-            sliced = array[item]
-            if isinstance(sliced, IDSSlice):
-                sliced_elements.extend(sliced._matched_elements)
-                sliced_sizes.append(len(sliced))
-            else:
-                sliced_elements.append(sliced)
-                sliced_sizes.append(1)
-
-        slice_str = self._format_slice(item)
-        # Full path: current path + slice operation
-        full_path = self._path + slice_str
-
-        # Update shape to reflect the sliced structure
-        # Keep first dimensions, store actual sizes (may be ragged)
-        new_virtual_shape = self._virtual_shape[:-1] + (None,)
-        new_hierarchy = self._element_hierarchy[:-1] + [sliced_sizes]
-
-        return IDSSlice(
-            self.metadata,
-            sliced_elements,
-            full_path,
-            parent_array=self._parent_array,
-            virtual_shape=new_virtual_shape,
-            element_hierarchy=new_hierarchy,
-        )
-
-    def _handle_array_wise_integer(self, item: int) -> "IDSSlice":
-        """Apply integer indexing array-wise to IDSStructArray elements.
-
-        Applies the integer index to each array element, reducing the last
-        dimension to size 1.
-
-        Args:
-            item: The integer index to apply
-
-        Returns:
-            IDSSlice with updated shape
-        """
-        indexed_elements = [array[int(item)] for array in self._matched_elements]
-
-        # Full path: current path + index operation
-        full_path = self._path + f"[{item}]"
-
-        # Shape changes: last dimension becomes 1
-        new_virtual_shape = self._virtual_shape[:-1] + (1,)
-
-        return IDSSlice(
-            self.metadata,
-            indexed_elements,
-            full_path,
-            parent_array=self._parent_array,
-            virtual_shape=new_virtual_shape,
-            element_hierarchy=self._element_hierarchy,
-        )
+            # Integer indexing not allowed
+            raise TypeError(
+                f"Cannot index IDSSlice with integer {item}. "
+                f"IDSSlice only supports slice notation (e.g., [0:5], [::2]).\n\n"
+                f"To access elements, use one of these alternatives:\n"
+                f"  1. Direct indexing (recommended):\n"
+                f"     ids[{item}].node  # Access element directly\n"
+                f"  2. Convert to list first:\n"
+                f"     list(ids)[{item}]  # Convert slice to list\n"
+                f"  3. Extract values:\n"
+                f"     ids.values()[{item}]  # Get values as flat list"
+            )
 
     def _handle_list_slice(self, item: slice) -> "IDSSlice":
         """Apply a slice operation to the matched elements list.
@@ -248,23 +210,66 @@ class IDSSlice:
         Returns:
             IDSSlice with updated shape and hierarchy
         """
-        sliced_elements = self._matched_elements[item]
+        from imas.ids_struct_array import IDSStructArray
+        
         slice_str = self._format_slice(item)
         # Full path: current path + slice operation
         full_path = self._path + slice_str
 
-        # Update shape to reflect the slice on first dimension
-        new_virtual_shape = (len(sliced_elements),) + self._virtual_shape[1:]
-        new_element_hierarchy = [len(sliced_elements)] + self._element_hierarchy[1:]
+        # Check if matched elements are IDSStructArray (nested arrays)
+        if self._matched_elements and isinstance(self._matched_elements[0], IDSStructArray):
+            # When slicing nested arrays, apply slice to each array and then flatten
+            flattened_elements = []
+            new_hierarchy_values = []
+            for array in self._matched_elements:
+                sliced_array = array[item]
+                new_hierarchy_values.append(len(sliced_array))
+                # Flatten: add each element from the sliced array to flattened list
+                for element in sliced_array:
+                    flattened_elements.append(element)
+            
+            # Build new hierarchy
+            # The key is: if we have a multi-level grouped hierarchy (like [3, [2, 2, 2], ...]),
+            # we're dealing with a nested structure that's already been flattened.
+            # We should only update the innermost level, NOT create a new top-level grouping.
+            
+            num_groups = len(self._matched_elements)
+            
+            if (len(self._element_hierarchy) >= 2 and 
+                isinstance(self._element_hierarchy[0], int) and
+                isinstance(self._element_hierarchy[1], list)):
+                # Multi-level hierarchy like [3, [2, 2, 2], ...]
+                # The top level is the original grouping, so DON'T recreate it
+                # Just replace the last (innermost) level
+                new_hierarchy = self._element_hierarchy[:-1] + [new_hierarchy_values]
+            else:
+                # Single level or not grouped yet - create new grouping
+                new_hierarchy = [num_groups, new_hierarchy_values]
+            
+            return IDSSlice(
+                self.metadata,
+                flattened_elements,
+                full_path,
+                parent_array=self._parent_array,
+                virtual_shape=(len(flattened_elements),),
+                element_hierarchy=new_hierarchy,
+            )
+        else:
+            # Normal slice on outer list
+            sliced_elements = self._matched_elements[item]
+            
+            # Update shape to reflect the slice on first dimension
+            new_virtual_shape = (len(sliced_elements),) + self._virtual_shape[1:]
+            new_element_hierarchy = [len(sliced_elements)] + self._element_hierarchy[1:]
 
-        return IDSSlice(
-            self.metadata,
-            sliced_elements,
-            full_path,
-            parent_array=self._parent_array,
-            virtual_shape=new_virtual_shape,
-            element_hierarchy=new_element_hierarchy,
-        )
+            return IDSSlice(
+                self.metadata,
+                sliced_elements,
+                full_path,
+                parent_array=self._parent_array,
+                virtual_shape=new_virtual_shape,
+                element_hierarchy=new_element_hierarchy,
+            )
 
     def __getattr__(self, name: str) -> "IDSSlice":
         """Access a child node on all matched elements.
@@ -310,7 +315,13 @@ class IDSSlice:
             )
 
         # Get attributes from all non-empty matched elements
-        child_elements = [getattr(element, name) for element in self]
+        # Special case: if matched_elements are IDSStructArray, keep them grouped
+        if self._matched_elements and isinstance(self._matched_elements[0], IDSStructArray):
+            # For nested arrays, return the arrays themselves, not attributes from them
+            # This allows chaining like .ion[:].element[:] to work
+            child_elements = self._matched_elements
+        else:
+            child_elements = [getattr(element, name) for element in self]
 
         # Check if children are IDSStructArray (nested arrays) or IDSNumericArray
         if not child_elements:
@@ -322,6 +333,28 @@ class IDSSlice:
                 parent_array=self._parent_array,
                 virtual_shape=self._virtual_shape,
                 element_hierarchy=self._element_hierarchy,
+            )
+
+        # If matched_elements are IDSStructArray and we're accessing an attribute on them,
+        # we need to get that attribute from each array's elements
+        if isinstance(self._matched_elements[0], IDSStructArray):
+            # Accessing attribute on nested arrays: need to get attr from each array's elements
+            flattened_elements = []
+            for array in child_elements:
+                # array is IDSStructArray, get the attribute from its elements
+                for element in array:
+                    flattened_elements.append(getattr(element, name))
+            
+            # Keep track of grouping for shape preservation
+            child_sizes = [len(array) for array in child_elements]
+            
+            return IDSSlice(
+                child_metadata,
+                flattened_elements,
+                full_path,
+                parent_array=self._parent_array,
+                virtual_shape=self._virtual_shape + (None,),
+                element_hierarchy=self._element_hierarchy + [child_sizes],
             )
 
         if isinstance(child_elements[0], IDSStructArray):
