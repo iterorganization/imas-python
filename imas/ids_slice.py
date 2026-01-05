@@ -31,7 +31,7 @@ class IDSSlice:
     - Iteration over matched elements
 
     Attributes:
-        metadata: Metadata from the parent array, or None if not available
+        metadata: Metadata from the parent array (always present)
     """
 
     __slots__ = [
@@ -45,7 +45,7 @@ class IDSSlice:
 
     def __init__(
         self,
-        metadata: Optional[IDSMetadata],
+        metadata: IDSMetadata,
         matched_elements: List[Any],
         slice_path: str,
         parent_array: Optional["IDSStructArray"] = None,
@@ -55,7 +55,7 @@ class IDSSlice:
         """Initialize IDSSlice.
 
         Args:
-            metadata: Metadata from the parent array
+            metadata: Metadata from the parent array (required)
             matched_elements: List of elements that matched the slice
             slice_path: String representation of the slice operation (e.g., "[8:]")
             parent_array: Optional reference to the parent IDSStructArray for context
@@ -275,23 +275,13 @@ class IDSSlice:
         from imas.ids_struct_array import IDSStructArray
         from imas.ids_primitive import IDSNumericArray
 
-        # Validate attribute name via metadata first
-        child_metadata = None
-        if self.metadata is not None:
-            try:
-                child_metadata = self.metadata[name]
-            except (KeyError, TypeError):
-                raise AttributeError(
-                    f"'{self.metadata.name}' has no child node '{name}'"
-                ) from None
-        else:
-            # No metadata available for validation
-            # Try to get the attribute anyway, will fail if invalid
-            if not self._matched_elements:
-                raise AttributeError(
-                    f"Cannot validate attribute '{name}' on empty slice "
-                    f"without metadata"
-                ) from None
+        # Validate attribute name via metadata
+        try:
+            child_metadata = self.metadata[name]
+        except (KeyError, TypeError):
+            raise AttributeError(
+                f"'{self.metadata.name}' has no child node '{name}'"
+            ) from None
 
         # Handle empty slice - valid if metadata says it's a valid node
         if not self._matched_elements:
