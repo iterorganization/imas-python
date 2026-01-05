@@ -113,7 +113,18 @@ class IDSSlice:
                 f"Use .is_ragged to check if data is ragged, or .to_array() to "
                 f"convert to numpy object array."
             )
-        return self._virtual_shape
+        
+        # Build shape from hierarchy, replacing None with actual uniform size
+        shape = []
+        for hierarchy_level in self._element_hierarchy:
+            if isinstance(hierarchy_level, list):
+                # This is a list of sizes - get the uniform size (we checked is_ragged)
+                shape.append(hierarchy_level[0])
+            else:
+                # This is a single count
+                shape.append(hierarchy_level)
+        
+        return tuple(shape)
 
     def __len__(self) -> int:
         """Return the number of elements matched by this slice."""
@@ -182,10 +193,8 @@ class IDSSlice:
         new_path = self._slice_path + slice_str
 
         # Update shape to reflect the sliced structure
-        # Keep first dimensions, update last dimension
-        new_virtual_shape = self._virtual_shape[:-1] + (
-            sliced_sizes[0] if sliced_sizes else 0,
-        )
+        # Keep first dimensions, store actual sizes (may be ragged)
+        new_virtual_shape = self._virtual_shape[:-1] + (None,)
         new_hierarchy = self._element_hierarchy[:-1] + [sliced_sizes]
 
         return IDSSlice(
@@ -316,9 +325,8 @@ class IDSSlice:
             child_sizes = [len(arr) for arr in child_elements]
 
             # New virtual shape: current shape + new dimension
-            new_virtual_shape = self._virtual_shape + (
-                child_sizes[0] if child_sizes else 0,
-            )
+            # Store actual sizes (may be ragged) - don't assume all are the same!
+            new_virtual_shape = self._virtual_shape + (None,)
             new_hierarchy = self._element_hierarchy + [child_sizes]
 
             return IDSSlice(
@@ -335,9 +343,8 @@ class IDSSlice:
             child_sizes = [len(arr) for arr in child_elements]
 
             # New virtual shape: current shape + new dimension
-            new_virtual_shape = self._virtual_shape + (
-                child_sizes[0] if child_sizes else 0,
-            )
+            # Store actual sizes (may be ragged) - don't assume all are the same!
+            new_virtual_shape = self._virtual_shape + (None,)
             new_hierarchy = self._element_hierarchy + [child_sizes]
 
             return IDSSlice(
@@ -410,27 +417,6 @@ class IDSSlice:
             - Multi-D with reshape=False: List of elements (each being an array)
             - Multi-D with reshape=True: numpy.ndarray with shape self.shape,
               or nested lists/object array representing structure
-
-        Examples:
-            >>> # Get names from identifiers without looping
-            >>> n = edge_profiles.grid_ggd[0].grid_subset[:].identifier.name.values()
-            >>> # Result: ["nodes", "edges", "cells"]
-            >>>
-            >>> # Get 2D array but as list of arrays (default)
-            >>> rho = core_profiles.profiles_1d[:].grid.rho_tor.values()
-            >>> # Result: [ndarray(100,), ndarray(100,), ...] - list of 106 arrays
-            >>>
-            >>> # Get 2D array reshaped to (106, 100)
-            >>> rho = core_profiles.profiles_1d[:].grid.rho_tor.values(reshape=True)
-            >>> # Result: ndarray shape (106, 100)
-            >>>
-            >>> # 3D ions case - returns object array with structure
-            >>> ion_rho = (
-            ...     core_profiles.profiles_1d[:].ion[:].element[:].density.values(
-            ...         reshape=True
-            ...     )
-            ... )
-            >>> # Result: object array shape (106, 3, 2) with IDSNumericArray elements
         """
         from imas.ids_primitive import IDSPrimitive, IDSNumericArray
 
@@ -445,6 +431,19 @@ class IDSSlice:
             return result
 
         # Multi-dimensional case with reshape requested
+        # Get the actual shape (handles None values in _virtual_shape)
+        try:
+            actual_shape = self.shape  # Will raise if ragged
+        except ValueError:
+            # If ragged, just return flat list
+            result = []
+            for element in self._matched_elements:
+                if isinstance(element, IDSPrimitive):
+                    result.append(element.value)
+                else:
+                    result.append(element)
+            return result
+
         flat_values = []
         for element in self._matched_elements:
             if isinstance(element, IDSPrimitive):
@@ -457,26 +456,26 @@ class IDSSlice:
                 flat_values.append(element)
 
         # For 1D, just return as is
-        if len(self._virtual_shape) == 1:
+        if len(actual_shape) == 1:
             return flat_values
 
         # Try to reshape to multi-dimensional shape
         try:
             # Calculate total size
             total_size = 1
-            for dim in self._virtual_shape:
+            for dim in actual_shape:
                 total_size *= dim
 
             # Check if sizes match
             if len(flat_values) == total_size:
                 # Successfully reshape to multi-dimensional
-                return np.array(flat_values, dtype=object).reshape(self._virtual_shape)
+                return np.array(flat_values, dtype=object).reshape(actual_shape)
         except (ValueError, TypeError):
             pass
 
         # If reshape fails or not all elements are extractable, return as object array
         try:
-            return np.array(flat_values, dtype=object).reshape(self._virtual_shape[0:1])
+            return np.array(flat_values, dtype=object).reshape(actual_shape[0:1])
         except (ValueError, TypeError):
             return flat_values
 
@@ -485,35 +484,31 @@ class IDSSlice:
 
         For 1D slices: returns a simple 1D array.
         For multi-dimensional slices: returns an array with shape self.shape.
+        For ragged data: returns an object array containing the elements as-is.
 
         This is useful for integration with numpy operations, scipy functions,
         and xarray data structures. The returned array preserves the hierarchical
         structure of the IMAS data.
 
         Returns:
-            numpy.ndarray with shape self.shape.
+            numpy.ndarray with shape self.shape, or object array if ragged.
 
         Raises:
             ValueError: If array cannot be converted to numpy
-
-        Examples:
-            >>> # Convert 2D slice to numpy array
-            >>> rho_array = core_profiles.profiles_1d[:].grid.rho_tor.to_array()
-            >>> # Result: ndarray shape (106, 100), dtype float64
-            >>> print(rho_array.shape)
-            (106, 100)
-            >>>
-            >>> ion_density = core_profiles.profiles_1d[:].ion[:].density.to_array()
-            >>> # Result: object array shape (106, 3) with varying sizes
-            >>>
-            >>> # Can be used directly with numpy functions
-            >>> mean_rho = np.mean(rho_array, axis=1)
-            >>> # Result: (106,) array of mean values
         """
         from imas.ids_primitive import IDSPrimitive, IDSNumericArray
 
+        # Try to get the actual shape (will check if ragged)
+        try:
+            actual_shape = self.shape  # Will raise if ragged
+            is_ragged_data = False
+        except ValueError:
+            # Data is ragged - handle it gracefully
+            is_ragged_data = True
+            actual_shape = None
+
         # 1D case - simple conversion
-        if len(self._virtual_shape) == 1:
+        if not is_ragged_data and len(actual_shape) == 1:
             flat_values = []
             for element in self._matched_elements:
                 if isinstance(element, IDSPrimitive):
@@ -538,6 +533,10 @@ class IDSSlice:
                 else:
                     array_values.append(element)
 
+            # For ragged data, return object array with arrays as elements
+            if is_ragged_data:
+                return np.array(array_values, dtype=object)
+
             # Try to stack into proper shape
             try:
                 # Check if all arrays have the same size (regular)
@@ -553,26 +552,26 @@ class IDSSlice:
                     # Regular array - all sub-arrays same size
                     stacked = np.array(array_values)
                     # Should now have shape (first_dim, second_dim)
-                    if stacked.shape == self._virtual_shape:
+                    if stacked.shape == actual_shape:
                         return stacked
                     else:
                         # Try explicit reshape
                         try:
-                            return stacked.reshape(self._virtual_shape)
+                            return stacked.reshape(actual_shape)
                         except ValueError:
                             # If reshape fails, return as object array
-                            result_arr = np.empty(self._virtual_shape, dtype=object)
+                            result_arr = np.empty(actual_shape, dtype=object)
                             for i, val in enumerate(array_values):
                                 result_arr.flat[i] = val
                             return result_arr
                 else:
-                    result_arr = np.empty(self._virtual_shape[0], dtype=object)
+                    result_arr = np.empty(actual_shape[0], dtype=object)
                     for i, val in enumerate(array_values):
                         result_arr[i] = val
                     return result_arr
             except (ValueError, TypeError):
                 # Fallback: return object array
-                result_arr = np.empty(self._virtual_shape[0], dtype=object)
+                result_arr = np.empty(actual_shape[0], dtype=object)
                 for i, val in enumerate(array_values):
                     result_arr[i] = val
                 return result_arr
@@ -604,8 +603,24 @@ class IDSSlice:
                 else:
                     flat_values.append(element)
 
+        # For ragged data, construct object array from hierarchy
+        if is_ragged_data:
+            # Build object array respecting the ragged structure
+            if len(self._element_hierarchy) == 1:
+                # Simple 1D array
+                return np.array(flat_values, dtype=object)
+            else:
+                # Multi-level hierarchy - reconstruct structure
+                result_arr = np.empty(self._element_hierarchy[0], dtype=object)
+                idx = 0
+                for i in range(self._element_hierarchy[0]):
+                    group_size = self._element_hierarchy[1][i]
+                    result_arr[i] = flat_values[idx:idx+group_size]
+                    idx += group_size
+                return result_arr
+
         total_size = 1
-        for dim in self._virtual_shape:
+        for dim in actual_shape:
             total_size *= dim
 
         # Check if we have the right number of elements
@@ -620,10 +635,10 @@ class IDSSlice:
             arr = np.array(flat_values)
             try:
                 # Try to reshape to target shape
-                return arr.reshape(self._virtual_shape)
+                return arr.reshape(actual_shape)
             except (ValueError, TypeError):
                 # If reshape fails, use object array
-                arr_obj = np.empty(self._virtual_shape, dtype=object)
+                arr_obj = np.empty(actual_shape, dtype=object)
                 for i, val in enumerate(flat_values):
                     arr_obj.flat[i] = val
                 return arr_obj
