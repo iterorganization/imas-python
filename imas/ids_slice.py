@@ -386,92 +386,53 @@ class IDSSlice:
         item_word = "item" if len(self) == 1 else "items"
         return f"<{type(self).__name__} (IDS:{ids_name}, {self._path} with {len(self)} {item_word})>"
 
-    def values(self, reshape: bool = False) -> Any:
+    def values(self) -> List[Any]:
         """Extract raw values from elements in this slice.
 
         For IDSPrimitive elements, this extracts the wrapped value.
         For other element types, returns them as-is.
 
-        For multi-dimensional slices (when shape has multiple dimensions),
-        this extracts values respecting the multi-dimensional structure.
+        Returns a flat list of extracted values. This is useful for getting 
+        the actual data without the IDS wrapper when accessing scalar fields 
+        through a slice, without requiring explicit looping through the 
+        original collection.
 
-        This is useful for getting the actual data without the IDS wrapper
-        when accessing scalar fields through a slice, without requiring
-        explicit looping through the original collection.
-
-        Args:
-            reshape: If True, reshape result to match self.shape for
-                    multi-dimensional slices. If False (default), return flat list
-                    or list of extracted values.
+        For multi-dimensional access to values:
+        - Use direct indexing: ``ids_obj[i1].collection[i2].value`` for best 
+          performance and clarity
+        - Use ``.to_array()`` if you need numpy array integration
 
         Returns:
-            list or numpy.ndarray: Extracted values as follows:
+            List of raw Python/numpy values or unwrapped elements
 
-            - 1D slices: List of raw Python/numpy values or unwrapped elements
-            - Multi-D with reshape=False: List of elements (each being an array)
-            - Multi-D with reshape=True: numpy.ndarray with shape self.shape,
-              or nested lists/object array representing structure
+        Examples:
+            Extract scalar values from a 1D slice::
+
+                # Get list of temperatures from all profiles
+                temps = core_profiles.profiles_1d[:].te.values()
+
+            For multi-dimensional access, use direct indexing instead::
+
+                # Get a specific temperature (more efficient than slicing)
+                temp = core_profiles.profiles_1d[0].te.values()[5]
+
+                # Or better yet, direct access
+                temp_value = core_profiles.profiles_1d[0].te[5]
+
+            For converting to numpy arrays::
+
+                # Use to_array() for tensorization
+                array = core_profiles.profiles_1d[:].te.to_array()
         """
-        from imas.ids_primitive import IDSPrimitive, IDSNumericArray
+        from imas.ids_primitive import IDSPrimitive
 
-        # Default behavior: return flat list without reshape
-        if not reshape:
-            result = []
-            for element in self._matched_elements:
-                if isinstance(element, IDSPrimitive):
-                    result.append(element.value)
-                else:
-                    result.append(element)
-            return result
-
-        # Multi-dimensional case with reshape requested
-        # Get the actual shape (handles None values in _virtual_shape)
-        try:
-            actual_shape = self.shape  # Will raise if ragged
-        except ValueError:
-            # If ragged, just return flat list
-            result = []
-            for element in self._matched_elements:
-                if isinstance(element, IDSPrimitive):
-                    result.append(element.value)
-                else:
-                    result.append(element)
-            return result
-
-        flat_values = []
+        result = []
         for element in self._matched_elements:
             if isinstance(element, IDSPrimitive):
-                flat_values.append(element.value)
-            elif isinstance(element, IDSNumericArray):
-                flat_values.append(
-                    element.data if hasattr(element, "data") else element.value
-                )
+                result.append(element.value)
             else:
-                flat_values.append(element)
-
-        # For 1D, just return as is
-        if len(actual_shape) == 1:
-            return flat_values
-
-        # Try to reshape to multi-dimensional shape
-        try:
-            # Calculate total size
-            total_size = 1
-            for dim in actual_shape:
-                total_size *= dim
-
-            # Check if sizes match
-            if len(flat_values) == total_size:
-                # Successfully reshape to multi-dimensional
-                return np.array(flat_values, dtype=object).reshape(actual_shape)
-        except (ValueError, TypeError):
-            pass
-
-        # If reshape fails or not all elements are extractable, return as object array
-        try:
-            return np.array(flat_values, dtype=object).reshape(actual_shape[0:1])
-        except (ValueError, TypeError):
-            return flat_values
+                result.append(element)
+        return result
 
     def to_array(self) -> np.ndarray:
         """Convert this slice to a numpy array respecting multi-dimensional structure.
