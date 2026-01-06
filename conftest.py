@@ -70,13 +70,6 @@ _BACKENDS = {
     "hdf5": HDF5_BACKEND,
     "mdsplus": MDSPLUS_BACKEND,
 }
-try:
-    from imas.db_entry import DBEntry
-    from imas_core.exception import ImasCoreBackendException
-    DBEntry("imas:mdsplus?path=dummy","r")
-except ImasCoreBackendException as iex:
-    if "not available" in str(iex.message):
-        _BACKENDS.pop("mdsplus")
 
 
 try:
@@ -100,17 +93,6 @@ def backend(pytestconfig: pytest.Config, request: pytest.FixtureRequest):
     if backends_provided and not pytestconfig.getoption(request.param):
         pytest.skip(f"Tests for {request.param} backend are skipped.")
     return _BACKENDS[request.param]
-
-
-@pytest.fixture()
-def has_imas():
-    return _has_imas
-
-
-@pytest.fixture()
-def requires_imas():
-    if not _has_imas:
-        pytest.skip("No IMAS available")
 
 
 def pytest_generate_tests(metafunc):
@@ -214,7 +196,7 @@ def _lowlevel_wrapper(original_method):
 
 
 @pytest.fixture
-def log_lowlevel_calls(monkeypatch, requires_imas):
+def log_lowlevel_calls(monkeypatch):
     """Debugging fixture to log calls to the imas lowlevel module."""
     for al_function in dir(lowlevel):
         if al_function.startswith("ual_") or al_function.startswith("al"):
