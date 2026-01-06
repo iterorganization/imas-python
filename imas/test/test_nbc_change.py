@@ -49,7 +49,7 @@ def test_nbc_structure_to_aos(caplog):
     assert caplog.record_tuples[0][:2] == ("imas.ids_convert", logging.WARNING)
 
 
-def test_nbc_0d_to_1d(caplog, requires_imas):
+def test_nbc_0d_to_1d(caplog):
     # channel/filter_spectrometer/radiance_calibration in spectrometer visible changed
     # from FLT_0D to FLT_1D in DD 3.39.0
     ids = IDSFactory("3.32.0").spectrometer_visible()
