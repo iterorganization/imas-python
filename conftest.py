@@ -9,7 +9,6 @@
 import functools
 import logging
 import os
-import sys
 from copy import deepcopy
 from pathlib import Path
 
@@ -22,7 +21,6 @@ import numpy as np
 import pytest
 from packaging.version import Version
 
-from imas.backends.imas_core.imas_interface import has_imas as _has_imas
 from imas.backends.imas_core.imas_interface import ll_interface, lowlevel
 from imas.dd_zip import dd_etree, dd_xml_versions, latest_dd_version
 from imas.ids_defs import (
@@ -39,17 +37,7 @@ logger.setLevel(logging.INFO)
 
 os.environ["IMAS_AL_DISABLE_VALIDATE"] = "1"
 
-
-try:
-    import imas  # noqa
-except ImportError:
-
-    class SkipOnIMASAccess:
-        def __getattr__(self, attr):
-            pytest.skip("This test requires the `imas` HLI, which is not available.")
-
-    # Any test that tries to access an attribute from the `imas` package will be skipped
-    sys.modules["imas"] = SkipOnIMASAccess()
+import imas  # noqa
 
 
 def pytest_addoption(parser):
@@ -84,12 +72,6 @@ except ImportError:
 @pytest.fixture(params=_BACKENDS)
 def backend(pytestconfig: pytest.Config, request: pytest.FixtureRequest):
     backends_provided = any(map(pytestconfig.getoption, _BACKENDS))
-    if not _has_imas:
-        if backends_provided:
-            raise RuntimeError(
-                "Explicit backends are provided, but IMAS is not available."
-            )
-        pytest.skip("No IMAS available, skip tests using a backend")
     if backends_provided and not pytestconfig.getoption(request.param):
         pytest.skip(f"Tests for {request.param} backend are skipped.")
     return _BACKENDS[request.param]
