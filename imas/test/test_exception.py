@@ -4,7 +4,7 @@ import imas
 from imas.backends.imas_core.imas_interface import ll_interface
 
 
-def test_catch_al_exception(requires_imas):
+def test_catch_al_exception():
     # Do something which lets the lowlevel Cython interface throw an ALException
     # Ensure we can catch it:
     with pytest.raises(imas.exception.ALException):

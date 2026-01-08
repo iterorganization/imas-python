@@ -13,7 +13,7 @@ for course in ["basic", "advanced"]:
 @pytest.mark.skip(reason="skipping hli test")
 @pytest.mark.filterwarnings("ignore:The input coordinates to pcolormesh:UserWarning")
 @pytest.mark.parametrize("snippet", course_snippets)
-def test_script_execution(snippet, monkeypatch, tmp_path, requires_imas):
+def test_script_execution(snippet, monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     # Prevent showing plots in a GUI
     monkeypatch.delenv("DISPLAY", raising=False)

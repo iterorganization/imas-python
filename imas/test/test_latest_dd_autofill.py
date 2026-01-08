@@ -55,7 +55,7 @@ def test_latest_dd_autofill(ids_name, backend, worker_id, tmp_path):
 @pytest.mark.parametrize(
     "serializer", [ASCII_SERIALIZER_PROTOCOL, FLEXBUFFERS_SERIALIZER_PROTOCOL]
 )
-def test_latest_dd_autofill_serialize(serializer, ids_name, has_imas):
+def test_latest_dd_autofill_serialize(serializer, ids_name):
     """Serialize and then deserialize again all IDSToplevels"""
     if serializer is None:
         pytest.skip("Unsupported serializer")
@@ -64,8 +64,6 @@ def test_latest_dd_autofill_serialize(serializer, ids_name, has_imas):
     ids = factory.new(ids_name)
     fill_with_random_data(ids)
 
-    if not has_imas:
-        return  # rest of the test requires an IMAS install
     data = ids.serialize(serializer)
 
     ids2 = factory.new(ids_name)

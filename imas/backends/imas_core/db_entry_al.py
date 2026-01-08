@@ -38,7 +38,7 @@ from imas.ids_toplevel import IDSToplevel
 
 from .al_context import ALContext, LazyALContext
 from .db_entry_helpers import delete_children, get_children, put_children
-from .imas_interface import LLInterfaceError, has_imas, ll_interface
+from .imas_interface import LLInterfaceError, ll_interface
 from .mdsplus_model import mdsplus_model_dir
 from .uda_support import extract_idsdef, get_dd_version_from_idsdef_xml
 
@@ -50,14 +50,6 @@ _OPEN_MODES = {
 }
 
 logger = logging.getLogger(__name__)
-
-
-def require_imas_available():
-    if not has_imas:
-        raise RuntimeError(
-            "The IMAS Core library is not available. Please install 'imas_core', "
-            "or load a supported IMAS module if you use an HPC environment."
-        )
 
 
 class ALDBEntryImpl(DBEntryImpl):
@@ -86,7 +78,6 @@ class ALDBEntryImpl(DBEntryImpl):
 
     @classmethod
     def from_uri(cls, uri: str, mode: str, factory: IDSFactory) -> "ALDBEntryImpl":
-        require_imas_available()
         if mode not in _OPEN_MODES:
             modes = list(_OPEN_MODES)
             raise ValueError(f"Unknown mode {mode!r}, was expecting any of {modes}")
@@ -105,8 +96,6 @@ class ALDBEntryImpl(DBEntryImpl):
         options: Any,
         factory: IDSFactory,
     ) -> "ALDBEntryImpl":
-        # Raise an error if imas is not available
-        require_imas_available()
 
         # Set defaults
         user_name = user_name or getpass.getuser()
