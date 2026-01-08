@@ -94,7 +94,7 @@ def run_lazy_loading_distributions_random(dbentry):
     dbentry.close()
 
 
-def test_lazy_load_close_dbentry(requires_imas):
+def test_lazy_load_close_dbentry():
     dbentry = DBEntry(MEMORY_BACKEND, "ITER", 1, 1)
     dbentry.create()
 
@@ -109,7 +109,7 @@ def test_lazy_load_close_dbentry(requires_imas):
         print(lazy_ids.time)
 
 
-def test_lazy_load_readonly(requires_imas):
+def test_lazy_load_readonly():
     dbentry = DBEntry(MEMORY_BACKEND, "ITER", 1, 1)
     dbentry.create()
     run_lazy_load_readonly(dbentry)
@@ -151,7 +151,7 @@ def run_lazy_load_readonly(dbentry):
     dbentry.close()
 
 
-def test_lazy_load_no_put(requires_imas):
+def test_lazy_load_no_put():
     dbentry = DBEntry(MEMORY_BACKEND, "ITER", 1, 1)
     dbentry.create()
 
@@ -169,7 +169,7 @@ def test_lazy_load_no_put(requires_imas):
     dbentry.close()
 
 
-def test_lazy_load_with_new_aos(requires_imas):
+def test_lazy_load_with_new_aos():
     dbentry = DBEntry(MEMORY_BACKEND, "ITER", 1, 1, dd_version="3.30.0")
     dbentry.create()
     et = dbentry.factory.edge_transport()
@@ -214,7 +214,7 @@ def test_lazy_load_with_new_aos_netcdf(tmp_path):
         assert len(lazy_et.model[0].ggd[0].electrons.particles.d_radial) == 0
 
 
-def test_lazy_load_with_new_structure(requires_imas):
+def test_lazy_load_with_new_structure():
     dbentry = DBEntry(MEMORY_BACKEND, "ITER", 1, 1, dd_version="3.30.0")
     dbentry.create()
 

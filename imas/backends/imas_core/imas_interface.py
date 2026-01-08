@@ -12,30 +12,17 @@ import logging
 
 from packaging.version import Version
 
+# Import the Access Layer module
+# First try to import imas_core, which is available since AL 5.2
+from imas_core import _al_lowlevel as lowlevel
+from imas_core import imasdef  # noqa: F401
+
 logger = logging.getLogger(__name__)
 
-
-# Import the Access Layer module
-has_imas = True
-try:
-    # First try to import imas_core, which is available since AL 5.2
-    from imas_core import _al_lowlevel as lowlevel
-    from imas_core import imasdef
-
-    # Enable throwing exceptions from the _al_lowlevel interface
-    enable_exceptions = getattr(lowlevel, "imas_core_config_enable_exceptions", None)
-    if enable_exceptions:
-        enable_exceptions()
-
-except ImportError as exc:
-    imas = None
-    has_imas = False
-    imasdef = None
-    lowlevel = None
-    logger.warning(
-        "Could not import 'imas_core': %s. Some functionality is not available.",
-        exc,
-    )
+# Enable throwing exceptions from the _al_lowlevel interface
+enable_exceptions = getattr(lowlevel, "imas_core_config_enable_exceptions", None)
+if enable_exceptions:
+    enable_exceptions()
 
 
 class LLInterfaceError(RuntimeError):

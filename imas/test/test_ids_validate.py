@@ -245,7 +245,7 @@ def test_validate_coordinate_same_as():
         (None, True),
     ],
 )
-def test_validate_on_put(monkeypatch, env_value, should_validate, requires_imas):
+def test_validate_on_put(monkeypatch, env_value, should_validate):
     dbentry = DBEntry(MEMORY_BACKEND, "test", 1, 1)
     dbentry.create()
     ids = dbentry.factory.core_profiles()

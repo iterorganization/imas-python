@@ -20,10 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 # Expose ALException, which may be thrown by the lowlevel
-if _imas_interface.has_imas:
-    ALException = _imas_interface.lowlevel.ALException
-else:
-    ALException = None
+
+ALException = _imas_interface.lowlevel.ALException
 
 
 class IDSNameError(ValueError):
