@@ -561,7 +561,7 @@ class DBEntry:
             raise RuntimeError("Database entry is not open.")
         if lazy and destination:
             raise ValueError("Cannot supply a destination IDS when lazy loading.")
-        if not self._ids_factory.exists(ids_name):
+        if not self._ids_factory.exists(ids_name) and autoconvert:
             raise IDSNameError(ids_name, self._ids_factory)
 
         # Note: this will raise an exception when the ids/occurrence is not filled:

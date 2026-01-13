@@ -1,6 +1,6 @@
 # This file is part of IMAS-Python.
 # You should have received the IMAS-Python LICENSE file with this project.
-""" Main CLI entry point """
+"""Main CLI entry point"""
 
 import logging
 import sys
@@ -22,7 +22,13 @@ from rich.table import Table
 
 import imas
 import imas.backends.imas_core.imas_interface
-from imas import DBEntry, dd_zip
+from imas import (
+    DBEntry,
+    dd_zip,
+    convert_to_plasma_profiles,
+    convert_to_plasma_sources,
+    convert_to_plasma_transport,
+)
 from imas.backends.imas_core.imas_interface import ll_interface
 from imas.command.db_analysis import analyze_db, process_db_analysis
 from imas.command.helpers import min_version_guard, setup_rich_log_handler
@@ -109,6 +115,23 @@ def print_ids(uri, ids, occurrence, print_all):
         imas.util.print_tree(ids_obj, not print_all)
 
 
+def _check_convert_to_plasma_ids(idss_with_occurrences):
+    """Check if no plasma_ IDS is present when converting a core_ or edge_ IDS."""
+    idsnames = {ids_name for ids_name, _ in idss_with_occurrences}
+    for suffix in ("_profiles", "_sources", "_transport"):
+        if f"plasma{suffix}" in idsnames:
+            if f"core{suffix}" in idsnames:
+                overlap = "core"
+            elif f"edge{suffix}" in idsnames:
+                overlap = "edge"
+            else:
+                continue
+            raise RuntimeError(
+                f"Cannot convert {overlap}{suffix} IDS to plasma{suffix}: "
+                f"there already exists a plasma{suffix} IDS in the data source."
+            )
+
+
 @cli.command("convert", no_args_is_help=True)
 @click.argument("uri_in")
 @click.argument("dd_version")
@@ -127,8 +150,21 @@ If not provided, all IDSs in the data entry are converted.",
     is_flag=True,
     help="Don't add provenance metadata to the converted IDS.",
 )
+@click.option(
+    "--convert-to-plasma-ids",
+    is_flag=True,
+    help="Convert core/edge profiles/transport/sources to the corresponding plasma IDS",
+)
 def convert_ids(
-    uri_in, dd_version, uri_out, ids, occurrence, quiet, timeit, no_provenance
+    uri_in,
+    dd_version,
+    uri_out,
+    ids,
+    occurrence,
+    quiet,
+    timeit,
+    no_provenance,
+    convert_to_plasma_ids,
 ):
     """Convert a Data Entry (or a single IDS) to the target DD version.
 
@@ -174,6 +210,10 @@ def convert_ids(
             else:
                 idss_with_occurrences.append((ids_name, occurrence))
 
+        if convert_to_plasma_ids:  # Sanity checks for conversion to plasma IDSs
+            _check_convert_to_plasma_ids(idss_with_occurrences)
+            next_plasma_occurrence = {"_profiles": 0, "_transport": 0, "_sources": 0}
+
         # Create progress bar and task
         columns = (
             TimeElapsedColumn(),
@@ -208,6 +248,29 @@ def convert_ids(
                         factory=entry_out.factory,
                         provenance_origin_uri=provenance_origin_uri,
                     )
+
+            # Convert to plasma_profiles/plasma_sources/plasma_transport IDS
+            if convert_to_plasma_ids and ids_name.startswith(("core", "edge")):
+                suffix = ids_name[4:]
+                logger.info(
+                    "Storing IDS %s/%d as plasma%s/%d",
+                    ids_name,
+                    occurrence,
+                    suffix,
+                    next_plasma_occurrence[suffix],
+                )
+                occurrence = next_plasma_occurrence[suffix]
+                next_plasma_occurrence[suffix] += 1
+
+                name2 = f"[bold green]plasma{suffix}[/][green]/{occurrence}[/]"
+                progress.update(task, description=f"Converting {name} to {name2}")
+                if suffix == "_profiles":
+                    ids2 = convert_to_plasma_profiles(ids2)
+                elif suffix == "_sources":
+                    ids2 = convert_to_plasma_sources(ids2)
+                elif suffix == "_transport":
+                    ids2 = convert_to_plasma_transport(ids2)
+                name = name2
 
             # Store in output entry:
             progress.update(task, description=f"Storing {name}", advance=1)
