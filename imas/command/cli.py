@@ -156,15 +156,15 @@ If not provided, all IDSs in the data entry are converted.",
     help="Convert core/edge profiles/transport/sources to the corresponding plasma IDS",
 )
 def convert_ids(
-    uri_in,
-    dd_version,
-    uri_out,
-    ids,
-    occurrence,
-    quiet,
-    timeit,
-    no_provenance,
-    convert_to_plasma_ids,
+    uri_in: str,
+    dd_version: str,
+    uri_out: str,
+    ids: str,
+    occurrence: int,
+    quiet: bool,
+    timeit: bool,
+    no_provenance: bool,
+    convert_to_plasma_ids: bool,
 ):
     """Convert a Data Entry (or a single IDS) to the target DD version.
 
@@ -252,25 +252,27 @@ def convert_ids(
             # Convert to plasma_profiles/plasma_sources/plasma_transport IDS
             if convert_to_plasma_ids and ids_name.startswith(("core", "edge")):
                 suffix = ids_name[4:]
-                logger.info(
-                    "Storing IDS %s/%d as plasma%s/%d",
-                    ids_name,
-                    occurrence,
-                    suffix,
-                    next_plasma_occurrence[suffix],
-                )
-                occurrence = next_plasma_occurrence[suffix]
-                next_plasma_occurrence[suffix] += 1
+                # This branch also matches core_instant_changes: check that suffix is ok
+                if suffix in next_plasma_occurrence:
+                    logger.info(
+                        "Storing IDS %s/%d as plasma%s/%d",
+                        ids_name,
+                        occurrence,
+                        suffix,
+                        next_plasma_occurrence[suffix],
+                    )
+                    occurrence = next_plasma_occurrence[suffix]
+                    next_plasma_occurrence[suffix] += 1
 
-                name2 = f"[bold green]plasma{suffix}[/][green]/{occurrence}[/]"
-                progress.update(task, description=f"Converting {name} to {name2}")
-                if suffix == "_profiles":
-                    ids2 = convert_to_plasma_profiles(ids2)
-                elif suffix == "_sources":
-                    ids2 = convert_to_plasma_sources(ids2)
-                elif suffix == "_transport":
-                    ids2 = convert_to_plasma_transport(ids2)
-                name = name2
+                    name2 = f"[bold green]plasma{suffix}[/][green]/{occurrence}[/]"
+                    progress.update(task, description=f"Converting {name} to {name2}")
+                    if suffix == "_profiles":
+                        ids2 = convert_to_plasma_profiles(ids2)
+                    elif suffix == "_sources":
+                        ids2 = convert_to_plasma_sources(ids2)
+                    elif suffix == "_transport":
+                        ids2 = convert_to_plasma_transport(ids2)
+                    name = name2
 
             # Store in output entry:
             progress.update(task, description=f"Storing {name}", advance=1)
