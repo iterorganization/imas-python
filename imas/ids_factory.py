@@ -41,6 +41,17 @@ class IDSFactory:
             version: DD version string, e.g. "3.38.1".
             xml_path: XML file containing data dictionary definition.
         """
+        if version is None and xml_path is None:
+            # Defer loading the DD definitions until we really need them
+            self.__deferred_init = True
+        else:
+            # If a specific version or xml_path is requested, we still load immediately
+            # so any exceptions are raise when creating the IDSfactory
+            self.__do_init(version, xml_path)
+            self.__deferred_init = False
+
+    def __do_init(self, version: str | None, xml_path: str | pathlib.Path | None):
+        """Actual initalization logic"""
         self._xml_path = xml_path
         self._etree = dd_zip.dd_etree(version, xml_path)
         self._ids_elements = {
@@ -71,10 +82,16 @@ class IDSFactory:
         return sorted(set(object.__dir__(self)).union(self._ids_elements))
 
     def __getattr__(self, name: str) -> Any:
+        # Actually initialize when we deferred it before
+        if self.__deferred_init:
+            self.__do_init(None, None)
+            self.__deferred_init = False
+            return getattr(self, name)
+        # Check if the name matches any IDS and return a 'constructor' for it
         if name in self._ids_elements:
             # Note: returning a partial to mimic AL HLI, e.g. factory.core_profiles()
             return partial(IDSToplevel, self, self._ids_elements[name])
-        raise AttributeError(f"{type(self)!r} object has no attribute {name!r}")
+        raise AttributeError(f"'IDSFactory' has no attribute {name!r}")
 
     def __iter__(self) -> Iterator[str]:
         """Iterate over the IDS names defined by the loaded Data Dictionary"""
