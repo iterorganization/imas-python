@@ -51,7 +51,7 @@ class IDSFactory:
             self.__deferred_init = False
 
     def __do_init(self, version: str | None, xml_path: str | pathlib.Path | None):
-        """Actual initalization logic"""
+        """Actual initialization logic"""
         self._xml_path = xml_path
         self._etree = dd_zip.dd_etree(version, xml_path)
         self._ids_elements = {
