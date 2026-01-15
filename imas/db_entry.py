@@ -160,7 +160,7 @@ class DBEntry:
                 legacy = True
             except TypeError as exc2:
                 raise TypeError(
-                    f"Incorrect arguments to {__class__.__name__}.__init__(): "
+                    "Incorrect arguments to DBEntry.__init__(): "
                     f"{exc1.args[0]}, {exc2.args[0]}"
                 ) from None
 
@@ -561,7 +561,7 @@ class DBEntry:
             raise RuntimeError("Database entry is not open.")
         if lazy and destination:
             raise ValueError("Cannot supply a destination IDS when lazy loading.")
-        if not self._ids_factory.exists(ids_name):
+        if autoconvert and not self._ids_factory.exists(ids_name):
             raise IDSNameError(ids_name, self._ids_factory)
 
         # Note: this will raise an exception when the ids/occurrence is not filled:
@@ -577,7 +577,7 @@ class DBEntry:
                 ids_name,
                 occurrence,
             )
-        elif dd_version != self.dd_version and dd_version not in dd_xml_versions():
+        elif dd_version not in dd_xml_versions() and dd_version != self.dd_version:
             # We don't know the DD version that this IDS was written with
             if ignore_unknown_dd_version:
                 # User chooses to ignore this problem, load as if it was stored with
