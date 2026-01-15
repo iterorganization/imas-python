@@ -78,7 +78,7 @@ class DBEntryImpl(ABC):
         destination: IDSToplevel,
         lazy: bool,
         nbc_map: Optional[NBCPathMap],
-    ) -> None:
+    ) -> IDSToplevel:
         """Implement DBEntry.get/get_slice/get_sample. Load data from the data source.
 
         Args:
