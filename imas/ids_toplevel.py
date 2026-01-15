@@ -22,7 +22,6 @@ from imas.ids_defs import (
     IDS_TIME_MODE_INDEPENDENT,
     IDS_TIME_MODE_UNKNOWN,
     IDS_TIME_MODES,
-    needs_imas,
 )
 from imas.ids_metadata import IDSMetadata, IDSType, get_toplevel_metadata
 from imas.ids_structure import IDSStructure
@@ -99,7 +98,6 @@ class IDSToplevel(IDSStructure):
         """Return the default serializer protocol."""
         return DEFAULT_SERIALIZER_PROTOCOL
 
-    @needs_imas
     def serialize(self, protocol=None) -> bytes:
         """Serialize this IDS to a data buffer.
 
@@ -169,7 +167,6 @@ class IDSToplevel(IDSStructure):
                 return bytes(buffer)
         raise ValueError(f"Unrecognized serialization protocol: {protocol}")
 
-    @needs_imas
     def deserialize(self, data: bytes) -> None:
         """Deserialize the data buffer into this IDS.
 
@@ -289,7 +286,6 @@ class IDSToplevel(IDSStructure):
         for child in self.iter_nonempty_(accept_lazy=True):
             child._validate()
 
-    @needs_imas
     def get(self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None) -> None:
         """Get data from AL backend storage format.
 
@@ -300,7 +296,6 @@ class IDSToplevel(IDSStructure):
             raise NotImplementedError()
         db_entry.get(self.metadata.name, occurrence, destination=self)
 
-    @needs_imas
     def getSlice(
         self,
         time_requested: float,
@@ -323,7 +318,6 @@ class IDSToplevel(IDSStructure):
             destination=self,
         )
 
-    @needs_imas
     def putSlice(
         self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None
     ) -> None:
@@ -336,7 +330,6 @@ class IDSToplevel(IDSStructure):
             raise NotImplementedError()
         db_entry.put_slice(self, occurrence)
 
-    @needs_imas
     def deleteData(
         self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None
     ) -> None:
@@ -349,7 +342,6 @@ class IDSToplevel(IDSStructure):
             raise NotImplementedError()
         db_entry.delete_data(self, occurrence)
 
-    @needs_imas
     def put(self, occurrence: int = 0, db_entry: Optional["DBEntry"] = None) -> None:
         """Put this IDS to the backend.
 

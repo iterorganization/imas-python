@@ -17,7 +17,7 @@ def test_imas_version():
 
 
 @pytest.mark.cli
-def test_db_analysis(tmp_path, requires_imas):
+def test_db_analysis(tmp_path):
     # This only tests the happy flow, error handling is not tested
     db_path = tmp_path / "test_db_analysis"
     with DBEntry(f"imas:hdf5?path={db_path}", "w") as entry:
@@ -42,7 +42,7 @@ def test_db_analysis(tmp_path, requires_imas):
 
 
 @pytest.mark.cli
-def test_db_analysis_csv(tmp_path, requires_imas):
+def test_db_analysis_csv(tmp_path):
     with DBEntry(f"imas:hdf5?path={tmp_path}/entry1", "w") as entry:
         eq = entry.factory.equilibrium()
         eq.ids_properties.homogeneous_time = 2
