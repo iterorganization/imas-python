@@ -6,7 +6,7 @@ from imas.exception import UnknownDDVersion
 from imas.test.test_helpers import compare_children, open_dbentry
 
 
-def test_dbentry_contextmanager(requires_imas):
+def test_dbentry_contextmanager():
     entry = imas.DBEntry(imas.ids_defs.MEMORY_BACKEND, "test", 1, 1)
     entry.create()
     ids = entry.factory.core_profiles()
@@ -22,7 +22,7 @@ def test_dbentry_contextmanager(requires_imas):
     assert entry2._dbe_impl is None
 
 
-def test_dbentry_contextmanager_uri(tmp_path, requires_imas):
+def test_dbentry_contextmanager_uri(tmp_path):
     entry = imas.DBEntry(f"imas:ascii?path={tmp_path}/testdb", "w")
     ids = entry.factory.core_profiles()
     ids.ids_properties.homogeneous_time = 0
@@ -77,7 +77,7 @@ def test_dbentry_constructor():
     assert get_entry_attrs(entry) == (1, 2, 3, 4, None, 6)
 
 
-def test_ignore_unknown_dd_version(monkeypatch, worker_id, tmp_path, requires_imas):
+def test_ignore_unknown_dd_version(monkeypatch, worker_id, tmp_path):
     entry = open_dbentry(imas.ids_defs.MEMORY_BACKEND, "w", worker_id, tmp_path)
     ids = entry.factory.core_profiles()
     ids.ids_properties.homogeneous_time = 0

@@ -9,7 +9,7 @@ pytest.importorskip("xarray")
 
 
 @pytest.fixture
-def entry(requires_imas, monkeypatch):
+def entry(monkeypatch):
     monkeypatch.setenv("IMAS_VERSION", "3.39.0")  # Use fixed DD version
     return imas.training.get_training_db_entry()
 
