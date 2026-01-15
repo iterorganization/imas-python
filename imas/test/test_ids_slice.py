@@ -313,7 +313,8 @@ class TestVaryingArraySizeIndexing:
         units_slice = units[:2]
         element_slice = units_slice.element
 
-        # Integer indexing not supported on IDSSlice - use list() to check length instead
+        # Integer indexing not supported on IDSSlice
+        # Use list() to check length instead
         elements_list = list(element_slice)
         assert len(elements_list) == 2
         # Access beyond available elements should be handled via list indexing

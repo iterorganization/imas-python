@@ -442,9 +442,10 @@ class IDSSlice:
         through a slice, without requiring explicit looping through the
         original collection.
 
-        For multi-dimensional access to values:
-        - Use direct indexing: ``ids_obj[i1].collection[i2].value`` for best
-          performance and clarity
+        For multi-dimensional access to values, use one of these approaches:
+
+        - Use direct indexing: ``ids_obj[i1].collection[i2].value`` (best
+          performance and clarity)
         - Use ``.to_array()`` if you need numpy array integration
 
         Returns:
