@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
-from imas.command.cli import print_version
+from imas.command.cli import print_version, convert_ids
 from imas.command.db_analysis import analyze_db, process_db_analysis
 from imas.db_entry import DBEntry
 from imas.test.test_helpers import fill_with_random_data
@@ -100,3 +100,38 @@ wall,ids_properties/version_put/access_layer_language,,1.0,1.0
 wall,ids_properties/version_put/data_dictionary,,1.0,1.0
 """  # noqa: E501 (line too long)
         )
+
+
+def test_imas_convert_with_plasma(tmp_path):
+    in_db = tmp_path / "in"
+    out_db = tmp_path / "out"
+    with DBEntry(f"imas:hdf5?path={in_db}", "w", dd_version="3.39.0") as entry:
+        for core_edge in ("core", "edge"):
+            for suffix in ("profiles", "sources", "transport"):
+                ids = entry.factory.new(f"{core_edge}_{suffix}")
+                ids.ids_properties.homogeneous_time = 2
+                for i in range(4):
+                    ids.ids_properties.comment = f"{core_edge}_{suffix} occurrence {i}"
+                    entry.put(ids, i)
+
+    runner = CliRunner()
+    with runner.isolated_filesystem(tmp_path):
+        convert_result = runner.invoke(
+            convert_ids,
+            [
+                "--convert-to-plasma-ids",
+                f"imas:hdf5?path={in_db}",
+                "4.1.0",
+                f"imas:hdf5?path={out_db}",
+            ],
+        )
+        assert convert_result.exit_code == 0
+
+    with DBEntry(f"imas:hdf5?path={out_db}", "r", dd_version="4.1.0") as entry:
+        for suffix in ("profiles", "sources", "transport"):
+            for i in range(8):
+                # We expect 8 occurrences, first 4 core, then 4 edge ones
+                core_edge = "core" if i < 4 else "edge"
+                expected_comment = f"{core_edge}_{suffix} occurrence {i % 4}"
+                ids = entry.get(f"plasma_{suffix}", i)
+                assert ids.ids_properties.comment == expected_comment
