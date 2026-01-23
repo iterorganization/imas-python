@@ -39,7 +39,7 @@ from imas.ids_toplevel import IDSToplevel
 from .al_context import ALContext, LazyALContext
 from .db_entry_helpers import delete_children, get_children, put_children
 from .imas_interface import LLInterfaceError, ll_interface
-from .mdsplus_model import mdsplus_model_dir
+from .mdsplus_model import mdsplus_model_dir, get_mdsplus_model_var
 from .uda_support import extract_idsdef, get_dd_version_from_idsdef_xml
 
 _OPEN_MODES = {
@@ -120,7 +120,7 @@ class ALDBEntryImpl(DBEntryImpl):
                 # Building the MDS+ models is required when creating a new Data Entry
                 ids_path = mdsplus_model_dir(factory)
                 if ids_path:
-                    os.environ["MDSPLUS_MODELS_PATH"] = ids_path
+                    os.environ[get_mdsplus_model_var()] = ids_path
 
         elif backend == "uda":
             # Set IDSDEF_PATH to point the UDA backend to the selected DD version

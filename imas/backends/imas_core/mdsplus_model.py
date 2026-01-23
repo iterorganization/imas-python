@@ -14,6 +14,7 @@ import uuid
 from pathlib import Path
 from subprocess import CalledProcessError, check_output
 from zlib import crc32
+from packaging.version import Version
 
 try:
     from importlib.resources import as_file, files
@@ -23,6 +24,8 @@ except ImportError:  # Python 3.8 support
 from imas.dd_zip import get_dd_xml, get_dd_xml_crc
 from imas.exception import MDSPlusModelError
 from imas.ids_factory import IDSFactory
+
+from .imas_interface import ll_interface
 
 logger = logging.getLogger(__name__)
 
@@ -292,6 +295,20 @@ def create_model_ids_xml(cache_dir_path, fname, version):
         raise e
 
 
+def get_mdsplus_model_var() -> str:
+    """
+    Return the environemnt variable name used by IMAS-Core to locate models:
+
+    - 'ids_path' for IMAS-Core<5.6
+    - 'MDSPLUS_MODELS_PATH' for IMAS-Core>=5.6
+    """
+    return (
+        "ids_path"
+        if ll_interface._al_version < Version("5.6.0")
+        else "MDSPLUS_MODELS_PATH"
+    )
+
+
 def create_mdsplus_model(cache_dir_path: Path) -> None:
     """Use jtraverser to compile a valid MDS model file."""
     try:
@@ -322,7 +339,7 @@ def create_mdsplus_model(cache_dir_path: Path) -> None:
             env={
                 "PATH": os.environ.get("PATH", ""),
                 "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
-                "MDSPLUS_MODELS_PATH": str(cache_dir_path),
+                get_mdsplus_model_var(): str(cache_dir_path),
             },
         )
         # Touch a file to show that we have finished the model
