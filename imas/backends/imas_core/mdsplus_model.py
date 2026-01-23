@@ -322,7 +322,7 @@ def create_mdsplus_model(cache_dir_path: Path) -> None:
             env={
                 "PATH": os.environ.get("PATH", ""),
                 "LD_LIBRARY_PATH": os.environ.get("LD_LIBRARY_PATH", ""),
-                "ids_path": str(cache_dir_path),
+                "MDSPLUS_MODELS_PATH": str(cache_dir_path),
             },
         )
         # Touch a file to show that we have finished the model

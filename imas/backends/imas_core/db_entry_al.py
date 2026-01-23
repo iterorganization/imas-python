@@ -120,7 +120,7 @@ class ALDBEntryImpl(DBEntryImpl):
                 # Building the MDS+ models is required when creating a new Data Entry
                 ids_path = mdsplus_model_dir(factory)
                 if ids_path:
-                    os.environ["ids_path"] = ids_path
+                    os.environ["MDSPLUS_MODELS_PATH"] = ids_path
 
         elif backend == "uda":
             # Set IDSDEF_PATH to point the UDA backend to the selected DD version
