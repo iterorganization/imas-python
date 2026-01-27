@@ -115,7 +115,7 @@ class ALContext:
         tmin: float,
         tmax: float,
         dtime: Optional[numpy.ndarray],
-        interpolation_method: int,
+        interpolation_method: Optional[int],
     ) -> "ALContext":
         """Begin a new timerange action for use in a ``with`` context."""
         ctx = ll_interface.begin_timerange_action(
@@ -163,7 +163,7 @@ class ALContext:
         """Call ual_write_data with this context."""
         status = ll_interface.write_data(self.ctx, path, timebasepath, data)
         if status != 0:
-            raise LowlevelError(f"write data at {path!r}: {status=}")
+            raise LowlevelError(f"write data at {path!r}", status)
 
     def list_all_occurrences(self, ids_name: str) -> List[int]:
         """List all occurrences of this IDS."""
@@ -359,7 +359,7 @@ class LazyALContext:
         tmin: float,
         tmax: float,
         dtime: Optional[numpy.ndarray],
-        interpolation_method: int,
+        interpolation_method: Optional[int],
     ) -> Iterator["LazyALContext"]:
         """Lazily start a lowlevel timerange action, see
         :meth:`ALContext.timerange_action`.

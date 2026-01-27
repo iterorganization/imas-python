@@ -25,6 +25,7 @@ from imas.ids_defs import (
 )
 from imas.ids_metadata import IDSMetadata, IDSType, get_toplevel_metadata
 from imas.ids_structure import IDSStructure
+from imas.ids_primitive import IDSInt0D
 
 if TYPE_CHECKING:
     from imas.db_entry import DBEntry
@@ -61,6 +62,7 @@ class IDSToplevel(IDSStructure):
 
     __doc__ = IDSDoc(__doc__)
     _path = ""  # Path to ourselves without the IDS name and slashes
+    _parent: "IDSFactory"  # In contrast to IDSBase, our parent is the IDSFactory
 
     def __init__(self, parent: "IDSFactory", structure_xml, lazy=False):
         """Save backend_version and backend_xml and build translation layer.
@@ -89,7 +91,7 @@ class IDSToplevel(IDSStructure):
         return self._version
 
     @property
-    def _time_mode(self) -> int:
+    def _time_mode(self) -> IDSInt0D:
         """Retrieve the time mode from `/ids_properties/homogeneous_time`"""
         return self.ids_properties.homogeneous_time
 

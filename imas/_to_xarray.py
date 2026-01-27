@@ -27,7 +27,7 @@ def to_xarray(ids: IDSToplevel, *paths: str) -> xarray.Dataset:
     # block checks if the paths are valid, and by using "metadata.path_string" we ensure
     # that / are used as separator.
     try:
-        paths = [ids.metadata[path].path_string for path in paths]
+        paths: list[str] = [ids.metadata[path].path_string for path in paths]
     except KeyError as exc:
         raise ValueError(str(exc)) from None
 

@@ -1,7 +1,6 @@
 # This file is part of IMAS-Python.
 # You should have received the IMAS-Python LICENSE file with this project.
-"""NetCDF metadata for dimensions and tensorization of IDSs.
-"""
+"""NetCDF metadata for dimensions and tensorization of IDSs."""
 
 from functools import lru_cache
 from typing import Dict, List, Optional, Set, Tuple
@@ -89,7 +88,7 @@ class NCMetadata:
         # Add cache for public API
         self.get_dimensions = lru_cache(maxsize=None)(self.get_dimensions)
 
-    def get_coordinates(self, path: str, homogeneous_time: bool) -> Tuple[str]:
+    def get_coordinates(self, path: str, homogeneous_time: bool) -> Tuple[str, ...]:
         """Get the coordinates (adhering to CF conventions) for a netCDF variable.
 
         Args:
@@ -109,7 +108,7 @@ class NCMetadata:
             for coord in self.coordinates[path]
         )
 
-    def get_dimensions(self, path: str, homogeneous_time: bool) -> Tuple[str]:
+    def get_dimensions(self, path: str, homogeneous_time: bool) -> Tuple[str, ...]:
         """Get the dimensions for a netCDF variable.
 
         Args:
