@@ -96,7 +96,6 @@ class ALDBEntryImpl(DBEntryImpl):
         options: Any,
         factory: IDSFactory,
     ) -> "ALDBEntryImpl":
-
         # Set defaults
         user_name = user_name or getpass.getuser()
         data_version = data_version or factory.dd_version
@@ -138,7 +137,7 @@ class ALDBEntryImpl(DBEntryImpl):
             if idsdef_path is None:
                 # Extract XML from the DD zip and point UDA to it
                 idsdef_path = extract_idsdef(factory.version)
-            os.environ["IDSDEF_PATH"] = idsdef_path
+            os.environ["IDSDEF_PATH"] = str(idsdef_path)
 
         elif backend in ["hdf5", "memory", "ascii", "flexbuffers"]:
             pass  # nothing to set up
@@ -173,7 +172,7 @@ class ALDBEntryImpl(DBEntryImpl):
         destination: IDSToplevel,
         lazy: bool,
         nbc_map: Optional[NBCPathMap],
-    ) -> None:
+    ) -> IDSToplevel:
         if self._db_ctx is None:
             raise RuntimeError("Database entry is not open.")
         if lazy and self.backend == "ascii":
@@ -333,9 +332,12 @@ class ALDBEntryImpl(DBEntryImpl):
             ll_path += f"/{occurrence}"
         ids = self._ids_factory.new(ids_name)
         with self._db_ctx.global_action(ll_path, WRITE_OP) as write_ctx:
-            delete_children(ids.metadata, write_ctx, "")
+            delete_children(ids.metadata, write_ctx)
 
     def list_all_occurrences(self, ids_name: str) -> List[int]:
+        if self._db_ctx is None:
+            raise RuntimeError("Database entry is not open.")
+
         try:
             occurrence_list = self._db_ctx.list_all_occurrences(ids_name)
         except LLInterfaceError:

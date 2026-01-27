@@ -1,7 +1,7 @@
 # This file is part of IMAS-Python.
 # You should have received the IMAS-Python LICENSE file with this project.
-"""Core of the IMAS-Python interpreted IDS metadata
-"""
+"""Core of the IMAS-Python interpreted IDS metadata"""
+
 import re
 import types
 from enum import Enum
@@ -77,7 +77,7 @@ def get_toplevel_metadata(structure_xml: Element) -> "IDSMetadata":
         IDSMetadata.__setattr__ = orig_setattr
 
 
-_type_map: Dict[Tuple[IDSDataType, int], Type] = {}
+_type_map: Dict[Tuple[Optional[IDSDataType], int], Type] = {}
 """Map of IDSDataType and ndim to IDSBase implementation class."""
 
 
@@ -205,11 +205,11 @@ class IDSMetadata:
         if self._parent is not None:
             self._is_dynamic = self.type.is_dynamic or self._parent._is_dynamic
 
-        self.coordinates: "tuple[IDSCoordinate]"
+        self.coordinates: "tuple[IDSCoordinate, ...]"
         """Tuple of coordinates of this node.
 
         ``coordinates[0]`` is the coordinate of the first dimension, etc."""
-        self.coordinates_same_as: "tuple[IDSCoordinate]"
+        self.coordinates_same_as: "tuple[IDSCoordinate, ...]"
         """Indicates quantities which share the same coordinate in a given dimension,
         but the coordinate is not explicitly stored in the IDS."""
         if self.ndim == 0:
@@ -231,7 +231,7 @@ class IDSMetadata:
             self.coordinates_same_as = tuple(coors_same_as)
 
         # Parse alternative coordinates
-        self.alternative_coordinates: "tuple[IDSPath]" = ()
+        self.alternative_coordinates: "tuple[IDSPath, ...]" = ()
         """Quantities that can be used as coordinate instead of this node."""
         if "alternative_coordinate1" in attrib:
             self.alternative_coordinates = tuple(

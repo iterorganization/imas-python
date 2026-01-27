@@ -7,7 +7,7 @@ import datetime
 import logging
 from functools import lru_cache, partial
 from pathlib import Path
-from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple
+from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, Any
 from xml.etree.ElementTree import Element, ElementTree
 
 import numpy
@@ -70,7 +70,7 @@ class NBCPathMap:
         self.ctxpath: Dict[str, str] = {}
         """Map providing the lowlevel context path for renamed elements."""
 
-        self.type_change: Dict[str, Optional[Callable[[IDSBase, IDSBase], None]]] = {}
+        self.type_change: Dict[str, Optional[Callable[[IDSBase, IDSBase], Any]]] = {}
         """Dictionary of paths that had a type change.
 
         Type changes are mapped to None in :py:attr:`path`, this ``dict`` allows to
@@ -1001,9 +1001,7 @@ def _repeat_first_point(node: IDSBase) -> None:
         child.value = numpy.concatenate((child.value, [child.value[0]]))
 
 
-def _remove_last_point_conditional(
-    source_node: IDSStructure, target_node: IDSStructure
-) -> None:
+def _remove_last_point_conditional(source_node: IDSBase, target_node: IDSBase) -> None:
     """Type change method for nbc_description=repeat_children_first_point_conditional*.
 
     This method handles converting from new (DDv4) to old (DDv3).

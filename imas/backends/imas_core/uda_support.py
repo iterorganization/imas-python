@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from typing import Union
+from typing import Union, Optional
 from xml.etree import ElementTree as ET
 
 from imas import dd_zip
@@ -10,7 +10,7 @@ from .mdsplus_model import _get_xdg_cache_dir
 logger = logging.getLogger(__name__)
 
 
-def get_dd_version_from_idsdef_xml(path: Union[str, Path]) -> str:
+def get_dd_version_from_idsdef_xml(path: Union[str, Path]) -> Optional[str]:
     """Parse the IDSDef.xml up to the point where the Data Dictionary version is set.
 
     Returns:
