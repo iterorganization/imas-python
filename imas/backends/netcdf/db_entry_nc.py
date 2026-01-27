@@ -100,7 +100,7 @@ class NCDBEntryImpl(DBEntryImpl):
         destination: IDSToplevel,
         lazy: bool,
         nbc_map: Optional[NBCPathMap],
-    ) -> None:
+    ) -> IDSToplevel:
         # Feature compatibility checks
         if parameters is not None:
             if isinstance(parameters, GetSliceParameters):

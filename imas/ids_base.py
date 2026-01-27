@@ -1,7 +1,6 @@
 # This file is part of IMAS-Python.
 # You should have received the IMAS-Python LICENSE file with this project.
-"""Base class for all IDS nodes.
-"""
+"""Base class for all IDS nodes."""
 
 import logging
 from typing import TYPE_CHECKING, Optional, Type
@@ -12,6 +11,7 @@ from imas.ids_metadata import IDSMetadata
 
 if TYPE_CHECKING:
     from imas.ids_toplevel import IDSToplevel
+    from imas.ids_primitive import IDSInt0D
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class IDSBase:
     """True iff this IDS lazy-loads its data"""
 
     @property
-    def _time_mode(self) -> int:
+    def _time_mode(self) -> "IDSInt0D":
         """Retrieve the time mode from `/ids_properties/homogeneous_time`"""
         return self._parent._time_mode
 

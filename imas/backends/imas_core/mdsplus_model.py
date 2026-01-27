@@ -366,7 +366,7 @@ def jTraverser_jar() -> Path:
     for component in os.environ.get("CLASSPATH", "").split(":"):
         if component.endswith(".jar"):
             if re.search(".*jTraverser.jar", component):
-                return component
+                return Path(component)
         else:  # assume its a directory (strip any '*' suffix)
             search_dirs.append(component.rstrip("*"))
 
