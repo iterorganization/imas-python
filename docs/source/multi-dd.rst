@@ -276,27 +276,108 @@ You need to explicitly convert the data, which you can do as follows:
       entry.put(imas.convert_ids(equilibrium, entry.dd_version))
 
 
+.. _`UDA backend and DD versions`:
+
+UDA backend caching and Data Dictionary versions
+------------------------------------------------
+
+If you try to load data from a different Data Dictionary version with the UDA backend,
+you may see the following error:
+
+.. code-block:: text
+
+  The Data Dictionary version of the data (3.38.1) is different from the Data
+  Dictionary version of the DBEntry (3.42.0). This is not supported when using the
+  UDA backend.
+
+There are three possible workarounds. The first two require passing an additional option
+in the IMAS UDA URI: please see the `imas-core documentation
+<https://imas-core.readthedocs.io/en/stable/user_guide/backends_guide.html#query-keys-specific-for-the-uda-backend>`__
+for more details on these URI options.
+
+1. Use UDA fetch to bypass the cache problem. You can do this by appending ``&fetch=1``
+   to the URI when you create the :py:class:`~imas.db_entry.DBEntry`.
+
+   Note that this will download all data from the IDS from the remote server, this may
+   not be desired if you only want to read a single time slice.
+2. Disable the UDA cache. You can do this by appending ``&cache_mode=none`` to the URI
+   when you create the :py:class:`~imas.db_entry.DBEntry`.
+
+   Note that this may make the ``get()`` (a lot) slower, since a separate request needs
+   to be sent to the remote UDA server for every data variable. However, this may still
+   be the best performing option if you are only interested in a subset of all the data
+   in an IDS (and use :ref:`lazy loading`).
+3. Explicitly provide the data dictionary version when you create the
+   :py:class:`~imas.db_entry.DBEntry`, setting it to match the Data Dictionary version
+   of the data you want to load.
+
+   Note that you may need to call ``imas.convert_ids`` to convert the IDS to your
+   desired Data Dictionary version.
+
+All three possible workarounds are shown in the examples below:
+
+.. md-tab-set::
+
+    .. md-tab-item:: Original code
+
+      .. code-block:: python
+
+        import imas
+
+        URI = (
+            "imas://uda.iter.org:56565/uda?backend=hdf5"
+            "&path=/work/imas/shared/imasdb/ITER/3/121013/50"
+        )
+        with imas.DBEntry(URI, "r") as entry:
+            cp = entry.get("core_profiles")
+
+    .. md-tab-item:: 1. Use UDA fetch
+
+      .. code-block:: python
+
+        import imas
+
+        URI = (
+            "imas://uda.iter.org:56565/uda?backend=hdf5"
+            "&path=/work/imas/shared/imasdb/ITER/3/121013/50&fetch=1"
+        )
+        with imas.DBEntry(URI, "r") as entry:
+            cp = entry.get("core_profiles")
+
+    .. md-tab-item:: 2. Disable the UDA cache
+
+      .. code-block:: python
+
+        import imas
+
+        URI = (
+            "imas://uda.iter.org:56565/uda?backend=hdf5"
+            "&path=/work/imas/shared/imasdb/ITER/3/121013/50&cache_mode=none"
+        )
+        with imas.DBEntry(URI, "r") as entry:
+            cp = entry.get("core_profiles")
+
+    .. md-tab-item:: 3. Explicitly provide the DD version
+
+      .. code-block:: python
+
+        import imas
+
+        URI = (
+            "imas://uda.iter.org:56565/uda?backend=hdf5"
+            "&path=/work/imas/shared/imasdb/ITER/3/121013/50"
+        )
+        with imas.DBEntry(URI, "r", dd_version="3.38.1") as entry:
+            cp = entry.get("core_profiles")
+
+        # Optional: convert the IDS to your desired DD version
+        cp = imas.convert_ids(cp, "3.42.0")
+
 
 .. _`DD background`:
 
 Background information
 ----------------------
-
-Since IMAS-Python needs to have access to multiple DD versions it was chosen to
-bundle these with the code at build-time, in setup.py. If a git clone of the
-Data Dictionary succeeds, the setup tools automatically download saxon and
-generate ``IDSDef.xml`` for each of the tagged versions in the DD git
-repository. These are then gathered into ``IDSDef.zip``, which is
-distributed inside the IMAS-Python package.
-
-To update the set of data dictionaries new versions can be added to the zipfile.
-A reinstall of the package will ensure that all available versions are included
-in IMAS-Python. Additionally an explicit path to an XML file can be specified, which
-is useful for development.
-
-Automated tests have been provided that check the loading of all of the DD
-versions tagged in the data-dictionary git repository.
-
 
 Data Dictionary definitions
 '''''''''''''''''''''''''''

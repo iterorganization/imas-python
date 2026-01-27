@@ -257,6 +257,22 @@ class ALDBEntryImpl(DBEntryImpl):
             raise DataEntryException(
                 f"IDS {ids_name!r}, occurrence {occurrence} is empty."
             )
+
+        # UDA caching doesn't play well when the DD version of the on-disk IDS doesn't
+        # match the DD version of this DBEntry. See GH#97
+        if self.backend == "uda" and dd_version != self._ids_factory.dd_version:
+            cache_mode = self._querydict.get("cache_mode")
+            fetch = self._querydict.get("fetch")
+            if cache_mode != "none" and fetch not in ("1", "true"):
+                raise RuntimeError(
+                    f"The Data Dictionary version of the data ({dd_version}) is "
+                    "different from the Data Dictionary version of the DBEntry "
+                    f"({self._ids_factory.dd_version}). This is not supported when "
+                    f"using the UDA backend. See {imas.PUBLISHED_DOCUMENTATION_ROOT}"
+                    "multi-dd.html#uda-backend-caching-and-data-dictionary-versions "
+                    "for more details and workarounds."
+                )
+
         return dd_version
 
     def put(self, ids: IDSToplevel, occurrence: int, is_slice: bool) -> None:
