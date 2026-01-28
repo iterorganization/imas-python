@@ -298,7 +298,7 @@ for more details on these URI options.
 1. Use UDA fetch to bypass the cache problem. You can do this by appending ``&fetch=1``
    to the URI when you create the :py:class:`~imas.db_entry.DBEntry`.
 
-   Note that this will download all data from the IDS from the remote server, this may
+   Note that this will download the entire IDS files from the remote server, this may
    not be desired if you only want to read a single time slice.
 2. Disable the UDA cache. You can do this by appending ``&cache_mode=none`` to the URI
    when you create the :py:class:`~imas.db_entry.DBEntry`.
@@ -309,8 +309,10 @@ for more details on these URI options.
    in an IDS (and use :ref:`lazy loading`).
 3. Explicitly provide the data dictionary version when you create the
    :py:class:`~imas.db_entry.DBEntry`, setting it to match the Data Dictionary version
-   of the data you want to load.
-
+   of the data you want to load. To obtain the version of the data on the remote server
+   from the field `ids_properties.put_version.data_dictionary` via a _lazy_ ``get()``
+   with ``autoconvert=False`` option and using the ``&cache_mode=none`` query in the URI.
+   
    Note that you may need to call ``imas.convert_ids`` to convert the IDS to your
    desired Data Dictionary version.
 
