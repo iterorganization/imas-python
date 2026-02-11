@@ -303,7 +303,7 @@ class ALDBEntryImpl(DBEntryImpl):
         if occurrence != 0:
             ll_path += f"/{occurrence}"
 
-        time_mode = ids.ids_properties.homogeneous_time
+        time_mode = int(ids.ids_properties.homogeneous_time)
         if is_slice:
             with self._db_ctx.global_action(ll_path, READ_OP) as read_ctx:
                 db_time_mode = read_ctx.read_data(
