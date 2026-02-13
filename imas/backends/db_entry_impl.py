@@ -120,3 +120,11 @@ class DBEntryImpl(ABC):
     @abstractmethod
     def list_all_occurrences(self, ids_name: str) -> List[int]:
         """Implement DBEntry.list_all_occurrences()"""
+
+    @abstractmethod
+    def list_filled_paths(self, ids_name: str, occurrence: int) -> List[str]:
+        """Implement DBEntry.list_filled_paths().
+
+        N.B. DD conversion is handled in DBEntry.list_filled_paths(), this method
+        returns the data paths as stored on-disk.
+        """

@@ -364,6 +364,9 @@ class ALDBEntryImpl(DBEntryImpl):
             ) from None
         return occurrence_list
 
+    def list_filled_paths(self, ids_name: str, occurrence: int) -> List[str]:
+        raise NotImplementedError()
+
     def _check_uda_warnings(self, lazy: bool) -> None:
         """Various checks / warnings for the UDA backend."""
         cache_mode = self._querydict.get("cache_mode")
