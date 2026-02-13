@@ -1,13 +1,13 @@
 import pytest
 
 import imas
-from imas.backends.imas_core.imas_interface import ll_interface
+from imas_core import _al_lowlevel
 from imas.exception import DataEntryException
 from imas.ids_defs import IDS_TIME_MODE_HOMOGENEOUS, IDS_TIME_MODE_INDEPENDENT
 
 
-if not hasattr(ll_interface, "list_all_occurrences"):
-    marker = pytest.mark.xfail(reason="list_all_occurrences not available in imas_core")
+if not hasattr(_al_lowlevel, "al_list_filled_paths"):
+    marker = pytest.mark.xfail(reason="list_filled_paths not available in imas_core")
 else:
     marker = []
 
@@ -61,6 +61,9 @@ def test_list_filled_paths(testuri):
         # Other occurrence should still raise an error:
         with pytest.raises(DataEntryException):
             dbentry.list_filled_paths("core_profiles", 1)
+        # Until we write data to the occurrence:
+        dbentry.put(cp, 3)
+        assert set(filled_paths) == set(dbentry.list_filled_paths("core_profiles", 3))
 
 
 def test_list_filled_paths_autoconvert(testuri):

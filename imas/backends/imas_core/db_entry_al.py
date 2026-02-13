@@ -365,7 +365,17 @@ class ALDBEntryImpl(DBEntryImpl):
         return occurrence_list
 
     def list_filled_paths(self, ids_name: str, occurrence: int) -> List[str]:
-        raise NotImplementedError()
+        if self._db_ctx is None:
+            raise RuntimeError("Database entry is not open.")
+        ll_path = ids_name
+        if occurrence != 0:
+            ll_path += f"/{occurrence}"
+        paths = self._db_ctx.list_filled_paths(ll_path)
+        if not paths:
+            raise DataEntryException(
+                f"IDS {ids_name!r}, occurrence {occurrence} is empty."
+            )
+        return paths
 
     def _check_uda_warnings(self, lazy: bool) -> None:
         """Various checks / warnings for the UDA backend."""

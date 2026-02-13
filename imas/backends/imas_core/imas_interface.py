@@ -166,6 +166,11 @@ class LowlevelInterface:
     ):
         raise self._minimal_version("5.4")
 
+    # New method in AL 5.7
+
+    def list_filled_paths(self, ctx, path):
+        raise self._minimal_version("5.7")
+
 
 # Dummy documentation for interface:
 for funcname in dir(LowlevelInterface):
