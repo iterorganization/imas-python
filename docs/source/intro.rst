@@ -86,17 +86,6 @@ get an error message if this is not possible:
 Load and store an IDS to disk with IMAS-Core
 ''''''''''''''''''''''''''''''''''''''''''''
 
-.. note::
-
-    - This functionality requires the IMAS-Core, until this library is openly available
-      on GitHub you may need to fetch it from `git.iter.org <https://git.iter.org/>`_
-      (requires to have an ITER account). Using IMAS-Core also enable slicing methods
-      :py:meth:`~imas.db_entry.DBEntry.get_slice`, 
-      :py:meth:`~imas.db_entry.DBEntry.put_slice` and
-      :py:meth:`~imas.db_entry.DBEntry.get_sample` (with IMAS-Core>=5.4).
-    - If you can't have access to it, you can save IDS to disk with the built-in
-      netCDF backend :ref:`Load and store an IDS to disk with netCDF`
-
 To store an IDS to disk, we need to indicate the following URI to the
 IMAS-Core: ``imas:<backend>?path=<path_to_folder>`` or using the legacy query keys
 ``imas:<backend>?user=<user>;database=<database>;version=<version>;pulse=<pulse>;run=<run>``
@@ -115,11 +104,9 @@ In IMAS-Python you do this as follows:
     >>> # now store the core_profiles IDS we just populated
     >>> dbentry.put(core_profiles)
 
-.. image:: imas_structure.png
-
 To load an IDS from disk, you need to specify the same information as
 when storing the IDS (see above). Once the data entry is opened, you
-can use ``<IDS>.get()`` to load IDS data from disk: 
+can use ``dbentry.get()`` to load IDS data from disk: 
 
 .. code-block:: python
 
@@ -146,7 +133,7 @@ In IMAS-Python you do this as follows:
 
 To load an IDS from disk, you need to specify the same file information as
 when storing the IDS. Once the data entry is opened, you
-can use ``<IDS>.get()`` to load IDS data from disk: 
+can use ``dbentry.get()`` to load IDS data from disk: 
 
 .. code-block:: python
 
@@ -154,3 +141,26 @@ can use ``<IDS>.get()`` to load IDS data from disk:
     >>> dbentry2 = imas.DBEntry("mypulsefile.nc","r")
     >>> core_profiles2 = dbentry2.get("core_profiles")
     >>> print(core_profiles2.ids_properties.comment.value)
+
+
+Data Entry API overview
+'''''''''''''''''''''''
+
+See the documentation of :py:class:`imas.DBEntry <imas.db_entry.DBEntry>` for more
+details on reading and writing IDSs to disk. Useful functions include:
+
+- :py:meth:`~imas.db_entry.DBEntry.put` and :py:meth:`~imas.db_entry.DBEntry.put_slice`
+  to write a full IDS or write append a time slice to existing data.
+- :py:meth:`~imas.db_entry.DBEntry.get`, :py:meth:`~imas.db_entry.DBEntry.get_slice` and
+  :py:meth:`~imas.db_entry.DBEntry.get_sample` to read all time slices, a single time
+  slice, or a sample of time slices from disk. ``get_slice()`` and ``get_sample()`` can
+  also interpolate data to a requested point in time.
+
+  All three ``get()`` methods have a ``lazy`` mode, which will only load data from disk
+  when you need it. This can greatly speed up data access in some scenarios. See
+  :ref:`Lazy loading` for more details.
+- :py:meth:`~imas.db_entry.DBEntry.list_all_occurrences` to query whether there are any
+  occurrences of a certain IDS stored on disk.
+- :py:meth:`~imas.db_entry.DBEntry.list_filled_paths` to query which Data Dictionary
+  paths have data filled inside a specific IDS.
+

@@ -813,10 +813,14 @@ class DBEntry:
             ids_name: Name of the IDS to request filled data for.
             occurrence: Occurrence number of the IDS to request filled data for.
 
+        Keyword Args:
+            autoconvert: If enabled (default), this method will take NBC renames into
+                account in the returned list of filled paths.
+
         Returns:
             List of paths which have some data filled in the backend. For example, when
             ``profiles_1d/ion/temperature`` is in this list, it means that there is at
-            least on ``ion`` in one ``profiles_1d`` entry for which the temperature is
+            least one ``ion`` in one ``profiles_1d`` entry for which the temperature is
             filled.
 
             The paths in this list may be ordered arbitrarily.
