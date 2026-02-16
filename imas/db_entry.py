@@ -815,7 +815,8 @@ class DBEntry:
 
         Keyword Args:
             autoconvert: If enabled (default), this method will take NBC renames into
-                account in the returned list of filled paths.
+                account in the returned list of filled paths. This argument corresponds
+                to the :py:data:`~get.autoconvert` argument of :py:meth:`get`.
 
         Returns:
             List of paths which have some data filled in the backend. For example, when
