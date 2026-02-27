@@ -12,15 +12,22 @@ except ImportError:  # Python 3.8 support
 import imas
 
 
-def get_training_db_entry() -> imas.DBEntry:
-    """Open and return an ``imas.DBEntry`` pointing to the training data."""
+def get_training_db_entry(convert=False) -> imas.DBEntry:
+    """Open and return an ``imas.DBEntry`` pointing to the training data.
+
+        Args:
+            convert: if True, converts assets to default DD version 
+    """
     assets_path = files(imas) / "assets/"
     entry = imas.DBEntry(f"imas:ascii?path={assets_path}", "r")
 
-    output_entry = imas.DBEntry("imas:memory?path=/", "w")
+    version = imas.dd_zip.latest_dd_version() if convert else "3.39.0"
+    output_entry = imas.DBEntry("imas:memory?path=/", "w", dd_version=version)
     for ids_name in ["core_profiles", "equilibrium"]:
         ids = entry.get(ids_name, autoconvert=False)
-        with patch.dict("os.environ", {"IMAS_AL_DISABLE_VALIDATE": "1"}):
+        if convert:
             output_entry.put(imas.convert_ids(ids, output_entry.dd_version))
+        else:
+            output_entry.put(ids)
     entry.close()
     return output_entry
