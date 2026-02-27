@@ -19,7 +19,7 @@ def get_training_db_entry(convert=False) -> imas.DBEntry:
     assets_path = files(imas) / "assets/"
     entry = imas.DBEntry(f"imas:ascii?path={assets_path}", "r")
 
-    version = imas.dd_zip.latest_dd_version() if convert else "3.39.0"
+    version = None if convert else "3.39.0"
     output_entry = imas.DBEntry("imas:memory?path=/", "w", dd_version=version)
     for ids_name in ["core_profiles", "equilibrium"]:
         ids = entry.get(ids_name, autoconvert=False)
