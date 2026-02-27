@@ -12,7 +12,7 @@ def assert_equal(core_edge, plasma):
 
 
 def test_convert_training_core_profiles():
-    with imas.training.get_training_db_entry() as entry:
+    with imas.training.get_training_db_entry(convert=True) as entry:
         cp = entry.get("core_profiles")
 
     pp = imas.convert_to_plasma_profiles(cp)
