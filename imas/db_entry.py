@@ -113,7 +113,10 @@ class DBEntry:
             object before you can use it for reading or writing data.
 
         Args:
-            uri: URI to the data entry, see explanation above.
+            uri: URI to the data entry (a path to a netCDF file ending with .nc,
+                or an `IMAS URI for one of IMAS-Core's backends
+                <https://imas-core.readthedocs.io/en/latest/user_guide/uris_guide.html>__`
+                ).
             mode: Mode to open the Data Entry in:
 
               - ``"r"``: Open an existing data entry. Raises an error when the data
