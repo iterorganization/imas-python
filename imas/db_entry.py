@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import os
 import pathlib
-from typing import Any, Type, overload
+from typing import Any, Type, overload, List
 
 import numpy
 
@@ -197,14 +197,14 @@ class DBEntry:
             from imas.backends.imas_core.db_entry_al import ALDBEntryImpl as impl
         return impl
 
-    def __enter__(self):
+    def __enter__(self) -> "DBEntry":
         # Context manager protocol
         if self._dbe_impl is None:
             # Open if the DBEntry was not already opened or created
             self.open()
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
         # Context manager protocol
         self.close()
 
@@ -800,3 +800,63 @@ class DBEntry:
             self.get(ids_name, occ, lazy=True)[node_path] for occ in occurrence_list
         ]
         return occurrence_list, node_content_list
+
+    def list_filled_paths(
+        self, ids_name, occurrence: int = 0, *, autoconvert: bool = True
+    ) -> List[str]:
+        """Get a list of filled Data Dictionary paths from the backend.
+
+        Note that this is only supported by some backends (HDF5 and netCDF), and will
+        result in an error on unsupported backends.
+
+        Args:
+            ids_name: Name of the IDS to request filled data for.
+            occurrence: Occurrence number of the IDS to request filled data for.
+
+        Keyword Args:
+            autoconvert: If enabled (default), this method will take NBC renames into
+                account in the returned list of filled paths. This argument corresponds
+                to the :py:data:`~get.autoconvert` argument of :py:meth:`get`.
+
+        Returns:
+            List of paths which have some data filled in the backend. For example, when
+            ``profiles_1d/ion/temperature`` is in this list, it means that there is at
+            least one ``ion`` in one ``profiles_1d`` entry for which the temperature is
+            filled.
+
+            The paths in this list may be ordered arbitrarily.
+
+        Example:
+            >>> with imas.DBEntry("imas:hdf5?path=./path/to/data", "r") as entry:
+            >>>     print(entry.list_filled_paths("core_profiles"))
+            ['ids_properties/comment', 'ids_properties/homogeneous_time',
+             'profiles_1d/grid/rho_tor_norm', 'profiles_1d/electrons/temperature',
+             'profiles_1d/ion/temperature', 'time']
+        """
+        if self._dbe_impl is None:
+            raise RuntimeError("Database entry is not open.")
+        paths = self._dbe_impl.list_filled_paths(ids_name, occurrence)
+        if not autoconvert:
+            return paths
+
+        # DD conversion?
+        dd_version = self._dbe_impl.read_dd_version(ids_name, occurrence)
+        if dd_version == self._ids_factory.dd_version:
+            return paths  # No conversion required
+
+        # Follow any NBC renames:
+        ddmap, source_is_older = dd_version_map_from_factories(
+            ids_name, IDSFactory(version=dd_version), self._ids_factory
+        )
+        nbc_map = ddmap.old_to_new if source_is_older else ddmap.new_to_old
+
+        converted_paths = []
+        for path in paths:
+            if path in nbc_map:
+                new_name = nbc_map.path[path]
+                if new_name is not None:
+                    converted_paths.append(new_name)
+            else:
+                converted_paths.append(path)
+
+        return converted_paths

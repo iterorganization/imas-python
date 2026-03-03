@@ -92,6 +92,14 @@ class NCDBEntryImpl(DBEntryImpl):
             )
         self._dataset.close()
 
+    def _get_group(self, ids_name: str, occurrence: int) -> "netCDF4.Group":
+        try:
+            return self._dataset[f"{ids_name}/{occurrence}"]
+        except LookupError as exc:
+            raise DataEntryException(
+                f"IDS {ids_name!r}, occurrence {occurrence} is not found."
+            ) from exc
+
     def get(
         self,
         ids_name: str,
@@ -110,12 +118,7 @@ class NCDBEntryImpl(DBEntryImpl):
             raise NotImplementedError(f"`{func}` is not available for netCDF files.")
 
         # Check if the IDS/occurrence exists, and obtain the group it is stored in
-        try:
-            group = self._dataset[f"{ids_name}/{occurrence}"]
-        except KeyError:
-            raise DataEntryException(
-                f"IDS {ids_name!r}, occurrence {occurrence} is not found."
-            )
+        group = self._get_group(ids_name, occurrence)
 
         # Load data into the destination IDS
         if self._ds_factory.dd_version == destination._dd_version:
@@ -183,3 +186,17 @@ class NCDBEntryImpl(DBEntryImpl):
 
         occurrence_list.sort()
         return occurrence_list
+
+    def list_filled_paths(self, ids_name: str, occurrence: int) -> List[str]:
+        # Check if the IDS/occurrence exists, and obtain the group it is stored in
+        group = self._get_group(ids_name, occurrence)
+
+        result = []
+        for name, variable in group.variables.items():
+            if variable.ndim == 0 and variable.dtype == "S1":
+                continue  # (Array of) Structure metadata node, no data
+            if name.endswith(":shape"):
+                continue  # Shape data, not a DD path
+            result.append(name.replace(".", "/"))
+
+        return result

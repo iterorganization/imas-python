@@ -174,6 +174,17 @@ class ALContext:
             return list(occurrences)
         return []
 
+    def list_filled_paths(self, path: str) -> List[str]:
+        """List all filled paths in an IDS.
+
+        Args:
+            path: IDS and occurrence as a string: <IDS>[/<occurrence>]
+        """
+        status, result = ll_interface.list_filled_paths(self.ctx, path)
+        if status != 0:
+            raise LowlevelError(f"list filled paths for {path!r}", status)
+        return result
+
     def close(self):
         """Close this ALContext."""
         ll_interface.end_action(self.ctx)
