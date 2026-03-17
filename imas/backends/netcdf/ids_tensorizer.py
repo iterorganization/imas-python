@@ -3,9 +3,10 @@
 """Tensorization logic to convert IDSs to netCDF files and/or xarray Datasets."""
 
 from collections import deque
-from typing import List
+from typing import List, Tuple
 
 import numpy
+import awkward as ak
 
 from imas.backends.netcdf.iterators import indexed_tree_iter
 from imas.backends.netcdf.nc_metadata import NCMetadata
@@ -203,3 +204,41 @@ class IDSTensorizer:
                 tmp_var[aos_coords + tuple(map(slice, node.shape))] = node.value
 
         return tmp_var
+
+    def recursively_convert_to_list(self, path: str, inactive_index:Tuple, 
+                                    shape:Tuple, i_dim: int):
+        entry = []
+        for index in path:
+            new_index = inactive_index + (index,)
+            if i_dim == len(shape) - 1:
+                entry.append(self.filled_data[path][new_index].value)
+            else:
+                entry.append(self.recursively_convert_to_list(path, new_index, 
+                                                              shape, i_dim + 1))
+        return entry
+
+    def awkward_tensorize(self, path:str):
+        """
+        Tensorizes the data at the given path with the specified fill value.
+
+        Args:
+            path: The path to the data in the IDS.
+            fillvalue: The value to fill the tensor with. Can be of any type,
+                             including strings.
+
+        Returns:
+            A tensor filled with the data from the specified path.
+        """
+        if path in self.shapes:
+            shape = self.shapes[path]
+        else:
+            dimensions = self.ncmeta.get_dimensions(path, self.homogeneous_time)
+            shape = tuple(self.dimension_size[dim] for dim in dimensions)
+        # Get the split between HDF5 indices and stored matrices
+        # i.e. equilibrium.time_slice.profiles_2d <-> psi
+        hdf5_dim = len(list(self.filled_data[path].keys())[0])
+        if hdf5_dim == 0:
+            return self.filled_data[path][()].value
+        else:
+            return ak.Array(self.recursively_convert_to_list(path, tuple(), shape[:hdf5_dim], 0))
+        
