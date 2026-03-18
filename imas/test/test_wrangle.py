@@ -1,6 +1,12 @@
 import pytest
 import numpy as np
-import awkward as ak
+try:
+    import awkward as ak
+except ImportError as exc:
+    raise ImportError(
+        "awkward-array is required"
+        "Install it with: pip install imas-python[awkward]"
+    ) from exc
 
 from imas.wrangler import wrangle, unwrangle
 from imas.ids_factory import IDSFactory

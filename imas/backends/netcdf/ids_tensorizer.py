@@ -6,7 +6,6 @@ from collections import deque
 from typing import List, Tuple
 
 import numpy
-import awkward as ak
 
 from imas.backends.netcdf.iterators import indexed_tree_iter
 from imas.backends.netcdf.nc_metadata import NCMetadata
@@ -244,5 +243,5 @@ class IDSTensorizer:
         if hdf5_dim == 0:
             return self.filled_data[path][()].value
         else:
-            return ak.Array(self.recursively_convert_to_list(path, tuple(), shape[:hdf5_dim], 0))
+            return self.recursively_convert_to_list(path, tuple(), shape[:hdf5_dim], 0)
         

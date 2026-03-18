@@ -65,7 +65,7 @@ def unwrangle(
         for ids_location in ids_locations[key]:
             location = key + "." + ids_location.replace("/", ".")
             values = tensorizer.awkward_tensorize(ids_location)
-            if hasattr(values, "__getattr__"):
+            if hasattr(values, "__getitem__"):
                 # Not a scalar, e.g. homogenous_time
                 try:
                     flat[location] = np.asarray(values)
