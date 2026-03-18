@@ -67,23 +67,28 @@ def flat(test_data):
     flat["equilibrium.time_slice.profiles_2d.psi"][:] = test_data["equilibrium"]["psi_2d"][None, ...]
     
     # Thomson scattering test data (ragged)
+    N = test_data["thomson_scattering"]["N_ch"][0] + test_data["thomson_scattering"]["N_ch"][1]
     flat["thomson_scattering.ids_properties.homogeneous_time"] = 0
     flat["thomson_scattering.channel.t_e.time"] = ak.concatenate([np.tile(test_data["thomson_scattering"]["time"][0],
-                                                                  (test_data["thomson_scattering"]["N_ch"][0],1)),
+                                                                  (test_data["thomson_scattering"]["N_ch"][0],
+                                                                   1)),
                                                                   np.tile(test_data["thomson_scattering"]["time"][1],
-                                                                  (test_data["thomson_scattering"]["N_ch"][1],1))])
-    flat["thomson_scattering.channel.t_e.data"] = ak.concatenate([np.tile(test_data["thomson_scattering"]["t_e"][0],
-                                                                  (test_data["thomson_scattering"]["N_ch"][0],1)),
-                                                                  np.tile(test_data["thomson_scattering"]["t_e"][1],
-                                                                  (test_data["thomson_scattering"]["N_ch"][1],1))])
+                                                                  (test_data["thomson_scattering"]["N_ch"][1],
+                                                                   1))])
+    flat["thomson_scattering.channel.t_e.data"] = ak.concatenate([np.repeat(test_data["thomson_scattering"]["t_e"][:test_data["thomson_scattering"]["N_ch"][0],None],
+                                                                  test_data["thomson_scattering"]["N_time"][0], axis=1),
+                                                                  np.repeat(test_data["thomson_scattering"]["t_e"][test_data["thomson_scattering"]["N_ch"][0]:,None],
+                                                                  test_data["thomson_scattering"]["N_time"][1], axis=1)])
     flat["thomson_scattering.channel.n_e.time"] = ak.concatenate([np.tile(test_data["thomson_scattering"]["time"][0],
-                                                                  (test_data["thomson_scattering"]["N_ch"][0],1)),
+                                                                  (test_data["thomson_scattering"]["N_ch"][0],
+                                                                   1)),
                                                                   np.tile(test_data["thomson_scattering"]["time"][1],
-                                                                  (test_data["thomson_scattering"]["N_ch"][1],1))])
-    flat["thomson_scattering.channel.n_e.data"] = ak.concatenate([np.tile(test_data["thomson_scattering"]["n_e"][0],
-                                                                  (test_data["thomson_scattering"]["N_ch"][0],1)),
-                                                                  np.tile(test_data["thomson_scattering"]["n_e"][1],
-                                                                  (test_data["thomson_scattering"]["N_ch"][1],1))])
+                                                                  (test_data["thomson_scattering"]["N_ch"][1],
+                                                                   1))])
+    flat["thomson_scattering.channel.n_e.data"] = ak.concatenate([np.repeat(test_data["thomson_scattering"]["n_e"][:test_data["thomson_scattering"]["N_ch"][0],None],
+                                                                  test_data["thomson_scattering"]["N_time"][0], axis=1),
+                                                                  np.repeat(test_data["thomson_scattering"]["n_e"][test_data["thomson_scattering"]["N_ch"][0]:,None],
+                                                                  test_data["thomson_scattering"]["N_time"][1], axis=1)])
     flat["thomson_scattering.channel.position.r"] = test_data["thomson_scattering"]["r"]
     flat["thomson_scattering.channel.position.z"] = test_data["thomson_scattering"]["z"]
     return flat
@@ -115,7 +120,7 @@ def test_ids_dict(test_data):
         thomson_scattering.channel[i].t_e.data = np.tile(test_data["thomson_scattering"]["t_e"][i],
                                                          test_data["thomson_scattering"]["N_time"][index])
         thomson_scattering.channel[i].n_e.time = test_data["thomson_scattering"]["time"][index]
-        thomson_scattering.channel[i].n_e.data = np.tile(test_data["thomson_scattering"]["t_e"][i],
+        thomson_scattering.channel[i].n_e.data = np.tile(test_data["thomson_scattering"]["n_e"][i],
                                                          test_data["thomson_scattering"]["N_time"][index])
         thomson_scattering.channel[i].position.r = test_data["thomson_scattering"]["r"][i]
         thomson_scattering.channel[i].position.z = test_data["thomson_scattering"]["z"][i]
@@ -132,4 +137,4 @@ def test_wrangle(test_ids_dict, flat):
 def test_unwrangle(test_ids_dict, flat):
     result = unwrangle(list(flat.keys()), test_ids_dict)
     for key in flat.keys():
-        np.testing.assert_allclose(result[key], flat[key])
+        assert ak.almost_equal(result[key], flat[key])

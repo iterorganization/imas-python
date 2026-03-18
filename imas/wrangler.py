@@ -16,7 +16,7 @@ def recursively_put(location, value, ids):
                 sub_ids.resize(N)
             elif sub_ids.size != N:
                 raise ValueError(
-                    f"""Inconsistent size across flat entries {location}, {N} (flat) vs. ids {ids.size}!
+                    f"""Inconsistent size across flat entries {location}, {N} (flat) vs. ids {sub_ids.size}!
 """
                 )
             # Need to iterate over indices (e.g. equilibrium.time_slice[:].)

@@ -208,7 +208,7 @@ class IDSTensorizer:
     def recursively_convert_to_list(self, path: str, inactive_index:Tuple, 
                                     shape:Tuple, i_dim: int):
         entry = []
-        for index in path:
+        for index in range(shape[i_dim]):
             new_index = inactive_index + (index,)
             if i_dim == len(shape) - 1:
                 entry.append(self.filled_data[path][new_index].value)
@@ -231,12 +231,16 @@ class IDSTensorizer:
         """
         if path in self.shapes:
             shape = self.shapes[path]
+            if shape.ndim > 2:
+                raise NotImplementedError("Dimensions higher than 2 are not yet implemented.")
+            shape = shape.shape
+            hdf5_dim = 1
         else:
             dimensions = self.ncmeta.get_dimensions(path, self.homogeneous_time)
             shape = tuple(self.dimension_size[dim] for dim in dimensions)
-        # Get the split between HDF5 indices and stored matrices
-        # i.e. equilibrium.time_slice.profiles_2d <-> psi
-        hdf5_dim = len(list(self.filled_data[path].keys())[0])
+            # Get the split between HDF5 indices and stored matrices
+            # i.e. equilibrium.time_slice.profiles_2d <-> psi
+            hdf5_dim = len(list(self.filled_data[path].keys())[0])
         if hdf5_dim == 0:
             return self.filled_data[path][()].value
         else:
