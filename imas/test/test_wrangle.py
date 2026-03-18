@@ -22,6 +22,8 @@ def test_data():
 
     data["thomson_scattering"] = {}
     data["thomson_scattering"]["N_ch"] = (20,10)
+    N = data["thomson_scattering"]["N_ch"][0] + data["thomson_scattering"]["N_ch"][1]
+    data["thomson_scattering"]["identifier"] = np.asarray("channel_" +  np.asarray(np.linspace(1,N+1,N, dtype=int),dtype="|U2"),dtype="|U10")
     data["thomson_scattering"]["N_time"] = (100, 300)
     data["thomson_scattering"]["r"] = np.concatenate([np.ones(data["thomson_scattering"]["N_ch"][0])*1.6,
                                                       np.ones(data["thomson_scattering"]["N_ch"][1])*1.7])
@@ -65,9 +67,8 @@ def flat(test_data):
         )
     )
     flat["equilibrium.time_slice.profiles_2d.psi"][:] = test_data["equilibrium"]["psi_2d"][None, ...]
-    
     # Thomson scattering test data (ragged)
-    N = test_data["thomson_scattering"]["N_ch"][0] + test_data["thomson_scattering"]["N_ch"][1]
+    flat["thomson_scattering.channel.identifier"] = test_data["thomson_scattering"]["identifier"]
     flat["thomson_scattering.ids_properties.homogeneous_time"] = 0
     flat["thomson_scattering.channel.t_e.time"] = ak.concatenate([np.tile(test_data["thomson_scattering"]["time"][0],
                                                                   (test_data["thomson_scattering"]["N_ch"][0],
@@ -116,6 +117,7 @@ def test_ids_dict(test_data):
     for i in range(N):
         if i == test_data["thomson_scattering"]["N_ch"][0]:
             index = 1
+        thomson_scattering.channel[i].identifier = test_data["thomson_scattering"]["identifier"][i]
         thomson_scattering.channel[i].t_e.time = test_data["thomson_scattering"]["time"][index]
         thomson_scattering.channel[i].t_e.data = np.tile(test_data["thomson_scattering"]["t_e"][i],
                                                          test_data["thomson_scattering"]["N_time"][index])
@@ -134,7 +136,20 @@ def test_wrangle(test_ids_dict, flat):
         diff = idsdiffgen(wrangled[key],test_ids_dict[key])
         assert len(list(diff)) == 0, diff
 
+def get_dtype(arr):
+    """Get dtype from either numpy or awkward array."""
+    if isinstance(arr, ak.Array):
+        # This is the easiest way I found to extract the numpy dtype from an awkward array
+        return eval("np." + arr.typestr.split("*")[-1])
+    if hasattr(arr, "dtype"):
+        return arr.dtype
+    else:
+        return type(arr)
+
 def test_unwrangle(test_ids_dict, flat):
     result = unwrangle(list(flat.keys()), test_ids_dict)
     for key in flat.keys():
-        assert ak.almost_equal(result[key], flat[key])
+        if np.issubdtype(get_dtype(result[key]), np.floating):
+            assert ak.almost_equal(result[key], flat[key])
+        else:
+            assert ak.array_equal(result[key], flat[key])
