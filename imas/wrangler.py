@@ -56,6 +56,7 @@ def unwrangle(
 ) -> Dict[str, ak.Array | np.ndarray]:
     flat = {}  
     ids_locations = split_location_across_ids(locations)
+    failed_locations = []
     for key in ids_locations:
         tensorizer = IDSTensorizer(ids_dict[key], ids_locations[key])
         tensorizer.include_coordinate_paths()
@@ -64,7 +65,11 @@ def unwrangle(
         # Add IDS conversion
         for ids_location in ids_locations[key]:
             location = key + "." + ids_location.replace("/", ".")
-            values = tensorizer.awkward_tensorize(ids_location)
+            try:
+                values = tensorizer.awkward_tensorize(ids_location)
+            except KeyError:
+                failed_locations.append(location)
+                continue
             if hasattr(values, "__getitem__"):
                 # Not a scalar, e.g. homogenous_time
                 try:
@@ -73,4 +78,4 @@ def unwrangle(
                     flat[location] = ak.Array(values)
             else:
                 flat[location] = values
-    return flat
+    return flat, failed_locations

@@ -153,7 +153,8 @@ def get_dtype(arr):
         return type(arr)
 
 def test_unwrangle(test_ids_dict, flat):
-    result = unwrangle(list(flat.keys()), test_ids_dict)
+    result, failed = unwrangle(list(flat.keys()), test_ids_dict)
+    assert failed == 0, f"The following fields failed to load {failed}"
     for key in flat.keys():
         if np.issubdtype(get_dtype(result[key]), np.floating):
             assert ak.almost_equal(result[key], flat[key])
