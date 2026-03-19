@@ -2,6 +2,7 @@ from typing import Dict, List, Tuple
 import awkward as ak
 import numpy as np
 from . import IDSFactory
+from .ids_convert import convert_ids
 from .ids_toplevel import IDSToplevel
 from .backends.netcdf.ids_tensorizer import IDSTensorizer
 
@@ -33,7 +34,7 @@ def recursively_put(location, value, ids):
     return ids
 
 
-def wrangle(flat: Dict, source_version="3.41.0") -> Dict[str, IDSToplevel]:
+def wrangle(flat: Dict, source_version: str) -> Dict[str, IDSToplevel]:
     wrangled = {}
     factory = IDSFactory(source_version)
     for key in flat:
@@ -55,13 +56,18 @@ def split_location_across_ids(locations: List[str]) -> Dict[str, List[str]]:
 
 
 def unwrangle(
-    locations: List[str], ids_dict: Dict[str, IDSToplevel], target_version="3.41.0"
+    locations: List[str],
+    ids_dict: Dict[str, IDSToplevel],
+    target_version: str | None = None,
 ) -> Tuple[Dict[str, ak.Array | np.ndarray], List[str]]:
     flat = {}
     ids_locations = split_location_across_ids(locations)
     failed_locations = []
     for key in ids_locations:
-        tensorizer = IDSTensorizer(ids_dict[key], ids_locations[key])
+        ids = ids_dict[key]
+        if target_version is not None:
+            ids = convert_ids(ids, target_version)
+        tensorizer = IDSTensorizer(ids, ids_locations[key])
         tensorizer.include_coordinate_paths()
         tensorizer.collect_filled_data()
         tensorizer.determine_data_shapes()
