@@ -5,6 +5,7 @@ from . import IDSFactory
 from .ids_toplevel import IDSToplevel
 from .backends.netcdf.ids_tensorizer import IDSTensorizer
 
+
 def recursively_put(location, value, ids):
     # time_slice.profiles_1d.psi
     if "." in location:
@@ -16,8 +17,8 @@ def recursively_put(location, value, ids):
                 sub_ids.resize(N)
             elif sub_ids.size != N:
                 raise ValueError(
-                    f"""Inconsistent size across flat entries {location}, {N} (flat) vs. ids {sub_ids.size}!
-"""
+                    f"Inconsistent size across flat entries {location}, "
+                    f"{N} (flat) vs. ids {sub_ids.size}!"
                 )
             # Need to iterate over indices (e.g. equilibrium.time_slice[:].)
             for index in range(N):
@@ -42,19 +43,21 @@ def wrangle(flat: Dict, source_version="3.41.0") -> Dict[str, IDSToplevel]:
         wrangled[ids] = recursively_put(location, flat[key], wrangled[ids])
     return wrangled
 
+
 def split_location_across_ids(locations: List[str]) -> Dict[str, List[str]]:
     ids_locations = {}
     for location in locations:
-        ids, path = location.split(".",1)
+        ids, path = location.split(".", 1)
         if ids not in ids_locations:
             ids_locations[ids] = []
-        ids_locations[ids].append(path.replace(".","/") )
+        ids_locations[ids].append(path.replace(".", "/"))
     return ids_locations
+
 
 def unwrangle(
     locations: List[str], ids_dict: Dict[str, IDSToplevel], target_version="3.41.0"
 ) -> Tuple[Dict[str, ak.Array | np.ndarray], List[str]]:
-    flat = {}  
+    flat = {}
     ids_locations = split_location_across_ids(locations)
     failed_locations = []
     for key in ids_locations:
@@ -74,7 +77,7 @@ def unwrangle(
                 # Not a scalar, e.g. homogenous_time
                 try:
                     flat[location] = np.asarray(values)
-                except ValueError as e:
+                except ValueError:
                     flat[location] = ak.Array(values)
             else:
                 flat[location] = values
