@@ -32,9 +32,9 @@ def recursively_put(location, value, ids):
     return ids
 
 
-def wrangle(flat: Dict, version: Optional[str] = None) -> Dict[str, IDSToplevel]:
+def wrangle(flat: Dict, version="3.41.0") -> Dict[str, IDSToplevel]:
     wrangled = {}
-   factory = IDSFactory(version) if version is not None else IDSFactory()
+    factory = IDSFactory(version)
     for key in flat:
         ids, location = key.split(".", 1)
         if ids not in wrangled:
