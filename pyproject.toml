@@ -94,6 +94,9 @@ xarray = [
 saxonche = [
     "saxonche",
 ]
+awkward = [
+    "awkward>=2.0",
+]
 test = [
     "pytest>=5.4.1",
     "pytest-cov>=0.6",
@@ -107,7 +110,7 @@ test = [
     "pint",
     # Optional dependencies
     # TODO add imas-core when it is available on pypi
-    "imas-python[netcdf,h5py,xarray,saxonche]",
+    "imas-python[netcdf,h5py,xarray,saxonche,awkward]",
 ]
 
 [project.scripts]

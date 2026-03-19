@@ -50,6 +50,7 @@ Manual
    configuring
    cli
    netcdf
+   wrangler
    changelog
    examples
 
