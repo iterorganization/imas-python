@@ -32,9 +32,9 @@ def recursively_put(location, value, ids):
     return ids
 
 
-def wrangle(flat: Dict, version="3.41.0") -> Dict[str, IDSToplevel]:
+def wrangle(flat: Dict, source_version="3.41.0") -> Dict[str, IDSToplevel]:
     wrangled = {}
-    factory = IDSFactory(version)
+    factory = IDSFactory(source_version)
     for key in flat:
         ids, location = key.split(".", 1)
         if ids not in wrangled:
@@ -52,7 +52,7 @@ def split_location_across_ids(locations: List[str]) -> Dict[str, List[str]]:
     return ids_locations
 
 def unwrangle(
-    locations: List[str], ids_dict: Dict[str, IDSToplevel], version="3.41.0"
+    locations: List[str], ids_dict: Dict[str, IDSToplevel], target_version="3.41.0"
 ) -> Tuple[Dict[str, ak.Array | np.ndarray], List[str]]:
     flat = {}  
     ids_locations = split_location_across_ids(locations)
