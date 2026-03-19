@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import awkward as ak
 import numpy as np
 from . import IDSFactory
@@ -53,7 +53,7 @@ def split_location_across_ids(locations: List[str]) -> Dict[str, List[str]]:
 
 def unwrangle(
     locations: List[str], ids_dict: Dict[str, IDSToplevel], version="3.41.0"
-) -> Dict[str, ak.Array | np.ndarray]:
+) -> Tuple[Dict[str, ak.Array | np.ndarray], List[str]]:
     flat = {}  
     ids_locations = split_location_across_ids(locations)
     failed_locations = []
