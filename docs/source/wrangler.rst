@@ -14,6 +14,7 @@ Key functions
 
 .. autofunction:: imas.wrangler.wrangle
 .. autofunction:: imas.wrangler.unwrangle
+.. autofunction:: imas.wrangler.ids_to_flat
 .. autofunction:: imas.wrangler.split_location_across_ids
 
 
@@ -61,6 +62,21 @@ Quick example
 
     print(recovered["core_profiles.time"])          # array([0., 1., 2.])
     print(recovered["core_profiles.profiles_1d.electrons.temperature"].shape)  # (3, 50)
+
+If you already have an IDS from a :py:class:`~imas.db_entry.DBEntry`, use
+:func:`~imas.wrangler.ids_to_flat` — no path list required:
+
+.. code-block:: python
+
+    import imas
+    from imas.wrangler import ids_to_flat
+
+    with imas.DBEntry("imas:hdf5?path=./test", "r") as db:
+        cp = db.get("core_profiles", autoconvert=False)
+
+    flat = ids_to_flat(cp)
+    print(flat["core_profiles.time"])
+    print(flat["core_profiles.profiles_1d.electrons.temperature"].shape)
 
 
 Array of Structures (AoS)

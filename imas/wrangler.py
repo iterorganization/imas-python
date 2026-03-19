@@ -30,7 +30,11 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 
-def wrangle(flat: Dict, version: Optional[str] = None) -> Dict[str, IDSToplevel]:
+def wrangle(
+    flat: Dict,
+    version: Optional[str] = None,
+    base_ids_dict: Optional[Dict[str, IDSToplevel]] = None,
+) -> Dict[str, IDSToplevel]:
     """Convert a flat dot-path dict into IDS toplevel objects.
 
     Args:
@@ -38,20 +42,39 @@ def wrangle(flat: Dict, version: Optional[str] = None) -> Dict[str, IDSToplevel]
             ``"equilibrium.time_slice.profiles_1d.psi"``.  Values are
             scalars, :class:`numpy.ndarray`, or :class:`awkward.Array`.
         version: Data Dictionary version string.  When ``None`` (default)
-            the installed default DD version is used.
+            the installed default DD version is used.  Ignored for any IDS
+            name that is already present in *base_ids_dict*.
+        base_ids_dict: Optional mapping of IDS name → existing
+            :class:`~imas.ids_toplevel.IDSToplevel` instances.  When
+            provided, new IDS objects for the matching names are created
+            using the **same DD version** as the supplied IDS.
 
     Returns:
         Dict mapping IDS name → :class:`~imas.ids_toplevel.IDSToplevel`.
     """
-    factory = IDSFactory(version) if version is not None else IDSFactory()
+    _default_factory: Optional[IDSFactory] = None
+    _versioned_factories: Dict[str, IDSFactory] = {}
     wrangled: Dict[str, IDSToplevel] = {}
+
+    def _factory_for(ids_name: str) -> IDSFactory:
+        nonlocal _default_factory
+        if base_ids_dict and ids_name in base_ids_dict:
+            v = base_ids_dict[ids_name]._dd_version
+            if v not in _versioned_factories:
+                _versioned_factories[v] = IDSFactory(v)
+            return _versioned_factories[v]
+        if _default_factory is None:
+            _default_factory = (
+                IDSFactory(version) if version is not None else IDSFactory()
+            )
+        return _default_factory
 
     for key, value in flat.items():
         ids_name, dot_path = key.split(".", 1)
         slash_path = dot_path.replace(".", "/")
 
         if ids_name not in wrangled:
-            wrangled[ids_name] = factory.new(ids_name)
+            wrangled[ids_name] = _factory_for(ids_name).new(ids_name)
 
         _put_value(slash_path, value, wrangled[ids_name])
 
@@ -69,8 +92,16 @@ def _put_value(slash_path: str, value: Any, node: IDSStructure) -> None:
         node: Current IDS structure node (IDSToplevel or IDSStructure).
     """
     if "/" not in slash_path:
-        # Leaf — assign directly via the IDS node
-        node[slash_path].value = value
+        if value is None:
+            return
+        target = node[slash_path]
+        if hasattr(value, "ndim") and value.ndim == 0:
+            target_ndim = target.metadata.ndim
+            if target_ndim == 0:
+                value = value.item()
+            else:
+                value = np.reshape(value, (1,) * target_ndim)
+        target.value = value
         return
 
     part, rest = slash_path.split("/", 1)
@@ -87,7 +118,8 @@ def _put_value(slash_path: str, value: Any, node: IDSStructure) -> None:
                 f"IDS has {child.size} elements, flat value has {N}."
             )
         for idx in range(N):
-            _put_value(rest, value[idx], child[idx])
+            if value[idx] is not None:
+                _put_value(rest, value[idx], child[idx])
 
     elif isinstance(child, IDSStructure):
         _put_value(rest, value, child)
@@ -269,3 +301,40 @@ def _build_nested_list(
             )
             for i in range(size)
         ]
+
+
+# ---------------------------------------------------------------------------
+# Convenience: single IDS → flat dict without specifying paths upfront
+# ---------------------------------------------------------------------------
+
+
+def ids_to_flat(ids: IDSToplevel) -> Dict[str, Any]:
+    """Convert a single :class:`~imas.ids_toplevel.IDSToplevel` to a flat dict.
+
+    All filled primitive leaf nodes are auto-discovered via
+    :func:`~imas.backends.netcdf.iterators.indexed_tree_iter`; no path list
+    needs to be supplied.
+
+    This is the ergonomic complement to :func:`wrangle` when you already have
+    an IDS object (e.g. read from a DBEntry) and want a flat representation::
+
+        with imas.DBEntry(uri, "r") as db:
+            cp = db.get("core_profiles")
+
+        flat = ids_to_flat(cp)
+        # flat["core_profiles.time"], flat["core_profiles.profiles_1d..."], …
+
+    Args:
+        ids: A filled IDSToplevel instance.
+
+    Returns:
+        Dict mapping dot-separated paths to values (numpy arrays, scalars, or
+        :class:`awkward.Array` for ragged data).
+    """
+    ids_name = ids.metadata.name
+    filled_paths = [
+        ids_name + "." + node.metadata.path_string.replace("/", ".")
+        for _, node in indexed_tree_iter(ids)
+        if isinstance(node, IDSPrimitive) and node.has_value
+    ]
+    return unwrangle(filled_paths, {ids_name: ids})

@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 from imas.ids_factory import IDSFactory
-from imas.wrangler import split_location_across_ids, unwrangle, wrangle
+from imas.wrangler import ids_to_flat, split_location_across_ids, unwrangle, wrangle
 
 
 # ---------------------------------------------------------------------------
@@ -173,6 +173,93 @@ def test_full_roundtrip():
         "core_profiles.profiles_1d.electrons.temperature",
     ]:
         np.testing.assert_array_almost_equal(recovered[key], flat[key])
+
+
+# ---------------------------------------------------------------------------
+# ids_to_flat
+# ---------------------------------------------------------------------------
+
+
+def test_ids_to_flat_returns_all_filled_paths():
+    """ids_to_flat discovers every filled leaf without an explicit path list."""
+    n_times, n_rho = 3, 10
+    flat_in = make_core_profiles(n_times, n_rho)
+    ids_dict = wrangle(flat_in)
+    cp = ids_dict["core_profiles"]
+
+    flat_out = ids_to_flat(cp)
+
+    # All paths we put in must come back out
+    for key in flat_in:
+        assert key in flat_out, f"Missing key: {key}"
+
+
+def test_ids_to_flat_roundtrip_values():
+    """Values recovered by ids_to_flat match what was wrangled in."""
+    n_times, n_rho = 2, 8
+    flat_in = make_core_profiles(n_times, n_rho)
+    ids_dict = wrangle(flat_in)
+    flat_out = ids_to_flat(ids_dict["core_profiles"])
+
+    np.testing.assert_array_almost_equal(
+        flat_out["core_profiles.time"], flat_in["core_profiles.time"]
+    )
+    np.testing.assert_array_almost_equal(
+        flat_out["core_profiles.profiles_1d.electrons.temperature"],
+        flat_in["core_profiles.profiles_1d.electrons.temperature"],
+    )
+
+
+def test_ids_to_flat_empty_ids_returns_empty():
+    """An unfilled IDS produces an empty dict."""
+    cp = IDSFactory().new("core_profiles")
+    assert ids_to_flat(cp) == {}
+
+
+def test_wrangle_base_ids_dict_uses_donor_version():
+    """base_ids_dict makes wrangle use the donor IDS DD version, not the default."""
+    # Build a small IDS and record its version
+    factory = IDSFactory()
+    cp = factory.new("core_profiles")
+    donor_version = cp._dd_version
+
+    flat = {"core_profiles.time": np.array([0.0, 1.0])}
+    ids_dict = wrangle(flat, base_ids_dict={"core_profiles": cp})
+
+    result_cp = ids_dict["core_profiles"]
+    assert result_cp._dd_version == donor_version
+    np.testing.assert_array_equal(result_cp.time.value, [0.0, 1.0])
+
+
+def test_wrangle_base_ids_dict_roundtrip():
+    """ids_to_flat + wrangle(base_ids_dict=...) is a lossless roundtrip."""
+    n_times, n_rho = 2, 8
+    flat_in = make_core_profiles(n_times, n_rho)
+    cp = wrangle(flat_in)["core_profiles"]
+
+    # Roundtrip via ids_to_flat → wrangle with base_ids_dict
+    flat_rt = ids_to_flat(cp)
+    ids_dict_rt = wrangle(flat_rt, base_ids_dict={"core_profiles": cp})
+    cp_rt = ids_dict_rt["core_profiles"]
+
+    np.testing.assert_array_almost_equal(
+        cp_rt.time.value, flat_in["core_profiles.time"]
+    )
+    np.testing.assert_array_almost_equal(
+        cp_rt.profiles_1d[0].grid.rho_tor_norm.value,
+        flat_in["core_profiles.profiles_1d.grid.rho_tor_norm"][0],
+    )
+
+
+def test_wrangle_scalar_in_array_field():
+    # (2, 1, 2) array ≡ 2 time slices, 1 ion species, 2 states, scalar leaf
+    flat = {
+        "core_profiles.profiles_1d.ion.state.density_thermal": np.zeros((2, 1, 2)),
+    }
+    # Must not raise: ValueError: Trying to assign a 0D value to FLT_1D
+    ids_dict = wrangle(flat)
+    cp = ids_dict["core_profiles"]
+    assert cp.profiles_1d[0].ion[0].state[0].density_thermal.has_value
 
 
 # ---------------------------------------------------------------------------
