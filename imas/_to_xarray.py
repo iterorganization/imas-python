@@ -50,18 +50,23 @@ def to_xarray(ids: IDSToplevel, *paths: str) -> xarray.Dataset:
         var_name = path.replace("/", ".")
         metadata = ids.metadata[path]
         if metadata.data_type in (IDSDataType.STRUCTURE, IDSDataType.STRUCT_ARRAY):
-            continue  # We don't store these in xarray
-
-        dimensions = tensorizer.ncmeta.get_dimensions(path, tensorizer.homogeneous_time)
-        data = tensorizer.tensorize(path, fillvals[metadata.data_type])
+            # Metadata variables for (arrays of) structures
+            if paths and path not in paths:
+                continue
+            dimensions = ()
+            data = ""
+        else:
+            dimensions = tensorizer.get_dimensions(path)
+            data = tensorizer.tensorize(path, fillvals[metadata.data_type])
 
         attrs = dict(documentation=metadata.documentation)
         if metadata.units:
             attrs["units"] = metadata.units
-        coordinates = tensorizer.filter_coordinates(path)
-        if coordinates:
-            coordinate_names.update(coordinates.split(" "))
-            attrs["coordinates"] = coordinates
+        if dimensions:
+            coordinates = tensorizer.filter_coordinates(path)
+            if coordinates:
+                coordinate_names.update(coordinates.split(" "))
+                attrs["coordinates"] = coordinates
 
         data_vars[var_name] = (dimensions, data, attrs)
 

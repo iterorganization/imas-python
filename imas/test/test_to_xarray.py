@@ -87,7 +87,9 @@ def test_to_xarray():
     ids.profiles_1d[0].time = 0.0
 
     # These should all be identical:
-    ds1 = to_xarray(ids)
+    ds1 = to_xarray(ids).drop_vars(
+        ["profiles_1d", "profiles_1d.electrons", "profiles_1d.grid"]
+    )
     ds2 = to_xarray(ids, "profiles_1d.electrons.temperature")
     ds3 = to_xarray(ids, "profiles_1d/electrons/temperature")
     assert ds1.equals(ds2)
