@@ -3,7 +3,7 @@
 """Tensorization logic to convert IDSs to netCDF files and/or xarray Datasets."""
 
 from collections import deque
-from typing import List
+from typing import List, Tuple
 
 import numpy
 
@@ -47,12 +47,20 @@ class IDSTensorizer:
         """Map of IDS paths to filled data nodes."""
         self.filled_variables = set()
         """Set of filled IDS variables"""
-        self.homogeneous_time = (
+        self.homogeneous_time = bool(
             ids.ids_properties.homogeneous_time == IDS_TIME_MODE_HOMOGENEOUS
         )
         """True iff the IDS time mode is homogeneous."""
         self.shapes = {}
         """Map of IDS paths to data shape arrays."""
+
+    def get_dimensions(self, path: str) -> Tuple[str, ...]:
+        """Get the dimensions for a netCDF variable.
+
+        Args:
+            path: Data Dictionary path to the variable, e.g. ``ids_properties/comment``.
+        """
+        return self.ncmeta.get_dimensions(path, self.homogeneous_time)
 
     def include_coordinate_paths(self) -> None:
         """Append all paths that are coordinates of self.paths_to_tensorize"""
@@ -62,7 +70,7 @@ class IDSTensorizer:
         for path in self.paths_to_tensorize:
             while path:
                 path, _, _ = path.rpartition("/")
-                if self.ncmeta.get_dimensions(path, self.homogeneous_time):
+                if self.get_dimensions(path):
                     queue.append(path)
 
         self.paths_to_tensorize = []
@@ -82,7 +90,6 @@ class IDSTensorizer:
         # Initialize dictionary with all paths that could exist in this IDS
         filled_data = {path: {} for path in self.ncmeta.paths}
         dimension_size = {}
-        get_dimensions = self.ncmeta.get_dimensions
 
         if self.paths_to_tensorize:
             # Restrict tensorization to provided paths
@@ -102,7 +109,7 @@ class IDSTensorizer:
             ndim = node.metadata.ndim
             if not ndim:
                 continue
-            dimensions = get_dimensions(path, self.homogeneous_time)
+            dimensions = self.get_dimensions(path)
             # We're only interested in the non-tensorized dimensions: [-ndim:]
             for dim_name, size in zip(dimensions[-ndim:], node.shape):
                 dimension_size[dim_name] = max(dimension_size.get(dim_name, 0), size)
@@ -115,15 +122,13 @@ class IDSTensorizer:
 
     def determine_data_shapes(self) -> None:
         """Determine tensorized data shapes and sparsity, save in :attr:`shapes`."""
-        get_dimensions = self.ncmeta.get_dimensions
-
         for path, nodes_dict in self.filled_data.items():
             metadata = self.ids.metadata[path]
             # Structures don't have a size
             if metadata.data_type is IDSDataType.STRUCTURE:
                 continue
             ndim = metadata.ndim
-            dimensions = get_dimensions(path, self.homogeneous_time)
+            dimensions = self.get_dimensions(path)
 
             # node shape if it is completely filled
             full_shape = tuple(self.dimension_size[dim] for dim in dimensions[-ndim:])
@@ -137,7 +142,7 @@ class IDSTensorizer:
 
             else:
                 # Data is tensorized, determine if it is homogeneously shaped
-                aos_dims = get_dimensions(self.ncmeta.aos[path], self.homogeneous_time)
+                aos_dims = self.get_dimensions(self.ncmeta.aos[path])
                 shapes_shape = [self.dimension_size[dim] for dim in aos_dims]
                 if ndim:
                     shapes_shape.append(ndim)
@@ -180,7 +185,7 @@ class IDSTensorizer:
         Returns:
             A tensor filled with the data from the specified path.
         """
-        dimensions = self.ncmeta.get_dimensions(path, self.homogeneous_time)
+        dimensions = self.get_dimensions(path)
         shape = tuple(self.dimension_size[dim] for dim in dimensions)
 
         # TODO: depending on the data, tmp_var may be HUGE, we may need a more

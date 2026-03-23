@@ -47,7 +47,6 @@ class IDS2NC(IDSTensorizer):
 
     def create_variables(self) -> None:
         """Create netCDF variables."""
-        get_dimensions = self.ncmeta.get_dimensions
         for path in self.filled_data:
             metadata = self.ids.metadata[path]
             var_name = path.replace("/", ".")
@@ -75,7 +74,7 @@ class IDS2NC(IDSTensorizer):
                 if dtype is not dtypes[IDSDataType.CPX]:  # Set fillvalue
                     kwargs.update(fill_value=default_fillvals[metadata.data_type])
                 # Create variable
-                dimensions = get_dimensions(path, self.homogeneous_time)
+                dimensions = self.get_dimensions(path)
                 var = self.group.createVariable(var_name, dtype, dimensions, **kwargs)
 
             # Fill metadata attributes
@@ -108,9 +107,9 @@ class IDS2NC(IDSTensorizer):
                     var.sparse = f"Sparse data, data shapes are stored in {shape_name}"
 
                     # Create variable to store data shape
-                    dimensions = get_dimensions(
-                        self.ncmeta.aos.get(path), self.homogeneous_time
-                    ) + (f"{metadata.ndim}D",)
+                    dimensions = self.get_dimensions(self.ncmeta.aos.get(path)) + (
+                        f"{metadata.ndim}D",
+                    )
                     shape_var = self.group.createVariable(
                         shape_name,
                         SHAPE_DTYPE,
