@@ -8,7 +8,7 @@ from imas.backends.netcdf.ids_tensorizer import IDSTensorizer
 from imas.ids_data_type import IDSDataType
 
 fillvals = {
-    IDSDataType.INT: -(2**31) + 1,
+    IDSDataType.INT: numpy.int32(-(2**31) + 1),
     IDSDataType.STR: "",
     IDSDataType.FLT: numpy.nan,
     IDSDataType.CPX: numpy.nan * (1 + 1j),
@@ -54,21 +54,23 @@ def to_xarray(ids: IDSToplevel, *paths: str) -> xarray.Dataset:
             if paths and path not in paths:
                 continue
             dimensions = ()
-            data = ""
+            data = b""
         else:
             dimensions = tensorizer.get_dimensions(path)
             data = tensorizer.tensorize(path, fillvals[metadata.data_type])
 
-        attrs = dict(documentation=metadata.documentation)
-        if metadata.units:
-            attrs["units"] = metadata.units
-        if dimensions:
-            coordinates = tensorizer.filter_coordinates(path)
-            if coordinates:
-                coordinate_names.update(coordinates.split(" "))
-                attrs["coordinates"] = coordinates
-
+        attrs = tensorizer.get_attributes(path, fillvals)
+        if "coordinates" in attrs:
+            coordinate_names.update(attrs["coordinates"].split(" "))
         data_vars[var_name] = (dimensions, data, attrs)
+
+        # :shape array for sparse data
+        if path in tensorizer.shapes and metadata.ndim:
+            shape_name = f"{var_name}:shape"
+            dimensions = tensorizer.get_shape_dimensions(path)
+            data = tensorizer.shapes[path]
+            attrs = tensorizer.get_shape_attributes(var_name)
+            data_vars[shape_name] = (dimensions, data, attrs)
 
     # Remove coordinates from data_vars and put in coordinates mapping:
     coordinates = {}

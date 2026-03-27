@@ -3,7 +3,7 @@
 """Tensorization logic to convert IDSs to netCDF files and/or xarray Datasets."""
 
 from collections import deque
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 
 import numpy
 
@@ -61,6 +61,11 @@ class IDSTensorizer:
             path: Data Dictionary path to the variable, e.g. ``ids_properties/comment``.
         """
         return self.ncmeta.get_dimensions(path, self.homogeneous_time)
+
+    def get_shape_dimensions(self, path: str) -> Tuple[str, ...]:
+        """Get dimensions names for shape array of the tensorized variable"""
+        ndim = self.ids.metadata[path].ndim
+        return self.get_dimensions(self.ncmeta.aos.get(path, "")) + (f"{ndim}D",)
 
     def include_coordinate_paths(self) -> None:
         """Append all paths that are coordinates of self.paths_to_tensorize"""
@@ -172,6 +177,54 @@ class IDSTensorizer:
             for coordinate in self.ncmeta.get_coordinates(path, self.homogeneous_time)
             if coordinate in self.filled_variables
         )
+
+    def get_attributes(self, path: str, fillvals: dict) -> Dict[str, str]:
+        """Get metadata attributes of the tensorized variable"""
+        metadata = self.ids.metadata[path]
+        var_name = path.replace("/", ".")
+
+        assert metadata.documentation is not None
+        attrs = {"documentation": metadata.documentation}
+        if metadata.units:
+            attrs["units"] = metadata.units
+
+        ancillary_variables = " ".join(
+            error_var
+            for error_var in [f"{var_name}_error_upper", f"{var_name}_error_lower"]
+            if error_var in self.filled_variables
+        )
+        if ancillary_variables:
+            attrs["ancillary_variables"] = ancillary_variables
+
+        if metadata.data_type is not IDSDataType.STRUCT_ARRAY:
+            coordinates = self.filter_coordinates(path)
+            if coordinates:
+                attrs["coordinates"] = coordinates
+
+        # Sparsity
+        if path in self.shapes:
+            if not metadata.ndim:
+                # Doesn't need a :shape array
+                attrs["sparse"] = (
+                    "Sparse data, missing data is filled with _FillValue"
+                    f" ({fillvals[metadata.data_type]})"
+                )
+            else:
+                attrs["sparse"] = (
+                    f"Sparse data, data shapes are stored in {var_name}:shape"
+                )
+
+        return attrs
+
+    def get_shape_attributes(self, var_name: str) -> Dict[str, str]:
+        doc_indices = ",".join(chr(ord("i") + i) for i in range(3))
+        documentation = (
+            f"Shape information for {var_name}.\n"
+            f"{var_name}:shape[{doc_indices},:] describes the shape of filled "
+            f"data of {var_name}[{doc_indices},...]. Data outside this "
+            "shape is unset (i.e. filled with _Fillvalue)."
+        )
+        return {"documentation": documentation}
 
     def tensorize(self, path, fillvalue):
         """

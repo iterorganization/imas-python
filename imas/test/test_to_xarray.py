@@ -1,11 +1,13 @@
 import numpy as np
+import netCDF4
 import pytest
 
 import imas
 import imas.training
+from imas.test.test_helpers import compare_children
 from imas.util import to_xarray
 
-pytest.importorskip("xarray")
+xarray = pytest.importorskip("xarray")
 
 
 @pytest.fixture
@@ -94,3 +96,22 @@ def test_to_xarray():
     ds3 = to_xarray(ids, "profiles_1d/electrons/temperature")
     assert ds1.equals(ds2)
     assert ds2.equals(ds3)
+
+
+@pytest.mark.parametrize("idsname", ["core_profiles", "equilibrium"])
+def test_roundtrip_xarray_netcdf(tmp_path, entry, idsname):
+    ids = entry.get(idsname)
+    xrds = to_xarray(ids)
+    fname = f"{tmp_path}/test-{idsname}-xarray.nc"
+    # First write mandatory file-level metadata
+    with netCDF4.Dataset(fname, "x") as ds:
+        ds.data_dictionary_version = imas.util.get_data_dictionary_version(ids)
+    # Then use xarray to write the IDS
+    xrds.to_netcdf(fname, "a", format="NETCDF4", group=f"{idsname}/0")
+    # And read it back with a DBEntry
+    with imas.DBEntry(fname, "r") as entry:
+        ids2 = entry.get(idsname)
+    compare_children(ids, ids2)
+    # Reading the netCDF file with xarray should produce an identical dataset
+    ncxrds = xarray.load_dataset(fname, group=f"{idsname}/0")
+    assert xrds.equals(ncxrds)
