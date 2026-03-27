@@ -217,6 +217,7 @@ class IDSTensorizer:
         return attrs
 
     def get_shape_attributes(self, var_name: str) -> Dict[str, str]:
+        """Get attributes of the :shape variable corresponding to var_name"""
         doc_indices = ",".join(chr(ord("i") + i) for i in range(3))
         documentation = (
             f"Shape information for {var_name}.\n"
