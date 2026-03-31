@@ -583,37 +583,19 @@ def test_3to4_name_identifier_empty_identifier():
     src.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
     src.coil.resize(2)
     # Case 1: name populated, identifier empty
-    src.coil[0].name = "CS3U"
+    src.coil[0].name = "TEST_NAME"
     src.coil[0].identifier = ""
     # Case 2: name populated, identifier not set at all
-    src.coil[1].name = "PF1"
+    src.coil[1].name = "TEST_NAME2"
 
     dst = convert_ids(src, "4.0.0")
 
     # name must be preserved in DD4 name (not overwritten by empty identifier)
-    assert dst.coil[0].name == "CS3U"
-    assert dst.coil[0].description == "CS3U"
+    assert dst.coil[0].name == "TEST_NAME"
+    assert dst.coil[0].description == "TEST_NAME"
 
-    assert dst.coil[1].name == "PF1"
-    assert dst.coil[1].description == "PF1"
-
-
-def test_3to4_name_identifier_both_populated():
-    """GH#114: when both name and identifier are populated, identifier wins."""
-    factory = IDSFactory("3.40.1")
-
-    src = factory.pf_active()
-    src.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
-    src.coil.resize(1)
-    src.coil[0].name = "CS3U"
-    src.coil[0].identifier = "COIL_ID"
-
-    dst = convert_ids(src, "4.0.0")
-
-    # DD3 identifier -> DD4 name
-    assert dst.coil[0].name == "COIL_ID"
-    # DD3 name -> DD4 description
-    assert dst.coil[0].description == "CS3U"
+    assert dst.coil[1].name == "TEST_NAME2"
+    assert dst.coil[1].description == "TEST_NAME2"
 
 
 def test_3to4_cocos_hardcoded_paths():

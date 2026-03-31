@@ -1157,14 +1157,7 @@ def _circuit_connections_4to3(node: IDSPrimitive) -> None:
 
 
 def _name_identifier_3to4(source_name: IDSBase, target_description: IDSBase) -> None:
-    """Handle DD3to4 name→description rename, preserving name when identifier is empty.
-
-    GH#114: The ``name→description`` rename moves DD3 ``name`` to DD4 ``description``.
-    Normally DD4 ``name`` is filled by the ``identifier→name`` rename.  However, when
-    the DD3 ``identifier`` is empty/unset, ``iter_nonempty_`` never visits it, leaving
-    DD4 ``name`` blank.  This handler copies DD3 ``name`` to *both* DD4 ``description``
-    and DD4 ``name`` when the DD3 ``identifier`` is absent.
-    """
+    """Preserve name when identifier is empty, see GH#114."""
     # Always copy DD3 name -> DD4 description
     target_description.value = source_name.value
 
