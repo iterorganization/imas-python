@@ -456,6 +456,8 @@ class DDVersionMap:
             # Map DD3 name -> DD4 description
             if name_path not in self.old_to_new.path:
                 self._add_rename(name_path, desc_path)
+                # GH#114: Also preserve name in DD4 name when identifier is empty
+                self.old_to_new.type_change[name_path] = _name_identifier_3to4
 
             # Map DD3 identifier -> DD4 name
             if id_path in self.old_to_new.path:
@@ -1152,6 +1154,26 @@ def _circuit_connections_4to3(node: IDSPrimitive) -> None:
     new_value[:, ::2] = node.value == 1
     new_value[:, 1::2] = node.value == -1
     node.value = new_value
+
+
+def _name_identifier_3to4(source_name: IDSBase, target_description: IDSBase) -> None:
+    """Handle DD3to4 name→description rename, preserving name when identifier is empty.
+
+    GH#114: The ``name→description`` rename moves DD3 ``name`` to DD4 ``description``.
+    Normally DD4 ``name`` is filled by the ``identifier→name`` rename.  However, when
+    the DD3 ``identifier`` is empty/unset, ``iter_nonempty_`` never visits it, leaving
+    DD4 ``name`` blank.  This handler copies DD3 ``name`` to *both* DD4 ``description``
+    and DD4 ``name`` when the DD3 ``identifier`` is absent.
+    """
+    # Always copy DD3 name -> DD4 description
+    target_description.value = source_name.value
+
+    # When DD3 identifier is empty, also preserve name in DD4 name
+    source_parent = source_name._parent
+    source_identifier = getattr(source_parent, "identifier", None)
+    if source_identifier is None or not source_identifier.value:
+        target_parent = target_description._parent
+        target_parent.name = source_name.value
 
 
 def _ids_properties_source(source: IDSString0D, provenance: IDSStructure) -> None:
