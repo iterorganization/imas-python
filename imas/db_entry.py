@@ -115,7 +115,7 @@ class DBEntry:
         Args:
             uri: URI to the data entry (a path to a netCDF file ending with .nc,
                 or an `IMAS URI for one of IMAS-Core's backends
-                <https://imas-core.readthedocs.io/en/latest/user_guide/uris_guide.html>__`
+                <https://imas-core.readthedocs.io/en/latest/user_guide/uris_guide.html>`__
                 ).
             mode: Mode to open the Data Entry in:
 
