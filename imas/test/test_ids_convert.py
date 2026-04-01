@@ -575,6 +575,29 @@ def test_4to3_name_identifier_mapping_magnetics():
     assert dst.b_field_pol_probe[0].identifier == "TEST_NAME"
 
 
+def test_3to4_name_identifier_empty_identifier():
+    """GH#114: name must be preserved when identifier is empty."""
+    factory = IDSFactory("3.40.1")
+
+    src = factory.pf_active()
+    src.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    src.coil.resize(2)
+    # Case 1: name populated, identifier empty
+    src.coil[0].name = "TEST_NAME"
+    src.coil[0].identifier = ""
+    # Case 2: name populated, identifier not set at all
+    src.coil[1].name = "TEST_NAME2"
+
+    dst = convert_ids(src, "4.0.0")
+
+    # name must be preserved in DD4 name (not overwritten by empty identifier)
+    assert dst.coil[0].name == "TEST_NAME"
+    assert dst.coil[0].description == "TEST_NAME"
+
+    assert dst.coil[1].name == "TEST_NAME2"
+    assert dst.coil[1].description == "TEST_NAME2"
+
+
 def test_3to4_cocos_hardcoded_paths():
     # Check for existence in 3.42.0
     factory = IDSFactory("3.42.0")

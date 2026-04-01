@@ -34,6 +34,9 @@ copyright = f"2020-{datetime.datetime.now().year}, ITER Organization"
 author = "ITER Organization"
 src_host = "https://github.com/iterorganization/"
 
+# Warn about missing references
+nitpicky = True
+
 # Parse urls here for convenience, to be re-used
 # ITER docs
 iter_projects = "https://github.com/iterorganization/"
