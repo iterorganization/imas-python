@@ -3,6 +3,7 @@ import awkward as ak
 import numpy as np
 from . import IDSFactory
 from .ids_convert import convert_ids
+from .dd_zip import parse_dd_version
 from .ids_toplevel import IDSToplevel
 from .backends.netcdf.ids_tensorizer import IDSTensorizer
 
@@ -65,7 +66,9 @@ def unwrangle(
     failed_locations = []
     for key in ids_locations:
         ids = ids_dict[key]
-        if target_version is not None:
+        if target_version is not None and parse_dd_version(
+            ids._dd_version
+        ) != parse_dd_version(target_version):
             ids = convert_ids(ids, target_version)
         tensorizer = IDSTensorizer(ids, ids_locations[key])
         tensorizer.include_coordinate_paths()
