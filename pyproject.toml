@@ -85,6 +85,9 @@ docs = [
 netcdf = [
     "netCDF4>=1.4.1",
 ]
+awkward = [
+    "awkward",
+]
 h5py = [
     "h5py",
 ]
