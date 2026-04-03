@@ -263,7 +263,7 @@ class IDSTensorizer:
 
         return tmp_var
 
-    def recursively_convert_to_list(
+    def _recursively_convert_to_list(
         self, path: str, inactive_index: Tuple, shape: Tuple, i_dim: int
     ):
         entry = []
@@ -273,7 +273,7 @@ class IDSTensorizer:
                 entry.append(self.filled_data[path][new_index].value)
             else:
                 entry.append(
-                    self.recursively_convert_to_list(path, new_index, shape, i_dim + 1)
+                    self._recursively_convert_to_list(path, new_index, shape, i_dim + 1)
                 )
         return entry
 
@@ -303,4 +303,4 @@ class IDSTensorizer:
             # i.e. equilibrium.time_slice.profiles_2d <-> psi
             shape = full_shape[:hdf5_dim]
 
-        return self.recursively_convert_to_list(path, tuple(), shape, 0)
+        return self._recursively_convert_to_list(path, tuple(), shape, 0)
