@@ -110,7 +110,7 @@ test = [
     "pint",
     # Optional dependencies
     # TODO add imas-core when it is available on pypi
-    "imas-python[netcdf,h5py,xarray,saxonche]",
+    "imas-python[netcdf,h5py,xarray,saxonche,awkward]",
 ]
 
 [project.scripts]

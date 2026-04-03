@@ -1,11 +1,15 @@
-from typing import Dict, List, Tuple
-import awkward as ak
+from typing import Dict, List, Tuple, Union
 import numpy as np
 from . import IDSFactory
 from .ids_convert import convert_ids
 from .dd_zip import parse_dd_version
 from .ids_toplevel import IDSToplevel
 from .backends.netcdf.ids_tensorizer import IDSTensorizer
+
+try:
+    import awkward as ak
+except ImportError:
+    ak = None
 
 
 def recursively_put(location, value, ids):
@@ -60,7 +64,7 @@ def unwrangle(
     locations: List[str],
     ids_dict: Dict[str, IDSToplevel],
     target_version: str | None = None,
-) -> Tuple[Dict[str, ak.Array | np.ndarray], List[str]]:
+) -> Tuple[Dict[str, Union[np.ndarray, object]], List[str]]:
     flat = {}
     ids_locations = split_location_across_ids(locations)
     failed_locations = []
@@ -87,7 +91,13 @@ def unwrangle(
                 try:
                     flat[location] = np.asarray(values)
                 except ValueError:
-                    flat[location] = ak.Array(values)
+                    if ak is not None:
+                        flat[location] = ak.Array(values)
+                    else:
+                        raise ImportError(
+                            "awkward-array is required to convert non-standard arrays. "
+                            "Install it with: pip install imas-python[awkward]"
+                        ) from None
             else:
                 flat[location] = values
     return flat, failed_locations
