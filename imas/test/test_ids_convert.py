@@ -439,6 +439,37 @@ def test_3to4_cocos_magnetics_workaround(dd4factory):
     compare_children(mag, mag3)
 
 
+def test_3to4_deprecated_magnetics(dd4factory):
+    # Test migrating deprecated bpol_probe
+    mag = IDSFactory("3.39.0").magnetics()
+    mag.bpol_probe.resize(2)
+    mag.bpol_probe[0].name = "name1"
+    mag.bpol_probe[0].identifier = "identifier1"
+    mag.bpol_probe[0].position.r = 1
+    mag.bpol_probe[0].field.data = [0.1, 0.2, 0.3]
+    mag.bpol_probe[1].name = "name2"
+    mag.bpol_probe[1].voltage.data = [0.1, 0.2, 0.3]
+
+    mag4 = convert_ids(mag, None, factory=dd4factory)
+    assert len(mag4.b_field_pol_probe) == 2
+    assert mag4.b_field_pol_probe[0].name == "identifier1"
+    assert mag4.b_field_pol_probe[0].description == "name1"
+    assert mag4.b_field_pol_probe[0].position.r == 1
+    assert array_equal(mag4.b_field_pol_probe[0].field.data, [0.1, 0.2, 0.3])
+    assert mag4.b_field_pol_probe[1].name == "name2"
+    assert mag4.b_field_pol_probe[1].description == "name2"
+    assert array_equal(mag4.b_field_pol_probe[1].voltage.data, [0.1, 0.2, 0.3])
+
+    # If both the deprecated and the "correct" quantity exist, we expect only the
+    # correct one to be converted to DD4:
+    mag.b_field_pol_probe.resize(1)
+    mag.b_field_pol_probe[0].name = "test"
+
+    mag4 = convert_ids(mag, None, factory=dd4factory)
+    assert len(mag4.b_field_pol_probe) == 1
+    assert mag4.b_field_pol_probe[0].name == "test"
+
+
 def test_3to4_pulse_schedule():
     ps = IDSFactory("3.39.0").pulse_schedule()
     ps.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS

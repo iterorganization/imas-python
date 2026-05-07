@@ -274,16 +274,7 @@ class DDVersionMap:
                         self.version_old,
                     )
                 elif self._check_data_type(old_item, new_item):
-                    # use class helper to register simple renames and
-                    # reciprocal mappings
                     self._add_rename(old_path, new_path)
-                    if old_item.get("data_type") in DDVersionMap.STRUCTURE_TYPES:
-                        # Add entries for common sub-elements
-                        for path in old_paths:
-                            if path.startswith(old_path):
-                                npath = path.replace(old_path, new_path, 1)
-                                if npath in new_path_set:
-                                    self._add_rename(path, npath)
             elif nbc_description == "type_changed":
                 pass  # We will handle this (if possible) in self._check_data_type
             elif nbc_description == "repeat_children_first_point":
@@ -334,28 +325,40 @@ class DDVersionMap:
         # Additional conversion rules for DDv3 to DDv4
         if self.version_old.major == 3 and new_version and new_version.major == 4:
             self._apply_3to4_conversion(old, new)
+            # 3to4 rules may have introduced additional missing items in self.old_to_new
+            self._map_missing(
+                False, old_path_set.difference(new_path_set, self.old_to_new)
+            )
 
-    def _add_rename(self, old_path: str, new_path: str) -> None:
+    def _add_rename(
+        self, old_path: str, new_path: str, reciprocal: bool = True
+    ) -> None:
         """Register a simple rename from old_path -> new_path using the
         path->Element maps stored on the instance (self.old_paths/self.new_paths).
         This will also add the reciprocal mapping when possible.
         """
         old_item = self.old_paths[old_path]
         new_item = self.new_paths[new_path]
-
-        # forward mapping
+        # Forward mapping
         self.old_to_new[old_path] = (
             new_path,
             _get_tbp(new_item, self.new_paths),
             _get_ctxpath(new_path, self.new_paths),
         )
-
-        # reciprocal mapping
-        self.new_to_old[new_path] = (
-            old_path,
-            _get_tbp(old_item, self.old_paths),
-            _get_ctxpath(old_path, self.old_paths),
-        )
+        # Reciprocal mapping
+        if reciprocal:
+            self.new_to_old[new_path] = (
+                old_path,
+                _get_tbp(old_item, self.old_paths),
+                _get_ctxpath(old_path, self.old_paths),
+            )
+        # Apply to descendent nodes as well if the item is a struct or AoS
+        for item in old_item.findall("field"):
+            path = item.get("path")
+            assert path is not None and path.startswith(old_path)
+            npath = path.replace(old_path, new_path, 1)
+            if npath in self.new_paths:
+                self._add_rename(path, npath, reciprocal)
 
     def _apply_3to4_conversion(self, old: Element, new: Element) -> None:
         # Postprocessing for COCOS definition change:
@@ -420,6 +423,11 @@ class DDVersionMap:
                             if p.startswith(path):
                                 to_update[p] = v
                 self.old_to_new.path.update(to_update)
+
+        # Migrate additional obsolescent nodes
+        # TODO: define migrations in a separate variable (as with the sign flips)?
+        if self.ids_name == "magnetics":
+            self._add_rename("bpol_probe", "b_field_pol_probe", reciprocal=False)
 
         # GH#59: To improve further the conversion of DD3 to DD4, especially the
         # Machine Description part of the IDSs, we would like to add a 3to4 specific
