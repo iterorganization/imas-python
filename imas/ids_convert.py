@@ -439,19 +439,20 @@ class DDVersionMap:
         # Only perform the mapping if the corresponding target fields exist in the
         # new DD and if we don't already have a mapping for the involved paths.
         # use self.old_paths and self.new_paths set in _build_map
-        for p in self.old_paths:
+        for name_path in self.old_paths:
             # look for name children
-            if not p.endswith("/name"):
+            if not name_path.endswith("/name"):
                 continue
-            parent = p.rsplit("/", 1)[0]
-            name_path = f"{parent}/name"
+            parent = name_path.rsplit("/", 1)[0]
             id_path = f"{parent}/identifier"
             index_path = f"{parent}/index"
-            desc_path = f"{parent}/description"
-            new_name_path = name_path
+            # Follow renames of parent structure
+            new_parent = self.old_to_new.path.get(parent) or parent
+            desc_path = f"{new_parent}/description"
+            new_name_path = f"{new_parent}/name"
 
-            # If neither 'name' nor 'identifier' existed in the old DD, skip this parent
-            if name_path not in self.old_paths or id_path not in self.old_paths:
+            # If 'identifier' doesn't exist in the old DD, skip this parent
+            if id_path not in self.old_paths:
                 continue
             # exclude identifier-structure (has index sibling)
             if index_path in self.old_paths:
@@ -462,14 +463,11 @@ class DDVersionMap:
                 continue
 
             # Map DD3 name -> DD4 description
-            if name_path not in self.old_to_new.path:
-                self._add_rename(name_path, desc_path)
-                # GH#114: Also preserve name in DD4 name when identifier is empty
-                self.old_to_new.type_change[name_path] = _name_identifier_3to4
-
+            self._add_rename(name_path, desc_path)
+            # GH#114: Also preserve name in DD4 name when identifier is empty
+            self.old_to_new.type_change[name_path] = _name_identifier_3to4
             # Map DD3 identifier -> DD4 name
-            if id_path in self.old_to_new.path:
-                self._add_rename(id_path, new_name_path)
+            self._add_rename(id_path, new_name_path)
 
     def _map_missing(self, is_new: bool, missing_paths: Set[str]):
         rename_map = self.new_to_old if is_new else self.old_to_new
