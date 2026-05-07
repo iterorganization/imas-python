@@ -428,6 +428,8 @@ class DDVersionMap:
         # TODO: define migrations in a separate variable (as with the sign flips)?
         if self.ids_name == "magnetics":
             self._add_rename("bpol_probe", "b_field_pol_probe", reciprocal=False)
+            self._add_rename("method", "ip", reciprocal=False)
+            self.old_to_new.type_change["method"] = _magnetics_method_to_ip
 
         # GH#59: To improve further the conversion of DD3 to DD4, especially the
         # Machine Description part of the IDSs, we would like to add a 3to4 specific
@@ -1335,3 +1337,14 @@ def _equilibrium_boundary_3to4(eq3: IDSToplevel, eq4: IDSToplevel, deepcopy: boo
             node[2].psi = -ts3.boundary_secondary_separatrix.psi  # COCOS change
             node[2].levelset.r = copy(ts3.boundary_secondary_separatrix.outline.r)
             node[2].levelset.z = copy(ts3.boundary_secondary_separatrix.outline.z)
+
+
+def _magnetics_method_to_ip(method: IDSBase, ip: IDSBase) -> None:
+    """Convert obsolescent method(:) to ip(:) in the magnetics IDS."""
+    if not len(method):
+        return
+    ip.resize(len(method))
+    for old_item, new_item in zip(method, ip, strict=True):
+        new_item.method_name.value = old_item.name.value
+        new_item.data.value = old_item.ip.data.value
+        new_item.time.value = old_item.ip.time.value

@@ -450,6 +450,12 @@ def test_3to4_deprecated_magnetics(dd4factory):
     mag.bpol_probe[1].name = "name2"
     mag.bpol_probe[1].voltage.data = [0.1, 0.2, 0.3]
 
+    mag.method.resize(2)
+    for i, method in enumerate(mag.method):
+        method.name = f"name{i}"
+        method.ip.data = [i, 1.0, 2.0]
+        method.ip.time = [i + 1, 2.0, 3.0]
+
     mag4 = convert_ids(mag, None, factory=dd4factory)
     assert len(mag4.b_field_pol_probe) == 2
     assert mag4.b_field_pol_probe[0].name == "identifier1"
@@ -460,14 +466,26 @@ def test_3to4_deprecated_magnetics(dd4factory):
     assert mag4.b_field_pol_probe[1].description == "name2"
     assert array_equal(mag4.b_field_pol_probe[1].voltage.data, [0.1, 0.2, 0.3])
 
+    assert len(mag4.ip) == 2
+    assert mag4.ip[0].method_name == "name0"
+    assert array_equal(mag4.ip[0].data, [0.0, 1.0, 2.0])
+    assert array_equal(mag4.ip[0].time, [1.0, 2.0, 3.0])
+    assert mag4.ip[1].method_name == "name1"
+    assert array_equal(mag4.ip[1].data, [1.0, 1.0, 2.0])
+    assert array_equal(mag4.ip[1].time, [2.0, 2.0, 3.0])
+
     # If both the deprecated and the "correct" quantity exist, we expect only the
     # correct one to be converted to DD4:
     mag.b_field_pol_probe.resize(1)
     mag.b_field_pol_probe[0].name = "test"
+    mag.ip.resize(1)
+    mag.ip[0].method_name = "ip"
 
     mag4 = convert_ids(mag, None, factory=dd4factory)
     assert len(mag4.b_field_pol_probe) == 1
     assert mag4.b_field_pol_probe[0].name == "test"
+    assert len(mag4.ip) == 1
+    assert mag4.ip[0].method_name == "ip"
 
 
 def test_3to4_pulse_schedule():
