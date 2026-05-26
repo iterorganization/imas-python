@@ -290,24 +290,17 @@ you may see the following error:
   Dictionary version of the DBEntry (3.42.0). This is not supported when using the
   UDA backend.
 
-There are three possible workarounds. The first two require passing an additional option
+There are two possible workarounds. The first one requires passing an additional option
 in the IMAS UDA URI: please see the `imas-core documentation
 <https://imas-core.readthedocs.io/en/stable/user_guide/backends_guide.html#query-keys-specific-for-the-uda-backend>`__
-for more details on these URI options.
+for more details on URI options.
 
 1. Use UDA fetch to bypass the cache problem. You can do this by appending ``&fetch=1``
    to the URI when you create the :py:class:`~imas.db_entry.DBEntry`.
 
    Note that this will download the entire IDS files from the remote server, this may
    not be desired if you only want to read a single time slice.
-2. Disable the UDA cache. You can do this by appending ``&cache_mode=none`` to the URI
-   when you create the :py:class:`~imas.db_entry.DBEntry`.
-
-   Note that this may make the ``get()`` (a lot) slower, since a separate request needs
-   to be sent to the remote UDA server for every data variable. However, this may still
-   be the best performing option if you are only interested in a subset of all the data
-   in an IDS (and use :ref:`lazy loading`).
-3. Explicitly provide the data dictionary version when you create the
+2. Explicitly provide the data dictionary version when you create the
    :py:class:`~imas.db_entry.DBEntry`, setting it to match the Data Dictionary version
    of the data you want to load. To obtain the version of the data on the remote server
    from the field `ids_properties.put_version.data_dictionary` via a _lazy_ ``get()``
@@ -316,7 +309,7 @@ for more details on these URI options.
    Note that you may need to call ``imas.convert_ids`` to convert the IDS to your
    desired Data Dictionary version.
 
-All three possible workarounds are shown in the examples below:
+The two possible workarounds are shown in the examples below:
 
 .. md-tab-set::
 
@@ -346,20 +339,7 @@ All three possible workarounds are shown in the examples below:
         with imas.DBEntry(URI, "r") as entry:
             cp = entry.get("core_profiles")
 
-    .. md-tab-item:: 2. Disable the UDA cache
-
-      .. code-block:: python
-
-        import imas
-
-        URI = (
-            "imas://uda.iter.org:56565/uda?backend=hdf5"
-            "&path=/work/imas/shared/imasdb/ITER/3/121013/50&cache_mode=none"
-        )
-        with imas.DBEntry(URI, "r") as entry:
-            cp = entry.get("core_profiles")
-
-    .. md-tab-item:: 3. Explicitly provide the DD version
+    .. md-tab-item:: 2. Explicitly provide the DD version
 
       .. code-block:: python
 
