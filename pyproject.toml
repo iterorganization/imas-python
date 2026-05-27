@@ -78,10 +78,6 @@ docs = [
     "sphinx-immaterial>=0.11.0,<0.12",
     "sphinx-click",
 ]
-
-# TODO enable when imas-core is available on pypi
-# imas-core = [ "imas-core@git+https://github.com/iterorganization/imas-core.git@main" ]
-
 netcdf = [
     "netCDF4>=1.4.1",
 ]
@@ -109,7 +105,6 @@ test = [
     # Pint is used in training snippets
     "pint",
     # Optional dependencies
-    # TODO add imas-core when it is available on pypi
     "imas-python[netcdf,h5py,xarray,saxonche,awkward]",
 ]
 

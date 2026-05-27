@@ -1,0 +1,10 @@
+version: 2
+updates:
+  # Enable version updates for Github Actions
+  - package-ecosystem: "github-actions"
+    # Look for `/.github/workflows` and `/action.yml` or `.yaml`
+    directory: "/"
+    # Check for updates once a week
+    schedule:
+      interval: "weekly"
+
