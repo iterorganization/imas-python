@@ -334,7 +334,7 @@ class IDSNumeric0D(IDSPrimitive):
     __doc__ = IDSDoc(__doc__)
     __slots__ = ()
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype=None, copy=None):
         return np.array(self.value, dtype=dtype)
 
     def __str__(self):
@@ -437,7 +437,9 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
     # list, to support operations like np.add(array_like, list)
     _HANDLED_TYPES = (np.ndarray, Number)
 
-    def __array__(self, dtype=None):
+    def __array__(self, dtype=None, copy=None):
+        if copy:
+            return self.value.astype(dtype, copy=True)
         return self.value.astype(dtype, copy=False)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
