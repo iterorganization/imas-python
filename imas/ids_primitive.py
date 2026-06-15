@@ -438,9 +438,7 @@ class IDSNumericArray(IDSPrimitive, np.lib.mixins.NDArrayOperatorsMixin):
     _HANDLED_TYPES = (np.ndarray, Number)
 
     def __array__(self, dtype=None, copy=None):
-        if copy:
-            return self.value.astype(dtype, copy=True)
-        return self.value.astype(dtype, copy=False)
+        return self.value.astype(dtype, copy=bool(copy))
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         out = kwargs.get("out", ())
