@@ -233,7 +233,7 @@ def test_ids_dict(test_data):
 
 
 def test_wrangle(test_ids_dict, flat):
-    wrangled = wrangle(flat)
+    wrangled = wrangle(flat, source_version='3.41.0')
     for key in test_ids_dict:
         diff = idsdiffgen(wrangled[key], test_ids_dict[key])
         assert len(list(diff)) == 0, diff
