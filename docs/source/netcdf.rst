@@ -185,6 +185,8 @@ specific paths inside the IDS. The latter variant can also be combined with
     #   profiles_1d.grid.psi
 
 
+.. _`Store Xarray Datasets in IMAS-compatible netCDF file`:
+    
 Store Xarray Datasets in IMAS-compatible netCDF file
 ''''''''''''''''''''''''''''''''''''''''''''''''''''
 

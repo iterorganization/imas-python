@@ -10,7 +10,7 @@ Features
 ''''''''
 
 - :merge:`131`: introduce alias and units metadata in the :ref:`Identifiers` API
-- :merge:`104`: add a :py:func:`imas.DBEntry.list_filled_paths` function (requires imas_core >= 5.7 for HDF5 backend)
+- :merge:`104`: add a :py:func:`imas.db_entry.DBEntry.list_filled_paths` function (requires imas_core >= 5.7 for HDF5 backend)
 
 Improvements
 ''''''''''''
