@@ -12,7 +12,11 @@ except ImportError:
     ak = None
 
 
-def recursively_put(location, value, ids):
+def _recursively_put(location, value, ids):
+    """
+    Traverses the hierarchy of an `ids` object and deposits `value` at 
+    `location`
+    """
     # time_slice.profiles_1d.psi
     if "." in location:
         position, sub_location = location.split(".", 1)
@@ -28,18 +32,27 @@ def recursively_put(location, value, ids):
                 )
             # Need to iterate over indices (e.g. equilibrium.time_slice[:].)
             for index in range(N):
-                recursively_put(sub_location, value[index], sub_ids[index])
+                _recursively_put(sub_location, value[index], sub_ids[index])
         else:
             # Need to set an attribute
             # Now get the new substring, e.g. time_slice
             position, sub_location = location.split(".", 1)
-            recursively_put(sub_location, value, sub_ids)
+            _recursively_put(sub_location, value, sub_ids)
     else:
         setattr(ids, location, value)
     return ids
 
 
 def wrangle(flat: Dict, source_version: str) -> Dict[str, IDSToplevel]:
+    """
+    Takes a `flat` dictionary of awkward|numpy arrays represented in the 
+    `source_version` and deposits each field in hierarchial IDS objects.
+    Returns a dictionary of the populated IDS.
+
+    Note: This does not perform any consistency checking to avoid performance
+    impacts. A future `safe_wrangle` could wrap this function and perform a subsequent 
+    consistency check. 
+    """
     wrangled = {}
     factory = IDSFactory(source_version)
     for key in flat:
@@ -50,7 +63,11 @@ def wrangle(flat: Dict, source_version: str) -> Dict[str, IDSToplevel]:
     return wrangled
 
 
-def split_location_across_ids(locations: List[str]) -> Dict[str, List[str]]:
+def _split_location_across_ids(locations: List[str]) -> Dict[str, List[str]]:
+    """
+    Helper function that groups a list of imas_composer style `locations`
+    into IDS-groups
+    """
     ids_locations = {}
     for location in locations:
         ids, path = location.split(".", 1)
@@ -65,8 +82,13 @@ def unwrangle(
     ids_dict: Dict[str, IDSToplevel],
     target_version: str | None = None,
 ) -> Tuple[Dict[str, Union[np.ndarray, object]], List[str]]:
+    """
+    Uses the IDSTensorizer to extract desired `locations` (imas_composer style) from a dictionary
+    of ids_dict and stores them in a dictionary of flat dictionary.
+    Automatically converts to `target_version` if specified.
+    """
     flat = {}
-    ids_locations = split_location_across_ids(locations)
+    ids_locations = _split_location_across_ids(locations)
     failed_locations = []
     for key in ids_locations:
         ids = ids_dict[key]
