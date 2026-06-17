@@ -4,7 +4,7 @@
 
 import logging
 from enum import Enum
-from typing import Iterable, List, Type
+from typing import Iterable, List, Type, Optional
 from xml.etree.ElementTree import fromstring
 
 from imas import dd_zip
@@ -15,18 +15,28 @@ logger = logging.getLogger(__name__)
 class IDSIdentifier(Enum):
     """Base class for all identifier enums."""
 
-    def __new__(cls, value: int, description: str, aliases: list = []):
+    name: str
+    """Name of this identifier value."""
+    index: int
+    """Unique index for this identifier value."""
+    description: str
+    """Description for this identifier value."""
+    aliases: list[str]
+    """Alternative names for this identifier value."""
+    units: Optional[str]
+    """Units of the quantity/quantities altered by this identifier. May be ``None`` if
+    the Data Dictionary doesn't provide this metadata."""
+
+    def __new__(
+        cls, value: int, description: str, aliases: list[str], units: Optional[str]
+    ):
         obj = object.__new__(cls)
         obj._value_ = value
+        obj.index = value
+        obj.description = description
+        obj.aliases = aliases
+        obj.units = units
         return obj
-
-    def __init__(self, value: int, description: str, aliases: list = []) -> None:
-        self.index = value
-        """Unique index for this identifier value."""
-        self.description = description
-        """Description for this identifier value."""
-        self.aliases = aliases
-        """Alternative names for this identifier value."""
 
     def __eq__(self, other):
         if self is other:
@@ -68,19 +78,22 @@ class IDSIdentifier(Enum):
     def _from_xml(cls, identifier_name, xml) -> Type["IDSIdentifier"]:
         element = fromstring(xml)
         enum_values = {}
-        aliases = {}
         for int_element in element.iterfind("int"):
             name = int_element.get("name")
             value = int_element.text
+            assert value is not None
             description = int_element.get("description")
             # alias attribute may contain multiple comma-separated aliases
             alias_attr = int_element.get("alias", "")
             aliases = [a.strip() for a in alias_attr.split(",") if a.strip()]
-            # Canonical entry: use the canonical 'name' as key
-            enum_values[name] = (int(value), description, aliases)
-            # Also add alias names as enum *aliases* (they become enum attributes)
+            units = int_element.get("units")
+
+            # Identifier can be looked up by its name or any of its aliases:
+            enumvalue = (int(value), description, aliases, units)
+            enum_values[name] = enumvalue
             for alias in aliases:
-                enum_values[alias] = (int(value), description, aliases)
+                enum_values[alias] = enumvalue
+
         # Create the enumeration
         enum = cls(
             identifier_name,

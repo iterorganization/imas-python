@@ -47,7 +47,6 @@ class IDS2NC(IDSTensorizer):
 
     def create_variables(self) -> None:
         """Create netCDF variables."""
-        get_dimensions = self.ncmeta.get_dimensions
         for path in self.filled_data:
             metadata = self.ids.metadata[path]
             var_name = path.replace("/", ".")
@@ -75,54 +74,21 @@ class IDS2NC(IDSTensorizer):
                 if dtype is not dtypes[IDSDataType.CPX]:  # Set fillvalue
                     kwargs.update(fill_value=default_fillvals[metadata.data_type])
                 # Create variable
-                dimensions = get_dimensions(path, self.homogeneous_time)
+                dimensions = self.get_dimensions(path)
                 var = self.group.createVariable(var_name, dtype, dimensions, **kwargs)
 
             # Fill metadata attributes
-            var.documentation = metadata.documentation
-            if metadata.units:
-                var.units = metadata.units
+            var.setncatts(self.get_attributes(path, default_fillvals))
 
-            ancillary_variables = " ".join(
-                error_var
-                for error_var in [f"{var_name}_error_upper", f"{var_name}_error_lower"]
-                if error_var in self.filled_variables
-            )
-            if ancillary_variables:
-                var.ancillary_variables = ancillary_variables
-
-            if metadata.data_type is not IDSDataType.STRUCT_ARRAY:
-                coordinates = self.filter_coordinates(path)
-                if coordinates:
-                    var.coordinates = coordinates
-
-            # Sparsity and :shape array
-            if path in self.shapes:
-                if not metadata.ndim:
-                    # Doesn't need a :shape array:
-                    var.sparse = "Sparse data, missing data is filled with _FillValue"
-                    var.sparse += f" ({default_fillvals[metadata.data_type]})"
-
-                else:
-                    shape_name = f"{var_name}:shape"
-                    var.sparse = f"Sparse data, data shapes are stored in {shape_name}"
-
-                    # Create variable to store data shape
-                    dimensions = get_dimensions(
-                        self.ncmeta.aos.get(path), self.homogeneous_time
-                    ) + (f"{metadata.ndim}D",)
-                    shape_var = self.group.createVariable(
-                        shape_name,
-                        SHAPE_DTYPE,
-                        dimensions,
-                    )
-                    doc_indices = ",".join(chr(ord("i") + i) for i in range(3))
-                    shape_var.documentation = (
-                        f"Shape information for {var_name}.\n"
-                        f"{shape_name}[{doc_indices},:] describes the shape of filled "
-                        f"data of {var_name}[{doc_indices},...]. Data outside this "
-                        "shape is unset (i.e. filled with _Fillvalue)."
-                    )
+            # :shape array for sparse data
+            if path in self.shapes and metadata.ndim:
+                shape_name = f"{var_name}:shape"
+                # Create variable to store data shape
+                dimensions = self.get_shape_dimensions(path)
+                shape_var = self.group.createVariable(
+                    shape_name, SHAPE_DTYPE, dimensions
+                )
+                shape_var.setncatts(self.get_shape_attributes(var_name))
 
     def store_data(self) -> None:
         """Store data in the netCDF variables"""

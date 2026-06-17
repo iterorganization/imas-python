@@ -6,11 +6,9 @@ from imas.dd_zip import dd_identifiers
 from imas.ids_factory import IDSFactory
 from imas.ids_identifiers import IDSIdentifier, identifiers
 
-has_aliases = Version(importlib.metadata.version("imas_data_dictionaries")) >= Version(
-    "4.1.0"
-)
-requires_aliases = pytest.mark.skipif(
-    not has_aliases, reason="Requires DD 4.1.0 for identifier aliases"
+requires_dd4_1 = pytest.mark.skipif(
+    Version(importlib.metadata.version("imas_data_dictionaries")) < Version("4.1.0"),
+    reason="Test requires DD 4.1.0 for additional identifier metadata",
 )
 
 
@@ -112,7 +110,7 @@ Materials used in the device mechanical structures
     assert identifier.CxHy.aliases == ["alias1", "alias2", "3alias"]
 
 
-@requires_aliases
+@requires_dd4_1
 def test_identifier_struct_assignment_with_aliases():
     """Test identifier struct assignment with aliases using materials_identifier."""
     mid = identifiers.materials_identifier
@@ -174,7 +172,7 @@ def test_invalid_identifier_assignment():
         cs.source[0].identifier = -1
 
 
-@requires_aliases
+@requires_dd4_1
 def test_identifier_aliases():
     """Test identifier enum aliases functionality."""
     mid = identifiers.materials_identifier
@@ -197,7 +195,7 @@ def test_identifier_aliases():
         assert mid[alias] is mid.U_235
 
 
-@requires_aliases
+@requires_dd4_1
 def test_identifier_alias_equality():
     """Test that identifiers with aliases are equal when comparing names and aliases."""
     mid = identifiers.materials_identifier
@@ -276,7 +274,7 @@ def test_identifier_alias_equality():
     assert mat5.descriptions[2] == mid["U_235"].description
 
 
-@requires_aliases
+@requires_dd4_1
 def test_identifier_alias_equality_non_ggd():
     """Test identifier aliases functionality on non-ggd material"""
     mid = identifiers.materials_identifier
@@ -293,3 +291,14 @@ def test_identifier_alias_equality_non_ggd():
     summary_ids.wall.material.name = "235U"  # Use canonical name
     assert summary_ids.wall.material == mid["235U"]
     assert summary_ids.wall.material == mid["U_235"]
+
+
+@requires_dd4_1
+def test_identifier_units():
+    ppcid = identifiers.poloidal_plane_coordinates_identifier
+    assert ppcid.rectangular.units == "m,m"
+    assert ppcid.inverse.units == "m,rad"
+
+    # materials identifier doesn't have units (and I don't expect they'll ever get any)
+    mid = identifiers.materials_identifier
+    assert mid.W.units is None

@@ -183,3 +183,41 @@ specific paths inside the IDS. The latter variant can also be combined with
     #   profiles_1d.grid.rho_tor
     #   profiles_1d.grid.rho_tor_norm
     #   profiles_1d.grid.psi
+
+
+.. _`Store Xarray Datasets in IMAS-compatible netCDF file`:
+    
+Store Xarray Datasets in IMAS-compatible netCDF file
+''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+.. versionadded:: 2.3.0 :py:meth:`~imas.util.to_xarray` now includes the required
+    metadata to load the IDS from a netCDF file.
+
+The following snippet shows how to store an IMAS Xarray dataset in an IMAS-compatible
+netCDF file. The group name in the netCDF file must correspond to ``<IDS
+Name>/<occurrence>`` (``core_profiles/0`` in the snippet).
+
+.. code-block:: python
+    :caption: Store IMAS Xarray dataset in an IMAS-compatible netCDF file
+
+    import imas.training
+    import netCDF4
+
+    with imas.training.get_training_db_entry() as training_entry:
+        core_profiles = training_entry.get("core_profiles")
+        xrds = imas.util.to_xarray(core_profiles)
+    
+    # Store the xarray dataset in an IMAS-compatible netCDF dataset
+    filename = "data.nc"
+    xrds.to_netcdf(
+        filename,
+        group="core_profiles/0",  # Update to the correct IDS name and occurrence
+        # auto_complex=True,      # Uncomment if the dataset contains complex data
+    )
+    # Set global DD version metadata
+    with netCDF4.Dataset(filename, "a") as ds: 
+        ds.data_dictionary_version = imas.util.get_data_dictionary_version(ids)
+
+    # Test that we can get the IDS from the netCDF file
+    with imas.DBEntry(filename, "r") as entry:
+        ids2 = entry.get("core_profiles")

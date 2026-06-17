@@ -439,6 +439,55 @@ def test_3to4_cocos_magnetics_workaround(dd4factory):
     compare_children(mag, mag3)
 
 
+def test_3to4_deprecated_magnetics(dd4factory):
+    # Test migrating deprecated bpol_probe
+    mag = IDSFactory("3.39.0").magnetics()
+    mag.bpol_probe.resize(2)
+    mag.bpol_probe[0].name = "name1"
+    mag.bpol_probe[0].identifier = "identifier1"
+    mag.bpol_probe[0].position.r = 1
+    mag.bpol_probe[0].field.data = [0.1, 0.2, 0.3]
+    mag.bpol_probe[1].name = "name2"
+    mag.bpol_probe[1].voltage.data = [0.1, 0.2, 0.3]
+
+    mag.method.resize(2)
+    for i, method in enumerate(mag.method):
+        method.name = f"name{i}"
+        method.ip.data = [i, 1.0, 2.0]
+        method.ip.time = [i + 1, 2.0, 3.0]
+
+    mag4 = convert_ids(mag, None, factory=dd4factory)
+    assert len(mag4.b_field_pol_probe) == 2
+    assert mag4.b_field_pol_probe[0].name == "identifier1"
+    assert mag4.b_field_pol_probe[0].description == "name1"
+    assert mag4.b_field_pol_probe[0].position.r == 1
+    assert array_equal(mag4.b_field_pol_probe[0].field.data, [0.1, 0.2, 0.3])
+    assert mag4.b_field_pol_probe[1].name == "name2"
+    assert mag4.b_field_pol_probe[1].description == "name2"
+    assert array_equal(mag4.b_field_pol_probe[1].voltage.data, [0.1, 0.2, 0.3])
+
+    assert len(mag4.ip) == 2
+    assert mag4.ip[0].method_name == "name0"
+    assert array_equal(mag4.ip[0].data, [0.0, 1.0, 2.0])
+    assert array_equal(mag4.ip[0].time, [1.0, 2.0, 3.0])
+    assert mag4.ip[1].method_name == "name1"
+    assert array_equal(mag4.ip[1].data, [1.0, 1.0, 2.0])
+    assert array_equal(mag4.ip[1].time, [2.0, 2.0, 3.0])
+
+    # If both the deprecated and the "correct" quantity exist, we expect only the
+    # correct one to be converted to DD4:
+    mag.b_field_pol_probe.resize(1)
+    mag.b_field_pol_probe[0].name = "test"
+    mag.ip.resize(1)
+    mag.ip[0].method_name = "ip"
+
+    mag4 = convert_ids(mag, None, factory=dd4factory)
+    assert len(mag4.b_field_pol_probe) == 1
+    assert mag4.b_field_pol_probe[0].name == "test"
+    assert len(mag4.ip) == 1
+    assert mag4.ip[0].method_name == "ip"
+
+
 def test_3to4_pulse_schedule():
     ps = IDSFactory("3.39.0").pulse_schedule()
     ps.ids_properties.homogeneous_time = IDS_TIME_MODE_HETEROGENEOUS
@@ -573,6 +622,29 @@ def test_4to3_name_identifier_mapping_magnetics():
 
     # DD4 name -> DD3 identifier
     assert dst.b_field_pol_probe[0].identifier == "TEST_NAME"
+
+
+def test_3to4_name_identifier_empty_identifier():
+    """GH#114: name must be preserved when identifier is empty."""
+    factory = IDSFactory("3.40.1")
+
+    src = factory.pf_active()
+    src.ids_properties.homogeneous_time = IDS_TIME_MODE_HOMOGENEOUS
+    src.coil.resize(2)
+    # Case 1: name populated, identifier empty
+    src.coil[0].name = "TEST_NAME"
+    src.coil[0].identifier = ""
+    # Case 2: name populated, identifier not set at all
+    src.coil[1].name = "TEST_NAME2"
+
+    dst = convert_ids(src, "4.0.0")
+
+    # name must be preserved in DD4 name (not overwritten by empty identifier)
+    assert dst.coil[0].name == "TEST_NAME"
+    assert dst.coil[0].description == "TEST_NAME"
+
+    assert dst.coil[1].name == "TEST_NAME2"
+    assert dst.coil[1].description == "TEST_NAME2"
 
 
 def test_3to4_cocos_hardcoded_paths():

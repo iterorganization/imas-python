@@ -14,13 +14,16 @@ enumerated list of options for defining, for example:
 - These may have alternative naming conventions supported through aliases 
   (e.g., "235U" and "U_235" for Uranium 235).
 
-Identifiers are a list of possible valid labels. Each label has up to four
-representations:
+Identifiers are a list of possible valid options. Each option has three representations
+that are stored in an IDS:
 
 1. An index (integer)
 2. A name (short string)
 3. A description (long string)
-4. List of aliases (list of short strings)
+
+.. seealso::
+    `Data Dictionary documentation for identifiers
+    <https://imas-data-dictionary.readthedocs.io/en/latest/identifiers.html>`__
 
 
 Identifiers in IMAS-Python
@@ -31,6 +34,20 @@ constructed on-demand from the loaded Data Dictionary definitions.
 
 All identifier enums can be accessed through ``imas.identifiers``. A list of
 the available identifiers is stored as ``imas.identifiers.identifiers``.
+
+Each identifier option provides the following attributes:
+
+- ``name``: the name of the option.
+- ``index``: the integer index value of the option.
+- ``description``: a longer string describing the option.
+- ``aliases``: a list of aliases that can be used instead of the name.
+- ``units``: optional information about the units of the quantities that are affected by
+  the identifier option. Take, for example, the `poloidal plan coordinate identifier
+  <https://imas-data-dictionary.readthedocs.io/en/stable/generated/identifier/poloidal_plane_coordinates_identifier.html>`__
+  which affects the units of ``grid/dim1`` and ``grid/dim2``.
+
+.. versionadded:: 2.1.0 ``aliases`` for identifiers.
+.. versionadded:: 2.3.0 ``units`` metadata.
 
 .. code-block:: python
     :caption: Accessing identifiers
@@ -47,6 +64,9 @@ the available identifiers is stored as ``imas.identifiers.identifiers``.
     print(csid.total.index)
     print(csid.total.description)
 
+    # Search identifier options by their index value
+    print(csid(1))
+
     # Access identifiers with aliases (when available)
     mid = imas.identifiers.materials_identifier
     print(mid["235U"].name)        # Access by canonical name
@@ -57,12 +77,12 @@ the available identifiers is stored as ``imas.identifiers.identifiers``.
     assert mid["235U"].name is mid.U_235.name
 
     # Item access is also possible
-    print(identifiers["edge_source_identifier"])
+    print(imas.identifiers["edge_source_identifier"])
 
     # You can use imas.util.inspect to list all options
-    imas.util.inspect(identifiers.ggd_identifier)
+    imas.util.inspect(imas.identifiers.ggd_identifier)
     # And also to get more details of a specific option
-    imas.util.inspect(identifiers.ggd_identifier.SN)
+    imas.util.inspect(imas.identifiers.ggd_identifier.SN)
 
     # When an IDS node is an identifier, you can use
     # metadata.identifier_enum to get the identifier
@@ -185,6 +205,7 @@ material_identifier["235U"].
     mat.names[0] = mid["235U"].name  # enum value
     mat.names[0] = mid.U_235.name  # enum value via alias
     mat.names[0] = mid["U_235"].name  # enum value via alias
+
 
 Compare identifiers
 -------------------

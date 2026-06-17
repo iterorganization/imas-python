@@ -26,8 +26,6 @@ equilibrium/vacuum_toroidal_field/b0
 	dim: 1
 	size: 3 
 -5.2999999999999998e+00 -5.2999999999999998e+00 -5.2999999999999998e+00 
-equilibrium/grids_ggd
-	size: 1
 equilibrium/time_slice
 	size: 3
 equilibrium/time_slice[0]/boundary/outline/r

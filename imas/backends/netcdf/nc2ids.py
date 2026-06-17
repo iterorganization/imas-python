@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Optional
+from typing import Optional, Tuple
 
 import netCDF4
 import numpy as np
@@ -80,6 +80,14 @@ class NC2IDS:
             )
         self.homogeneous_time = var[()] == IDS_TIME_MODE_HOMOGENEOUS
 
+    def get_dimensions(self, path: str) -> Tuple[str, ...]:
+        """Get the dimensions for a netCDF variable.
+
+        Args:
+            path: Data Dictionary path to the variable, e.g. ``ids_properties/comment``.
+        """
+        return self.ncmeta.get_dimensions(path, self.homogeneous_time)
+
     def run(self, lazy: bool) -> None:
         """Load the data from the netCDF group into the IDS."""
         self.variables.sort()
@@ -130,9 +138,7 @@ class NC2IDS:
 
                 else:
                     # FIXME: extract dimension name from nc file?
-                    dim = self.ncmeta.get_dimensions(
-                        metadata.path_string, self.homogeneous_time
-                    )[-1]
+                    dim = self.get_dimensions(metadata.path_string)[-1]
                     size = self.group.dimensions[dim].size
                     for _, node in indexed_tree_iter(self.ids, target_metadata):
                         node.resize(size)
@@ -235,9 +241,7 @@ class NC2IDS:
                 raise variable_error(var, "data type", var.dtype, expected_dtype)
 
             # Dimensions
-            expected_dims = self.ncmeta.get_dimensions(
-                metadata.path_string, self.homogeneous_time
-            )
+            expected_dims = self.get_dimensions(metadata.path_string)
             if var.dimensions != expected_dims:
                 raise variable_error(var, "dimensions", var.dimensions, expected_dims)
 
@@ -298,9 +302,7 @@ class NC2IDS:
             return  # Sparsity is stored with _Fillvalue, nothing to validate
 
         # Dimensions
-        aos_dimensions = self.ncmeta.get_dimensions(
-            self.ncmeta.aos.get(metadata.path_string), self.homogeneous_time
-        )
+        aos_dimensions = self.get_dimensions(self.ncmeta.aos.get(metadata.path_string))
         shape_dimensions = shape_var.dimensions
         if (
             len(shape_dimensions) != len(aos_dimensions) + 1
@@ -331,7 +333,6 @@ class LazyContext:
 
         Args:
             child: The child IDS node which should be lazy loaded.
-
         """
         metadata = child.metadata
         path = metadata.path_string
@@ -347,9 +348,7 @@ class LazyContext:
                 size = nc2ids.group[var.name + ":shape"][self.index][0]
             else:
                 # FIXME: extract dimension name from nc file?
-                dim = nc2ids.ncmeta.get_dimensions(
-                    metadata.path_string, nc2ids.homogeneous_time
-                )[-1]
+                dim = nc2ids.get_dimensions(metadata.path_string)[-1]
                 size = nc2ids.group.dimensions[dim].size
 
             child._set_lazy_context(LazyArrayStructContext(nc2ids, self.index, size))
