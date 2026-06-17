@@ -3,6 +3,55 @@
 Changelog
 =========
 
+What's new in IMAS-Python 2.3.0
+-------------------------------
+
+Features
+''''''''
+
+- :merge:`131`: introduce alias and units metadata in the :ref:`Identifiers` API
+- :merge:`104`: add a :py:func:`imas.DBEntry.list_filled_paths` function (requires imas_core >= 5.7 for HDF5 backend)
+
+Improvements
+''''''''''''
+
+- :issue:`116`: migrate `magnetics` obsolescent fields (`method -> ip`, `bpol_probe -> b_field_pol_probe`) with a value during a 3to4 conversion 
+- :merge:`112`: include metadata variables when writing an IDS to a netCDF files with the function `to_xarray`, allowing to read back the IDS with a `get` (see :ref:`Store Xarray Datasets in IMAS-compatible netCDF file`)
+  - improve documentation w.r.t netcdf URI and UDA backend usage limitations and associated workarounds
+
+Bug fixes
+'''''''''
+
+- :issue:`118`: fix deprecation warning with copy keyword for __array__ implementation (Numpy > 2)
+- :issue:`117`: fix 3to4 conversion of name/identifier when identifier is empty
+- :merge:`105`: fix training data assets that failed loading
+
+  
+
+What's new in IMAS-Python 2.2.0
+-------------------------------
+
+Features
+''''''''
+- :issue:`44`: add `--convert-to-plasma-ids` option to `imas convert`  
+
+Improvements
+''''''''''''
+
+- :merge:`100`: remove legacy tool `extract_test_data` 
+- :merge:`98`: support MDSplus models configuration change introduced in imas_core >= 5.6
+- :issue:`97`: better documentation, exception message and control of DD compatibility when using UDA backend
+- :merge:`95`: defer loading the default DD definitions
+- :issue:`91`: remove hidden `has_imas` attribute (may break compatibility of applications that used it!)
+
+Bug fixes
+'''''''''
+
+- :merge:`100`: fix incorrect type hints
+- :issue:`89`: properly unpack 0D data when reading an IDS from a netCDF file
+
+
+
 What's new in IMAS-Python 2.1.0
 -------------------------------
 
