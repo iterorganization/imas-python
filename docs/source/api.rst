@@ -21,6 +21,7 @@ IMAS-Python public API
    ids_convert.convert_ids
    ids_data_type.IDSDataType
    ids_factory.IDSFactory
+   ids_factory.get_all_ids_names
    ids_identifiers.identifiers
    ids_metadata.IDSMetadata
    ids_metadata.IDSType

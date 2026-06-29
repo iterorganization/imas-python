@@ -23,7 +23,7 @@ from .convert_core_edge_plasma import (
 from .db_entry import DBEntry
 from .ids_convert import convert_ids
 from .ids_data_type import IDSDataType
-from .ids_factory import IDSFactory
+from .ids_factory import IDSFactory, get_all_ids_names
 from .ids_identifiers import identifiers
 from .ids_metadata import IDSMetadata, IDSType
 from .ids_primitive import IDSPrimitive
@@ -42,6 +42,7 @@ __all__ = [
     "DBEntry",
     "IDSDataType",
     "IDSFactory",
+    "get_all_ids_names",
     "IDSMetadata",
     "IDSPrimitive",
     "IDSStructure",

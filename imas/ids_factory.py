@@ -17,6 +17,16 @@ from imas.ids_toplevel import IDSToplevel
 logger = logging.getLogger(__name__)
 
 
+def get_all_ids_names() -> list[str]:
+    """Get all IDS names available across all dd versions"""
+    ids_names: set[str] = set()
+
+    for dd_version in dd_zip.dd_xml_versions():
+        ids_names.update(IDSFactory(dd_version).ids_names())
+
+    return sorted(ids_names)
+
+
 class IDSFactory:
     """Factory class generating IDSToplevel elements for specific DD versions.
 

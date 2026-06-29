@@ -1,7 +1,7 @@
 import pytest
 
-from imas.dd_zip import latest_dd_version
-from imas.ids_factory import IDSFactory
+from imas.dd_zip import dd_xml_versions, latest_dd_version
+from imas.ids_factory import IDSFactory, get_all_ids_names
 
 
 def test_ids_factory_with_version():
@@ -33,3 +33,10 @@ def test_ids_factory_from_env(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("IMAS_VERSION", version)
     factory = IDSFactory()
     assert factory._version == version
+
+
+def test_get_all_ids_names():
+    ids_names = get_all_ids_names()
+
+    for dd_version in dd_xml_versions():
+        assert set(IDSFactory(dd_version).ids_names()) <= set(ids_names)
