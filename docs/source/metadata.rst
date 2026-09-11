@@ -8,6 +8,15 @@ associated with elements in the IDS, such as coordinate information, units, etc.
 IMAS-Python provides the :py:class:`~imas.ids_metadata.IDSMetadata` API for
 interacting with this metadata.
 
+Metadata attributes are read-only and may be shared by independent IDS instances.
+Constructing metadata for another IDS does not disable this protection.
+
+.. note::
+    This does not make IMAS-Python generally thread-safe. Do not access the same
+    IDS or its substructures simultaneously from multiple threads. IMAS-Core
+    ``put``, ``get``, ``serialize`` and ``deserialize`` operations are not
+    thread-safe either.
+
 On this page you find several examples for querying and using the metadata of
 IDS elements.
 

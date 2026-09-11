@@ -67,14 +67,7 @@ def get_toplevel_metadata(structure_xml: Element) -> "IDSMetadata":
     if not _type_map:
         _build_type_map()
 
-    # Delete the custom __setattr__ so __init__ can assign values:
-    orig_setattr = IDSMetadata.__setattr__
-    del IDSMetadata.__setattr__
-    try:
-        return IDSMetadata(structure_xml, "", None)
-    finally:
-        # Always restore the custom __setattr__ to avoid accidental data changes
-        IDSMetadata.__setattr__ = orig_setattr
+    return IDSMetadata(structure_xml, "", None)
 
 
 _type_map: Dict[Tuple[Optional[IDSDataType], int], Type] = {}
@@ -98,18 +91,24 @@ def _build_type_map():
     from imas.ids_structure import IDSStructure
     from imas.ids_toplevel import IDSToplevel
 
-    _type_map[(None, 0)] = IDSToplevel
-    _type_map[(IDSDataType.STRUCTURE, 0)] = IDSStructure
-    _type_map[(IDSDataType.STRUCT_ARRAY, 1)] = IDSStructArray
-    _type_map[(IDSDataType.STR, 0)] = IDSString0D
-    _type_map[(IDSDataType.STR, 1)] = IDSString1D
-    _type_map[(IDSDataType.INT, 0)] = IDSInt0D
-    _type_map[(IDSDataType.FLT, 0)] = IDSFloat0D
-    _type_map[(IDSDataType.CPX, 0)] = IDSComplex0D
+    type_map = {
+        (None, 0): IDSToplevel,
+        (IDSDataType.STRUCTURE, 0): IDSStructure,
+        (IDSDataType.STRUCT_ARRAY, 1): IDSStructArray,
+        (IDSDataType.STR, 0): IDSString0D,
+        (IDSDataType.STR, 1): IDSString1D,
+        (IDSDataType.INT, 0): IDSInt0D,
+        (IDSDataType.FLT, 0): IDSFloat0D,
+        (IDSDataType.CPX, 0): IDSComplex0D,
+    }
     for dim in range(1, 7):
-        _type_map[(IDSDataType.INT, dim)] = IDSNumericArray
-        _type_map[(IDSDataType.FLT, dim)] = IDSNumericArray
-        _type_map[(IDSDataType.CPX, dim)] = IDSNumericArray
+        type_map[(IDSDataType.INT, dim)] = IDSNumericArray
+        type_map[(IDSDataType.FLT, dim)] = IDSNumericArray
+        type_map[(IDSDataType.CPX, dim)] = IDSNumericArray
+
+    # Concurrent constructors must only see a complete type map.
+    global _type_map
+    _type_map = type_map
 
 
 class IDSMetadata:
@@ -257,11 +256,16 @@ class IDSMetadata:
         # AL expects ndim of STR types to be one more (STR_0D is 1D array of chars)
         self._al_ndim = self.ndim + (self.data_type is IDSDataType.STR)
 
+        # Freeze this node without changing the class or other metadata instances.
+        object.__setattr__(self, "_initialized", True)
+
     def __repr__(self) -> str:
         return f"<IDSMetadata for '{self.name}'>"
 
     def __setattr__(self, name: str, value: Any) -> None:
-        raise RuntimeError("Cannot set attribute: IDSMetadata is read-only.")
+        if self.__dict__.get("_initialized", False):
+            raise RuntimeError("Cannot set attribute: IDSMetadata is read-only.")
+        object.__setattr__(self, name, value)
 
     def __delattr__(self, name: str) -> None:
         raise RuntimeError("Cannot delete attribute: IDSMetadata is read-only.")
