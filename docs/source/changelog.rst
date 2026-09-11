@@ -3,6 +3,16 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+Bug fixes
+'''''''''
+
+- :issue:`130`: prevent concurrent metadata construction from changing the global
+  ``IDSMetadata`` class or exposing an incomplete node type map. This does not
+  provide general thread safety for IDS access or IMAS-Core operations.
+
 What's new in IMAS-Python 2.3.0
 -------------------------------
 
